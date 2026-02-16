@@ -3,20 +3,20 @@
 import polars as pl
 import pytest
 from hypothesis import given, settings
-
-from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.parametric import (
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
     downstream_metadata_strategy,
     feature_metadata_strategy,
     upstream_metadata_strategy,
 )
+
+from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.versioning.types import HashAlgorithm
 
@@ -39,13 +39,13 @@ def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
 
     spec = MyFeature.spec()
     feature_version = MyFeature.feature_version()
-    snapshot_version = "test_snapshot_v1"
+    project_version = "test_snapshot_v1"
 
     @given(
         feature_metadata_strategy(
             spec,
             feature_version=feature_version,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             min_rows=5,
             max_rows=10,
         )
@@ -69,7 +69,7 @@ def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
 
         # Check version columns have correct constant values
         assert df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_version]
-        assert df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [snapshot_version]
+        assert df[METAXY_PROJECT_VERSION].unique().to_list() == [project_version]
 
         # Check provenance values are populated (strings should NOT be empty)
         for row in df.iter_rows(named=True):
@@ -78,9 +78,7 @@ def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
             for field_name in field_names:
                 assert field_name in provenance
                 assert isinstance(provenance[field_name], str)
-                assert len(provenance[field_name]) > 0, (
-                    f"Field '{field_name}' should not be empty"
-                )
+                assert len(provenance[field_name]) > 0, f"Field '{field_name}' should not be empty"
 
     property_test()
 
@@ -99,7 +97,7 @@ def test_feature_metadata_strategy_with_id_columns_df(graph: FeatureGraph) -> No
 
     spec = MyFeature.spec()
     feature_version = MyFeature.feature_version()
-    snapshot_version = "test_snapshot_v1"
+    project_version = "test_snapshot_v1"
 
     # Create a specific ID column DataFrame
     id_df = pl.DataFrame({"sample_uid": [100, 200, 300]})
@@ -108,7 +106,7 @@ def test_feature_metadata_strategy_with_id_columns_df(graph: FeatureGraph) -> No
         feature_metadata_strategy(
             spec,
             feature_version=feature_version,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             id_columns_df=id_df,
         )
     )
@@ -152,13 +150,13 @@ def test_upstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> None
     feature_versions = {
         "parent": ParentFeature.feature_version(),
     }
-    snapshot_version = "test_snapshot_v1"
+    project_version = "test_snapshot_v1"
 
     @given(
         upstream_metadata_strategy(
             plan,
             feature_versions=feature_versions,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             min_rows=3,
             max_rows=5,
         )
@@ -178,17 +176,11 @@ def test_upstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> None
         assert EXPECTED_SYSTEM_COLUMNS.issubset(set(parent_df.columns))
 
         # Check provenance structure
-        assert parent_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
-            [pl.Field("parent_field", pl.String)]
-        )
+        assert parent_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct([pl.Field("parent_field", pl.String)])
 
         # Check versions are correct
-        assert parent_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["parent"]
-        ]
-        assert parent_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
+        assert parent_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["parent"]]
+        assert parent_df[METAXY_PROJECT_VERSION].unique().to_list() == [project_version]
 
     property_test()
 
@@ -234,13 +226,13 @@ def test_upstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) -> N
         "parent_a": ParentA.feature_version(),
         "parent_b": ParentB.feature_version(),
     }
-    snapshot_version = "test_snapshot_v1"
+    project_version = "test_snapshot_v1"
 
     @given(
         upstream_metadata_strategy(
             plan,
             feature_versions=feature_versions,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             min_rows=5,
             max_rows=10,
         )
@@ -258,33 +250,19 @@ def test_upstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) -> N
         assert 5 <= len(parent_a_df) <= 10
 
         # Both should have matching sample_uid values (for joins)
-        assert (
-            parent_a_df["sample_uid"].to_list() == parent_b_df["sample_uid"].to_list()
-        )
+        assert parent_a_df["sample_uid"].to_list() == parent_b_df["sample_uid"].to_list()
 
         # Check provenance structures are different
-        assert parent_a_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
-            [pl.Field("field_a", pl.String)]
-        )
-        assert parent_b_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
-            [pl.Field("field_b", pl.String)]
-        )
+        assert parent_a_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct([pl.Field("field_a", pl.String)])
+        assert parent_b_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct([pl.Field("field_b", pl.String)])
 
         # Check versions
-        assert parent_a_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["parent_a"]
-        ]
-        assert parent_b_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["parent_b"]
-        ]
+        assert parent_a_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["parent_a"]]
+        assert parent_b_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["parent_b"]]
 
         # Both should have same snapshot version
-        assert parent_a_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
-        assert parent_b_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
+        assert parent_a_df[METAXY_PROJECT_VERSION].unique().to_list() == [project_version]
+        assert parent_b_df[METAXY_PROJECT_VERSION].unique().to_list() == [project_version]
 
     property_test()
 
@@ -307,7 +285,7 @@ def test_upstream_metadata_strategy_no_deps(graph: FeatureGraph) -> None:
         upstream_metadata_strategy(
             plan,
             feature_versions={},
-            snapshot_version="test_v1",
+            project_version="test_v1",
         )
     )
     @settings(max_examples=5)
@@ -347,7 +325,7 @@ def test_upstream_metadata_strategy_missing_version_error(graph: FeatureGraph) -
         upstream_metadata_strategy(
             plan,
             feature_versions={},  # Empty!
-            snapshot_version="test_v1",
+            project_version="test_v1",
         ).example()
 
 
@@ -365,13 +343,13 @@ def test_feature_metadata_strategy_exact_rows(graph: FeatureGraph) -> None:
 
     spec = MyFeature.spec()
     feature_version = MyFeature.feature_version()
-    snapshot_version = "test_v1"
+    project_version = "test_v1"
 
     @given(
         feature_metadata_strategy(
             spec,
             feature_version=feature_version,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             num_rows=7,  # Exact count
         )
     )
@@ -411,13 +389,13 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
         "parent": ParentFeature.feature_version(),
         "child": ChildFeature.feature_version(),
     }
-    snapshot_version = "test_snapshot_v1"
+    project_version = "test_snapshot_v1"
 
     @given(
         downstream_metadata_strategy(
             plan,
             feature_versions=feature_versions,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             hash_algorithm=HashAlgorithm.XXHASH64,
             min_rows=3,
             max_rows=5,
@@ -451,12 +429,8 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
             assert len(provenance["child_field"]) > 0, "Hash should not be empty"
 
         # Check version columns
-        assert downstream_df[METAXY_FEATURE_VERSION].unique().to_list() == [
-            feature_versions["child"]
-        ]
-        assert downstream_df[METAXY_SNAPSHOT_VERSION].unique().to_list() == [
-            snapshot_version
-        ]
+        assert downstream_df[METAXY_FEATURE_VERSION].unique().to_list() == [feature_versions["child"]]
+        assert downstream_df[METAXY_PROJECT_VERSION].unique().to_list() == [project_version]
 
     property_test()
 
@@ -503,13 +477,13 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         "parent_b": ParentB.feature_version(),
         "child": ChildFeature.feature_version(),
     }
-    snapshot_version = "test_snapshot_v1"
+    project_version = "test_snapshot_v1"
 
     @given(
         downstream_metadata_strategy(
             plan,
             feature_versions=feature_versions,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             hash_algorithm=HashAlgorithm.SHA256,
             min_rows=5,
             max_rows=10,
@@ -538,7 +512,6 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         assert field_names == {"result"}
 
         # Verify provenance is calculated (non-empty hashes)
-        # Note: SHA256 produces 64 hex chars (256 bits)
         for row in downstream_df.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert len(provenance["result"]) > 0
@@ -574,13 +547,13 @@ def test_downstream_metadata_strategy_no_truncation(graph: FeatureGraph) -> None
         "parent": ParentFeature.feature_version(),
         "child": ChildFeature.feature_version(),
     }
-    snapshot_version = "test_v1"
+    project_version = "test_v1"
 
     @given(
         downstream_metadata_strategy(
             plan,
             feature_versions=feature_versions,
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             hash_algorithm=HashAlgorithm.XXHASH64,
             min_rows=2,
             max_rows=5,

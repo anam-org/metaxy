@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from fastmcp import FastMCP
 
-from metaxy import FeatureGraph, MetaxyConfig, coerce_to_feature_key, init_metaxy
+from metaxy import FeatureGraph, MetaxyConfig, coerce_to_feature_key, init
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -60,7 +60,7 @@ def _get_metaxy_context() -> MetaxyContext:
     if MetaxyConfig.is_set():
         config = MetaxyConfig.get()
     else:
-        config = init_metaxy()
+        config = init()
 
     graph = FeatureGraph.get_active()
 
@@ -85,16 +85,12 @@ def _register_tools(server: FastMCP) -> None:
         config_dict = config.model_dump(mode="json")
 
         # Add config_file which is a private attr not included in model_dump
-        config_dict["config_file"] = (
-            str(config.config_file) if config.config_file else None
-        )
+        config_dict["config_file"] = str(config.config_file) if config.config_file else None
 
         return config_dict
 
     @server.tool()
-    def list_features(
-        project: str | None = None, verbose: bool = False
-    ) -> dict[str, Any]:
+    def list_features(project: str | None = None, verbose: bool = False) -> dict[str, Any]:
         """List all registered features with their metadata.
 
         Matches the output format of `mx list features --format json`.
@@ -116,16 +112,15 @@ def _register_tools(server: FastMCP) -> None:
 
         features_data: list[dict[str, Any]] = []
 
-        for feature_key, feature_spec in graph.feature_specs_by_key.items():
-            feature_cls = graph.get_feature_by_key(feature_key)
-
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             # Filter by project if specified
-            if project and feature_cls.project != project:
+            if project and definition.project != project:
                 continue
 
+            feature_spec = definition.spec
             version = graph.get_feature_version(feature_key)
             is_root = not feature_spec.deps
-            import_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+            import_path = definition.feature_class_path
 
             # Get the feature plan for resolved field dependencies
             feature_plan = graph.get_feature_plan(feature_key) if verbose else None
@@ -133,9 +128,7 @@ def _register_tools(server: FastMCP) -> None:
             # Build field info
             fields_info: list[dict[str, Any]] = []
             for field_key, field_spec in feature_spec.fields_by_key.items():
-                field_version = graph.get_field_version(
-                    FQFieldKey(feature=feature_key, field=field_key)
-                )
+                field_version = graph.get_field_version(FQFieldKey(feature=feature_key, field=field_key))
                 field_data: dict[str, Any] = {
                     "key": field_spec.key.to_string(),
                     "code_version": field_spec.code_version,
@@ -163,16 +156,14 @@ def _register_tools(server: FastMCP) -> None:
                 "key": feature_key.to_string(),
                 "version": version,
                 "is_root": is_root,
-                "project": feature_cls.project,
+                "project": definition.project,
                 "import_path": import_path,
                 "field_count": len(fields_info),
                 "fields": fields_info,
             }
 
             if verbose and feature_spec.deps:
-                feature_data["deps"] = [
-                    dep.feature.to_string() for dep in feature_spec.deps
-                ]
+                feature_data["deps"] = [dep.feature.to_string() for dep in feature_spec.deps]
 
             features_data.append(feature_data)
 
@@ -196,10 +187,9 @@ def _register_tools(server: FastMCP) -> None:
         graph = metaxy_ctx.graph
 
         key = coerce_to_feature_key(feature_key)
-        feature_cls = graph.get_feature_by_key(key)
-        spec = feature_cls.spec()
+        definition = graph.get_feature_definition(key)
 
-        return spec.model_dump(mode="json")
+        return definition.spec.model_dump(mode="json")
 
     @server.tool()
     def list_stores() -> list[dict[str, str]]:
@@ -236,7 +226,7 @@ def _register_tools(server: FastMCP) -> None:
         config = metaxy_ctx.config
 
         store = config.get_store(store_name)
-        return store.display()
+        return str(store)
 
     @server.tool()
     def get_metadata(
@@ -244,8 +234,8 @@ def _register_tools(server: FastMCP) -> None:
         store_name: str,
         columns: list[str] | None = None,
         filters: list[str] | None = None,
-        current_only: bool = True,
-        latest_only: bool = True,
+        with_feature_history: bool = False,
+        with_sample_history: bool = False,
         include_soft_deleted: bool = False,
         allow_fallback: bool = True,
         sort_by: list[str] | None = None,
@@ -259,8 +249,8 @@ def _register_tools(server: FastMCP) -> None:
             store_name: Name of the metadata store to read from
             columns: List of columns to select (None for all)
             filters: List of SQL-like filter expressions (e.g., "column > 5", "name == 'foo'")
-            current_only: Only return current (non-superseded) rows (default: True)
-            latest_only: Only return latest version of each row (default: True)
+            with_feature_history: Only return current (non-superseded) rows (default: True)
+            with_sample_history: Only return latest version of each row (default: True)
             include_soft_deleted: Include soft-deleted rows (default: False)
             allow_fallback: If True, check fallback stores when feature is not found
                 in the primary store (default: True)
@@ -281,18 +271,18 @@ def _register_tools(server: FastMCP) -> None:
         graph = metaxy_ctx.graph
 
         key = coerce_to_feature_key(feature_key)
-        feature_cls = graph.get_feature_by_key(key)
+        definition = graph.get_feature_definition(key)
         store = config.get_store(store_name)
 
         nw_filters = _parse_filters(filters)
 
         with store:
-            lazy_frame = store.read_metadata(
-                feature_cls,
+            lazy_frame = store.read(
+                definition,
                 columns=columns,
                 filters=nw_filters if nw_filters else None,
-                current_only=current_only,
-                latest_only=latest_only,
+                with_feature_history=with_feature_history,
+                with_sample_history=with_sample_history,
                 include_soft_deleted=include_soft_deleted,
                 allow_fallback=allow_fallback,
             )
@@ -300,7 +290,7 @@ def _register_tools(server: FastMCP) -> None:
             if sort_by:
                 lazy_frame = lazy_frame.sort(by=sort_by, descending=descending)
 
-            df: pl.DataFrame = lazy_frame.head(limit).collect().to_polars()  # type: ignore[assignment]
+            df: pl.DataFrame = lazy_frame.head(limit).collect().to_polars()
 
             return {
                 "columns": list(df.columns),

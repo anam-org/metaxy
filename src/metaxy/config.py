@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
+import tomli_w
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
@@ -20,6 +21,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 from typing_extensions import Self
+
+from metaxy._decorators import public
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
@@ -43,6 +46,7 @@ def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
     return keys
 
 
+@public
 class InvalidConfigError(Exception):
     """Raised when Metaxy configuration is invalid.
 
@@ -65,9 +69,7 @@ class InvalidConfigError(Exception):
         if config_file:
             parts.append(f"Config file: {config_file}")
 
-        parts.append(
-            "Note: METAXY_* environment variables can override config file settings "
-        )
+        parts.append("Note: METAXY_* environment variables can override config file settings ")
 
         super().__init__("\n".join(parts))
 
@@ -178,18 +180,19 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
         return self.toml_data
 
 
+@public
 class StoreConfig(BaseSettings):
     """Configuration for a single metadata store.
 
     Example:
         ```py
-        config = StoreConfig(
+        store_config = StoreConfig(
             type="metaxy_delta.DeltaMetadataStore",
             config={
                 "root_path": "s3://bucket/metadata",
                 "region": "us-west-2",
                 "fallback_stores": ["prod"],
-            }
+            },
         )
         ```
     """
@@ -205,7 +208,7 @@ class StoreConfig(BaseSettings):
     # Annotated as str | type to allow passing class objects directly
     type_path: str | type[Any] = PydanticField(
         alias="type",
-        description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
+        description="Full import path to metadata store class (e.g., 'metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore')",
     )
 
     config: dict[str, Any] = PydanticField(
@@ -254,10 +257,17 @@ class StoreConfig(BaseSettings):
                 try:
                     importlib.import_module(module_path)
                 except ImportError as import_err:
-                    raise ImportError(
-                        f"Cannot import '{self.type_path}': {import_err}"
-                    ) from import_err
+                    raise ImportError(f"Cannot import '{self.type_path}': {import_err}") from import_err
             raise
+
+    def to_toml(self) -> str:
+        """Serialize to TOML string.
+
+        Returns:
+            TOML representation of this store configuration.
+        """
+        data = self.model_dump(mode="json", by_alias=True)
+        return tomli_w.dumps(data)
 
 
 class PluginConfig(BaseSettings):
@@ -273,10 +283,11 @@ class PluginConfig(BaseSettings):
 
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
 
-# Context variable for storing the app context
-_metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
-    "_metaxy_config", default=None
-)
+# Global config visible to all threads, set via MetaxyConfig.set() / .load().
+# ContextVar overlay for per-context overrides via MetaxyConfig.use().
+# get() checks the ContextVar first, falling back to the global.
+_global_config: "MetaxyConfig | None" = None
+_config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_override", default=None)
 
 
 BUILTIN_PLUGINS = {
@@ -288,6 +299,7 @@ BUILTIN_PLUGINS = {
 StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
 
 
+@public
 class MetaxyConfig(BaseSettings):
     """Main Metaxy configuration.
 
@@ -302,6 +314,7 @@ class MetaxyConfig(BaseSettings):
     Environment variables can be templated with `${MY_VAR:-default}` syntax.
 
     Example: Accessing current configuration
+        <!-- skip next -->
         ```py
         config = MetaxyConfig.load()
         ```
@@ -399,19 +412,31 @@ class MetaxyConfig(BaseSettings):
         frozen=False,
     )
 
-    hash_truncation_length: int | None = PydanticField(
-        default=None,
-        description="Truncate hash values to this length (minimum 8 characters).",
-    )
+    hash_truncation_length: int = PydanticField(default=8, description="Truncate hash values to this length.", ge=8)
 
     auto_create_tables: bool = PydanticField(
         default=False,
-        description="Auto-create tables when opening stores (development/testing only). WARNING: Do not use in production. Use proper database migration tools like Alembic.",
+        description="Auto-create tables when opening stores. It is not advised to enable this setting in production.",
     )
 
-    project: str = PydanticField(
-        default="default",
+    project: str | None = PydanticField(
+        default=None,
         description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
+    )
+
+    locked: bool | None = PydanticField(
+        default=None,
+        description="Whether to raise an error if an external feature doesn't have a matching feature version when [syncing external features][metaxy.sync_external_features] from the metadata store.",
+    )
+
+    sync: bool = PydanticField(
+        default=True,
+        description="Whether to automatically [sync external feature definitions][metaxy.sync_external_features] from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.",
+    )
+
+    metaxy_lock_path: str = PydanticField(
+        default="metaxy.lock",
+        description="Relative or absolute path to the lock file, resolved from the config file's location.",
     )
 
     # Private attribute to track which config file was used (set by load())
@@ -424,6 +449,22 @@ class MetaxyConfig(BaseSettings):
         Returns None if the config was created directly (not via load()).
         """
         return self._config_file
+
+    @property
+    def lock_file(self) -> Path | None:
+        """The resolved lock file path.
+
+        Returns the absolute path if `metaxy_lock_path` is absolute, otherwise
+        resolves it relative to the config file's directory.
+
+        Returns None if the path is relative and no config file is set.
+        """
+        lock_path = Path(self.metaxy_lock_path)
+        if lock_path.is_absolute():
+            return lock_path
+        if self._config_file is None:
+            return None
+        return self._config_file.parent / lock_path
 
     def _load_plugins(self) -> None:
         """Load enabled plugins. Must be called after config is set."""
@@ -439,8 +480,10 @@ class MetaxyConfig(BaseSettings):
 
     @field_validator("project")
     @classmethod
-    def validate_project(cls, v: str) -> str:
+    def validate_project(cls, v: str | None) -> str | None:
         """Validate project name follows naming rules."""
+        if v is None:
+            return None
         if not v:
             raise ValueError("project name cannot be empty")
         if "/" in v:
@@ -456,9 +499,7 @@ class MetaxyConfig(BaseSettings):
         import re
 
         if not re.match(r"^[a-zA-Z0-9_-]+$", v):
-            raise ValueError(
-                f"project name '{v}' must contain only alphanumeric characters, underscores, and hyphens"
-            )
+            raise ValueError(f"project name '{v}' must contain only alphanumeric characters, underscores, and hyphens")
         return v
 
     @property
@@ -489,16 +530,6 @@ class MetaxyConfig(BaseSettings):
             plugin = plugin_cls()
         return plugin
 
-    @field_validator("hash_truncation_length")
-    @classmethod
-    def validate_hash_truncation_length(cls, v: int | None) -> int | None:
-        """Validate hash truncation length is at least 8 if set."""
-        if v is not None and v < 8:
-            raise ValueError(
-                f"hash_truncation_length must be at least 8 characters, got {v}"
-            )
-        return v
-
     @classmethod
     def settings_customise_sources(
         cls,
@@ -519,9 +550,7 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def get(
-        cls, *, load: bool = False, _allow_default_config: bool = False
-    ) -> "MetaxyConfig":
+    def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":
         """Get the current Metaxy configuration.
 
         Args:
@@ -532,35 +561,37 @@ class MetaxyConfig(BaseSettings):
                 config without warning if global config is not set. Used by methods
                 like `get_plugin` that may be called at import time.
         """
-        cfg = _metaxy_config.get()
+        cfg = _config_override.get() or _global_config
         if cfg is None:
             if load:
                 return cls.load()
             if not _allow_default_config:
                 warnings.warn(
                     UserWarning(
-                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
+                        "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved)."
                     ),
                     stacklevel=2,
                 )
-            return cls(project="default")
+            return cls()
         else:
             return cfg
 
     @classmethod
     def set(cls, config: Self | None) -> None:
-        """Set the current Metaxy configuration."""
-        _metaxy_config.set(config)
+        """Set the current Metaxy configuration (visible to all threads)."""
+        global _global_config
+        _global_config = config
 
     @classmethod
     def is_set(cls) -> bool:
         """Check if the current Metaxy configuration is set."""
-        return _metaxy_config.get() is not None
+        return _config_override.get() is not None or _global_config is not None
 
     @classmethod
     def reset(cls) -> None:
         """Reset the current Metaxy configuration to None."""
-        _metaxy_config.set(None)
+        global _global_config
+        _global_config = None
 
     @contextmanager
     def use(self) -> Iterator[Self]:
@@ -568,19 +599,18 @@ class MetaxyConfig(BaseSettings):
 
         Example:
             ```py
-            config = MetaxyConfig(project="test")
-            with config.use():
+            test_config = MetaxyConfig(project="test")
+            with test_config.use():
                 # Code here uses test config
                 assert MetaxyConfig.get().project == "test"
             # Previous config restored
             ```
         """
-        previous = _metaxy_config.get()
-        _metaxy_config.set(self)
+        token = _config_override.set(self)
         try:
             yield self
         finally:
-            _metaxy_config.set(previous)
+            _config_override.reset(token)
 
     @classmethod
     def load(
@@ -606,6 +636,7 @@ class MetaxyConfig(BaseSettings):
             Loaded config (TOML + env vars merged)
 
         Example:
+            <!-- skip next -->
             ```py
             # Auto-discover with parent search
             config = MetaxyConfig.load()
@@ -660,8 +691,10 @@ class MetaxyConfig(BaseSettings):
 
             # Temporarily replace method
             cls.settings_customise_sources = custom_sources  # ty: ignore[invalid-assignment]
-            config = cls()
-            cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
+            try:
+                config = cls()
+            finally:
+                cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
             # Store the resolved config file path
             config._config_file = toml_path.resolve()
         else:
@@ -756,7 +789,6 @@ class MetaxyConfig(BaseSettings):
 
         Example:
             ```py
-            config = MetaxyConfig.load()
             store = config.get_store("prod")
 
             # Use default store
@@ -843,7 +875,7 @@ class MetaxyConfig(BaseSettings):
         # Use self.use() to ensure this config is available for fallback resolution
         try:
             with self.use():
-                store = store_class.from_config(typed_config, **extra_kwargs)
+                store = store_class.from_config(typed_config, name=name, **extra_kwargs)
         except InvalidConfigError:
             # Don't re-wrap InvalidConfigError (e.g., from nested fallback store resolution)
             raise
@@ -856,10 +888,7 @@ class MetaxyConfig(BaseSettings):
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)
         # Only check if we explicitly configured a hash algorithm
-        if (
-            configured_hash_algorithm is not None
-            and store.hash_algorithm != configured_hash_algorithm
-        ):
+        if configured_hash_algorithm is not None and store.hash_algorithm != configured_hash_algorithm:
             raise InvalidConfigError.from_config(
                 self,
                 f"Store '{name}' ({store_class.__name__}) was configured with "
@@ -875,3 +904,23 @@ class MetaxyConfig(BaseSettings):
             )
 
         return store
+
+    def to_toml(self) -> str:
+        """Serialize to TOML string.
+
+        Returns:
+            TOML representation of this configuration.
+        """
+        data = self.model_dump(mode="json", by_alias=True)
+        # Remove None values (TOML doesn't support them)
+        data = _remove_none_values(data)
+        return tomli_w.dumps(data)
+
+
+def _remove_none_values(obj: Any) -> Any:
+    """Recursively remove None values from a dict (TOML doesn't support None)."""
+    if isinstance(obj, dict):
+        return {k: _remove_none_values(v) for k, v in obj.items() if v is not None}
+    if isinstance(obj, list):
+        return [_remove_none_values(item) for item in obj if item is not None]
+    return obj

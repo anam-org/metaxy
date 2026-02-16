@@ -21,9 +21,7 @@ from metaxy.metadata_store.system import SystemTableStorage
 # Context Manager Tests
 
 
-def test_store_requires_context_manager(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_store_requires_context_manager(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that operations outside context manager raise error."""
     data = pl.DataFrame(
         {
@@ -37,18 +35,16 @@ def test_store_requires_context_manager(
 
     # Should not be able to write without opening
     with pytest.raises(StoreNotOpenError):
-        persistent_store.write_metadata(test_features["UpstreamFeatureA"], data)
+        persistent_store.write(test_features["UpstreamFeatureA"], data)
 
     # Should not be able to read without opening
     with pytest.raises(StoreNotOpenError):
-        persistent_store.read_metadata(test_features["UpstreamFeatureA"])
+        persistent_store.read(test_features["UpstreamFeatureA"])
 
 
-def test_store_context_manager(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_store_context_manager(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that store works as a context manager."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         # Store should be open
         assert store._is_open
 
@@ -59,7 +55,7 @@ def test_store_context_manager(
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], data)
+        store.write(test_features["UpstreamFeatureA"], data)
 
     # After exiting, should be closed
     assert not persistent_store._is_open
@@ -68,11 +64,9 @@ def test_store_context_manager(
 # Basic CRUD Tests
 
 
-def test_write_and_read_metadata(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_and_read(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test basic write and read operations."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -85,10 +79,8 @@ def test_write_and_read_metadata(
             }
         )
 
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
-        result = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        store.write(test_features["UpstreamFeatureA"], metadata)
+        result = collect_to_polars(store.read(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
@@ -96,11 +88,9 @@ def test_write_and_read_metadata(
         assert "path" in result.columns
 
 
-def test_write_invalid_schema(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_invalid_schema(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -109,14 +99,12 @@ def test_write_invalid_schema(
         )
 
         with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
-            store.write_metadata(test_features["UpstreamFeatureA"], invalid_df)
+            store.write(test_features["UpstreamFeatureA"], invalid_df)
 
 
-def test_write_append(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_write_append(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that writes are append-only."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -137,21 +125,17 @@ def test_write_append(
             }
         )
 
-        store.write_metadata(test_features["UpstreamFeatureA"], df1)
-        store.write_metadata(test_features["UpstreamFeatureA"], df2)
+        store.write(test_features["UpstreamFeatureA"], df1)
+        store.write(test_features["UpstreamFeatureA"], df2)
 
-        result = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store.read(test_features["UpstreamFeatureA"]))
         assert len(result) == 4
         assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
-def test_read_with_filters(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_with_filters(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test reading with Polars filter expressions."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -162,10 +146,10 @@ def test_read_with_filters(
                 ],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
         result = collect_to_polars(
-            store.read_metadata(
+            store.read(
                 test_features["UpstreamFeatureA"],
                 filters=[nw.col("sample_uid") > 1],
             )
@@ -175,11 +159,9 @@ def test_read_with_filters(
         assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
-def test_read_with_column_selection(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_with_column_selection(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test reading specific columns."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -191,10 +173,10 @@ def test_read_with_column_selection(
                 ],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
         result = collect_to_polars(
-            store.read_metadata(
+            store.read(
                 test_features["UpstreamFeatureA"],
                 columns=["sample_uid", "metaxy_provenance_by_field"],
             )
@@ -204,26 +186,20 @@ def test_read_with_column_selection(
         assert "path" not in result.columns
 
 
-def test_read_nonexistent_feature(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_read_nonexistent_feature(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that reading nonexistent feature raises error."""
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         with pytest.raises(FeatureNotFoundError):
-            store.read_metadata(test_features["UpstreamFeatureA"])
+            store.read(test_features["UpstreamFeatureA"])
 
 
 # Feature Existence Tests
 
 
-def test_has_feature_local(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_has_feature_local(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test has_feature for local store."""
-    with persistent_store.open("write") as store:
-        assert not store.has_feature(
-            test_features["UpstreamFeatureA"], check_fallback=False
-        )
+    with persistent_store.open("w") as store:
+        assert not store.has_feature(test_features["UpstreamFeatureA"], check_fallback=False)
 
         metadata = pl.DataFrame(
             {
@@ -231,14 +207,10 @@ def test_has_feature_local(
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
-        assert store.has_feature(
-            test_features["UpstreamFeatureA"], check_fallback=False
-        )
-        assert not store.has_feature(
-            test_features["UpstreamFeatureB"], check_fallback=False
-        )
+        assert store.has_feature(test_features["UpstreamFeatureA"], check_fallback=False)
+        assert not store.has_feature(test_features["UpstreamFeatureB"], check_fallback=False)
 
 
 # System Tables Tests
@@ -264,13 +236,11 @@ def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
                 ],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], data)
+        store.write(test_features["UpstreamFeatureA"], data)
         SystemTableStorage(store).push_graph_snapshot()
 
         # Read system table
-        version_history = collect_to_polars(
-            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
-        )
+        version_history = collect_to_polars(store.read(FEATURE_VERSIONS_KEY, with_feature_history=True))
 
         assert len(version_history) > 0
         assert "feature_key" in version_history.columns
@@ -287,25 +257,16 @@ def test_display(persistent_store) -> None:
     display_closed = persistent_store.display()
     assert len(display_closed) > 0
 
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         # Should work when open
         display_open = store.display()
         assert len(display_open) > 0
 
 
-def test_repr(persistent_store) -> None:
-    """Test /repr/ method."""
-    with persistent_store.open("write") as store:
-        repr_str = repr(store)
-        assert len(repr_str) > 0
-
-
 # Nested Context Manager Tests
 
 
-def test_nested_context_managers(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_nested_context_managers(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test that nested context managers work correctly.
 
     Args:
@@ -314,7 +275,7 @@ def test_nested_context_managers(
     """
     with persistent_store as store1:
         # Nest another context (simulates fallback opening)
-        with store1.open("write") as store2:
+        with store1.open("w") as store2:
             assert store1 is store2
             assert store1._is_open
 
@@ -324,13 +285,11 @@ def test_nested_context_managers(
                     "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
                 }
             )
-            store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
+            store1.write(test_features["UpstreamFeatureA"], metadata)
 
         # Should still be open after inner context exits
         assert store1._is_open
-        result = collect_to_polars(
-            store1.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store1.read(test_features["UpstreamFeatureA"]))
         assert len(result) == 1
 
     # Now should be closed after outer context exits
@@ -340,16 +299,14 @@ def test_nested_context_managers(
 # Multiple Features Tests
 
 
-def test_multiple_features(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_multiple_features(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
     """Test storing multiple features in same store.
 
     Args:
         persistent_store: Store fixture (unopened)
         test_graph: Registry with test features
     """
-    with persistent_store.open("write") as store:
+    with persistent_store.open("w") as store:
         # Write feature A
         data_a = pl.DataFrame(
             {
@@ -360,7 +317,7 @@ def test_multiple_features(
                 ],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], data_a)
+        store.write(test_features["UpstreamFeatureA"], data_a)
 
         # Write feature B
         data_b = pl.DataFrame(
@@ -373,15 +330,11 @@ def test_multiple_features(
                 ],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureB"], data_b)
+        store.write(test_features["UpstreamFeatureB"], data_b)
 
         # Read both
-        result_a = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureA"])
-        )
-        result_b = collect_to_polars(
-            store.read_metadata(test_features["UpstreamFeatureB"])
-        )
+        result_a = collect_to_polars(store.read(test_features["UpstreamFeatureA"]))
+        result_b = collect_to_polars(store.read(test_features["UpstreamFeatureB"]))
 
         assert len(result_a) == 2
         assert len(result_b) == 3

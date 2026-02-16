@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from functools import reduce
 from typing import TYPE_CHECKING, Annotated, Any
 
 import cyclopts
@@ -11,26 +10,28 @@ import narwhals as nw
 from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
-from metaxy.cli.utils import FeatureSelector, FilterArgs, OutputFormat
+from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat
 
 if TYPE_CHECKING:
-    from metaxy import BaseFeature
+    from metaxy import FeatureDefinition
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
+    from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.types import FeatureKey
 
 
 # Metadata subcommand app
 app = cyclopts.App(
-    name="metadata",  # pyrefly: ignore[unexpected-keyword]
-    help="Manage Metaxy metadata",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="metadata",
+    help="Manage Metaxy metadata in metadata stores.",
+    console=console,
+    error_console=error_console,
 )
 
 
 @app.command()
 def status(
-    *,
     selector: FeatureSelector = FeatureSelector(),
+    *,
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -39,11 +40,12 @@ def status(
         ),
     ] = None,
     filters: FilterArgs | None = None,
-    snapshot_version: Annotated[
+    global_filters: GlobalFilterArgs | None = None,
+    project_version: Annotated[
         str | None,
         cyclopts.Parameter(
             name=["--snapshot-id"],
-            help="Check metadata against a specific snapshot version.",
+            help="Check metadata against a specific project version.",
         ),
     ] = None,
     assert_in_sync: Annotated[
@@ -84,93 +86,66 @@ def status(
     """Check metadata completeness and freshness for specified features.
 
     Examples:
-        $ metaxy metadata status --feature user_features
-        $ metaxy metadata status --feature feat1 --feature feat2
+        $ metaxy metadata status my/feature
+        $ metaxy metadata status feat1 feat2
         $ metaxy metadata status --all-features
         $ metaxy metadata status --store dev --all-features
         $ metaxy metadata status --all-features --filter "status = 'active'"
     """
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error, load_graph_for_command
+    from metaxy.cli.utils import load_graph_for_command
     from metaxy.graph.status import get_feature_metadata_status
 
-    filters = filters or []
-
-    # Validate feature selection
-    selector.validate(format)
-
-    # Filters are already parsed by the converter
-    global_filters = filters if filters else None
+    # Normalize filter arguments
+    target_filters_list = filters if filters else None
+    global_filters_list = global_filters if global_filters else None
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
     with metadata_store:
         # Load graph (from snapshot or current)
-        graph = load_graph_for_command(
-            context, snapshot_version, metadata_store, format
-        )
+        graph = load_graph_for_command(context, project_version, metadata_store, format)
 
         # Resolve feature keys
-        valid_keys, missing_keys = selector.resolve_keys(graph, format)
+        selector.resolve(format, graph=graph, error_missing=assert_in_sync)
+        missing_keys = selector.missing_keys
 
         # Handle empty result for --all-features
-        if selector.all_features and not valid_keys:
-            _output_no_features_warning(format, snapshot_version)
+        if selector.all_features and not selector:
+            _output_no_features_warning(format, project_version)
             return
 
-        # Handle missing features
-        if missing_keys:
-            if assert_in_sync:
-                exit_with_error(
-                    CLIError(
-                        code="FEATURES_NOT_FOUND",
-                        message="Feature(s) not found in graph",
-                        details={"features": [k.to_string() for k in missing_keys]},
-                    ),
-                    format,
-                )
-            elif format == "plain":
-                formatted = ", ".join(k.to_string() for k in missing_keys)
-                data_console.print(
-                    f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
-                )
-
         # If no valid features remain
-        if not valid_keys:
-            _output_no_features_warning(format, snapshot_version)
+        if not selector:
+            _output_no_features_warning(format, project_version)
             return
 
         # Print header for plain format only when using a snapshot
-        if format == "plain" and snapshot_version:
-            data_console.print(
-                f"\n[bold]Metadata status (snapshot {snapshot_version})[/bold]"
-            )
+        if format == "plain" and project_version:
+            data_console.print(f"\n[bold]Metadata status (snapshot {project_version})[/bold]")
 
         # Collect status for all features
         needs_update = False
         feature_reps: dict[str, Any] = {}
-        # Each item is (feature_cls, status_with_increment, error_msg)
+        # Each item is (definition, status_with_increment, error_msg)
         # error_msg is None for success, or a string for errors
-        collected_statuses: list[
-            tuple[
-                type[BaseFeature], FeatureMetadataStatusWithIncrement | None, str | None
-            ]
-        ] = []
+        collected_statuses: list[tuple[FeatureDefinition, FeatureMetadataStatusWithIncrement | None, str | None]] = []
 
         errors: list[tuple[str, str, Exception]] = []
 
         # Enable progress calculation if --progress or --verbose is set
         compute_progress = progress or verbose
 
-        for feature_key in valid_keys:
-            feature_cls = graph.features_by_key[feature_key]
+        for feature_key in selector:
+            definition = graph.get_feature_definition(feature_key)
             try:
                 status_with_increment = get_feature_metadata_status(
-                    feature_cls,
+                    definition,
                     metadata_store,
                     use_fallback=allow_fallback_stores,
-                    global_filters=global_filters,
+                    global_filters=global_filters_list,
+                    target_filters=target_filters_list,
                     compute_progress=compute_progress,
                 )
 
@@ -178,13 +153,9 @@ def status(
                     needs_update = True
 
                 if format == "json":
-                    feature_reps[feature_key.to_string()] = (
-                        status_with_increment.to_representation(verbose=verbose)
-                    )
+                    feature_reps[feature_key.to_string()] = status_with_increment.to_representation(verbose=verbose)
                 else:
-                    collected_statuses.append(
-                        (feature_cls, status_with_increment, None)
-                    )
+                    collected_statuses.append((definition, status_with_increment, None))
             except Exception as e:
                 # Log the error and continue with other features
                 error_msg = str(e)
@@ -193,24 +164,22 @@ def status(
                 if format == "json":
                     from metaxy.graph.status import FullFeatureMetadataRepresentation
 
-                    feature_reps[feature_key.to_string()] = (
-                        FullFeatureMetadataRepresentation(
-                            feature_key=feature_key.to_string(),
-                            status="error",
-                            needs_update=False,
-                            metadata_exists=False,
-                            store_rows=0,
-                            missing=None,
-                            stale=None,
-                            orphaned=None,
-                            target_version="",
-                            is_root_feature=False,
-                            error_message=error_msg,
-                        )
+                    feature_reps[feature_key.to_string()] = FullFeatureMetadataRepresentation(
+                        feature_key=feature_key.to_string(),
+                        status="error",
+                        needs_update=False,
+                        metadata_exists=False,
+                        store_rows=0,
+                        missing=None,
+                        stale=None,
+                        orphaned=None,
+                        target_version="",
+                        is_root_feature=False,
+                        error_message=error_msg,
                     )
                 else:
-                    # For plain format, store (feature_cls, None, error_msg)
-                    collected_statuses.append((feature_cls, None, error_msg))
+                    # For plain format, store (definition, None, error_msg)
+                    collected_statuses.append((definition, None, error_msg))
 
         # Output plain format as Rich Table
         if format == "plain":
@@ -221,12 +190,8 @@ def status(
             # Print rich tracebacks for any errors before the table
             if errors:
                 for feat, _, exc in errors:
-                    error_console.print(
-                        f"\n[bold red]Error processing feature:[/bold red] {feat}"
-                    )
-                    error_console.print(
-                        Traceback.from_exception(type(exc), exc, exc.__traceback__)
-                    )
+                    error_console.print(f"\n[bold red]Error processing feature:[/bold red] {feat}")
+                    error_console.print(Traceback.from_exception(type(exc), exc, exc.__traceback__))
 
             table = Table(show_header=True, header_style="bold")
             table.add_column("Status", justify="center", no_wrap=True)
@@ -239,15 +204,13 @@ def status(
 
             verbose_details: list[tuple[str, list[str]]] = []
 
-            for feature_cls, status_with_increment, error_msg in collected_statuses:
+            for definition, status_with_increment, error_msg in collected_statuses:
                 # Handle error case
                 if error_msg is not None:
                     icon = _STATUS_ICONS["error"]
-                    feature_key_str = feature_cls.spec().key.to_string()
+                    feature_key_str = definition.key.to_string()
                     # Truncate error message for display
-                    truncated_error = (
-                        error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
-                    )
+                    truncated_error = error_msg[:60] + "..." if len(error_msg) > 60 else error_msg
                     table.add_row(
                         icon,
                         feature_key_str,
@@ -266,11 +229,7 @@ def status(
                 feature_key_str = status.feature_key.to_string()
 
                 # Determine if this is a "no input" case
-                no_input = (
-                    compute_progress
-                    and not status.is_root_feature
-                    and status.progress_percentage is None
-                )
+                no_input = compute_progress and not status.is_root_feature and status.progress_percentage is None
 
                 # Format status column with progress if available
                 if status.progress_percentage is not None:
@@ -320,9 +279,7 @@ def status(
             if verbose and verbose_details:
                 for feature_key_str, details in verbose_details:
                     data_console.print()  # Blank line before each feature
-                    data_console.print(
-                        f"[bold cyan]`{feature_key_str}` preview[/bold cyan]"
-                    )
+                    data_console.print(f"[bold cyan]`{feature_key_str}` preview[/bold cyan]")
                     data_console.print()  # Blank line after title
                     for line in details:
                         data_console.print(line)
@@ -343,21 +300,15 @@ def status(
 
             adapter = TypeAdapter(dict[str, FullFeatureMetadataRepresentation])
             output: dict[str, Any] = {
-                "snapshot_version": snapshot_version,
-                "features": json.loads(
-                    adapter.dump_json(feature_reps, exclude_none=True)
-                ),
+                "project_version": project_version,
+                "features": json.loads(adapter.dump_json(feature_reps, exclude_none=True)),
                 "needs_update": needs_update,
             }
             warnings_dict: dict[str, Any] = {}
             if missing_keys:
-                warnings_dict["missing_in_graph"] = [
-                    k.to_string() for k in missing_keys
-                ]
+                warnings_dict["missing_in_graph"] = [k.to_string() for k in missing_keys]
             if errors:
-                warnings_dict["errors"] = [
-                    {"feature": feat, "error": err} for feat, err, _ in errors
-                ]
+                warnings_dict["errors"] = [{"feature": feat, "error": err} for feat, err, _ in errors]
             if warnings_dict:
                 output["warnings"] = warnings_dict
             print(json.dumps(output, indent=2))
@@ -369,8 +320,8 @@ def status(
 
 @app.command()
 def delete(
-    *,
     selector: FeatureSelector = FeatureSelector(),
+    *,
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -383,9 +334,17 @@ def delete(
         bool,
         cyclopts.Parameter(
             name=["--soft"],
+            negative="--hard",
             help="Whether to mark records with deletion timestamps vs physically remove them.",
         ),
     ] = True,
+    with_feature_history: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--with-feature-history"],
+            help="Include rows from all historical feature versions (by default, only current version is affected).",
+        ),
+    ] = False,
     yes: Annotated[
         bool,
         cyclopts.Parameter(
@@ -393,25 +352,31 @@ def delete(
             help="Confirm deletion without prompting (required for hard deletes without filters).",
         ),
     ] = False,
+    dry_run: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--dry-run"],
+            help="Preview deletion: show features, filters, and row counts without executing.",
+        ),
+    ] = False,
 ) -> None:
     """Delete metadata rows matching filters.
 
     Examples:
-        $ metaxy metadata delete --feature user_features --filter "status = 'inactive'"
-        $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --soft=false
-        $ metaxy metadata delete --feature test_feature --filter "1=1" --yes  # Delete all rows
+        $ metaxy metadata delete my/feature --filter "status = 'inactive'"
+        $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --hard
+        $ metaxy metadata delete test_feature --filter "1=1" --yes  # Delete all rows
     """
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
 
     filters = filters or []
-    selector.validate("plain")
 
     # Require --yes confirmation for hard deletes when no filters provided
     if not soft and not filters and not yes:
         exit_with_error(
             CLIError(
-                code="MISSING_CONFIRMATION",
+                code=CLIErrorCode.MISSING_CONFIRMATION,
                 message="Hard deleting all metadata requires --yes flag to prevent accidental deletion.",
                 hint="Use --yes to confirm, or provide --filter to restrict deletion.",
             ),
@@ -422,55 +387,40 @@ def delete(
     metadata_store = context.get_store(store)
 
     with metadata_store:
-        # Resolve feature keys without loading full graph
-        from metaxy.models.feature import FeatureGraph
+        # Resolve feature keys
+        selector.resolve("plain")
 
-        graph = FeatureGraph.get_active()
-        valid_keys, missing_keys = selector.resolve_keys(graph, "plain")
-
-        if missing_keys:
-            missing = ", ".join(k.to_string() for k in missing_keys)
-            console.print(
-                f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {missing}"
-            )
-        if not valid_keys:
+        if not selector:
             exit_with_error(
                 CLIError(
-                    code="NO_FEATURES",
+                    code=CLIErrorCode.NO_FEATURES,
                     message="No valid features selected for deletion.",
                 ),
                 "plain",
             )
 
-        # Combine filters with AND, or use empty list for "delete all"
-        combined_filter: nw.Expr | list[nw.Expr]
-        if filters:
-            combined_filter = (
-                reduce(lambda acc, expr: acc & expr, filters[1:], filters[0])
-                if len(filters) > 1
-                else filters[0]
-            )
-        else:
-            # No filters means "delete all" - pass empty list to allow optimized paths
-            # (e.g., TRUNCATE TABLE in Ibis backend)
-            combined_filter = []
+        # Dry-run mode: count rows, print features and filters, then exit
+        if dry_run:
+            store_name = store if store else context.config.store
+            row_counts = _count_rows_to_delete(metadata_store, selector, filters, soft, with_feature_history)
+            _print_dry_run_info(selector, filters, soft, with_feature_history, store_name, row_counts)
+            return
 
         errors: dict[str, str] = {}
 
-        with metadata_store.open("write"):
-            for feature_key in valid_keys:
+        with metadata_store.open("w"):
+            for feature_key in selector:
                 try:
-                    metadata_store.delete_metadata(
+                    metadata_store.delete(
                         feature_key,
-                        filters=combined_filter,
+                        filters=filters,
                         soft=soft,
+                        with_feature_history=with_feature_history,
                     )
                 except Exception as e:  # pragma: no cover - CLI surface
                     error_msg = str(e)
                     errors[feature_key.to_string()] = error_msg
-                    error_console.print(
-                        f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}"
-                    )
+                    error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
         console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")
@@ -479,9 +429,7 @@ def delete(
             raise SystemExit(1)
 
 
-def _output_no_features_warning(
-    format: OutputFormat, snapshot_version: str | None
-) -> None:
+def _output_no_features_warning(format: OutputFormat, project_version: str | None) -> None:
     """Output warning when no features are found to check."""
     if format == "json":
         print(
@@ -489,7 +437,7 @@ def _output_no_features_warning(
                 {
                     "warning": "No valid features to check",
                     "features": {},
-                    "snapshot_version": snapshot_version,
+                    "project_version": project_version,
                     "needs_update": False,
                 },
                 indent=2,
@@ -499,129 +447,103 @@ def _output_no_features_warning(
         data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
 
 
-@app.command()
-def drop(
-    *,
-    selector: FeatureSelector = FeatureSelector(),
-    store: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--store"],
-            help="Store name to drop metadata from (defaults to configured default store).",
-        ),
-    ] = None,
-    confirm: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--confirm"],
-            help="Confirm the drop operation (required to prevent accidental deletion).",
-        ),
-    ] = False,
-    format: Annotated[
-        OutputFormat,
-        cyclopts.Parameter(
-            name=["--format"],
-            help="Output format: 'plain' (default) or 'json'.",
-        ),
-    ] = "plain",
-) -> None:
-    """Drop metadata from a store.
+def _count_rows_to_delete(
+    store: MetadataStore,
+    selector: FeatureSelector,
+    filters: list[nw.Expr],
+    soft: bool,
+    with_feature_history: bool,
+) -> dict[FeatureKey, int | str]:
+    """Count rows that would be deleted for each feature.
 
-    Removes metadata for specified features. This is destructive and requires --confirm.
+    Returns a dict mapping FeatureKey to row counts.
+    If counting fails for a feature, the value will be an error message string.
 
-    Examples:
-        $ metaxy metadata drop --feature user_features --confirm
-        $ metaxy metadata drop --feature feat1 --feature feat2 --confirm
-        $ metaxy metadata drop --store dev --all-features --confirm
+    The reason this isn't implemented on the MetadataStore class is because this is an estimation,
+    we don't actually get a number of deleted rows from the storage backend.
     """
-    from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, exit_with_error
 
-    # Validate feature selection
-    selector.validate(format)
+    row_counts: dict[FeatureKey, int | str] = {}
+    count_frames: list[tuple[FeatureKey, nw.LazyFrame]] = []
 
-    # Require confirmation
-    if not confirm:
-        exit_with_error(
-            CLIError(
-                code="MISSING_CONFIRMATION",
-                message="This is a destructive operation. Must specify --confirm flag.",
-                details={"required_flag": "--confirm"},
-            ),
-            format,
-        )
-
-    context = AppContext.get()
-    context.raise_command_cannot_override_project()
-    metadata_store = context.get_store(store)
-
-    with metadata_store.open("write"):
-        graph = context.graph
-
-        # Resolve feature keys
-        valid_keys, _ = selector.resolve_keys(graph, format)
-
-        # Handle no features
-        if not valid_keys:
-            if format == "json":
-                print(
-                    json.dumps(
-                        {
-                            "warning": "NO_FEATURES_FOUND",
-                            "message": "No features found in active graph.",
-                            "features_dropped": 0,
-                        }
-                    )
-                )
-            else:
-                console.print(
-                    "[yellow]Warning:[/yellow] No features found in active graph."
-                )
-            return
-
-        if format == "plain":
-            console.print(
-                f"\n[bold]Dropping metadata for {len(valid_keys)} feature(s)...[/bold]\n"
-            )
-
-        # Drop each feature
-        dropped: list[str] = []
-        failed: list[dict[str, str]] = []
-
-        for feature_key in valid_keys:
-            key_str = feature_key.to_string()
+    with store:
+        # Build count lazy frames for all features
+        for feature_key in selector:
             try:
-                metadata_store.drop_feature_metadata(feature_key)
-                dropped.append(key_str)
-                if format == "plain":
-                    console.print(f"[green]✓[/green] Dropped: {key_str}")
+                # Match the same parameters as delete uses for soft deletes
+                # For hard deletes, this is an approximation since hard delete uses
+                # _delete_feature directly, but this gives a reasonable count
+                lazy = store.read(
+                    feature_key,
+                    filters=filters,
+                    include_soft_deleted=False,
+                    with_feature_history=with_feature_history,
+                    with_sample_history=False,  # matches delete default
+                    allow_fallback=soft,  # soft deletes use fallback, hard deletes don't
+                )
+                # Pre-aggregate to count per feature
+                count_frame = lazy.select(nw.len().alias("count"))
+                count_frames.append((feature_key, count_frame))
             except Exception as e:
-                failed.append({"feature": key_str, "error": str(e)})
-                if format == "plain":
-                    from metaxy.cli.utils import print_error_item
+                row_counts[feature_key] = f"error: {e}"
 
-                    print_error_item(
-                        console, key_str, e, prefix="[red]✗[/red] Failed to drop"
-                    )
+        # Concat and collect all at once for parallel execution
+        if count_frames:
+            combined = nw.concat([cf for _, cf in count_frames])
+            counts_dicts = combined.collect().to_polars().to_dicts()
 
-        # Output result
-        if format == "json":
-            result: dict[str, Any] = {
-                "success": True,
-                "features_dropped": len(dropped),
-                "dropped": dropped,
-            }
-            if failed:
-                result["failed"] = failed
-            print(json.dumps(result, indent=2))
+            # Map counts back to feature keys (order preserved from concat)
+            for (feature_key, _), row in zip(count_frames, counts_dicts):
+                row_counts[feature_key] = row["count"]
+
+    return row_counts
+
+
+def _print_dry_run_info(
+    selector: FeatureSelector,
+    filters: list[nw.Expr],
+    soft: bool,
+    with_feature_history: bool,
+    store_name: str,
+    row_counts: dict[FeatureKey, int | str],
+) -> None:
+    """Print dry-run information for delete command."""
+    mode_str = "[yellow]soft[/yellow]" if soft else "[red]hard[/red]"
+    history_str = "[yellow]yes[/yellow]" if with_feature_history else "[green]no[/green]"
+    console.print(f"[bold cyan]Dry run[/bold cyan] ({mode_str} delete, with_feature_history={history_str})")
+    console.print()
+
+    console.print(f"[bold]Store:[/bold] [blue]{store_name}[/blue]")
+    console.print()
+
+    # Calculate total rows
+    total_rows = sum(c for c in row_counts.values() if isinstance(c, int))
+
+    console.print(f"[bold]Features[/bold] [dim]({len(selector)})[/dim]:")
+    for feature_key in selector:
+        count = row_counts.get(feature_key, "?")
+        if isinstance(count, int):
+            count_str = f"[dim]({count} rows)[/dim]"
         else:
-            console.print(
-                f"\n[green]✓[/green] Drop complete: {len(dropped)} feature(s) dropped"
-            )
+            count_str = f"[red]{count}[/red]"
+        console.print(f"  [cyan]•[/cyan] {feature_key.to_string()} {count_str}")
+    console.print()
+
+    console.print(f"[bold]Total rows to delete:[/bold] [yellow]{total_rows}[/yellow]")
+    console.print()
+
+    console.print("[bold]Filters:[/bold]")
+    if filters:
+        for f in filters:
+            console.print(f"  [magenta]•[/magenta] {f!r}")
+    else:
+        console.print("  [dim](none)[/dim]")
 
 
 @app.command()
 def copy(
+    selector: FeatureSelector = FeatureSelector(),
+    *,
     from_store: Annotated[
         str,
         cyclopts.Parameter(
@@ -636,53 +558,40 @@ def copy(
             help="Destination store name to copy metadata to.",
         ),
     ],
-    *features: Annotated[
-        str,
-        cyclopts.Parameter(
-            help="One or more feature keys to copy, separated by whitespaces.",
-        ),
-    ],
     filters: FilterArgs | None = None,
-    current_only: Annotated[
+    with_feature_history: Annotated[
         bool,
         cyclopts.Parameter(
-            name=["--current-only"],
-            help="Only copy rows with the current feature_version (as defined in loaded feature graph).",
-        ),
-    ] = False,
-    latest_only: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--latest-only"],
-            help="Deduplicate samples by keeping only the latest row per id_columns group.",
+            name=["--with-feature-history"],
+            help="Include rows from all historical feature versions (by default, only current version is copied).",
         ),
     ] = True,
+    with_sample_history: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--with-sample-history"],
+            help="Include all historical materializations per sample (by default, deduplicates by id_columns).",
+        ),
+    ] = False,
 ) -> None:
     """Copy metadata from one store to another.
 
     Copies metadata for specified features from source to destination store.
-    By default, copies all versions (--no-current-only) and deduplicates by
-    keeping only the latest row per sample (--latest-only).
+    By default, copies all versions (--with-feature-history) and deduplicates by
+    keeping only the latest row per sample (--no-with-sample-history).
 
     Examples:
-        $ metaxy metadata copy user_features --from prod --to dev
+        $ metaxy metadata copy my/feature --from prod --to dev
         $ metaxy metadata copy feat1 feat2 --from prod --to dev
+        $ metaxy metadata copy --all-features --from prod --to dev
         $ metaxy metadata copy feat1 --from prod --to dev --current-only
         $ metaxy metadata copy feat1 --from prod --to dev --filter "sample_uid IN (1, 2)"
     """
-    from pydantic import ValidationError
     from rich.status import Status
 
-    from metaxy import coerce_to_feature_key
     from metaxy.cli.context import AppContext
-    from metaxy.models.types import FeatureKey
 
     filters = filters or []
-
-    # Require at least one feature
-    if not features:
-        data_console.print("[red]Error:[/red] At least one feature must be specified.")
-        raise SystemExit(1)
 
     context = AppContext.get()
 
@@ -690,33 +599,11 @@ def copy(
     source_store = context.get_store(from_store)
     dest_store = context.get_store(to_store)
 
-    # Parse and resolve feature keys
-    graph = context.graph
-    valid_keys: list[FeatureKey] = []
-    missing_keys: list[FeatureKey] = []
-
-    for raw_key in features:
-        try:
-            key = coerce_to_feature_key(raw_key)
-            if key in graph.features_by_key:
-                valid_keys.append(key)
-            else:
-                missing_keys.append(key)
-        except ValidationError as exc:
-            error_console.print(
-                f"[red]Error:[/red] Invalid feature key '{raw_key}': {exc}"
-            )
-            raise SystemExit(1)
-
-    # Handle missing features
-    if missing_keys:
-        formatted = ", ".join(k.to_string() for k in missing_keys)
-        data_console.print(
-            f"[yellow]Warning:[/yellow] Feature(s) not found in graph: {formatted}"
-        )
+    # Resolve feature keys
+    selector.resolve("plain")
 
     # Handle no valid features
-    if not valid_keys:
+    if not selector:
         data_console.print("[yellow]Warning:[/yellow] No valid features to copy.")
         return
 
@@ -724,17 +611,17 @@ def copy(
     global_filters = filters if filters else None
 
     with Status(
-        f"Copying metadata for {len(valid_keys)} feature(s) from '{from_store}' to '{to_store}'...",
+        f"Copying metadata for {len(selector)} feature(s) from '{from_store}' to '{to_store}'...",
         console=data_console,
         spinner="dots",
     ):
-        with source_store.open("read"), dest_store.open("write"):
+        with source_store, dest_store.open("w"):
             stats = dest_store.copy_metadata(
                 from_store=source_store,
-                features=list(valid_keys),
+                features=list(selector),
                 global_filters=global_filters,
-                current_only=current_only,
-                latest_only=latest_only,
+                with_feature_history=with_feature_history,
+                with_sample_history=with_sample_history,
             )
 
     data_console.print(

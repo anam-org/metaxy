@@ -8,10 +8,10 @@ import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
+from metaxy_testing.predicate_cases import predicate_cases
 from sqlglot import exp, parse_one
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy._testing.predicate_cases import predicate_cases
 from metaxy.metadata_store.utils import (
     _strip_table_qualifiers,
     generate_sql,
@@ -77,9 +77,7 @@ def duckdb_datafusion_table() -> pa.Table:
 
 
 def test_generate_sql_from_schema_dict() -> None:
-    schema = nw.from_native(
-        pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})
-    ).collect_schema()
+    schema = nw.from_native(pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})).collect_schema()
     sql = generate_sql(
         lambda lf: lf.filter(nw.col("price") > 5),
         schema,
@@ -96,9 +94,7 @@ def test_generate_sql_from_schema_dict() -> None:
 
 
 def test_narwhals_expr_to_sql_predicate_combines_filters() -> None:
-    schema = nw.from_native(
-        pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})
-    ).collect_schema()
+    schema = nw.from_native(pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})).collect_schema()
     predicate = narwhals_expr_to_sql_predicate(
         [nw.col("price") > 5, nw.col("price") < 10],
         schema,
@@ -111,20 +107,14 @@ def test_narwhals_expr_to_sql_predicate_combines_filters() -> None:
 
 
 def test_narwhals_expr_to_sql_predicate_requires_filters() -> None:
-    schema = nw.from_native(
-        pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})
-    ).collect_schema()
+    schema = nw.from_native(pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})).collect_schema()
     with pytest.raises(ValueError, match="at least one filter"):
         narwhals_expr_to_sql_predicate([], schema, dialect="duckdb")
 
 
 def test_narwhals_expr_to_sql_predicate_strips_table_prefix() -> None:
-    schema = nw.from_native(
-        pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})
-    ).collect_schema()
-    predicate = narwhals_expr_to_sql_predicate(
-        nw.col("price") > 5, schema, dialect="duckdb"
-    )
+    schema = nw.from_native(pl.DataFrame(schema={"date": pl.Date, "price": pl.Float64})).collect_schema()
+    predicate = narwhals_expr_to_sql_predicate(nw.col("price") > 5, schema, dialect="duckdb")
     assert "_metaxy_temp" not in predicate
 
 
@@ -172,9 +162,7 @@ def test_narwhals_predicate_executes_in_datafusion_naive_timestamp() -> None:
     )
     ctx.register_record_batches("prices", [[batch]])
 
-    schema = nw.from_native(
-        pl.DataFrame(schema={"price": pl.Float64, "ts": pl.Datetime()})
-    ).collect_schema()
+    schema = nw.from_native(pl.DataFrame(schema={"price": pl.Float64, "ts": pl.Datetime()})).collect_schema()
     predicate = narwhals_expr_to_sql_predicate(
         [nw.col("price") > 5, nw.col("ts") > datetime(2024, 1, 1)],
         schema,
@@ -248,9 +236,7 @@ def test_predicate_equality_duckdb_datafusion_snapshot(
 
     con = duckdb.connect()
     con.register("t", table)
-    duckdb_rows = con.execute(
-        f"SELECT id FROM t WHERE {duckdb_predicate} ORDER BY id"
-    ).fetchall()
+    duckdb_rows = con.execute(f"SELECT id FROM t WHERE {duckdb_predicate} ORDER BY id").fetchall()
     duckdb_ids = [row[0] for row in duckdb_rows]
 
     ctx = datafusion.SessionContext()
@@ -281,9 +267,7 @@ def test_predicate_equality_duckdb_datafusion_snapshot(
 def test_narwhals_expr_to_sql_predicate_rejects_window_expressions(
     expr: nw.Expr,
 ) -> None:
-    schema = nw.from_native(
-        pl.DataFrame(schema={"value": pl.Int64, "group": pl.Utf8})
-    ).collect_schema()
+    schema = nw.from_native(pl.DataFrame(schema={"value": pl.Int64, "group": pl.Utf8})).collect_schema()
     with pytest.raises(
         (RuntimeError, NotImplementedError),
         match="Could not extract WHERE clause|not supported",
@@ -375,9 +359,7 @@ def test_extra_transforms_single_transform() -> None:
 
 def test_extra_transforms_multiple_transforms() -> None:
     """Test passing multiple transforms as a sequence."""
-    schema = nw.from_native(
-        pl.DataFrame(schema={"status": pl.Utf8, "price": pl.Float64})
-    ).collect_schema()
+    schema = nw.from_native(pl.DataFrame(schema={"status": pl.Utf8, "price": pl.Float64})).collect_schema()
 
     # Create a custom transform that uppercases column names (for testing)
     def uppercase_columns():

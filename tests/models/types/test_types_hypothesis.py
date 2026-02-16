@@ -8,9 +8,9 @@ from typing import Any
 import hypothesis.strategies as st
 import pytest
 from hypothesis import assume, given, settings
+from metaxy_testing.models import SampleFeatureSpec
 from pydantic import BaseModel, ValidationError
 
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
@@ -56,17 +56,13 @@ def key_parts_list(draw: st.DrawFn) -> list[str]:
     if n_parts == 1:
         return [first_part]
     # Remaining parts can start with letter, digit, or underscore
-    other_parts = draw(
-        st.lists(valid_other_key_part(), min_size=n_parts - 1, max_size=n_parts - 1)
-    )
+    other_parts = draw(st.lists(valid_other_key_part(), min_size=n_parts - 1, max_size=n_parts - 1))
     return [first_part] + other_parts
 
 
 # Strategy for generating unique lists of key parts
 @st.composite
-def unique_key_parts_lists(
-    draw: st.DrawFn, min_size: int = 1, max_size: int = 3
-) -> list[list[str]]:
+def unique_key_parts_lists(draw: st.DrawFn, min_size: int = 1, max_size: int = 3) -> list[list[str]]:
     """Generate a list of unique key parts lists."""
     n_keys = draw(st.integers(min_value=min_size, max_value=max_size))
 
@@ -408,9 +404,7 @@ class TestFeatureSpecProperties:
         unique_parts=unique_key_parts_lists(min_size=1, max_size=3),
     )
     @settings(max_examples=50)
-    def test_feature_spec_with_fields(
-        self, key_data: Any, unique_parts: list[list[str]]
-    ):
+    def test_feature_spec_with_fields(self, key_data: Any, unique_parts: list[list[str]]):
         """Test SampleFeatureSpec with fields using coercible keys."""
         # Convert unique parts to various formats
         fields = []
@@ -423,9 +417,7 @@ class TestFeatureSpecProperties:
             else:
                 field_key = FieldKey(parts)  # FieldKey instance
 
-            fields.append(
-                FieldSpec(key=field_key, code_version="1", deps=SpecialFieldDep.ALL)
-            )
+            fields.append(FieldSpec(key=field_key, code_version="1", deps=SpecialFieldDep.ALL))
 
         spec = SampleFeatureSpec(key=key_data, fields=fields)
 
@@ -470,7 +462,7 @@ class TestFeatureDepProperties:
 
     @given(
         key_data=coercible_to_feature_key(),
-        columns=st.one_of(
+        select=st.one_of(
             st.none(),
             st.just(()),  # Empty tuple means only system columns
             st.lists(
@@ -485,14 +477,12 @@ class TestFeatureDepProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_feature_dep_with_columns(
-        self, key_data: Any, columns: tuple[str, ...] | None
-    ):
+    def test_feature_dep_with_select(self, key_data: Any, select: tuple[str, ...] | None):
         """Test FeatureDep with column selection."""
-        dep = FeatureDep(feature=key_data, columns=columns)
+        dep = FeatureDep(feature=key_data, select=select)
 
         assert isinstance(dep.feature, FeatureKey)
-        assert dep.columns == columns
+        assert dep.select == select
 
     @given(
         key_data=coercible_to_feature_key(),
@@ -505,9 +495,7 @@ class TestFeatureDepProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_feature_dep_with_rename(
-        self, key_data: Any, rename_pairs: list[tuple[str, str]]
-    ):
+    def test_feature_dep_with_rename(self, key_data: Any, rename_pairs: list[tuple[str, str]]):
         """Test FeatureDep with column renaming."""
         rename = dict(rename_pairs) if rename_pairs else None
 
@@ -520,22 +508,20 @@ class TestFeatureDepProperties:
     @settings(max_examples=50)
     def test_feature_dep_json_serialization(self, key_data: Any):
         """Test FeatureDep JSON serialization."""
-        dep = FeatureDep(
-            feature=key_data, columns=("col1", "col2"), rename={"col1": "new_col1"}
-        )
+        dep = FeatureDep(feature=key_data, rename={"col1": "new_col1"}, select=("new_col1", "col2"))
 
         # Serialize to JSON
         json_data = dep.model_dump(mode="json")
 
         # Key should be serialized as a string for JSON dict key compatibility
         assert isinstance(json_data["feature"], str)
-        assert json_data["columns"] == ["col1", "col2"]  # Tuple becomes list in JSON
+        assert json_data["select"] == ["new_col1", "col2"]  # Tuple becomes list in JSON
         assert json_data["rename"] == {"col1": "new_col1"}
 
         # Should be able to reconstruct
         dep_restored = FeatureDep(**json_data)
         assert dep_restored.feature == dep.feature
-        assert dep_restored.columns == ("col1", "col2")
+        assert dep_restored.select == ("new_col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
 
 
@@ -624,14 +610,15 @@ class TestComplexIntegration:
 
         # Build dependencies and create spec (omit deps if empty)
         if dep_keys:
-            deps = [
-                FeatureDep(
-                    feature=dep_key,
-                    columns=("col1",) if i % 2 == 0 else None,
-                    rename={"col1": f"dep{i}_col1"} if i % 3 == 0 else None,
-                )
-                for i, dep_key in enumerate(dep_keys)
-            ]
+            deps = []
+            for i, dep_key in enumerate(dep_keys):
+                rename = {"col1": f"dep{i}_col1"} if i % 3 == 0 else None
+                if i % 2 == 0:
+                    # select uses post-rename names
+                    select = (f"dep{i}_col1",) if rename else ("col1",)
+                else:
+                    select = None
+                deps.append(FeatureDep(feature=dep_key, select=select, rename=rename))
             spec = SampleFeatureSpec(key=main_key, deps=deps, fields=fields)
         else:
             spec = SampleFeatureSpec(key=main_key, fields=fields)

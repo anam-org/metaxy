@@ -1,7 +1,8 @@
 """Tests comparing feature_spec_version and feature_version behavior."""
 
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 
 
 def test_feature_spec_version_vs_feature_version() -> None:
@@ -27,8 +28,8 @@ def test_feature_spec_version_vs_feature_version() -> None:
     feature_version = TestFeature.feature_version()
 
     # Both should be valid SHA256 hashes
-    assert len(feature_spec_version) == 64
-    assert len(feature_version) == 64
+    assert len(feature_spec_version) == 8
+    assert len(feature_version) == 8
     assert all(c in "0123456789abcdef" for c in feature_spec_version)
     assert all(c in "0123456789abcdef" for c in feature_version)
 
@@ -109,12 +110,12 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["upstream", "one"]),
-                    columns=("col1", "col2"),
                     rename={"col1": "one_col1"},
+                    select=("one_col1", "col2"),
                 ),
                 FeatureDep(
                     feature=FeatureKey(["upstream", "two"]),
-                    columns=None,  # All columns
+                    select=None,  # All columns
                     rename=None,
                 ),
             ],
@@ -133,9 +134,9 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
     # Verify deps are fully captured
     assert len(spec_dict["deps"]) == 2
-    assert spec_dict["deps"][0]["columns"] == ["col1", "col2"]
+    assert spec_dict["deps"][0]["select"] == ["one_col1", "col2"]
     assert spec_dict["deps"][0]["rename"] == {"col1": "one_col1"}
-    assert spec_dict["deps"][1]["columns"] is None
+    assert spec_dict["deps"][1]["select"] is None
     assert spec_dict["deps"][1]["rename"] is None
 
     # The feature_spec_version should be deterministic
@@ -148,12 +149,12 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("col1", "col2"),
                 rename={"col1": "one_col1"},
+                select=("one_col1", "col2"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=None,
+                select=None,
                 rename=None,
             ),
         ],

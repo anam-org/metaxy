@@ -38,17 +38,15 @@ class RenderConfig:
         metadata={"help": "Show feature and field code versions"},
     )
 
-    show_snapshot_version: bool = field(
+    show_project_version: bool = field(
         default=True,
-        metadata={"help": "Show graph snapshot version in output"},
+        metadata={"help": "Show graph project version in output"},
     )
 
     # Display options
     hash_length: int = field(
         default=8,
-        metadata={
-            "help": "Number of characters to show for version hashes (0 for full)"
-        },
+        metadata={"help": "Number of characters to show for version hashes (0 for full)"},
     )
 
     direction: str = field(
@@ -59,30 +57,22 @@ class RenderConfig:
     # Filtering options
     feature: str | None = field(
         default=None,
-        metadata={
-            "help": "Focus on a specific feature (e.g., 'video/files' or 'video__files')"
-        },
+        metadata={"help": "Focus on a specific feature (e.g., 'video/files' or 'video__files')"},
     )
 
     up: int | None = field(
         default=None,
-        metadata={
-            "help": "Number of dependency levels to render upstream (default: all)"
-        },
+        metadata={"help": "Number of dependency levels to render upstream (default: all)"},
     )
 
     down: int | None = field(
         default=None,
-        metadata={
-            "help": "Number of dependency levels to render downstream (default: all)"
-        },
+        metadata={"help": "Number of dependency levels to render downstream (default: all)"},
     )
 
     project: str | None = field(
         default=None,
-        metadata={
-            "help": "Filter nodes by project (show only features from this project)"
-        },
+        metadata={"help": "Filter nodes by project (show only features from this project)"},
     )
 
     show_projects: bool = field(
@@ -120,7 +110,7 @@ class RenderConfig:
             show_feature_versions=False,
             show_field_versions=False,
             show_code_versions=False,
-            show_snapshot_version=False,
+            show_project_version=False,
             show_projects=show_projects,
         )
 
@@ -132,7 +122,7 @@ class RenderConfig:
             show_feature_versions=True,
             show_field_versions=True,
             show_code_versions=False,
-            show_snapshot_version=True,
+            show_project_version=True,
             hash_length=8,
         )
 
@@ -144,7 +134,7 @@ class RenderConfig:
             show_feature_versions=True,
             show_field_versions=True,
             show_code_versions=True,
-            show_snapshot_version=True,
+            show_project_version=True,
             hash_length=0,  # Full hashes
             show_projects=show_projects,
         )
@@ -224,9 +214,7 @@ class BaseRenderer:
         else:
             return self.theme.feature_color
 
-    def _format_version_transition(
-        self, old_version: str | None, new_version: str | None
-    ) -> str:
+    def _format_version_transition(self, old_version: str | None, new_version: str | None) -> str:
         """Format version transition for diff display.
 
         Args:
@@ -285,10 +273,7 @@ class BaseRenderer:
                 else:
                     # Check if this node is a parent of any node in the project
                     for other_node in graph_data.nodes.values():
-                        if (
-                            other_node.project == self.config.project
-                            and node.key in other_node.dependencies
-                        ):
+                        if other_node.project == self.config.project and node.key in other_node.dependencies:
                             filtered_nodes[key] = node
                             break
 
@@ -305,8 +290,8 @@ class BaseRenderer:
             graph_data = GraphData(
                 nodes=filtered_nodes,
                 edges=filtered_edges,
-                snapshot_version=graph_data.snapshot_version,
-                old_snapshot_version=graph_data.old_snapshot_version,
+                project_version=graph_data.project_version,
+                old_project_version=graph_data.old_project_version,
             )
 
         # Apply feature focus filter if specified

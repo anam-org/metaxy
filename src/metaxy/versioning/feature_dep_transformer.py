@@ -103,9 +103,7 @@ class FeatureDepTransformer:
         """Whether this dependency uses left join (optional) or inner join (required)."""
         return self.dep.optional
 
-    def transform(
-        self, df: FrameT, filters: Sequence[nw.Expr] | None = None
-    ) -> RenamedDataFrame[FrameT]:
+    def transform(self, df: FrameT, filters: Sequence[nw.Expr] | None = None) -> RenamedDataFrame[FrameT]:
         """Apply FeatureDep transformations to an upstream DataFrame.
 
         Transforms the upstream DataFrame by:
@@ -132,9 +130,7 @@ class FeatureDepTransformer:
         # These are recalculated for the downstream feature and would cause column name
         # conflicts when joining 3+ upstream features
         existing_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
-        columns_to_drop = [
-            col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns
-        ]
+        columns_to_drop = [col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns]
         if columns_to_drop:
             df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
@@ -177,27 +173,20 @@ class FeatureDepTransformer:
 
     @cached_property
     def renamed_metaxy_cols(self) -> list[str]:
-        return list(
-            map(self.rename_upstream_metaxy_column, self.metaxy_columns_to_load)
-        )
+        return list(map(self.rename_upstream_metaxy_column, self.metaxy_columns_to_load))
 
     @cached_property
     def renames(self) -> dict[str, str]:
         """Column rename mapping including user renames and metaxy column renames."""
         return {
             **(self.dep.rename or {}),
-            **{
-                col: self.rename_upstream_metaxy_column(col)
-                for col in self.metaxy_columns_to_load
-            },
+            **{col: self.rename_upstream_metaxy_column(col) for col in self.metaxy_columns_to_load},
         }
 
     @cached_property
     def renamed_id_columns(self) -> list[str]:
         """All upstream ID columns after rename (regardless of column selection)."""
-        return [
-            self.renames.get(col, col) for col in self.upstream_feature_spec.id_columns
-        ]
+        return [self.renames.get(col, col) for col in self.upstream_feature_spec.id_columns]
 
     @cached_property
     def selected_id_columns(self) -> list[str]:
@@ -235,10 +224,10 @@ class FeatureDepTransformer:
 
     @cached_property
     def _user_requested_columns(self) -> list[str]:
-        """User-requested columns (after rename)."""
-        if self.dep.columns is None:
+        """User-requested columns (post-rename names)."""
+        if self.dep.select is None:
             return []
-        return [self._apply_rename(col) for col in self.dep.columns]
+        return list(self.dep.select)
 
     @cached_property
     def _lineage_required_columns(self) -> list[str]:
@@ -253,9 +242,7 @@ class FeatureDepTransformer:
     @cached_property
     def _join_required_columns(self) -> list[str]:
         """Join-required ID columns (after rename) not already selected."""
-        already_selected = set(self._user_requested_columns) | set(
-            self._lineage_required_columns
-        )
+        already_selected = set(self._user_requested_columns) | set(self._lineage_required_columns)
         return [
             self._apply_rename(col)
             for col in self._join_required_id_columns
@@ -265,7 +252,7 @@ class FeatureDepTransformer:
     @cached_property
     def renamed_columns(self) -> list[str] | None:
         """Columns to select, or None to select all."""
-        if self.dep.columns is None:
+        if self.dep.select is None:
             return None
 
         return [

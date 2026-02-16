@@ -13,12 +13,11 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.renamed_df import RenamedDataFrame
@@ -83,7 +82,7 @@ class UpstreamPreparer(Generic[FrameT]):
             self._validate_no_collisions(dfs)
 
         # Step 5: Join all dependencies
-        return self.engine.join(dfs)  # ty: ignore[invalid-argument-type]
+        return self.engine.join(dfs)
 
     def _transform_all(
         self,
@@ -92,9 +91,7 @@ class UpstreamPreparer(Generic[FrameT]):
     ) -> dict[FeatureKey, RenamedDataFrame[FrameT]]:
         """Transform each upstream dependency using its FeatureDepTransformer."""
         return {
-            k: self.engine.feature_transformers_by_key[k].transform(
-                df, filters=(filters or {}).get(k)
-            )
+            k: self.engine.feature_transformers_by_key[k].transform(df, filters=(filters or {}).get(k))
             for k, df in upstream.items()
         }
 
@@ -112,14 +109,12 @@ class UpstreamPreparer(Generic[FrameT]):
             dep = self.plan.feature.deps_by_key.get(feature_key)
             if dep is not None:
                 dep_transformer = self.engine.feature_transformers_by_key[feature_key]
-                handler = create_lineage_handler(
-                    dep, self.plan, self.engine, dep_transformer
-                )
+                handler = create_lineage_handler(dep, self.plan, self.engine, dep_transformer)
                 transformed_df = handler.transform_upstream(
-                    renamed_df.df,  # ty: ignore[invalid-argument-type]
+                    renamed_df.df,
                     hash_algorithm,
                 )
-                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                result[feature_key] = RenamedDataFrame(
                     df=transformed_df,
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
@@ -133,8 +128,7 @@ class UpstreamPreparer(Generic[FrameT]):
         """Drop system columns not needed for provenance calculation."""
         columns_to_drop = [
             METAXY_FEATURE_VERSION,
-            METAXY_SNAPSHOT_VERSION,
-            METAXY_FEATURE_SPEC_VERSION,
+            METAXY_PROJECT_VERSION,
         ]
 
         result = dict(dfs)
@@ -143,7 +137,7 @@ class UpstreamPreparer(Generic[FrameT]):
             cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
             cols_to_drop = [col for col in columns_to_drop if col in cols]
             if cols_to_drop:
-                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
+                result[feature_key] = RenamedDataFrame(
                     df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
@@ -177,9 +171,7 @@ class UpstreamPreparer(Generic[FrameT]):
         colliding_columns = [
             col
             for col, features in all_columns.items()
-            if len(features) > 1
-            and col not in id_cols
-            and col not in allowed_system_columns
+            if len(features) > 1 and col not in id_cols and col not in allowed_system_columns
         ]
 
         if colliding_columns:

@@ -10,6 +10,7 @@ from pytest_cases import fixture, parametrize_with_cases
 
 import metaxy as mx
 import metaxy.ext.dagster as mxd
+from tests.conftest import require_fixture
 
 
 class DagsterStoreConfigCases:
@@ -19,16 +20,16 @@ class DagsterStoreConfigCases:
     def case_delta(self, tmp_path: Path) -> mx.StoreConfig:
         """DeltaMetadataStore configuration."""
         return mx.StoreConfig(
-            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
             config={"root_path": tmp_path / "delta_store"},
         )
 
     @pytest.mark.clickhouse
-    def case_clickhouse(self, clickhouse_db: str) -> mx.StoreConfig:
+    def case_clickhouse(self, request) -> mx.StoreConfig:
         """ClickHouseMetadataStore configuration."""
         return mx.StoreConfig(
-            type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
-            config={"connection_string": clickhouse_db},
+            type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+            config={"connection_string": require_fixture(request, "clickhouse_db")},
         )
 
 

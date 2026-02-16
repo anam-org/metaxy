@@ -1,6 +1,6 @@
 """LanceDB-specific tests.
 
-Most LanceDB store functionality is tested via parametrized tests in StoreCases.
+Most LanceDB store functionality is tested via parametrized tests in AllStoreCases.
 This module tests LanceDB-specific features:
 - Connection property enforcement
 - Path type detection (local vs remote)
@@ -20,8 +20,8 @@ import pytest
 from metaxy import FeatureKey
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
+from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import StoreNotOpenError
-from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +46,7 @@ def test_lancedb_table_naming(tmp_path, test_graph, test_features) -> None:
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         # Verify table was created (uses optimized _table_exists internally)
         assert store.has_feature(feature_cls, check_fallback=False)
@@ -94,9 +94,7 @@ def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
         with monkeypatch.context() as m:
             m.setattr("lancedb.connect", mock_lancedb.connect)
             with store.open():
-                assert len(mkdir_called) == 0, (
-                    f"mkdir should not be called for remote URI: {uri}"
-                )
+                assert len(mkdir_called) == 0, f"mkdir should not be called for remote URI: {uri}"
                 assert store._conn is not None
 
     monkeypatch.setattr(Path, "mkdir", original_mkdir)
@@ -178,10 +176,7 @@ def test_lancedb_sanitize_path() -> None:
 
     # URIs with credentials should mask them
     assert sanitize_uri("db://user:pass@host/db") == "db://***:***@host/db"
-    assert (
-        sanitize_uri("https://admin:secret@host:8000/api")
-        == "https://***:***@host:8000/api"
-    )
+    assert sanitize_uri("https://admin:secret@host:8000/api") == "https://***:***@host:8000/api"
     assert sanitize_uri("s3://key:secret@bucket/path") == "s3://***:***@bucket/path"
 
     # Username only (no password)
@@ -224,7 +219,7 @@ def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> 
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         original_table_names = store.conn.table_names
         table_names_mock = Mock(side_effect=original_table_names)
@@ -236,9 +231,7 @@ def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> 
         table_names_mock.assert_not_called()
 
 
-def test_lancedb_s3_storage_options_passed(
-    s3_bucket_and_storage_options, test_features
-) -> None:
+def test_lancedb_s3_storage_options_passed(s3_bucket_and_storage_options, test_features) -> None:
     """Verify storage_options are passed to LanceDB operations with moto-backed S3.
 
     This ensures object store credentials are correctly forwarded to lance-rs.
@@ -248,9 +241,7 @@ def test_lancedb_s3_storage_options_passed(
     store_uri = f"s3://{bucket_name}/lancedb_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with LanceDBMetadataStore(
-        store_uri, connect_kwargs={"storage_options": storage_options}
-    ) as store:
+    with LanceDBMetadataStore(store_uri, connect_kwargs={"storage_options": storage_options}) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -260,10 +251,10 @@ def test_lancedb_s3_storage_options_passed(
                 ],
             }
         )
-        store.write_metadata(feature_cls, metadata)
+        store.write(feature_cls, metadata)
 
         assert store.has_feature(feature_cls, check_fallback=False)
 
-        result = collect_to_polars(store.read_metadata(feature_cls))
+        result = collect_to_polars(store.read(feature_cls))
         assert len(result) == 2
         assert set(result["sample_uid"].to_list()) == {1, 2}

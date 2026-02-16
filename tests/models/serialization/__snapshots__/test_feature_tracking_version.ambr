@@ -1,47 +1,43 @@
 # serializer version: 1
-# name: test_feature_version_unchanged_by_project
-  'fcd6985a4dea45488450141be5c4712fd47781b4d0a7e42f04760c376eadf42f'
+# name: test_definition_version_deterministic
+  '042a2c29'
 # ---
-# name: test_feature_with_deps_different_projects
+# name: test_definition_version_excludes_project
   dict({
-    'downstream_a_project': 'project_a',
-    'downstream_a_version': 'b7478f4be75eea0fa8d468df3f33cc8033cde080313e4ef783222fd65416f8e2',
-    'downstream_b_project': 'project_b',
-    'downstream_b_version': 'b7478f4be75eea0fa8d468df3f33cc8033cde080313e4ef783222fd65416f8e2',
-    'upstream_a_project': 'project_a',
-    'upstream_a_version': '8fd9019605c792a83a2cab5aaac4aea7a1e8524e51b728c0e02beb8032ee0ec1',
-    'upstream_b_project': 'project_b',
-    'upstream_b_version': '8fd9019605c792a83a2cab5aaac4aea7a1e8524e51b728c0e02beb8032ee0ec1',
+    'definition_version_a': '08961080',
+    'definition_version_b': '08961080',
+    'definition_versions_same': True,
+    'feature_version_a': 'd26937b1',
+    'feature_version_b': 'd26937b1',
+    'feature_versions_same': True,
   })
 # ---
-# name: test_full_definition_version_includes_project
+# name: test_feature_version_unchanged_by_project
+  '209a00a5'
+# ---
+# name: test_feature_with_deps_same_definition_version
   dict({
-    'feature_version_a': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
-    'feature_version_b': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
-    'feature_versions_same': True,
-    'project_a': 'project_a',
-    'project_b': 'project_b',
-    'tracking_version_a': '3c4b5b847688f6794de6489ad727a19834d56802247b1b034e942af22bb7f136',
-    'tracking_version_b': 'b5c56a1258183e8f1f9800fcc0a45df60879347ed76a0a2d0da3b3bee20cba76',
-    'tracking_versions_differ': True,
+    'downstream_definition_version': '01a2570f',
+    'downstream_feature_version': 'df87030d',
+    'upstream_definition_version': '6efa14f2',
+    'upstream_feature_version': '492c1fb9',
   })
 # ---
 # name: test_project_in_graph_snapshot
   dict({
-    'feature1_project': 'snapshot_project',
-    'feature2_project': 'snapshot_project',
     'feature_keys': list([
       'feature1',
       'feature2',
     ]),
+    'has_definition_version_feature1': True,
+    'has_definition_version_feature2': True,
+    'has_project_feature1': True,
+    'has_project_feature2': True,
   })
 # ---
-# name: test_provenance_by_field_unchanged_by_project
+# name: test_provenance_by_field_unchanged_across_graphs
   dict({
-    'field1': '9cb9f5bd9b380278e273033d16f07feabda7bdf5b813e9941b0f29e63b20efdb',
-    'field2': '0b485f68befbb7abb029b43a698161745c63259b8ad0bc00260b7da4b9830243',
+    'field1': '9cb9f5bd',
+    'field2': '0b485f68',
   })
-# ---
-# name: test_tracking_version_deterministic
-  '080c208fe965c93fa64dc9f1bdb5cb1fad865a20f88de75223cbd357c9fc3a0a'
 # ---

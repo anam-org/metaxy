@@ -7,6 +7,8 @@ from pathlib import Path
 
 import polars as pl
 import pytest
+from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     FeatureDep,
@@ -15,10 +17,8 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.models import FullGraphMigration
 from metaxy.migrations.ops import BaseOperation, DataVersionReconciliation
@@ -61,8 +61,8 @@ def test_base_operation_subclass_implements_interface():
             store,
             feature_key,
             *,
-            snapshot_version,
-            from_snapshot_version=None,
+            project_version,
+            from_project_version=None,
             dry_run=False,
         ) -> int:
             if dry_run:
@@ -86,8 +86,8 @@ def test_base_operation_with_custom_fields():
             store,
             feature_key,
             *,
-            snapshot_version,
-            from_snapshot_version=None,
+            project_version,
+            from_project_version=None,
             dry_run=False,
         ) -> int:
             return 0
@@ -113,8 +113,8 @@ class _TestBackfillOperation(BaseOperation):
         store,
         feature_key,
         *,
-        snapshot_version,
-        from_snapshot_version=None,
+        project_version,
+        from_project_version=None,
         dry_run=False,
     ) -> int:
         if dry_run:
@@ -131,8 +131,8 @@ class _FailingOperation(BaseOperation):
         store,
         feature_key,
         *,
-        snapshot_version,
-        from_snapshot_version=None,
+        project_version,
+        from_project_version=None,
         dry_run=False,
     ) -> int:
         raise ValueError(f"Intentional failure for {feature_key}")
@@ -169,15 +169,13 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup data
-        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
-        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+        Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
         upstream_data = pl.DataFrame(
             {
@@ -186,22 +184,22 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
         # Write downstream
-        diff = store.resolve_update(Downstream)
-        if len(diff.added) > 0:
-            store.write_metadata(Downstream, diff.added)
+        increment = store.resolve_update(Downstream)
+        if len(increment.new) > 0:
+            store.write(Downstream, increment.new)
 
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with _TestBackfillOperation
         migration = FullGraphMigration(
             migration_id="test_001",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -242,14 +240,14 @@ def test_full_graph_migration_single_operation_multiple_features(tmp_path: Path)
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with TestBackfillOperation for both features
         migration = FullGraphMigration(
             migration_id="test_002",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -287,14 +285,14 @@ def test_full_graph_migration_multiple_operations(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with two different operations
         migration = FullGraphMigration(
             migration_id="test_003",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -345,21 +343,19 @@ def test_full_graph_migration_topological_sorting(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with features in wrong order (downstream before upstream)
         migration = FullGraphMigration(
             migration_id="test_004",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -400,14 +396,14 @@ def test_full_graph_migration_operation_fails(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with FailingOperation
         migration = FullGraphMigration(
             migration_id="test_005",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._FailingOperation",
@@ -442,14 +438,14 @@ def test_full_graph_migration_invalid_operation_class(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Migration can be created, but validation error happens when operations are accessed
         migration = FullGraphMigration(
             migration_id="test_006",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "nonexistent.module.NonexistentOperation",
@@ -482,13 +478,13 @@ def test_full_graph_migration_dry_run(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         migration = FullGraphMigration(
             migration_id="test_007",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -502,9 +498,7 @@ def test_full_graph_migration_dry_run(tmp_path: Path):
         # Status should be skipped
         assert result.status == "skipped"
         assert result.features_completed == 1
-        assert (
-            result.rows_affected == 10
-        )  # _TestBackfillOperation returns 10 in dry run
+        assert result.rows_affected == 10  # _TestBackfillOperation returns 10 in dry run
 
         # Verify no events were written
         storage = SystemTableStorage(store)
@@ -539,15 +533,13 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         # Setup data
-        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
-        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+        Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
 
         upstream_data = pl.DataFrame(
             {
@@ -556,21 +548,21 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
             }
         )
         upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
-        store.write_metadata(Upstream, upstream_data)
+        store.write(Upstream, upstream_data)
 
-        diff = store.resolve_update(Downstream)
-        if len(diff.added) > 0:
-            store.write_metadata(Downstream, diff.added)
+        increment = store.resolve_update(Downstream)
+        if len(increment.new) > 0:
+            store.write(Downstream, increment.new)
 
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration where upstream succeeds but downstream fails
         migration = FullGraphMigration(
             migration_id="test_008",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -611,14 +603,14 @@ def test_full_graph_migration_operation_specific_config(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         # Create migration with custom config
         migration = FullGraphMigration(
             migration_id="test_009",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -650,13 +642,13 @@ def test_full_graph_migration_events_tracking(tmp_path: Path):
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         SystemTableStorage(store).push_graph_snapshot()
-        snapshot_version = graph.snapshot_version
+        project_version = graph.project_version
 
         migration = FullGraphMigration(
             migration_id="test_010",
             parent="initial",
             created_at=datetime.now(timezone.utc),
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             ops=[
                 {
                     "type": "tests.migrations.test_operations._TestBackfillOperation",
@@ -708,9 +700,7 @@ def test_data_version_reconciliation_requires_from_snapshot(tmp_path: Path):
         ],
     )
 
-    temp_module.write_features(
-        {"Upstream": upstream_spec, "Downstream": downstream_spec}
-    )
+    temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -718,15 +708,13 @@ def test_data_version_reconciliation_requires_from_snapshot(tmp_path: Path):
 
         op = DataVersionReconciliation()
 
-        # Should raise error without from_snapshot_version
-        with pytest.raises(
-            ValueError, match="DataVersionReconciliation requires from_snapshot_version"
-        ):
+        # Should raise error without from_project_version
+        with pytest.raises(ValueError, match="DataVersionReconciliation requires from_project_version"):
             op.execute_for_feature(
                 store,
                 "test/downstream",
-                snapshot_version=graph.snapshot_version,
-                from_snapshot_version=None,  # Missing!
+                project_version=graph.project_version,
+                from_project_version=None,  # Missing!
                 dry_run=False,
             )
 
@@ -745,7 +733,7 @@ def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
     graph = temp_module.graph
 
     with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-        Root = graph.features_by_key[FeatureKey(["test", "root"])]
+        Root = graph.feature_definitions_by_key[FeatureKey(["test", "root"])]
 
         # Write some data
         data = pl.DataFrame(
@@ -755,10 +743,10 @@ def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
             }
         )
         data = add_metaxy_provenance_column(data, Root)
-        store.write_metadata(Root, data)
+        store.write(Root, data)
 
         SystemTableStorage(store).push_graph_snapshot()
-        from_snapshot = graph.snapshot_version
+        from_snapshot = graph.project_version
 
         # Change code version
         temp_module2 = TempFeatureModule("test_dvr_root_v2")
@@ -779,8 +767,8 @@ def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
                 op.execute_for_feature(
                     store,
                     "test/root",
-                    snapshot_version=graph_v2.snapshot_version,
-                    from_snapshot_version=from_snapshot,
+                    project_version=graph_v2.project_version,
+                    from_project_version=from_snapshot,
                     dry_run=False,
                 )
 

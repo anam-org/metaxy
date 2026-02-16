@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import (
     Event,
     EventType,
@@ -31,16 +31,10 @@ def test_write_and_read_events(storage: SystemTableStorage):
     migration_id = "mig_001"
 
     # Write started event
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
 
     # Write feature events
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/a"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -51,9 +45,7 @@ def test_write_and_read_events(storage: SystemTableStorage):
     )
 
     # Write completed event
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Read all events
     events = storage.get_migration_events(migration_id, project="test")
@@ -71,30 +63,15 @@ def test_get_migration_status(storage: SystemTableStorage):
     migration_id = "mig_001"
 
     # Not started
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.NOT_STARTED
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.NOT_STARTED
 
     # Started
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.IN_PROGRESS
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.IN_PROGRESS
 
     # Feature in progress
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/a"
-        )
-    )
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.IN_PROGRESS
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.IN_PROGRESS
 
     # Feature completed
     storage.write_event(
@@ -105,33 +82,19 @@ def test_get_migration_status(storage: SystemTableStorage):
             rows_affected=100,
         )
     )
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.IN_PROGRESS
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.IN_PROGRESS
 
     # Migration completed
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.COMPLETED
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.COMPLETED
 
 
 def test_get_migration_status_failed(storage: SystemTableStorage):
     """Test failed migration status."""
     migration_id = "mig_failed"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/a"
-        )
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
     storage.write_event(
         Event.feature_failed(
             project="test",
@@ -148,10 +111,7 @@ def test_get_migration_status_failed(storage: SystemTableStorage):
         )
     )
 
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.FAILED
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.FAILED
 
 
 def test_is_feature_completed(storage: SystemTableStorage):
@@ -257,16 +217,10 @@ def test_resumable_migration(storage: SystemTableStorage):
     migration_id = "mig_resume"
 
     # Start migration
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
 
     # Complete first feature
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/a"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -277,11 +231,7 @@ def test_resumable_migration(storage: SystemTableStorage):
     )
 
     # Fail on second feature
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/b"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/b"))
     storage.write_event(
         Event.feature_failed(
             project="test",
@@ -292,19 +242,12 @@ def test_resumable_migration(storage: SystemTableStorage):
     )
 
     # Check status
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.IN_PROGRESS
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.IN_PROGRESS
     assert storage.is_feature_completed(migration_id, "feature/a", "test")
     assert not storage.is_feature_completed(migration_id, "feature/b", "test")
 
     # Resume: retry feature/b
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/b"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/b"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -315,11 +258,7 @@ def test_resumable_migration(storage: SystemTableStorage):
     )
 
     # Complete third feature
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/c"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/c"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -330,15 +269,10 @@ def test_resumable_migration(storage: SystemTableStorage):
     )
 
     # Mark complete
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Verify final state
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.COMPLETED
     assert set(storage.get_completed_features(migration_id, project="test")) == {
         "feature/a",
         "feature/b",
@@ -351,16 +285,10 @@ def test_typed_events_api(storage: SystemTableStorage):
     migration_id = "mig_typed"
 
     # Write started event using builder
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
 
     # Write feature events
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/a"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -371,11 +299,7 @@ def test_typed_events_api(storage: SystemTableStorage):
     )
 
     # Write feature with error
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/b"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/b"))
     storage.write_event(
         Event.feature_failed(
             project="test",
@@ -386,24 +310,17 @@ def test_typed_events_api(storage: SystemTableStorage):
     )
 
     # Complete migration
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Verify events were written correctly
     events = storage.get_migration_events(migration_id, project="test")
     assert events.height == 6
 
     # Verify status computation works
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.COMPLETED
     assert storage.is_feature_completed(migration_id, "feature/a", "test")
     assert not storage.is_feature_completed(migration_id, "feature/b", "test")
-    assert storage.get_failed_features(migration_id, project="test") == {
-        "feature/b": "Test error"
-    }
+    assert storage.get_failed_features(migration_id, project="test") == {"feature/b": "Test error"}
 
 
 def test_typed_events_failed_migration(storage: SystemTableStorage):
@@ -411,9 +328,7 @@ def test_typed_events_failed_migration(storage: SystemTableStorage):
     migration_id = "mig_typed_failed"
 
     # Start and immediately fail
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.migration_failed(
             project="test",
@@ -423,16 +338,11 @@ def test_typed_events_failed_migration(storage: SystemTableStorage):
     )
 
     # Verify status
-    assert (
-        storage.get_migration_status(migration_id, project="test")
-        == MigrationStatus.FAILED
-    )
+    assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.FAILED
 
     # Verify error is in payload
     events = storage.get_migration_events(migration_id, project="test")
-    failed_event = events.filter(
-        events["event_type"] == EventType.MIGRATION_FAILED.value
-    )
+    failed_event = events.filter(events["event_type"] == EventType.MIGRATION_FAILED.value)
     assert failed_event.height == 1
 
 
@@ -451,17 +361,11 @@ def test_multiple_migrations_in_sequence(storage: SystemTableStorage):
             rows_affected=100,
         )
     )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id="mig_001")
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id="mig_001"))
 
     # Migration 2: Start and fail
     storage.write_event(Event.migration_started(project="test", migration_id="mig_002"))
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id="mig_002", feature_key="feature/b"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id="mig_002", feature_key="feature/b"))
     storage.write_event(
         Event.feature_failed(
             project="test",
@@ -471,9 +375,7 @@ def test_multiple_migrations_in_sequence(storage: SystemTableStorage):
         )
     )
     storage.write_event(
-        Event.migration_failed(
-            project="test", migration_id="mig_002", error_message="Database timeout"
-        )
+        Event.migration_failed(project="test", migration_id="mig_002", error_message="Database timeout")
     )
 
     # Migration 3: In progress
@@ -490,9 +392,7 @@ def test_multiple_migrations_in_sequence(storage: SystemTableStorage):
     # Verify statuses
     assert storage.get_migration_status("mig_001", "test") == MigrationStatus.COMPLETED
     assert storage.get_migration_status("mig_002", "test") == MigrationStatus.FAILED
-    assert (
-        storage.get_migration_status("mig_003", "test") == MigrationStatus.IN_PROGRESS
-    )
+    assert storage.get_migration_status("mig_003", "test") == MigrationStatus.IN_PROGRESS
 
     # Verify completed features
     assert storage.get_completed_features("mig_001", "test") == ["feature/a"]
@@ -501,9 +401,7 @@ def test_multiple_migrations_in_sequence(storage: SystemTableStorage):
 
     # Verify failed features
     assert storage.get_failed_features("mig_001", "test") == {}
-    assert storage.get_failed_features("mig_002", "test") == {
-        "feature/b": "Database timeout"
-    }
+    assert storage.get_failed_features("mig_002", "test") == {"feature/b": "Database timeout"}
     assert storage.get_failed_features("mig_003", "test") == {}
 
 
@@ -511,16 +409,10 @@ def test_migration_with_multiple_features(storage: SystemTableStorage):
     """Test migration affecting multiple features with mixed success/failure."""
     migration_id = "mig_multi_feature"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
 
     # Feature A: Success
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/a"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -531,11 +423,7 @@ def test_migration_with_multiple_features(storage: SystemTableStorage):
     )
 
     # Feature B: Success
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/b"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/b"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -546,11 +434,7 @@ def test_migration_with_multiple_features(storage: SystemTableStorage):
     )
 
     # Feature C: Failure
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/c"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/c"))
     storage.write_event(
         Event.feature_failed(
             project="test",
@@ -561,11 +445,7 @@ def test_migration_with_multiple_features(storage: SystemTableStorage):
     )
 
     # Feature D: Success
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/d"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/d"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -576,14 +456,10 @@ def test_migration_with_multiple_features(storage: SystemTableStorage):
     )
 
     # Migration completes despite feature C failure
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Verify overall status
-    assert (
-        storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
 
     # Verify completed features
     completed = storage.get_completed_features(migration_id, "test")
@@ -605,9 +481,7 @@ def test_migration_retry_after_partial_failure(storage: SystemTableStorage):
     migration_id = "mig_retry"
 
     # First attempt: Start and partially complete
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -636,17 +510,10 @@ def test_migration_retry_after_partial_failure(storage: SystemTableStorage):
     )
 
     # Check status after first attempt
-    assert (
-        storage.get_migration_status(migration_id, "test")
-        == MigrationStatus.IN_PROGRESS
-    )
+    assert storage.get_migration_status(migration_id, "test") == MigrationStatus.IN_PROGRESS
 
     # Retry: Feature C succeeds this time
-    storage.write_event(
-        Event.feature_started(
-            project="test", migration_id=migration_id, feature_key="feature/c"
-        )
-    )
+    storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/c"))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -667,14 +534,10 @@ def test_migration_retry_after_partial_failure(storage: SystemTableStorage):
     )
 
     # Mark migration as completed
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Verify final status
-    assert (
-        storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
 
     # Verify all features completed (including the retried one)
     completed = storage.get_completed_features(migration_id, "test")
@@ -688,9 +551,7 @@ def test_migration_retry_after_partial_failure(storage: SystemTableStorage):
 def test_multiple_projects_isolation(storage: SystemTableStorage):
     """Test that migrations for different projects are properly isolated."""
     # Project 1
-    storage.write_event(
-        Event.migration_started(project="project1", migration_id="mig_001")
-    )
+    storage.write_event(Event.migration_started(project="project1", migration_id="mig_001"))
     storage.write_event(
         Event.feature_completed(
             project="project1",
@@ -699,14 +560,10 @@ def test_multiple_projects_isolation(storage: SystemTableStorage):
             rows_affected=100,
         )
     )
-    storage.write_event(
-        Event.migration_completed(project="project1", migration_id="mig_001")
-    )
+    storage.write_event(Event.migration_completed(project="project1", migration_id="mig_001"))
 
     # Project 2 (same migration ID but different project)
-    storage.write_event(
-        Event.migration_started(project="project2", migration_id="mig_001")
-    )
+    storage.write_event(Event.migration_started(project="project2", migration_id="mig_001"))
     storage.write_event(
         Event.feature_failed(
             project="project2",
@@ -724,31 +581,21 @@ def test_multiple_projects_isolation(storage: SystemTableStorage):
     )
 
     # Verify project1 shows completed
-    assert (
-        storage.get_migration_status("mig_001", project="project1")
-        == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status("mig_001", project="project1") == MigrationStatus.COMPLETED
     assert storage.get_completed_features("mig_001", "project1") == ["feature/a"]
     assert storage.get_failed_features("mig_001", "project1") == {}
 
     # Verify project2 shows failed
-    assert (
-        storage.get_migration_status("mig_001", project="project2")
-        == MigrationStatus.FAILED
-    )
+    assert storage.get_migration_status("mig_001", project="project2") == MigrationStatus.FAILED
     assert storage.get_completed_features("mig_001", "project2") == []
-    assert storage.get_failed_features("mig_001", "project2") == {
-        "feature/b": "Error in project2"
-    }
+    assert storage.get_failed_features("mig_001", "project2") == {"feature/b": "Error in project2"}
 
 
 def test_feature_with_zero_rows_affected(storage: SystemTableStorage):
     """Test feature completion with zero rows affected (e.g., no data to migrate)."""
     migration_id = "mig_zero_rows"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -757,14 +604,10 @@ def test_feature_with_zero_rows_affected(storage: SystemTableStorage):
             rows_affected=0,
         )
     )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Verify it's still considered completed
-    assert (
-        storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
     assert storage.is_feature_completed(migration_id, "feature/empty", "test")
     assert storage.get_completed_features(migration_id, "test") == ["feature/empty"]
 
@@ -772,17 +615,11 @@ def test_feature_with_zero_rows_affected(storage: SystemTableStorage):
 def test_list_executed_migrations(storage: SystemTableStorage):
     """Test listing all executed migrations across projects."""
     # Project 1
-    storage.write_event(
-        Event.migration_started(project="project1", migration_id="mig_001")
-    )
-    storage.write_event(
-        Event.migration_started(project="project1", migration_id="mig_002")
-    )
+    storage.write_event(Event.migration_started(project="project1", migration_id="mig_001"))
+    storage.write_event(Event.migration_started(project="project1", migration_id="mig_002"))
 
     # Project 2
-    storage.write_event(
-        Event.migration_started(project="project2", migration_id="mig_003")
-    )
+    storage.write_event(Event.migration_started(project="project2", migration_id="mig_003"))
 
     # List all migrations (no project filter)
     all_migrations = storage.list_executed_migrations(project=None)
@@ -800,16 +637,10 @@ def test_migration_with_no_features(storage: SystemTableStorage):
     """Test migration that starts and completes without any features (edge case)."""
     migration_id = "mig_no_features"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
-    assert (
-        storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
     assert storage.get_completed_features(migration_id, "test") == []
     assert storage.get_failed_features(migration_id, "test") == {}
 
@@ -818,9 +649,7 @@ def test_migration_immediate_failure(storage: SystemTableStorage):
     """Test migration that fails immediately without processing any features."""
     migration_id = "mig_immediate_fail"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.migration_failed(
             project="test",
@@ -877,9 +706,7 @@ def test_get_migration_summary(storage: SystemTableStorage):
     assert summary["total_features_processed"] == 0
 
     # Start migration and complete some features
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -915,9 +742,7 @@ def test_get_migration_summary(storage: SystemTableStorage):
     assert summary["total_features_processed"] == 3
 
     # Complete migration
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Test COMPLETED status
     summary = storage.get_migration_summary(migration_id, "test")
@@ -939,9 +764,7 @@ def test_get_migration_status_with_expected_features(storage: SystemTableStorage
     migration_id = "mig_expected"
 
     # Start migration and complete features
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -958,20 +781,14 @@ def test_get_migration_status_with_expected_features(storage: SystemTableStorage
             rows_affected=200,
         )
     )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Without expected_features, status is COMPLETED
-    assert (
-        storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, "test") == MigrationStatus.COMPLETED
 
     # With expected_features matching completed features, status is COMPLETED
     assert (
-        storage.get_migration_status(
-            migration_id, "test", expected_features=["feature/a", "feature/b"]
-        )
+        storage.get_migration_status(migration_id, "test", expected_features=["feature/a", "feature/b"])
         == MigrationStatus.COMPLETED
     )
 
@@ -992,9 +809,7 @@ def test_get_migration_status_expected_features_subset(storage: SystemTableStora
     migration_id = "mig_superset"
 
     # Complete more features than expected
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     for fk in ["feature/a", "feature/b", "feature/c"]:
         storage.write_event(
             Event.feature_completed(
@@ -1004,16 +819,11 @@ def test_get_migration_status_expected_features_subset(storage: SystemTableStora
                 rows_affected=100,
             )
         )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Expect only feature/a - should still be COMPLETED since all expected are done
     assert (
-        storage.get_migration_status(
-            migration_id, "test", expected_features=["feature/a"]
-        )
-        == MigrationStatus.COMPLETED
+        storage.get_migration_status(migration_id, "test", expected_features=["feature/a"]) == MigrationStatus.COMPLETED
     )
 
 
@@ -1023,9 +833,7 @@ def test_get_migration_status_expected_features_with_failed_migration(
     """Test expected_features with a failed migration."""
     migration_id = "mig_failed_expected"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -1044,9 +852,7 @@ def test_get_migration_status_expected_features_with_failed_migration(
 
     # Even with expected_features, a FAILED migration stays FAILED
     assert (
-        storage.get_migration_status(
-            migration_id, "test", expected_features=["feature/a", "feature/b"]
-        )
+        storage.get_migration_status(migration_id, "test", expected_features=["feature/a", "feature/b"])
         == MigrationStatus.FAILED
     )
 
@@ -1055,9 +861,7 @@ def test_get_migration_summary_with_expected_features(storage: SystemTableStorag
     """Test get_migration_summary() with expected_features parameter."""
     migration_id = "mig_summary_expected"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
     storage.write_event(
         Event.feature_completed(
             project="test",
@@ -1066,18 +870,14 @@ def test_get_migration_summary_with_expected_features(storage: SystemTableStorag
             rows_affected=100,
         )
     )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Summary without expected_features shows COMPLETED
     summary = storage.get_migration_summary(migration_id, "test")
     assert summary["status"] == MigrationStatus.COMPLETED
 
     # Summary with expected_features that aren't all completed shows IN_PROGRESS
-    summary = storage.get_migration_summary(
-        migration_id, "test", expected_features=["feature/a", "feature/b"]
-    )
+    summary = storage.get_migration_summary(migration_id, "test", expected_features=["feature/a", "feature/b"])
     assert summary["status"] == MigrationStatus.IN_PROGRESS
     assert summary["completed_features"] == ["feature/a"]
 
@@ -1086,15 +886,8 @@ def test_get_migration_status_empty_expected_features(storage: SystemTableStorag
     """Test that empty expected_features list is ignored."""
     migration_id = "mig_empty_expected"
 
-    storage.write_event(
-        Event.migration_started(project="test", migration_id=migration_id)
-    )
-    storage.write_event(
-        Event.migration_completed(project="test", migration_id=migration_id)
-    )
+    storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
+    storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
     # Empty list should behave same as None
-    assert (
-        storage.get_migration_status(migration_id, "test", expected_features=[])
-        == MigrationStatus.COMPLETED
-    )
+    assert storage.get_migration_status(migration_id, "test", expected_features=[]) == MigrationStatus.COMPLETED

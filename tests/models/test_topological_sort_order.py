@@ -11,6 +11,8 @@ Tests cover:
 
 from __future__ import annotations
 
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -19,7 +21,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 
 
 class TestDescendingOrdering:
@@ -327,9 +328,7 @@ class TestEdgeCases:
         ):
             pass
 
-        sorted_keys = graph.topological_sort_features(
-            [FeatureA.spec().key], descending=True
-        )
+        sorted_keys = graph.topological_sort_features([FeatureA.spec().key], descending=True)
         assert len(sorted_keys) == 1
         assert sorted_keys[0] == FeatureA.spec().key
 
@@ -544,9 +543,7 @@ class TestDefaultOrderBehavior:
 class TestDeterministicOrdering:
     """Test that features at the same level are sorted deterministically."""
 
-    def test_alphabetical_ordering_same_level_dependents_first(
-        self, graph: FeatureGraph
-    ):
+    def test_alphabetical_ordering_same_level_dependents_first(self, graph: FeatureGraph):
         """Test features at same level are sorted in reverse alphabetical order with dependents_first."""
 
         class FeatureParent(
@@ -626,9 +623,7 @@ class TestInputVariations:
             pass
 
         # Pass string paths instead of FeatureKey objects
-        sorted_keys = graph.topological_sort_features(
-            ["test/a", "test/b"], descending=True
-        )
+        sorted_keys = graph.topological_sort_features(["test/a", "test/b"], descending=True)
 
         assert len(sorted_keys) == 2
         assert sorted_keys[0] == FeatureB.spec().key
@@ -657,9 +652,7 @@ class TestInputVariations:
             pass
 
         # Pass Feature classes directly
-        sorted_keys = graph.topological_sort_features(
-            [FeatureA, FeatureB], descending=True
-        )
+        sorted_keys = graph.topological_sort_features([FeatureA, FeatureB], descending=True)
 
         assert len(sorted_keys) == 2
         assert sorted_keys[0] == FeatureB.spec().key
@@ -688,9 +681,7 @@ class TestInputVariations:
             pass
 
         # Mix of string, FeatureKey, and Feature class
-        sorted_keys = graph.topological_sort_features(
-            ["test/a", FeatureB.spec().key], descending=True
-        )
+        sorted_keys = graph.topological_sort_features(["test/a", FeatureB.spec().key], descending=True)
 
         assert len(sorted_keys) == 2
         assert sorted_keys[0] == FeatureB.spec().key

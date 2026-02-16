@@ -11,8 +11,8 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
@@ -275,9 +275,7 @@ def test_identity_lineage_load_upstream(
 
     # Verify lineage is identity
     # Identity lineage is the default for deps without explicit lineage
-    assert all(
-        dep.lineage.relationship.type.value == "1:1" for dep in plan.feature.deps
-    )
+    assert all(dep.lineage.relationship.type.value == "1:1" for dep in plan.feature.deps)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
@@ -353,14 +351,12 @@ def test_identity_lineage_resolve_increment(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     # Identity: should detect one changed sample
@@ -434,9 +430,7 @@ def test_aggregation_lineage_load_upstream(
     assert len(set(s2_provenance)) == 1, "All s2 rows should have identical provenance"
 
     # s1 and s2 should have different provenance (different upstream data)
-    assert s1_provenance[0] != s2_provenance[0], (
-        "Different groups should have different provenance"
-    )
+    assert s1_provenance[0] != s2_provenance[0], "Different groups should have different provenance"
 
 
 def test_aggregation_lineage_resolve_increment_no_current(
@@ -456,14 +450,12 @@ def test_aggregation_lineage_resolve_increment_no_current(
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=None,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=None,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -539,14 +531,12 @@ def test_aggregation_lineage_resolve_increment_with_changes(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -608,9 +598,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
         sample=None,
     )
     added_v1 = added_v1_lazy.collect()
-    assert (
-        len(added_v1) == 2
-    )  # 2 rows with aggregated metaxy values (s1 has 2 readings)
+    assert len(added_v1) == 2  # 2 rows with aggregated metaxy values (s1 has 2 readings)
 
     # Updated upstream: 3 readings for s1 in hour 10 (added r3)
     upstream_v2 = nw.from_native(
@@ -674,14 +662,12 @@ def test_aggregation_lineage_new_readings_trigger_change(
     )
 
     # Resolve increment with new upstream
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_aggregated,
-            upstream={FeatureKey(["sensor_readings"]): upstream_v2},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_aggregated,
+        upstream={FeatureKey(["sensor_readings"]): upstream_v2},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -760,14 +746,12 @@ def test_expansion_lineage_resolve_increment_no_current(
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=None,
-            upstream=upstream,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=None,
+        upstream=upstream,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -849,14 +833,12 @@ def test_expansion_lineage_resolve_increment_video_changed(
     # Resolve increment with modified video metadata
     # The expansion handler will group video_frames_current by video_id to get one row per video
     # Then compare with upstream (which has 2 videos)
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=video_frames_current,  # Current frames for v1 (3 frames) and v2 (2 frames)
-            upstream={FeatureKey(["video"]): upstream_modified},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=video_frames_current,  # Current frames for v1 (3 frames) and v2 (2 frames)
+        upstream={FeatureKey(["video"]): upstream_modified},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -915,14 +897,12 @@ def test_expansion_lineage_new_video_added(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=video_frames_current,  # Has frames for v1 and v2 only
-            upstream={FeatureKey(["video"]): upstream_with_new_video},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=video_frames_current,  # Has frames for v1 and v2 only
+        upstream={FeatureKey(["video"]): upstream_with_new_video},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -970,14 +950,12 @@ def test_expansion_lineage_video_removed(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=video_frames_current,  # Has frames for v1 and v2
-            upstream={FeatureKey(["video"]): upstream_without_v2},  # Only v1
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=video_frames_current,  # Has frames for v1 and v2
+        upstream={FeatureKey(["video"]): upstream_without_v2},  # Only v1
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -1062,12 +1040,8 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
             {
                 "sensor_id": ["s1"],
                 "hour": ["2024-01-01T10"],
-                "metaxy_provenance_by_field": expected_v1["metaxy_provenance_by_field"][
-                    0:1
-                ],
-                "metaxy_data_version_by_field": expected_v1[
-                    "metaxy_data_version_by_field"
-                ][0:1],
+                "metaxy_provenance_by_field": expected_v1["metaxy_provenance_by_field"][0:1],
+                "metaxy_data_version_by_field": expected_v1["metaxy_data_version_by_field"][0:1],
                 "metaxy_provenance": [expected_v1["metaxy_provenance"][0]],
             }
         ).lazy()
@@ -1111,14 +1085,12 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Resolve increment with changed data_version
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_v1,
-            upstream={FeatureKey(["sensor_readings"]): upstream_v2},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_v1,
+        upstream={FeatureKey(["sensor_readings"]): upstream_v2},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -1238,14 +1210,12 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Resolve increment with changed data_version for v2
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_v1,
-            upstream={FeatureKey(["video"]): upstream_v2},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_v1,
+        upstream={FeatureKey(["video"]): upstream_v2},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     added = added_lazy.collect()
@@ -1316,12 +1286,8 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
             {
                 "sensor_id": ["s1"],
                 "hour": ["2024-01-01T10"],
-                "metaxy_provenance_by_field": expected_base[
-                    "metaxy_provenance_by_field"
-                ][0:1],
-                "metaxy_data_version_by_field": expected_base[
-                    "metaxy_data_version_by_field"
-                ][0:1],
+                "metaxy_provenance_by_field": expected_base["metaxy_provenance_by_field"][0:1],
+                "metaxy_data_version_by_field": expected_base["metaxy_data_version_by_field"][0:1],
                 "metaxy_provenance": [expected_base["metaxy_provenance"][0]],
             }
         ).lazy()
@@ -1355,14 +1321,12 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_base,
-            upstream={FeatureKey(["sensor_readings"]): upstream_dv_changed},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["sensor_readings"]): upstream_dv_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
@@ -1398,22 +1362,18 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_base,
-            upstream={FeatureKey(["sensor_readings"]): upstream_prov_changed},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["sensor_readings"]): upstream_prov_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
     # Provenance is computed from data_version_by_field, so changing only provenance_by_field
     # should NOT trigger a change (data_version_by_field is unchanged)
-    assert len(changed) == 0, (
-        "Changing only provenance_by_field should NOT trigger change"
-    )
+    assert len(changed) == 0, "Changing only provenance_by_field should NOT trigger change"
 
 
 def test_expansion_lineage_data_version_vs_provenance_independent(
@@ -1466,9 +1426,7 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
                 "frame_id": [0, 1],
                 "metaxy_provenance_by_field": [
                     expected_base["metaxy_provenance_by_field"][0],
-                    expected_base["metaxy_provenance_by_field"][
-                        0
-                    ],  # Same for all frames
+                    expected_base["metaxy_provenance_by_field"][0],  # Same for all frames
                 ],
                 "metaxy_data_version_by_field": [
                     expected_base["metaxy_data_version_by_field"][0],
@@ -1499,14 +1457,12 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_base,
-            upstream={FeatureKey(["video"]): upstream_dv_changed},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["video"]): upstream_dv_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
@@ -1530,22 +1486,18 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy, _ = (
-        engine.resolve_increment_with_provenance(
-            current=current_base,
-            upstream={FeatureKey(["video"]): upstream_prov_changed},
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            filters={},
-            sample=None,
-        )
+    added_lazy, changed_lazy, removed_lazy, _ = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["video"]): upstream_prov_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
     )
 
     changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
     # Provenance is computed from data_version_by_field, so changing only provenance_by_field
     # should NOT trigger a change (data_version_by_field is unchanged)
-    assert len(changed) == 0, (
-        "Changing only provenance_by_field should NOT trigger change"
-    )
+    assert len(changed) == 0, "Changing only provenance_by_field should NOT trigger change"
 
 
 # ============================================================================
@@ -1740,12 +1692,8 @@ def test_load_upstream_does_not_leak_renamed_data_version_column(
     # - metaxy_provenance__<feature_key>
     # - metaxy_provenance_by_field__<feature_key>
     # - metaxy_data_version_by_field__<feature_key>
-    leaked_columns = [
-        col for col in columns if col.startswith("metaxy_") and "__" in col
-    ]
-    assert leaked_columns == [], (
-        f"Internal renamed columns leaked to output: {leaked_columns}"
-    )
+    leaked_columns = [col for col in columns if col.startswith("metaxy_") and "__" in col]
+    assert leaked_columns == [], f"Internal renamed columns leaked to output: {leaked_columns}"
 
 
 def test_load_upstream_does_not_leak_columns_identity_lineage(
@@ -1769,12 +1717,8 @@ def test_load_upstream_does_not_leak_columns_identity_lineage(
     result_df = result.collect()
     columns = result_df.columns
 
-    leaked_columns = [
-        col for col in columns if col.startswith("metaxy_") and "__" in col
-    ]
-    assert leaked_columns == [], (
-        f"Internal renamed columns leaked to output: {leaked_columns}"
-    )
+    leaked_columns = [col for col in columns if col.startswith("metaxy_") and "__" in col]
+    assert leaked_columns == [], f"Internal renamed columns leaked to output: {leaked_columns}"
 
 
 def test_load_upstream_does_not_leak_columns_expansion_lineage(
@@ -1798,12 +1742,8 @@ def test_load_upstream_does_not_leak_columns_expansion_lineage(
     result_df = result.collect()
     columns = result_df.columns
 
-    leaked_columns = [
-        col for col in columns if col.startswith("metaxy_") and "__" in col
-    ]
-    assert leaked_columns == [], (
-        f"Internal renamed columns leaked to output: {leaked_columns}"
-    )
+    leaked_columns = [col for col in columns if col.startswith("metaxy_") and "__" in col]
+    assert leaked_columns == [], f"Internal renamed columns leaked to output: {leaked_columns}"
 
 
 def test_load_upstream_does_not_leak_columns_mixed_lineage(
@@ -1842,12 +1782,8 @@ def test_load_upstream_does_not_leak_columns_mixed_lineage(
             {
                 "sensor_id": ["s1"],
                 "hour": ["2024-01-01T10"],
-                "metaxy_provenance_by_field": [
-                    {"location": "loc_hash", "sensor_type": "type_hash"}
-                ],
-                "metaxy_data_version_by_field": [
-                    {"location": "loc_hash", "sensor_type": "type_hash"}
-                ],
+                "metaxy_provenance_by_field": [{"location": "loc_hash", "sensor_type": "type_hash"}],
+                "metaxy_data_version_by_field": [{"location": "loc_hash", "sensor_type": "type_hash"}],
                 "metaxy_provenance": ["info_prov"],
                 "metaxy_data_version": ["info_dv"],
             }
@@ -1869,12 +1805,8 @@ def test_load_upstream_does_not_leak_columns_mixed_lineage(
     columns = result_df.columns
 
     # Should not have any renamed internal columns from either dependency
-    leaked_columns = [
-        col for col in columns if col.startswith("metaxy_") and "__" in col
-    ]
-    assert leaked_columns == [], (
-        f"Internal renamed columns leaked to output: {leaked_columns}"
-    )
+    leaked_columns = [col for col in columns if col.startswith("metaxy_") and "__" in col]
+    assert leaked_columns == [], f"Internal renamed columns leaked to output: {leaked_columns}"
 
 
 def test_mixed_lineage_different_relationship_types(graph: FeatureGraph) -> None:
@@ -1954,23 +1886,23 @@ def test_mixed_lineage_different_relationship_types(graph: FeatureGraph) -> None
 
 
 # ============================================================================
-# Tests for aggregation column auto-inclusion when columns= is specified
+# Tests for aggregation column auto-inclusion when select= is specified
 # ============================================================================
 
 
 def test_aggregation_columns_auto_included_when_columns_specified(
     graph: FeatureGraph,
 ) -> None:
-    """Test that aggregation 'on' columns are automatically included when columns= is specified.
+    """Test that aggregation 'on' columns are automatically included when select= is specified.
 
-    This reproduces a bug where specifying columns= on a FeatureDep with aggregation lineage
+    This reproduces a bug where specifying select= on a FeatureDep with aggregation lineage
     would cause the aggregation column to be missing, leading to:
     - "unable to find column" error during aggregation
 
     The scenario:
     - Feature A has id_columns=["id_a"] and fields including "group_col"
     - Feature B depends on A with:
-      - columns=("field_x", "field_y") - explicit column selection NOT including group_col
+      - select=("field_x", "field_y") - explicit column selection NOT including group_col
       - lineage=aggregation(on=["group_col"])
 
     Expected behavior: group_col should be auto-included since it's needed for aggregation.
@@ -1998,8 +1930,8 @@ def test_aggregation_columns_auto_included_when_columns_specified(
             deps=[
                 FeatureDep(
                     feature=UpstreamDetail,
-                    # BUG: columns= doesn't include group_col, but aggregation needs it
-                    columns=("field_x", "field_y"),
+                    # BUG: select= doesn't include group_col, but aggregation needs it
+                    select=("field_x", "field_y"),
                     lineage=LineageRelationship.aggregation(on=["group_col"]),
                 )
             ],
@@ -2063,10 +1995,10 @@ def test_aggregation_columns_auto_included_when_columns_specified(
 def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
     graph: FeatureGraph,
 ) -> None:
-    """Test two deps aggregating on the same column where neither specifies the agg column in columns=.
+    """Test two deps aggregating on the same column where neither specifies the agg column in select=.
 
     The aggregation 'on' columns should be automatically included from the lineage relationship -
-    there's no need to specify them twice in both `columns=` and `lineage=aggregation(on=...)`.
+    there's no need to specify them twice in both `select=` and `lineage=aggregation(on=...)`.
 
     This test verifies:
     - chunk_id is auto-included for both deps from lineage.aggregation(on=["chunk_id"])
@@ -2112,18 +2044,18 @@ def test_two_deps_with_aggregation_on_same_column_with_explicit_columns(
                 # First dep: chunk_id NOT in columns - auto-included from lineage
                 FeatureDep(
                     feature=NotesEncodings,
-                    columns=("encoding_path", "encoding_size"),
                     rename={
                         "encoding_path": "encodings_path",
                         "encoding_size": "encodings_size",
                     },
+                    select=("encodings_path", "encodings_size"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
-                # Second dep: chunk_id NOT in columns - auto-included from lineage
+                # Second dep: chunk_id NOT in select - auto-included from lineage
                 FeatureDep(
                     feature=NotesTexts,
-                    columns=("notes_type", "text_path", "text_size"),
                     rename={"text_path": "texts_path", "text_size": "texts_size"},
+                    select=("notes_type", "texts_path", "texts_size"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
             ],
@@ -2294,14 +2226,14 @@ def test_two_deps_with_same_upstream_id_column_and_aggregation(
             deps=[
                 FeatureDep(
                     feature=DirectorNotesEncodings,
-                    columns=("path", "size", "chunk_id"),
                     rename={"path": "encodings_path", "size": "encodings_size"},
+                    select=("encodings_path", "encodings_size", "chunk_id"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
                 FeatureDep(
                     feature=DirectorNotesTexts,
-                    columns=("director_notes_type", "path", "size"),
                     rename={"path": "text_path", "size": "text_size"},
+                    select=("director_notes_type", "text_path", "text_size"),
                     lineage=LineageRelationship.aggregation(on=["chunk_id"]),
                 ),
             ],
@@ -2419,14 +2351,14 @@ def test_two_deps_with_same_upstream_id_column_and_aggregation(
 def test_expansion_columns_auto_included_when_columns_specified(
     graph: FeatureGraph,
 ) -> None:
-    """Test that expansion 'on' columns are automatically included when columns= is specified.
+    """Test that expansion 'on' columns are automatically included when select= is specified.
 
     This mirrors test_aggregation_columns_auto_included_when_columns_specified but for expansion.
 
     The scenario:
     - Feature A (Video) has id_columns=["video_id"] and fields including metadata
     - Feature B (VideoFrames) depends on A with:
-      - columns=("resolution",) - explicit column selection NOT including video_id
+      - select=("resolution",) - explicit column selection NOT including video_id
       - lineage=expansion(on=["video_id"])
 
     Expected behavior: video_id should be auto-included since it's needed for expansion.
@@ -2454,8 +2386,8 @@ def test_expansion_columns_auto_included_when_columns_specified(
             deps=[
                 FeatureDep(
                     feature=VideoSource,
-                    # BUG: columns= doesn't include video_id, but expansion needs it
-                    columns=("resolution", "fps"),
+                    # BUG: select= doesn't include video_id, but expansion needs it
+                    select=("resolution", "fps"),
                     lineage=LineageRelationship.expansion(on=["video_id"]),
                 )
             ],
@@ -2515,7 +2447,7 @@ def test_expansion_columns_auto_included_when_columns_specified(
 def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
     graph: FeatureGraph,
 ) -> None:
-    """Test two deps with expansion on the same column where columns= doesn't include the expansion column.
+    """Test two deps with expansion on the same column where select= doesn't include the expansion column.
 
     This mirrors test_two_deps_with_aggregation_on_same_column_with_explicit_columns but for expansion.
 
@@ -2555,16 +2487,16 @@ def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
             key=FeatureKey(["expanded_media_frames"]),
             id_columns=("video_id", "frame_id"),
             deps=[
-                # First dep: MISSING video_id in columns
+                # First dep: MISSING video_id in select
                 FeatureDep(
                     feature=VideoMetadata,
-                    columns=("resolution",),
+                    select=("resolution",),
                     lineage=LineageRelationship.expansion(on=["video_id"]),
                 ),
-                # Second dep: ALSO MISSING video_id in columns
+                # Second dep: ALSO MISSING video_id in select
                 FeatureDep(
                     feature=AudioMetadata,
-                    columns=("sample_rate",),
+                    select=("sample_rate",),
                     lineage=LineageRelationship.expansion(on=["video_id"]),
                 ),
             ],
@@ -2651,7 +2583,7 @@ def test_two_deps_with_expansion_on_same_column_with_explicit_columns(
 
 
 def test_aggregation_field_level_provenance_isolation(graph: FeatureGraph) -> None:
-    """Test that field-level dependencies are correctly preserved through aggregation.
+    """Test that field-level lineage are correctly preserved through aggregation.
 
     This is a critical test for the aggregation lineage fix. The downstream feature
     has two fields with different dependencies:
@@ -3036,9 +2968,7 @@ def test_aggregation_field_level_provenance_definition_change() -> None:
                 fields=[
                     # Temperature field code_version changed from "1" to "2"
                     FieldSpec(key=FieldKey(["temperature"]), code_version="2"),
-                    FieldSpec(
-                        key=FieldKey(["humidity"]), code_version="1"
-                    ),  # Unchanged
+                    FieldSpec(key=FieldKey(["humidity"]), code_version="1"),  # Unchanged
                 ],
             ),
         ):

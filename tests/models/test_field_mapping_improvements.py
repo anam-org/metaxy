@@ -1,7 +1,8 @@
 """Tests for improved DefaultFieldsMapping functionality."""
 
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.fields_mapping import FieldsMapping
 
 
@@ -203,6 +204,4 @@ def test_exclude_fields_with_suffix_matching():
 
     # Field should have no explicit deps (will resolve at runtime with exclusions)
     french_field = Downstream.spec().fields_by_key[FieldKey(["french"])]
-    assert (
-        french_field.deps == []
-    )  # Will match video/french at runtime (audio/french excluded)
+    assert french_field.deps == []  # Will match video/french at runtime (audio/french excluded)

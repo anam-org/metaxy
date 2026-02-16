@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal, cast
 import narwhals as nw
 from narwhals.typing import FrameT
 
+from metaxy._hashing import get_hash_truncation_length
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -18,7 +19,6 @@ from metaxy.models.constants import (
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.utils.hashing import get_hash_truncation_length
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 from metaxy.versioning.renamed_df import RenamedDataFrame
 from metaxy.versioning.types import HashAlgorithm
@@ -60,10 +60,7 @@ class VersioningEngine(ABC):
     @cached_property
     def feature_transformers_by_key(self) -> dict[FeatureKey, FeatureDepTransformer]:
         """Build transformers for each upstream dependency."""
-        return {
-            dep.feature: FeatureDepTransformer(dep=dep, plan=self.plan)
-            for dep in (self.plan.feature_deps or [])
-        }
+        return {dep.feature: FeatureDepTransformer(dep=dep, plan=self.plan) for dep in (self.plan.feature_deps or [])}
 
     @cached_property
     def shared_id_columns(self) -> list[str]:
@@ -165,9 +162,7 @@ class VersioningEngine(ABC):
                             df = cast(
                                 FrameT,
                                 df.with_columns(  # ty: ignore[invalid-argument-type]
-                                    nw.coalesce(
-                                        nw.col(id_col), nw.col(right_col)
-                                    ).alias(id_col)
+                                    nw.coalesce(nw.col(id_col), nw.col(right_col)).alias(id_col)
                                 ).drop(right_col),
                             )
 
@@ -326,11 +321,7 @@ class VersioningEngine(ABC):
             extracted_col = f"__extract_{field_name}"
             extracted_cols[field_name] = extracted_col
 
-            extract_expr = (
-                nw.col(renamed_data_version_by_field_col)
-                .struct.field(field_name)
-                .cast(nw.String)
-            )
+            extract_expr = nw.col(renamed_data_version_by_field_col).struct.field(field_name).cast(nw.String)
             df = df.with_columns(extract_expr.alias(extracted_col))  # ty: ignore[invalid-argument-type]
 
         # Step 2: Use window function to aggregate within groups
@@ -378,8 +369,8 @@ class VersioningEngine(ABC):
         df = self.build_struct_column(  # ty: ignore[invalid-assignment]
             df, renamed_data_version_by_field_col, hashed_field_cols
         )
-        df = self.build_struct_column(  # ty: ignore[invalid-assignment]
-            df,  # ty: ignore[invalid-argument-type]
+        df = self.build_struct_column(
+            df,
             renamed_prov_by_field_col,
             hashed_field_cols,
         )
@@ -397,7 +388,7 @@ class VersioningEngine(ABC):
             df,
             "__sample_concat",
             renamed_data_version_col,
-            hash_algorithm,  # ty: ignore[invalid-argument-type]
+            hash_algorithm,
             truncate_length=hash_length,
         )
         df = df.with_columns(  # ty: ignore[invalid-argument-type]
@@ -405,15 +396,13 @@ class VersioningEngine(ABC):
         )
 
         # Drop temp columns
-        df = df.drop("__sample_concat", *hashed_field_cols.values())  # ty: ignore[invalid-argument-type]
+        df = df.drop("__sample_concat", *hashed_field_cols.values())
 
-        return df  # ty: ignore[invalid-return-type]
+        return df
 
     def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed data_version_by_field column name for an upstream feature."""
-        return self.feature_transformers_by_key[
-            feature_key
-        ].renamed_data_version_by_field_col
+        return self.feature_transformers_by_key[feature_key].renamed_data_version_by_field_col
 
     def get_field_provenance_exprs(
         self,
@@ -430,14 +419,12 @@ class VersioningEngine(ABC):
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         for field_spec in self.plan.feature.fields:
             field_provenance: dict[FQFieldKey, nw.Expr] = {}
-            for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(
-                field_spec.key
-            ).items():
+            for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(field_spec.key).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                base_expr = nw.col(
-                    self.get_renamed_data_version_by_field_col(fq_key.feature)
-                ).struct.field(parent_field_spec.key.to_struct_key())
+                base_expr = nw.col(self.get_renamed_data_version_by_field_col(fq_key.feature)).struct.field(
+                    parent_field_spec.key.to_struct_key()
+                )
 
                 # Check if this is from an optional dependency
                 transformer = self.feature_transformers_by_key.get(fq_key.feature)
@@ -458,7 +445,7 @@ class VersioningEngine(ABC):
         drop_renamed_data_version_col: bool = False,
     ) -> FrameT:
         """Compute provenance columns from a DataFrame with upstream data_version_by_field columns."""
-        hash_length = MetaxyConfig.get().hash_truncation_length or 64
+        hash_length = MetaxyConfig.get().hash_truncation_length
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
@@ -500,7 +487,7 @@ class VersioningEngine(ABC):
                 concat_col,
                 hash_col_name,
                 hash_algo,
-                truncate_length=hash_length,  # ty: ignore[invalid-argument-type]
+                truncate_length=hash_length,
             )
 
         # Build provenance_by_field struct
@@ -510,9 +497,7 @@ class VersioningEngine(ABC):
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)  # ty: ignore[invalid-assignment]
 
         # Drop all temporary columns
-        temp_columns_to_drop = list(temp_concat_cols.values()) + list(
-            temp_hash_cols.values()
-        )
+        temp_columns_to_drop = list(temp_concat_cols.values()) + list(temp_hash_cols.values())
         df = df.drop(*temp_columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         # Drop renamed upstream system columns
@@ -521,9 +506,7 @@ class VersioningEngine(ABC):
         for transformer in self.feature_transformers_by_key.values():
             renamed_prov_col = transformer.renamed_provenance_col
             renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
-            renamed_data_version_by_field_col = (
-                transformer.renamed_data_version_by_field_col
-            )
+            renamed_data_version_by_field_col = transformer.renamed_data_version_by_field_col
             if renamed_prov_col in current_columns:
                 columns_to_drop.append(renamed_prov_col)
             if renamed_prov_by_field_col in current_columns:
@@ -536,11 +519,11 @@ class VersioningEngine(ABC):
                     columns_to_drop.append(renamed_data_version_col)
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+            df = df.drop(*columns_to_drop)
 
         # Add data_version columns (default to provenance values)
 
-        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )
@@ -567,24 +550,24 @@ class VersioningEngine(ABC):
         Returns:
             DataFrame with ID columns, data columns, and computed provenance columns.
         """
-        df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)  # ty: ignore[invalid-argument-type]
+        df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)
 
         # Compute provenance columns (shared logic)
         df = self._compute_provenance_internal(
-            df,  # ty: ignore[invalid-argument-type]
+            df,
             hash_algo,
             drop_renamed_data_version_col=True,
         )
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
-        version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
-        current_columns = df.collect_schema().names()
+        version_columns = ["metaxy_feature_version", "metaxy_project_version"]
+        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
         if columns_to_drop:
             df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
-        return df  # ty: ignore[invalid-return-type]
+        return df
 
     def compute_provenance_columns(
         self,
@@ -605,7 +588,7 @@ class VersioningEngine(ABC):
             DataFrame with provenance columns added.
         """
         return self._compute_provenance_internal(
-            df,  # ty: ignore[invalid-argument-type]
+            df,
             hash_algo,
             drop_renamed_data_version_col=False,
         )
@@ -634,15 +617,10 @@ class VersioningEngine(ABC):
             DataFrame with the sample-level hash column added.
         """
         if field_names is None:
-            field_names = sorted(
-                [f.key.to_struct_key() for f in self.plan.feature.fields]
-            )
+            field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
 
         # Concatenate all field hashes with separator
-        sample_components = [
-            nw.col(struct_column).struct.field(field_name)
-            for field_name in sorted(field_names)
-        ]
+        sample_components = [nw.col(struct_column).struct.field(field_name) for field_name in sorted(field_names)]
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
@@ -683,7 +661,7 @@ class VersioningEngine(ABC):
         """
         expected, input_df = self._prepare_expected(
             sample,
-            upstream,  # ty: ignore[invalid-argument-type]
+            upstream,
             hash_algorithm,
             filters,
         )
@@ -694,7 +672,7 @@ class VersioningEngine(ABC):
 
         # Step 3: Validate current metadata has required provenance columns
         self._check_required_provenance_columns(
-            current,  # ty: ignore[invalid-argument-type]
+            current,
             "The `current` DataFrame loaded from the metadata store",
         )
 
@@ -718,9 +696,7 @@ class VersioningEngine(ABC):
         """Prepare the expected dataframe from sample (root features) or upstream."""
         if sample is not None:
             # Root features: sample is user-provided with provenance columns already
-            assert len(upstream) == 0, (
-                "Root features should have no upstream dependencies"
-            )
+            assert len(upstream) == 0, "Root features should have no upstream dependencies"
             expected = sample
             input_df: FrameT | None = None
 
@@ -731,19 +707,19 @@ class VersioningEngine(ABC):
                     f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
                 )
                 expected = self.hash_struct_version_column(
-                    expected,  # ty: ignore[invalid-argument-type]
+                    expected,
                     hash_algorithm=hash_algorithm,
                 )
 
             # Validate that root features provide both required provenance columns
             self._check_required_provenance_columns(
-                expected,  # ty: ignore[invalid-argument-type]
+                expected,
                 "The `sample` DataFrame (must be provided to root features)",
             )
         else:
             # Normal case: compute provenance from upstream
             expected = self.load_upstream_with_provenance(
-                upstream,  # ty: ignore[invalid-argument-type]
+                upstream,
                 hash_algo=hash_algorithm,
                 filters=filters,
             )

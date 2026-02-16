@@ -60,8 +60,7 @@ def find_migration_yaml(migration_id: str, migrations_dir: Path | None = None) -
 
     if not migrations_dir.exists():
         raise FileNotFoundError(
-            f"Migration '{migration_id}' not found. "
-            f"Migrations directory does not exist: {migrations_dir}"
+            f"Migration '{migration_id}' not found. Migrations directory does not exist: {migrations_dir}"
         )
 
     # Search through all YAML files to find the one with matching ID
@@ -84,8 +83,7 @@ def find_migration_yaml(migration_id: str, migrations_dir: Path | None = None) -
             continue
 
     raise FileNotFoundError(
-        f"Migration '{migration_id}' not found in {migrations_dir}.\n"
-        f"Available migrations: {available}"
+        f"Migration '{migration_id}' not found in {migrations_dir}.\nAvailable migrations: {available}"
     )
 
 
@@ -146,8 +144,7 @@ def find_latest_migration(migrations_dir: Path | None = None) -> str | None:
     if len(heads) == 0:
         # This means there's a cycle or orphaned migrations
         raise ValueError(
-            "No head migration found - possible cycle in migration chain. "
-            f"All migrations: {list(migrations.keys())}"
+            f"No head migration found - possible cycle in migration chain. All migrations: {list(migrations.keys())}"
         )
 
     if len(heads) > 1:

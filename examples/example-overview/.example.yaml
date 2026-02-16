@@ -8,7 +8,7 @@ scenarios:
     steps:
       - name: "push_graph"
         type: "run_command"
-        command: "metaxy graph push"
+        command: "metaxy push"
         description: "Push initial graph snapshot"
         capture_output: true
         timeout: 10.0

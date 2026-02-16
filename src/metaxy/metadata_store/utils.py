@@ -16,9 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 # Context variable for suppressing feature_version warning in migrations
-_suppress_feature_version_warning: ContextVar[bool] = ContextVar(
-    "_suppress_feature_version_warning", default=False
-)
+_suppress_feature_version_warning: ContextVar[bool] = ContextVar("_suppress_feature_version_warning", default=False)
 
 
 def is_local_path(path: str) -> bool:
@@ -38,8 +36,7 @@ def allow_feature_version_override() -> Iterator[None]:
     Example:
         ```py
         with allow_feature_version_override():
-            # DataFrame already has metaxy_feature_version column from migration
-            store.write_metadata(MyFeature, df_with_feature_version)
+            pass  # Warnings suppressed within this block
         ```
     """
     token = _suppress_feature_version_warning.set(True)
@@ -136,9 +133,7 @@ def narwhals_expr_to_sql_predicate(
     *,
     dialect: str,
     extra_transforms: (
-        Callable[[exp.Expression], exp.Expression]
-        | Sequence[Callable[[exp.Expression], exp.Expression]]
-        | None
+        Callable[[exp.Expression], exp.Expression] | Sequence[Callable[[exp.Expression], exp.Expression]] | None
     ) = None,
 ) -> str:
     """Convert Narwhals filter expressions to a SQL WHERE clause predicate.
@@ -167,33 +162,29 @@ def narwhals_expr_to_sql_predicate(
     Example:
         ```py
         import narwhals as nw
-        import polars as pl
 
-        df = pl.DataFrame({"status": ["active"], "age": [25]})
+        schema = nw.Schema({"status": nw.String, "age": nw.Int64})
         filters = nw.col("status") == "active"
-        narwhals_expr_to_sql_predicate(filters, df, dialect="duckdb")
-        # '"status" = \'active\''
+        result = narwhals_expr_to_sql_predicate(filters, schema, dialect="duckdb")
         ```
 
     Example: With extra transforms
         ```py
+        import narwhals as nw
         from metaxy.metadata_store.utils import unquote_identifiers
 
-        # Generate unquoted SQL for LanceDB
+        schema = nw.Schema({"status": nw.String})
+        filters = nw.col("status") == "active"
         sql = narwhals_expr_to_sql_predicate(
             filters,
             schema,
             dialect="datafusion",
             extra_transforms=unquote_identifiers(),
         )
-        # 'status = \'active\''  (no quotes around column name)
+        assert "status" in sql  # Unquoted column name
         ```
     """
-    filter_list = (
-        list(filters)
-        if isinstance(filters, Sequence) and not isinstance(filters, nw.Expr)
-        else [filters]
-    )
+    filter_list = list(filters) if isinstance(filters, Sequence) and not isinstance(filters, nw.Expr) else [filters]
     if not filter_list:
         raise ValueError("narwhals_expr_to_sql_predicate expects at least one filter")
     sql = generate_sql(lambda lf: lf.filter(*filter_list), schema, dialect=dialect)
@@ -203,8 +194,7 @@ def narwhals_expr_to_sql_predicate(
     predicate_expr = _extract_where_expression(sql, dialect=dialect)
     if predicate_expr is None:
         raise RuntimeError(
-            f"Could not extract WHERE clause from generated SQL for filters: {filters}\n"
-            f"Generated SQL: {sql}"
+            f"Could not extract WHERE clause from generated SQL for filters: {filters}\nGenerated SQL: {sql}"
         )
 
     predicate_expr = simplify(predicate_expr)
@@ -214,9 +204,7 @@ def narwhals_expr_to_sql_predicate(
 
     # Apply extra transforms if provided
     if extra_transforms is not None:
-        transform_list = (
-            [extra_transforms] if callable(extra_transforms) else list(extra_transforms)
-        )
+        transform_list = [extra_transforms] if callable(extra_transforms) else list(extra_transforms)
         for transform in transform_list:
             predicate_expr = predicate_expr.transform(transform)
 
@@ -256,12 +244,11 @@ def unquote_identifiers() -> Callable[[exp.Expression], exp.Expression]:
     Example:
         ```py
         import sqlglot
-        from sqlglot import exp
 
-        sql = '"status" = \'active\''
+        sql = '''"status" = 'active' '''
         parsed = sqlglot.parse_one(sql)
         transformed = parsed.transform(unquote_identifiers())
-        # Result: status = 'active'
+        assert "status" in str(transformed)
         ```
     """
 

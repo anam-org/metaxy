@@ -1,0 +1,44 @@
+name: Pull Request
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'graphite:merge') }}
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      python-versions:
+        description: 'Python versions (JSON array)'
+        type: string
+        default: '["3.10", "3.11", "3.12", "3.13"]'
+      run-windows:
+        description: 'Run Windows tests'
+        type: boolean
+        default: false
+      run-macos:
+        description: 'Run macOS tests'
+        type: boolean
+        default: false
+      dependency-matrix:
+        description: 'Run dependency version compatibility tests'
+        type: boolean
+        default: false
+
+jobs:
+  qa:
+    uses: ./.github/workflows/_qa.yml
+    with:
+      python-versions: ${{ (github.event_name == 'workflow_dispatch' && inputs.python-versions) || (contains(github.event.pull_request.labels.*.name, 'tests:full') && '["3.10", "3.11", "3.12", "3.13"]') || '["3.10"]' }}
+      run-windows: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-windows) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
+      run-macos: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-macos) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
+      dependency-matrix: ${{ (github.event_name == 'workflow_dispatch' && inputs.dependency-matrix) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

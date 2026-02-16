@@ -1,4 +1,4 @@
-"""Comprehensive tests for MetadataStore.write_metadata_multi() method.
+"""Comprehensive tests for MetadataStore.write_multi() method.
 
 Tests cover:
 - Verification that writes occur in reverse topological order
@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
@@ -26,9 +27,8 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 @pytest.fixture
@@ -96,12 +96,12 @@ def store(tmp_path) -> Iterator[DeltaMetadataStore]:
 
 
 class TestBasicFunctionality:
-    """Test basic functionality of write_metadata_multi."""
+    """Test basic functionality of write_multi."""
 
     def test_empty_dict_is_noop(self, store: DeltaMetadataStore):
         """Test that passing an empty dict does nothing (no-op)."""
         # Should not raise any errors
-        store.write_metadata_multi({})
+        store.write_multi({})
 
     def test_single_feature(
         self,
@@ -124,11 +124,11 @@ class TestBasicFunctionality:
             )
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
         # Verify data was written
-        result = collect_to_polars(store.read_metadata(FeatureA))
+        result = collect_to_polars(store.read(FeatureA))
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
@@ -156,12 +156,12 @@ class TestBasicFunctionality:
             ),
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
         # Verify both features were written
-        result_a = collect_to_polars(store.read_metadata(FeatureA))
-        result_b = collect_to_polars(store.read_metadata(FeatureB))
+        result_a = collect_to_polars(store.read(FeatureA))
+        result_b = collect_to_polars(store.read(FeatureB))
 
         assert len(result_a) == 2
         assert len(result_b) == 2
@@ -216,10 +216,10 @@ class TestReverseTopologicalOrder:
             ),
         }
 
-        # Track write order by spying on write_metadata
+        # Track write order by spying on write
         write_order = []
 
-        original_write = store.write_metadata
+        original_write = store.write
 
         def tracked_write(feature, df, materialization_id=None):
             # Resolve the feature key
@@ -227,9 +227,9 @@ class TestReverseTopologicalOrder:
             write_order.append(feature_key)
             return original_write(feature, df, materialization_id)
 
-        with patch.object(store, "write_metadata", side_effect=tracked_write):
-            with store.allow_cross_project_writes():
-                store.write_metadata_multi(metadata)
+        with patch.object(store, "write", side_effect=tracked_write):
+            with store.open("w"):
+                store.write_multi(metadata)
 
         # Verify D was written before C, and C before A
         d_idx = write_order.index(FeatureD.spec().key)
@@ -242,9 +242,7 @@ class TestReverseTopologicalOrder:
         # All features should have been written
         assert len(write_order) == 4
 
-    def test_writes_linear_chain_in_reverse_order(
-        self, store: DeltaMetadataStore, graph: FeatureGraph
-    ):
+    def test_writes_linear_chain_in_reverse_order(self, store: DeltaMetadataStore, graph: FeatureGraph):
         """Test a simple linear chain is written in reverse order: C -> B -> A for A -> B -> C."""
 
         class FeatureA(
@@ -277,29 +275,23 @@ class TestReverseTopologicalOrder:
             pass
 
         metadata = {
-            FeatureA: pl.DataFrame(
-                {"sample_uid": [1], "metaxy_provenance_by_field": [{"x": "hash1"}]}
-            ),
-            FeatureB: pl.DataFrame(
-                {"sample_uid": [2], "metaxy_provenance_by_field": [{"y": "hash2"}]}
-            ),
-            FeatureC: pl.DataFrame(
-                {"sample_uid": [3], "metaxy_provenance_by_field": [{"z": "hash3"}]}
-            ),
+            FeatureA: pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"x": "hash1"}]}),
+            FeatureB: pl.DataFrame({"sample_uid": [2], "metaxy_provenance_by_field": [{"y": "hash2"}]}),
+            FeatureC: pl.DataFrame({"sample_uid": [3], "metaxy_provenance_by_field": [{"z": "hash3"}]}),
         }
 
         # Track write order
         write_order = []
-        original_write = store.write_metadata
+        original_write = store.write
 
         def tracked_write(feature, df, materialization_id=None):
             feature_key = store._resolve_feature_key(feature)
             write_order.append(feature_key)
             return original_write(feature, df, materialization_id)
 
-        with patch.object(store, "write_metadata", side_effect=tracked_write):
-            with store.allow_cross_project_writes():
-                store.write_metadata_multi(metadata)
+        with patch.object(store, "write", side_effect=tracked_write):
+            with store.open("w"):
+                store.write_multi(metadata)
 
         # Verify reverse order: C, B, A
         assert write_order[0] == FeatureC.spec().key
@@ -327,10 +319,10 @@ class TestInputVariations:
             )
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
-        result = collect_to_polars(store.read_metadata(FeatureA))
+        result = collect_to_polars(store.read(FeatureA))
         assert len(result) == 1
 
     def test_accepts_string_paths(
@@ -350,10 +342,10 @@ class TestInputVariations:
             )
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
-        result = collect_to_polars(store.read_metadata(FeatureA))
+        result = collect_to_polars(store.read(FeatureA))
         assert len(result) == 1
 
     def test_accepts_feature_classes(
@@ -373,10 +365,10 @@ class TestInputVariations:
             )
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
-        result = collect_to_polars(store.read_metadata(FeatureA))
+        result = collect_to_polars(store.read(FeatureA))
         assert len(result) == 1
 
     def test_accepts_mixed_key_types(
@@ -403,11 +395,11 @@ class TestInputVariations:
             ),
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
-        result_a = collect_to_polars(store.read_metadata(FeatureA))
-        result_b = collect_to_polars(store.read_metadata(FeatureB))
+        result_a = collect_to_polars(store.read(FeatureA))
+        result_b = collect_to_polars(store.read(FeatureB))
 
         assert len(result_a) == 1
         assert len(result_b) == 1
@@ -421,7 +413,7 @@ class TestMaterializationId:
         store: DeltaMetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
-        """Test that materialization_id is passed to write_metadata calls."""
+        """Test that materialization_id is passed to write calls."""
         FeatureA = features_with_deps["FeatureA"]
 
         metadata = {
@@ -435,19 +427,17 @@ class TestMaterializationId:
 
         materialization_id = "test-run-123"
 
-        # Spy on write_metadata to verify materialization_id is passed
-        original_write = store.write_metadata
+        # Spy on write to verify materialization_id is passed
+        original_write = store.write
         write_calls = []
 
         def tracked_write(feature, df, materialization_id=None):
             write_calls.append(materialization_id)
             return original_write(feature, df, materialization_id)
 
-        with patch.object(store, "write_metadata", side_effect=tracked_write):
-            with store.allow_cross_project_writes():
-                store.write_metadata_multi(
-                    metadata, materialization_id=materialization_id
-                )
+        with patch.object(store, "write", side_effect=tracked_write):
+            with store.open("w"):
+                store.write_multi(metadata, materialization_id=materialization_id)
 
         # Verify materialization_id was passed
         assert len(write_calls) == 1
@@ -458,7 +448,7 @@ class TestMaterializationId:
         store: DeltaMetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
-        """Test that materialization_id is passed to all write_metadata calls."""
+        """Test that materialization_id is passed to all write calls."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureB = features_with_deps["FeatureB"]
 
@@ -479,19 +469,17 @@ class TestMaterializationId:
 
         materialization_id = "batch-write-456"
 
-        # Spy on write_metadata
-        original_write = store.write_metadata
+        # Spy on write
+        original_write = store.write
         write_calls = []
 
         def tracked_write(feature, df, materialization_id=None):
             write_calls.append(materialization_id)
             return original_write(feature, df, materialization_id)
 
-        with patch.object(store, "write_metadata", side_effect=tracked_write):
-            with store.allow_cross_project_writes():
-                store.write_metadata_multi(
-                    metadata, materialization_id=materialization_id
-                )
+        with patch.object(store, "write", side_effect=tracked_write):
+            with store.open("w"):
+                store.write_multi(metadata, materialization_id=materialization_id)
 
         # Verify materialization_id was passed to all writes
         assert len(write_calls) == 2
@@ -506,7 +494,7 @@ class TestDataIntegrity:
         store: DeltaMetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
     ):
-        """Test that data written via write_metadata_multi can be read back correctly."""
+        """Test that data written via write_multi can be read back correctly."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureB = features_with_deps["FeatureB"]
         FeatureC = features_with_deps["FeatureC"]
@@ -532,13 +520,13 @@ class TestDataIntegrity:
             ),
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
         # Read back and verify
-        result_a = collect_to_polars(store.read_metadata(FeatureA))
-        result_b = collect_to_polars(store.read_metadata(FeatureB))
-        result_c = collect_to_polars(store.read_metadata(FeatureC))
+        result_a = collect_to_polars(store.read(FeatureA))
+        result_b = collect_to_polars(store.read(FeatureB))
+        result_c = collect_to_polars(store.read(FeatureC))
 
         assert len(result_a) == 2
         assert set(result_a["sample_uid"].to_list()) == {1, 2}
@@ -551,12 +539,10 @@ class TestDataIntegrity:
 
 
 class TestErrorHandling:
-    """Test error handling for write_metadata_multi."""
+    """Test error handling for write_multi."""
 
-    def test_store_not_open_raises(
-        self, features_with_deps: dict[str, type[BaseFeature]], tmp_path
-    ):
-        """Test that calling write_metadata_multi on a closed store raises StoreNotOpenError."""
+    def test_store_not_open_raises(self, features_with_deps: dict[str, type[BaseFeature]], tmp_path):
+        """Test that calling write_multi on a closed store raises StoreNotOpenError."""
         from metaxy.metadata_store import StoreNotOpenError
 
         FeatureA = features_with_deps["FeatureA"]
@@ -574,7 +560,7 @@ class TestErrorHandling:
 
         # Store is not opened, should raise
         with pytest.raises(StoreNotOpenError):
-            store.write_metadata_multi(metadata)
+            store.write_multi(metadata)
 
     def test_invalid_schema_raises(
         self,
@@ -597,8 +583,8 @@ class TestErrorHandling:
         }
 
         with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
-            with store.allow_cross_project_writes():
-                store.write_metadata_multi(metadata)
+            with store.open("w"):
+                store.write_multi(metadata)
 
 
 class TestSubsetOfFeatures:
@@ -629,12 +615,12 @@ class TestSubsetOfFeatures:
             ),
         }
 
-        with store.allow_cross_project_writes():
-            store.write_metadata_multi(metadata)
+        with store.open("w"):
+            store.write_multi(metadata)
 
         # Verify A and C were written
-        result_a = collect_to_polars(store.read_metadata(FeatureA))
-        result_c = collect_to_polars(store.read_metadata(FeatureC))
+        result_a = collect_to_polars(store.read(FeatureA))
+        result_c = collect_to_polars(store.read(FeatureC))
 
         assert len(result_a) == 1
         assert len(result_c) == 1

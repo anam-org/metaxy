@@ -1,0 +1,16 @@
+[project]
+name = "metaxy-testing"
+version = "0.0.1"
+description = "Testing utilities for Metaxy"
+requires-python = ">=3.10"
+dependencies = [
+  "metaxy",
+  "pydantic",
+  "tabulate",
+]
+
+[project.scripts]
+mxtest-analyze-timings = "metaxy_testing.analyze_timings:main"
+
+[tool.uv.sources]
+metaxy = { workspace = true }

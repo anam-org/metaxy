@@ -16,14 +16,15 @@ if TYPE_CHECKING:
 
 # List subcommand app
 app = cyclopts.App(
-    name="list",  # pyrefly: ignore[unexpected-keyword]
-    help="List Metaxy entities",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="list",
+    help="List Metaxy entities",
+    console=console,
+    error_console=error_console,
 )
 
 
-@app.command()
+@app.command(name="features")
+@app.command(name="feature", show=False)
 def features(
     *,
     verbose: Annotated[
@@ -48,7 +49,6 @@ def features(
         $ metaxy list features --verbose
         $ metaxy list features --format json
     """
-    from metaxy import get_feature_by_key
     from metaxy.cli.context import AppContext
     from metaxy.models.plan import FQFieldKey
 
@@ -58,18 +58,18 @@ def features(
     # Collect feature data
     features_data: list[dict[str, Any]] = []
 
-    for feature_key, feature_spec in graph.feature_specs_by_key.items():
-        feature_cls = get_feature_by_key(feature_key)
-        if context.project and feature_cls.project != context.project:
+    for feature_key, definition in graph.feature_definitions_by_key.items():
+        if context.project and definition.project != context.project:
             continue
 
+        feature_spec = definition.spec
         version = graph.get_feature_version(feature_key)
 
         # Determine if it's a root feature (no deps)
         is_root = not feature_spec.deps
 
-        # Get import path (module.ClassName)
-        import_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+        # Get source from definition
+        source = definition.source
 
         # Get the feature plan for resolved field dependencies
         feature_plan = graph.get_feature_plan(feature_key) if verbose else None
@@ -77,9 +77,7 @@ def features(
         # Build field info
         fields_info: list[dict[str, Any]] = []
         for field_key, field_spec in feature_spec.fields_by_key.items():
-            field_version = graph.get_field_version(
-                FQFieldKey(feature=feature_key, field=field_key)
-            )
+            field_version = graph.get_field_version(FQFieldKey(feature=feature_key, field=field_key))
             field_data: dict[str, Any] = {
                 "key": field_spec.key.to_string(),
                 "code_version": field_spec.code_version,
@@ -107,16 +105,15 @@ def features(
             "key": feature_key.to_string(),
             "version": version,
             "is_root": is_root,
-            "project": feature_cls.project,
-            "import_path": import_path,
+            "is_external": definition.is_external,
+            "project": definition.project,
+            "source": source,
             "field_count": len(fields_info),
             "fields": fields_info,
         }
 
         if verbose and feature_spec.deps:
-            feature_data["deps"] = [
-                dep.feature.to_string() for dep in feature_spec.deps
-            ]
+            feature_data["deps"] = [dep.feature.to_string() for dep in feature_spec.deps]
 
         features_data.append(feature_data)
 
@@ -154,23 +151,29 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
             header_style="bold",
         )
         table.add_column("Feature", no_wrap=True)
-        table.add_column("Import Path", no_wrap=True)
+        table.add_column("Version", no_wrap=True)
+        table.add_column("Source", no_wrap=True)
 
         if verbose:
             table.add_column("Dependencies")
 
         for feature in project_features:
+            feature_key_display = feature["key"]
+            source_display = feature["source"]
+
             if verbose:
                 deps_display = ", ".join(feature.get("deps", [])) or "-"
                 table.add_row(
-                    feature["key"],
-                    feature["import_path"],
+                    feature_key_display,
+                    feature["version"],
+                    source_display,
                     deps_display,
                 )
             else:
                 table.add_row(
-                    feature["key"],
-                    feature["import_path"],
+                    feature_key_display,
+                    feature["version"],
+                    source_display,
                 )
 
         data_console.print(table)
@@ -179,9 +182,10 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
     # Summary
     root_count = sum(1 for f in features_data if f["is_root"])
     dependent_count = len(features_data) - root_count
+    external_count = sum(1 for f in features_data if f["is_external"])
+    external_suffix = f", {external_count} external" if external_count else ""
     data_console.print(
-        f"[dim]Total: {len(features_data)} feature(s) "
-        f"({root_count} root, {dependent_count} dependent)[/dim]"
+        f"[dim]Total: {len(features_data)} feature(s) ({root_count} root, {dependent_count} dependent{external_suffix})[/dim]"
     )
 
     # Verbose: show field details for each feature
@@ -189,9 +193,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
         data_console.print()
         for feature in features_data:
             data_console.print(
-                f"[bold cyan]{feature['key']}[/bold cyan] "
-                f"[dim]({feature['project']})[/dim] "
-                f"{feature['import_path']}"
+                f"[bold cyan]{feature['key']}[/bold cyan] [dim]({feature['project']})[/dim] {feature['source']}"
             )
 
             field_table = Table(show_header=True, header_style="bold dim")
@@ -202,9 +204,7 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
 
             for field in feature["fields"]:
                 field_version_display = (
-                    field["version"][:12] + "..."
-                    if len(field["version"]) > 12
-                    else field["version"]
+                    field["version"][:12] + "..." if len(field["version"]) > 12 else field["version"]
                 )
                 deps_str = "-"
                 if "deps" in field:
@@ -230,3 +230,80 @@ def _output_features_plain(features_data: list[dict[str, Any]], verbose: bool) -
 
             data_console.print(field_table)
             data_console.print()
+
+
+@app.command()
+@app.command(name="store", show=False)
+def stores(
+    *,
+    format: Annotated[
+        OutputFormat,
+        cyclopts.Parameter(
+            name=["-f", "--format"],
+            help="Output format: 'plain' (default) or 'json'.",
+        ),
+    ] = "plain",
+) -> None:
+    """List configured metadata stores.
+
+    Examples:
+        $ metaxy list stores
+        $ metaxy list stores --format json
+    """
+    from metaxy.cli.context import AppContext
+
+    context = AppContext.get()
+    config = context.config
+
+    # Collect store data
+    stores_data: list[dict[str, Any]] = []
+
+    for name, store_config in config.stores.items():
+        store = config.get_store(name)
+        fallback_names = store_config.config.get("fallback_stores", [])
+        store_data: dict[str, Any] = {
+            "name": name,
+            "is_default": name == config.store,
+            "info": store.display(),
+            "fallbacks": fallback_names,
+        }
+        stores_data.append(store_data)
+
+    # Sort: default store first, then alphabetically
+    stores_data.sort(key=lambda s: (not s["is_default"], s["name"]))
+
+    # Output based on format
+    if format == "json":
+        output: dict[str, Any] = {
+            "default_store": config.store,
+            "store_count": len(stores_data),
+            "stores": stores_data,
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        _output_stores_plain(stores_data, config.store)
+
+
+def _output_stores_plain(stores_data: list[dict[str, Any]], default_store: str) -> None:
+    """Output stores in plain format using rich tables."""
+    if not stores_data:
+        data_console.print("[yellow]No stores configured.[/yellow]")
+        return
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Name", no_wrap=True)
+    table.add_column("Info", no_wrap=False)
+    table.add_column("Fallbacks", no_wrap=False)
+
+    for store in stores_data:
+        name = store["name"]
+        if store["is_default"]:
+            name = f"[bold cyan]{name}[/bold cyan] [dim](default)[/dim]"
+
+        fallbacks = ", ".join(store["fallbacks"]) if store["fallbacks"] else "[dim]-[/dim]"
+
+        table.add_row(name, store["info"], fallbacks)
+
+    data_console.print(table)
+    data_console.print()
+    data_console.print(f"[dim]Total: {len(stores_data)} store(s)[/dim]")

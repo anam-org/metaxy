@@ -11,6 +11,7 @@ import warnings
 
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import (
@@ -22,10 +23,9 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import MetaxyColumnMissingWarning
 from metaxy.models.constants import (
     METAXY_PROVENANCE,
@@ -104,9 +104,7 @@ def DownstreamFeature(features: dict[str, type[BaseFeature]]):
 class TestProperDataframeWrite:
     """Test that writing proper dataframes does not emit warnings."""
 
-    def test_root_feature_with_provenance_by_field_only(
-        self, any_store: MetadataStore, RootFeature
-    ):
+    def test_root_feature_with_provenance_by_field_only(self, any_store: MetadataStore, RootFeature):
         """Root features should only require metaxy_provenance_by_field.
 
         When writing a root feature (no dependencies) with only
@@ -127,20 +125,15 @@ class TestProperDataframeWrite:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            with any_store.open("write"):
-                with any_store.allow_cross_project_writes():
-                    any_store.write_metadata(RootFeature, df)
+            with any_store.open("w"):
+                any_store.write(RootFeature, df)
 
                 # Verify write succeeded
-                result = collect_to_polars(any_store.read_metadata(RootFeature))
+                result = collect_to_polars(any_store.read(RootFeature))
                 assert len(result) == 3
 
             # Check for MetaxyColumnMissingWarning
-            metaxy_warnings = [
-                warning
-                for warning in w
-                if issubclass(warning.category, MetaxyColumnMissingWarning)
-            ]
+            metaxy_warnings = [warning for warning in w if issubclass(warning.category, MetaxyColumnMissingWarning)]
             assert len(metaxy_warnings) == 0, (
                 f"Unexpected MetaxyColumnMissingWarning: {[str(warning.message) for warning in metaxy_warnings]}"
             )
@@ -181,21 +174,16 @@ class TestProperDataframeWrite:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            with any_store.open("write"):
-                with any_store.allow_cross_project_writes():
-                    any_store.write_metadata(RootFeature, root_df)
-                    any_store.write_metadata(DownstreamFeature, downstream_df)
+            with any_store.open("w"):
+                any_store.write(RootFeature, root_df)
+                any_store.write(DownstreamFeature, downstream_df)
 
                 # Verify write succeeded
-                result = collect_to_polars(any_store.read_metadata(DownstreamFeature))
+                result = collect_to_polars(any_store.read(DownstreamFeature))
                 assert len(result) == 3
 
             # Check for MetaxyColumnMissingWarning
-            metaxy_warnings = [
-                warning
-                for warning in w
-                if issubclass(warning.category, MetaxyColumnMissingWarning)
-            ]
+            metaxy_warnings = [warning for warning in w if issubclass(warning.category, MetaxyColumnMissingWarning)]
             # Filter to only warnings about the downstream feature write
             # (the root feature write may also emit warnings that we'll test separately)
             assert len(metaxy_warnings) == 0, (
@@ -204,6 +192,6 @@ class TestProperDataframeWrite:
 
 
 def test_sql_dialect_uses_connection(ibis_store: DuckDBMetadataStore) -> None:
-    with ibis_store.open("write"):
+    with ibis_store.open("w"):
         expected = ibis_store.conn.name
         assert ibis_store._sql_dialect == expected

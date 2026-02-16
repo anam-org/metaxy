@@ -1,12 +1,36 @@
 ---
 title: "User Guide"
-description: "Comprehensive documentation for using Metaxy in your multi-modal pipelines."
+description: "Learn how to use Metaxy for incremental processing in multimodal pipelines."
 ---
 
 # User Guide
 
-Learn how to use Metaxy step by step.
+Welcome to the Metaxy User Guide. Start with the introduction to understand what Metaxy does, then follow the quickstart to get up and running.
 
-- **[Getting Started](overview/quickstart.md)** - Get started quickly with Metaxy
+<div class="grid cards" markdown>
 
-- **[Concepts](learn/metadata-stores.md)** - Deep dive into Metaxy concepts
+-   :material-book-open-variant: **[Introduction](../index.md)**
+
+    ---
+
+    Learn what Metaxy is and why it exists.
+
+-   :material-rocket-launch: **[Quickstart](quickstart/quickstart.md)**
+
+    ---
+
+    Get started with using Metaxy.
+
+-   :material-lightbulb-outline: **[Concepts](concepts/index.md)**
+
+    ---
+
+    Understand the core concepts and abstractions.
+
+-   :material-cog: **[Application Lifecycle](concepts/lifecycle/development.md)**
+
+    ---
+
+    Development, testing, and deployment patterns.
+
+</div>

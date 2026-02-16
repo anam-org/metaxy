@@ -42,9 +42,7 @@ class FullFeatureMetadataRepresentation(BaseModel):
     progress_percentage: float | None = None
 
 
-StatusCategory = Literal[
-    "missing", "needs_update", "up_to_date", "root_feature", "error"
-]
+StatusCategory = Literal["missing", "needs_update", "up_to_date", "root_feature", "error"]
 
 # Status display configuration
 _STATUS_ICONS: dict[StatusCategory, str] = {
@@ -77,18 +75,10 @@ class FeatureMetadataStatus(BaseModel):
     feature_key: FeatureKey = Field(description="The feature key being inspected")
     target_version: str = Field(description="The feature version from code")
     metadata_exists: bool = Field(description="Whether metadata exists in the store")
-    store_row_count: int = Field(
-        description="Number of metadata rows currently in store (0 if none exist)"
-    )
-    missing_count: int = Field(
-        description="Number of new samples from upstream not yet in metadata"
-    )
-    stale_count: int = Field(
-        description="Number of samples with stale provenance needing update"
-    )
-    orphaned_count: int = Field(
-        description="Number of samples in store but removed from upstream"
-    )
+    store_row_count: int = Field(description="Number of metadata rows currently in store (0 if none exist)")
+    missing_count: int = Field(description="Number of new samples from upstream not yet in metadata")
+    stale_count: int = Field(description="Number of samples with stale provenance needing update")
+    orphaned_count: int = Field(description="Number of samples in store but removed from upstream")
     needs_update: bool = Field(description="Whether updates are needed")
     is_root_feature: bool = Field(
         default=False,
@@ -173,9 +163,7 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
         verbose: bool,
     ) -> FullFeatureMetadataRepresentation:
         """Convert status to the full JSON representation used by the CLI."""
-        sample_details = (
-            self.sample_details() if verbose and self.lazy_increment else None
-        )
+        sample_details = self.sample_details() if verbose and self.lazy_increment else None
         # For root features, missing/stale/orphaned are not meaningful
         missing = None if self.status.is_root_feature else self.status.missing_count
         stale = None if self.status.is_root_feature else self.status.stale_count
@@ -220,28 +208,28 @@ def format_sample_previews(
     lines: list[str] = []
 
     if missing_count > 0:
-        missing_preview_df = lazy_increment.added.head(limit).collect().to_polars()
+        missing_preview_df = lazy_increment.new.head(limit).collect().to_polars()
         if missing_preview_df.height > 0:
             lines.append("[bold yellow]Missing samples:[/bold yellow]")
-            glimpse_str = missing_preview_df.glimpse(return_type="string")
-            if glimpse_str:
-                lines.append(glimpse_str)
+            glimpse_result = missing_preview_df.glimpse(return_type="string")
+            if isinstance(glimpse_result, str):
+                lines.append(glimpse_result)
 
     if stale_count > 0:
-        stale_preview_df = lazy_increment.changed.head(limit).collect().to_polars()
+        stale_preview_df = lazy_increment.stale.head(limit).collect().to_polars()
         if stale_preview_df.height > 0:
             lines.append("[bold cyan]Stale samples:[/bold cyan]")
-            glimpse_str = stale_preview_df.glimpse(return_type="string")
-            if glimpse_str:
-                lines.append(glimpse_str)
+            glimpse_result = stale_preview_df.glimpse(return_type="string")
+            if isinstance(glimpse_result, str):
+                lines.append(glimpse_result)
 
     if orphaned_count > 0:
-        orphaned_preview_df = lazy_increment.removed.head(limit).collect().to_polars()
+        orphaned_preview_df = lazy_increment.orphaned.head(limit).collect().to_polars()
         if orphaned_preview_df.height > 0:
             lines.append("[bold red]Orphaned samples:[/bold red]")
-            glimpse_str = orphaned_preview_df.glimpse(return_type="string")
-            if glimpse_str:
-                lines.append(glimpse_str)
+            glimpse_result = orphaned_preview_df.glimpse(return_type="string")
+            if isinstance(glimpse_result, str):
+                lines.append(glimpse_result)
 
     return lines
 
@@ -264,6 +252,7 @@ def get_feature_metadata_status(
     *,
     use_fallback: bool = True,
     global_filters: Sequence[nw.Expr] | None = None,
+    target_filters: Sequence[nw.Expr] | None = None,
     compute_progress: bool = False,
 ) -> FeatureMetadataStatusWithIncrement:
     """Get metadata status for a single feature.
@@ -274,8 +263,10 @@ def get_feature_metadata_status(
             FeatureKey instance, or BaseFeature class.
         metadata_store: The metadata store to query
         use_fallback: Whether to read metadata from fallback stores.
-        global_filters: List of Narwhals filter expressions to apply to all features.
-            These filters are applied when reading metadata and resolving updates.
+        global_filters: List of Narwhals filter expressions applied to all features
+            (both upstream and target).
+        target_filters: List of Narwhals filter expressions applied only to the target
+            feature (or more precisely, the result of an increment calculation on it).
         compute_progress: Whether to calculate progress percentage.
             When True, computes what percentage of input units have been processed.
             This requires additional computation (re-runs the input query).
@@ -290,31 +281,39 @@ def get_feature_metadata_status(
     # Resolve to FeatureKey using the type adapter (handles all input types)
     key = ValidatedFeatureKeyAdapter.validate_python(feature_key)
 
-    # Look up feature class from the active graph
+    # Look up feature definition from the active graph
     graph = FeatureGraph.get_active()
-    if key not in graph.features_by_key:
+    if key not in graph.feature_definitions_by_key:
         raise ValueError(f"Feature {key.to_string()} not found in active graph")
-    feature_cls = graph.features_by_key[key]
+    definition = graph.feature_definitions_by_key[key]
 
-    target_version = feature_cls.feature_version()
+    target_version = graph.get_feature_version(key)
 
     # Check if this is a root feature (no upstream dependencies)
     plan = graph.get_feature_plan(key)
     is_root_feature = not plan.deps
 
     # Get row count for this feature version
-    id_columns = feature_cls.spec().id_columns
+    id_columns = definition.spec.id_columns
     id_columns_seq = tuple(id_columns) if id_columns is not None else None
 
     # Get store metadata (table_name, uri, etc.)
     store_metadata = metadata_store.get_store_metadata(key)
 
+    # Combine global_filters and target_filters for read
+    # (read doesn't distinguish them - it only reads the target feature)
+    combined_filters: list[nw.Expr] = []
+    if global_filters:
+        combined_filters.extend(global_filters)
+    if target_filters:
+        combined_filters.extend(target_filters)
+
     try:
-        metadata_lazy = metadata_store.read_metadata(
+        metadata_lazy = metadata_store.read(
             key,
             columns=list(id_columns_seq) if id_columns_seq is not None else None,
             allow_fallback=use_fallback,
-            filters=list(global_filters) if global_filters else None,
+            filters=combined_filters if combined_filters else None,
         )
         row_count = count_lazy_rows(metadata_lazy)
         metadata_exists = True
@@ -340,22 +339,21 @@ def get_feature_metadata_status(
 
     # For non-root features, resolve the update to get missing/stale/orphaned counts
     lazy_increment = metadata_store.resolve_update(
-        feature_cls,
+        key,
         lazy=True,
         global_filters=list(global_filters) if global_filters else None,
+        target_filters=list(target_filters) if target_filters else None,
     )
 
     # Count changes
-    missing_count = count_lazy_rows(lazy_increment.added)
-    stale_count = count_lazy_rows(lazy_increment.changed)
-    orphaned_count = count_lazy_rows(lazy_increment.removed)
+    missing_count = count_lazy_rows(lazy_increment.new)
+    stale_count = count_lazy_rows(lazy_increment.stale)
+    orphaned_count = count_lazy_rows(lazy_increment.orphaned)
 
     # Calculate progress if requested
     progress_percentage: float | None = None
     if compute_progress:
-        progress_percentage = metadata_store.calculate_input_progress(
-            lazy_increment, key
-        )
+        progress_percentage = metadata_store.calculate_input_progress(lazy_increment, key)
 
     status = FeatureMetadataStatus(
         feature_key=key,
@@ -369,6 +367,4 @@ def get_feature_metadata_status(
         store_metadata=store_metadata,
         progress_percentage=progress_percentage,
     )
-    return FeatureMetadataStatusWithIncrement(
-        status=status, lazy_increment=lazy_increment
-    )
+    return FeatureMetadataStatusWithIncrement(status=status, lazy_increment=lazy_increment)

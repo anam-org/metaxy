@@ -4,7 +4,7 @@ The skip_comparison parameter is used for backfilling scenarios where you want t
 write all upstream samples without checking what already exists in the store.
 
 When skip_comparison=True:
-- All upstream samples are returned in Increment.added
+- All upstream samples are returned in increment.new
 - changed and removed are empty frames
 - All system columns (metaxy_data_version, metaxy_provenance, etc.) are still computed
 """
@@ -15,12 +15,12 @@ from typing import Any
 
 import narwhals as nw
 import polars as pl
+from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import FeatureDep, FeatureGraph
-from metaxy._testing import add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -31,7 +31,7 @@ from metaxy.models.constants import (
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from tests.metadata_stores.conftest import (
-    BasicStoreCases,  # pyrefly: ignore[import-error]
+    BasicStoreCases,
 )
 
 
@@ -85,9 +85,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                     ],
                 }
             )
-            user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
-            )
+            user_samples = add_metaxy_provenance_column(user_samples, VideoEmbeddingsFeature)
 
             # Call resolve_update with skip_comparison=True
             result = store.resolve_update(
@@ -97,23 +95,23 @@ class TestResolveUpdateSkipComparisonRootFeatures:
             )
 
             # All samples should be in added
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
 
             # changed and removed should be empty
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
             # Verify system columns are present in added
             # Note: resolve_update returns provenance and data_version columns,
-            # but feature_version and snapshot_version are added by write_metadata
-            assert METAXY_PROVENANCE in result.added.columns
-            assert METAXY_PROVENANCE_BY_FIELD in result.added.columns
-            assert METAXY_DATA_VERSION in result.added.columns
-            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+            # but feature_version and project_version are added by write
+            assert METAXY_PROVENANCE in result.new.columns
+            assert METAXY_PROVENANCE_BY_FIELD in result.new.columns
+            assert METAXY_DATA_VERSION in result.new.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
             # Verify provenance_by_field matches input
-            added_df = result.added.to_polars().sort("sample_uid")
+            added_df = result.new.to_polars().sort("sample_uid")
             assert added_df[METAXY_PROVENANCE_BY_FIELD].to_list() == [
                 {"embedding": "hash1"},
                 {"embedding": "hash2"},
@@ -123,9 +121,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
             # Verify data_version equals provenance for root features
             for row in added_df.iter_rows(named=True):
                 assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
-                assert (
-                    row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
-                )
+                assert row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_skip_comparison_ignores_existing_metadata_root(
@@ -169,10 +165,8 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, VideoEmbeddingsFeature
-            )
-            store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, VideoEmbeddingsFeature)
+            store.write(VideoEmbeddingsFeature, initial_metadata)
 
             # Now resolve_update with skip_comparison=True
             # Provide the same samples plus a new one
@@ -186,9 +180,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
                     ],
                 }
             )
-            user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
-            )
+            user_samples = add_metaxy_provenance_column(user_samples, VideoEmbeddingsFeature)
 
             result = store.resolve_update(
                 VideoEmbeddingsFeature,
@@ -197,12 +189,12 @@ class TestResolveUpdateSkipComparisonRootFeatures:
             )
 
             # With skip_comparison=True, ALL samples should be in added (including existing ones)
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
 
             # changed and removed should be empty
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
 
 class TestResolveUpdateSkipComparisonDownstreamFeatures:
@@ -261,7 +253,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamFeature)
-            store.write_metadata(UpstreamFeature, upstream_data)
+            store.write(UpstreamFeature, upstream_data)
 
             # Call resolve_update on downstream with skip_comparison=True
             result = store.resolve_update(
@@ -270,18 +262,18 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
             )
 
             # All upstream samples should be in added
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
 
             # changed and removed should be empty
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
             # Verify system columns are present
-            assert METAXY_PROVENANCE in result.added.columns
-            assert METAXY_PROVENANCE_BY_FIELD in result.added.columns
-            assert METAXY_DATA_VERSION in result.added.columns
-            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+            assert METAXY_PROVENANCE in result.new.columns
+            assert METAXY_PROVENANCE_BY_FIELD in result.new.columns
+            assert METAXY_DATA_VERSION in result.new.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_skip_comparison_ignores_existing_metadata_downstream(
@@ -336,7 +328,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                 }
             )
             upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamFeature)
-            store.write_metadata(UpstreamFeature, upstream_data)
+            store.write(UpstreamFeature, upstream_data)
 
             # Write some downstream metadata (simulate existing data)
             existing_downstream = pl.DataFrame(
@@ -348,10 +340,8 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
                     ],
                 }
             )
-            existing_downstream = add_metaxy_provenance_column(
-                existing_downstream, DownstreamFeature
-            )
-            store.write_metadata(DownstreamFeature, existing_downstream)
+            existing_downstream = add_metaxy_provenance_column(existing_downstream, DownstreamFeature)
+            store.write(DownstreamFeature, existing_downstream)
 
             # Call resolve_update with skip_comparison=True
             result = store.resolve_update(
@@ -361,12 +351,12 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
 
             # With skip_comparison=True, ALL upstream samples should be in added
             # (not just the new one)
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
 
             # changed and removed should be empty
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
 
 class TestResolveUpdateSkipComparisonLazy:
@@ -430,23 +420,22 @@ class TestResolveUpdateSkipComparisonLazy:
             # Note: When passing Polars samples to DuckDB, the engine switches to Polars
             # So we expect either the native implementation or Polars
             expected_impl = store.native_implementation()
-            actual_impl = lazy_result.added.implementation
+            actual_impl = lazy_result.new.implementation
 
             # Allow Polars when samples are Polars (auto-switching behavior)
-            from narwhals import Implementation
 
-            assert actual_impl in [expected_impl, Implementation.POLARS]
-            assert lazy_result.changed.implementation == actual_impl
-            assert lazy_result.removed.implementation == actual_impl
+            assert actual_impl in [expected_impl, nw.Implementation.POLARS]
+            assert lazy_result.stale.implementation == actual_impl
+            assert lazy_result.orphaned.implementation == actual_impl
 
             # Collect the lazy result
             result = lazy_result.collect()
 
             # Verify the collected result has correct structure
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
 
 class TestResolveUpdateSkipComparisonDefaultBehavior:
@@ -490,10 +479,8 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, RootFeature
-            )
-            store.write_metadata(RootFeature, initial_metadata)
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, RootFeature)
+            store.write(RootFeature, initial_metadata)
 
             # Provide samples with skip_comparison=False (explicit, but it's the default)
             user_samples = pl.DataFrame(
@@ -516,16 +503,16 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
             )
 
             # With normal behavior, only NEW sample should be in added
-            assert len(result.added) == 1
-            assert result.added["sample_uid"].to_list() == [3]
+            assert len(result.new) == 1
+            assert result.new["sample_uid"].to_list() == [3]
 
             # Note: Some backends might detect existing samples as "changed" due to
             # implementation differences (e.g., timestamp precision, auto-switching).
             # The key test is that the new sample is properly detected.
             # For a more strict test, we'd need to ensure exact implementation match.
             # changed and removed should have no more than the existing samples
-            assert len(result.changed) <= 2
-            assert len(result.removed) == 0
+            assert len(result.stale) <= 2
+            assert len(result.orphaned) == 0
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_skip_comparison_explicit_false(
@@ -562,10 +549,8 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
                     ],
                 }
             )
-            initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, RootFeature
-            )
-            store.write_metadata(RootFeature, initial_metadata)
+            initial_metadata = add_metaxy_provenance_column(initial_metadata, RootFeature)
+            store.write(RootFeature, initial_metadata)
 
             # Provide samples with explicit skip_comparison=False
             user_samples = pl.DataFrame(
@@ -588,14 +573,14 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
             )
 
             # Only NEW sample should be in added
-            assert len(result.added) == 1
-            assert result.added["sample_uid"].to_list() == [3]
+            assert len(result.new) == 1
+            assert result.new["sample_uid"].to_list() == [3]
 
             # Note: Some backends might detect existing samples as "changed" due to
             # implementation differences. The key test is that the new sample is detected.
             # changed and removed should have no more than the existing samples
-            assert len(result.changed) <= 2
-            assert len(result.removed) == 0
+            assert len(result.stale) <= 2
+            assert len(result.orphaned) == 0
 
 
 class TestResolveUpdateSkipComparisonComplexScenarios:
@@ -634,9 +619,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                     key=FeatureKey(["intermediate"]),
                     deps=[FeatureDep(feature=RootFeature)],
                     fields=[
-                        FieldSpec(
-                            key=FieldKey(["intermediate_result"]), code_version="1"
-                        ),
+                        FieldSpec(key=FieldKey(["intermediate_result"]), code_version="1"),
                     ],
                 ),
             ):
@@ -667,7 +650,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             root_data = add_metaxy_provenance_column(root_data, RootFeature)
-            store.write_metadata(RootFeature, root_data)
+            store.write(RootFeature, root_data)
 
             # Write intermediate metadata
             intermediate_data = pl.DataFrame(
@@ -680,10 +663,8 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                     ],
                 }
             )
-            intermediate_data = add_metaxy_provenance_column(
-                intermediate_data, IntermediateFeature
-            )
-            store.write_metadata(IntermediateFeature, intermediate_data)
+            intermediate_data = add_metaxy_provenance_column(intermediate_data, IntermediateFeature)
+            store.write(IntermediateFeature, intermediate_data)
 
             # Call resolve_update on leaf with skip_comparison=True
             result = store.resolve_update(
@@ -692,12 +673,12 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
             )
 
             # All upstream samples should be in added
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
 
             # changed and removed should be empty
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0
 
     @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_skip_comparison_diamond_graph(
@@ -778,7 +759,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             root_data = add_metaxy_provenance_column(root_data, RootFeature)
-            store.write_metadata(RootFeature, root_data)
+            store.write(RootFeature, root_data)
 
             # Write branch A metadata
             branch_a_data = pl.DataFrame(
@@ -792,7 +773,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             branch_a_data = add_metaxy_provenance_column(branch_a_data, BranchAFeature)
-            store.write_metadata(BranchAFeature, branch_a_data)
+            store.write(BranchAFeature, branch_a_data)
 
             # Write branch B metadata
             branch_b_data = pl.DataFrame(
@@ -806,7 +787,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
                 }
             )
             branch_b_data = add_metaxy_provenance_column(branch_b_data, BranchBFeature)
-            store.write_metadata(BranchBFeature, branch_b_data)
+            store.write(BranchBFeature, branch_b_data)
 
             # Call resolve_update on leaf with skip_comparison=True
             result = store.resolve_update(
@@ -815,9 +796,9 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
             )
 
             # All upstream samples should be in added
-            assert len(result.added) == 3
-            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
+            assert len(result.new) == 3
+            assert sorted(result.new["sample_uid"].to_list()) == [1, 2, 3]
 
             # changed and removed should be empty
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
+            assert len(result.stale) == 0
+            assert len(result.orphaned) == 0

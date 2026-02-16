@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 import pytest
 from fastmcp import Client
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import FeatureKey, FieldKey, FieldSpec, MetaxyConfig
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.ext.mcp.server import create_server
 from metaxy.models.feature import BaseFeature
 
@@ -163,9 +163,7 @@ class TestGetFeature:
     async def test_returns_feature_spec(self, mcp_client: Client) -> None:
         _create_test_features()
 
-        result = await _call_tool(
-            mcp_client, "get_feature", feature_key="mcp_test/parent"
-        )
+        result = await _call_tool(mcp_client, "get_feature", feature_key="mcp_test/parent")
 
         assert result["key"] == "mcp_test/parent"
         assert "fields" in result
@@ -174,9 +172,7 @@ class TestGetFeature:
     async def test_includes_dependencies(self, mcp_client: Client) -> None:
         _create_test_features()
 
-        result = await _call_tool(
-            mcp_client, "get_feature", feature_key="mcp_test/child"
-        )
+        result = await _call_tool(mcp_client, "get_feature", feature_key="mcp_test/child")
 
         assert "deps" in result
         assert len(result["deps"]) == 1
@@ -232,9 +228,7 @@ class TestGetStore:
 class TestGetMetadata:
     """Tests for get_metadata tool."""
 
-    async def test_raises_for_feature_not_in_store(
-        self, mcp_client: Client, config: MetaxyConfig
-    ) -> None:
+    async def test_raises_for_feature_not_in_store(self, mcp_client: Client, config: MetaxyConfig) -> None:
         """When feature has no table in store, FeatureNotFoundError is raised."""
         _create_test_features()
 
@@ -250,9 +244,7 @@ class TestGetMetadata:
         # The error should mention the feature wasn't found
         assert "not found" in str(exc_info.value).lower()
 
-    async def test_returns_data_when_present(
-        self, mcp_client: Client, config: MetaxyConfig
-    ) -> None:
+    async def test_returns_data_when_present(self, mcp_client: Client, config: MetaxyConfig) -> None:
         parent_cls, _ = _create_test_features()
 
         store = config.get_store("dev")
@@ -268,8 +260,8 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+        with store.open("w"):
+            store.write(parent_cls, test_data)
 
         result = await _call_tool(
             mcp_client,
@@ -284,9 +276,7 @@ class TestGetMetadata:
         assert len(result["rows"]) == 2
         assert result["total_rows"] == 2
 
-    async def test_respects_limit(
-        self, mcp_client: Client, config: MetaxyConfig
-    ) -> None:
+    async def test_respects_limit(self, mcp_client: Client, config: MetaxyConfig) -> None:
         parent_cls, _ = _create_test_features()
 
         store = config.get_store("dev")
@@ -294,14 +284,12 @@ class TestGetMetadata:
             {
                 "sample_uid": [f"id_{i}" for i in range(5)],
                 "embedding": [[float(i)] for i in range(5)],
-                "metaxy_provenance_by_field": [
-                    {"embedding": f"hash{i}"} for i in range(5)
-                ],
+                "metaxy_provenance_by_field": [{"embedding": f"hash{i}"} for i in range(5)],
             }
         )
 
-        with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+        with store.open("w"):
+            store.write(parent_cls, test_data)
 
         result = await _call_tool(
             mcp_client,
@@ -314,9 +302,7 @@ class TestGetMetadata:
         assert result["total_rows"] == 3
         assert len(result["rows"]) == 3
 
-    async def test_select_columns(
-        self, mcp_client: Client, config: MetaxyConfig
-    ) -> None:
+    async def test_select_columns(self, mcp_client: Client, config: MetaxyConfig) -> None:
         parent_cls, _ = _create_test_features()
 
         store = config.get_store("dev")
@@ -331,8 +317,8 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+        with store.open("w"):
+            store.write(parent_cls, test_data)
 
         result = await _call_tool(
             mcp_client,
@@ -361,8 +347,8 @@ class TestGetMetadata:
             }
         )
 
-        with store.open("write"):
-            store.write_metadata(parent_cls, test_data)
+        with store.open("w"):
+            store.write(parent_cls, test_data)
 
         # Sort ascending
         result = await _call_tool(

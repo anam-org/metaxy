@@ -10,14 +10,14 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
 
+from metaxy._decorators import experimental, public
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
 from metaxy.models.constants import (
-    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_VERSION,
-    METAXY_FULL_DEFINITION_VERSION,
-    METAXY_SNAPSHOT_VERSION,
+    METAXY_PROJECT_VERSION,
 )
 from metaxy.models.feature_spec import FeatureSpec
 
@@ -52,17 +52,17 @@ def create_system_tables(
         # Composite primary key
         Column("project", String, primary_key=True, index=True),
         Column("feature_key", String, primary_key=True, index=True),
-        Column(METAXY_FEATURE_SPEC_VERSION, String, primary_key=True),
+        Column(METAXY_DEFINITION_VERSION, String, primary_key=True),
         # Versioning columns
         Column(METAXY_FEATURE_VERSION, String, index=True),
-        Column(METAXY_FULL_DEFINITION_VERSION, String, index=True),
-        Column(METAXY_SNAPSHOT_VERSION, String, index=True),
+        Column(METAXY_PROJECT_VERSION, String, index=True),
         # Metadata columns
         Column("recorded_at", DateTime, index=True),
         Column("feature_spec", String),
         Column("feature_schema", String),
         Column("feature_class_path", String),
         Column("tags", String, default="{}"),
+        Column("deleted_at", DateTime, nullable=True),
         Index(
             f"idx_{feature_versions_name}_lookup",
             "project",
@@ -149,6 +149,8 @@ def _get_system_metadata(
     return metadata
 
 
+@public
+@experimental
 def get_system_slqa_metadata(
     store: IbisMetadataStore,
     protocol: str | None = None,
@@ -190,7 +192,7 @@ def _get_features_metadata(
 ) -> MetaData:
     """Filter user-defined feature tables from source metadata by project.
 
-    This function must be called after init_metaxy() to ensure features are loaded.
+    This function must be called after init() to ensure features are loaded.
 
     Args:
         source_metadata: Source SQLAlchemy MetaData to filter (e.g., SQLModel.metadata)
@@ -226,17 +228,16 @@ def _get_features_metadata(
     expected_table_names = set()
     feature_specs_by_table_name = {}
 
-    for feature_key, feature_cls in graph.features_by_key.items():
+    for feature_key, definition in graph.feature_definitions_by_key.items():
         # Filter by project if requested
-        if filter_by_project and hasattr(feature_cls, "project"):
-            feature_project = getattr(feature_cls, "project")
-            if feature_project != project:
+        if filter_by_project:
+            if definition.project != project:
                 continue
 
         table_name = store.get_table_name(feature_key)
 
         expected_table_names.add(table_name)
-        feature_specs_by_table_name[table_name] = feature_cls.spec()
+        feature_specs_by_table_name[table_name] = definition.spec
 
     # Filter source metadata to only include expected tables
     filtered_metadata = MetaData()
@@ -274,10 +275,10 @@ def _inject_constraints(
     """
     from sqlalchemy import PrimaryKeyConstraint
 
-    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_FEATURE_VERSION
+    from metaxy.models.constants import METAXY_FEATURE_VERSION, METAXY_UPDATED_AT
 
-    # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-    key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
+    # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_updated_at
+    key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_UPDATED_AT]
 
     if inject_primary_key:
         table.append_constraint(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
@@ -286,6 +287,8 @@ def _inject_constraints(
         table.append_constraint(Index("metaxy_idx", *key_columns))
 
 
+@experimental
+@public
 def filter_feature_sqla_metadata(
     store: IbisMetadataStore,
     source_metadata: MetaData,
@@ -301,7 +304,7 @@ def filter_feature_sqla_metadata(
     This function filters the source metadata to include only feature tables
     belonging to the specified project, and returns the connection URL for the store.
 
-    This function must be called after init_metaxy() to ensure features are loaded.
+    This function must be called after init() to ensure features are loaded.
 
     Args:
         store: IbisMetadataStore instance
@@ -330,20 +333,18 @@ def filter_feature_sqla_metadata(
 
     Example: Basic Usage
 
+        <!-- skip next -->
         ```py
         from metaxy.ext.sqlalchemy import filter_feature_sqla_metadata
-        from metaxy import init_metaxy
-        from metaxy.config import MetaxyConfig
+        from sqlalchemy import MetaData
 
         # Load features first
-        init_metaxy()
+        mx.init()
 
         # Get store instance
-        config = MetaxyConfig.get()
+        config = mx.MetaxyConfig.get()
         store = config.get_store("my_store")
 
-        # With custom metadata
-        from sqlalchemy import MetaData
         my_metadata = MetaData()
         # ... define tables in my_metadata ...
 
@@ -353,9 +354,10 @@ def filter_feature_sqla_metadata(
 
     Example: With SQLModel
 
+        <!-- skip next -->
         ```py
-        # With SQLModel
         from sqlmodel import SQLModel
+
         url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
         ```
     """

@@ -4,11 +4,11 @@ from pathlib import Path
 
 import narwhals as nw
 import polars as pl
+from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature
-from metaxy._testing import add_metaxy_provenance_column
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.lineage import LineageRelationship
@@ -56,9 +56,7 @@ class TestExpansionRelationships:
         lineage = dep.lineage
         assert lineage is not None
         aggregation_cols = lineage.get_aggregation_columns(["video_id", "frame_id"])
-        assert aggregation_cols is None, (
-            f"Expected None for expansion relationships, got {aggregation_cols}"
-        )
+        assert aggregation_cols is None, f"Expected None for expansion relationships, got {aggregation_cols}"
 
         # Test with metadata store
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -74,7 +72,7 @@ class TestExpansionRelationships:
                 }
             )
             video_data = add_metaxy_provenance_column(video_data, Video)
-            store.write_metadata(Video, nw.from_native(video_data))
+            store.write(Video, nw.from_native(video_data))
 
             # Write child metadata (multiple frames per video)
             frames_data = pl.DataFrame(
@@ -93,14 +91,14 @@ class TestExpansionRelationships:
                 }
             )
             frames_data = add_metaxy_provenance_column(frames_data, VideoFrames)
-            store.write_metadata(VideoFrames, nw.from_native(frames_data))
+            store.write(VideoFrames, nw.from_native(frames_data))
 
             # Resolve update
-            diff = store.resolve_update(VideoFrames)
+            increment = store.resolve_update(VideoFrames)
 
             # Should detect changes (parent provenance vs child provenance)
-            assert diff.changed is not None
-            changed_df = diff.changed.to_polars()
+            assert increment.stale is not None
+            changed_df = increment.stale.to_polars()
             # Should group by parent ID, so 2 parent changes detected
             assert changed_df.shape[0] == 2
 
@@ -147,7 +145,7 @@ class TestExpansionRelationships:
                 }
             )
             article_data = add_metaxy_provenance_column(article_data, Article)
-            store.write_metadata(Article, nw.from_native(article_data))
+            store.write(Article, nw.from_native(article_data))
 
             # Child metadata (existing)
             para_data = pl.DataFrame(
@@ -165,14 +163,14 @@ class TestExpansionRelationships:
                 }
             )
             para_data = add_metaxy_provenance_column(para_data, ArticleParagraphs)
-            store.write_metadata(ArticleParagraphs, nw.from_native(para_data))
+            store.write(ArticleParagraphs, nw.from_native(para_data))
 
             # Resolve update
             diff = store.resolve_update(ArticleParagraphs)
 
             # Should detect changes based on parent provenance
-            assert diff.changed is not None
-            changed_df = diff.changed.to_polars()
+            assert diff.stale is not None
+            changed_df = diff.stale.to_polars()
 
             # Should have 2 groups (one per parent)
             assert changed_df.shape[0] == 2
@@ -185,9 +183,7 @@ class TestExpansionRelationships:
         from metaxy.models.lineage import ExpansionRelationship
 
         # With explicit 'on' parameter
-        rel1 = ExpansionRelationship(
-            on=["video_id"], id_generation_pattern="sequential"
-        )
+        rel1 = ExpansionRelationship(on=["video_id"], id_generation_pattern="sequential")
         result1 = rel1.get_aggregation_columns(["video_id", "frame_id"])
         assert result1 is None  # Expansion relationships don't aggregate during join
 

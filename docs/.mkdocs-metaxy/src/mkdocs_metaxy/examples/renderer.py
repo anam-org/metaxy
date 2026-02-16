@@ -4,7 +4,7 @@ This module provides rendering utilities for:
 - Scenario lists with descriptions
 - Source code in markdown code blocks
 - Diff patches in markdown code blocks
-- Execution events (commands, patches, graph pushes)
+- Execution events (commands, patches, pushing feature definitions)
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
+from metaxy_testing import CommandExecuted, GraphPushed, PatchApplied
 
 
 class ExampleRenderer:
@@ -22,9 +22,7 @@ class ExampleRenderer:
         """Initialize the renderer."""
         pass
 
-    def render_scenarios(
-        self, scenarios: list[dict[str, Any]], example_name: str
-    ) -> str:
+    def render_scenarios(self, scenarios: list[dict[str, Any]], example_name: str) -> str:
         """Render a list of scenarios as markdown.
 
         Args:
@@ -182,37 +180,27 @@ class ExampleRenderer:
         result += "\n"
         return result
 
-    def render_source_link(
-        self, example_name: str, button_style: bool = True, text: str | None = None
-    ) -> str:
+    def render_source_link(self, example_name: str, button_style: bool = True, text: str | None = None) -> str:
         """Render a GitHub source link for an example.
 
         Args:
             example_name: Name of the example.
             button_style: Whether to render as a button (True) or inline link (False).
-            text: Custom text for the link. Defaults to "View Example Source on GitHub".
+            text: Custom text for the link. Defaults to "View Source on GitHub".
 
         Returns:
             Markdown string with GitHub link.
         """
-        example_dir = (
-            f"example-{example_name}"
-            if not example_name.startswith("example-")
-            else example_name
-        )
-        github_url = (
-            f"https://github.com/anam-org/metaxy/tree/main/examples/{example_dir}"
-        )
+        example_dir = f"example-{example_name}" if not example_name.startswith("example-") else example_name
+        github_url = f"https://github.com/anam-org/metaxy/tree/main/examples/{example_dir}"
 
         if text is None:
-            text = "View Example Source on GitHub"
+            text = "View Source on GitHub"
 
         if button_style:
             return f"[:octicons-mark-github-16: {text}]({github_url}){{.md-button target=_blank}}\n\n"
         else:
-            return (
-                f"[:octicons-mark-github-16: {text}]({github_url}){{target=_blank}}\n\n"
-            )
+            return f"[:octicons-mark-github-16: {text}]({github_url}){{target=_blank}}\n\n"
 
     def render_error(self, message: str, details: str | None = None) -> str:
         """Render an error message as markdown.
@@ -289,9 +277,7 @@ class ExampleRenderer:
         except Exception as e:
             return f"```\nError rendering graph diff: {e}\n```"
 
-    def render_command_output(
-        self, event: CommandExecuted, show_command: bool = True
-    ) -> str:
+    def render_command_output(self, event: CommandExecuted, show_command: bool = True) -> str:
         """Render command execution output as markdown.
 
         Args:
@@ -318,9 +304,7 @@ class ExampleRenderer:
 
         return "\n".join(md_parts)
 
-    def render_patch_applied(
-        self, event: PatchApplied, graph_diff_md: str | None = None
-    ) -> str:
+    def render_patch_applied(self, event: PatchApplied, graph_diff_md: str | None = None) -> str:
         """Render patch application event as markdown.
 
         Args:
@@ -336,16 +320,10 @@ class ExampleRenderer:
         md_parts.append("")
 
         # Only show snapshot changes if they actually differ
-        if (
-            event.before_snapshot
-            and event.after_snapshot
-            and event.before_snapshot != event.after_snapshot
-        ):
+        if event.before_snapshot and event.after_snapshot and event.before_snapshot != event.after_snapshot:
             before_short = event.before_snapshot[:8]
             after_short = event.after_snapshot[:8]
-            md_parts.append(
-                f"Graph snapshot changed: `{before_short}...` → `{after_short}...`"
-            )
+            md_parts.append(f"Graph snapshot changed: `{before_short}...` → `{after_short}...`")
             md_parts.append("")
 
             # Include graph diff if provided
@@ -356,13 +334,13 @@ class ExampleRenderer:
         return "\n".join(md_parts)
 
     def render_graph_pushed(self, event: GraphPushed) -> str:
-        """Render graph push event as markdown.
+        """Render feature definitions push event as markdown.
 
         Args:
             event: GraphPushed event from execution state.
 
         Returns:
-            Markdown string describing the graph push.
+            Markdown string describing the push.
         """
-        snapshot_short = event.snapshot_version[:8]
+        snapshot_short = event.project_version[:8]
         return f"**Graph snapshot recorded:** `{snapshot_short}...`\n\n"

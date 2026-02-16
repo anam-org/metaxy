@@ -16,6 +16,7 @@ from narwhals.typing import Frame
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy._decorators import public
 from metaxy.metadata_store.base import (
     MetadataStore,
     MetadataStoreConfig,
@@ -80,6 +81,7 @@ class IbisMetadataStoreConfig(MetadataStoreConfig):
     )
 
 
+@public
 class IbisMetadataStore(MetadataStore, ABC):
     """
     Generic SQL metadata store using Ibis.
@@ -99,6 +101,7 @@ class IbisMetadataStore(MetadataStore, ABC):
     For other backends, override the calculator instance variable with backend-specific implementations.
 
     Example:
+        <!-- skip next -->
         ```py
         # ClickHouse
         store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
@@ -110,7 +113,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         store = IbisMetadataStore("duckdb:///metadata.db")
 
         with store:
-            store.write_metadata(MyFeature, df)
+            store.write(MyFeature, df)
         ```
     """
 
@@ -151,15 +154,13 @@ class IbisMetadataStore(MetadataStore, ABC):
             ImportError: If Ibis or required backend driver not installed
 
         Example:
+            <!-- skip next -->
             ```py
             # Using connection string
             store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
 
             # Using backend + params
-            store = IbisMetadataStore(
-                backend="clickhouse",
-                connection_params={"host": "localhost", "port": 9000}
-                )
+            store = IbisMetadataStore(backend="clickhouse", connection_params={"host": "localhost", "port": 9000})
             ```
         """
         from ibis.backends.sql import SQLBackend
@@ -208,9 +209,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return HashAlgorithm.MD5
 
     @contextmanager
-    def _create_versioning_engine(
-        self, plan: FeaturePlan
-    ) -> Iterator[IbisVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[IbisVersioningEngine]:
         """Create provenance engine for Ibis backend as a context manager.
 
         Args:
@@ -225,8 +224,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create provenance engine: store is not open. "
-                "Ensure store is used as context manager."
+                "Cannot create provenance engine: store is not open. Ensure store is used as context manager."
             )
 
         # Create hash functions for Ibis expressions
@@ -235,7 +233,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Create engine using the configured class (allows subclass override)
         engine = self.versioning_engine_cls(
             plan=plan,
-            hash_functions=hash_functions,
+            hash_functions=hash_functions,  # ty: ignore[unknown-argument]
         )
 
         try:
@@ -284,14 +282,12 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
 
         if self._conn is None:
-            raise StoreNotOpenError(
-                "Ibis connection is not open. Store must be used as a context manager."
-            )
+            raise StoreNotOpenError("Ibis connection is not open. Store must be used as a context manager.")
         else:
-            return self._conn  # ty: ignore[invalid-return-type]
+            return self._conn
 
     @contextmanager
-    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
+    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
         """Open connection to database via Ibis.
 
         Subclasses should override this to add backend-specific initialization
@@ -315,13 +311,11 @@ class IbisMetadataStore(MetadataStore, ABC):
                 # Setup: Connect to database
                 if self.connection_string:
                     # Use connection string
-                    self._conn = ibis.connect(self.connection_string)
+                    self._conn = ibis.connect(self.connection_string)  # ty: ignore[invalid-assignment]
                 else:
                     # Use backend + params
                     # Get backend-specific connect function
-                    assert self.backend is not None, (
-                        "backend must be set if connection_string is None"
-                    )
+                    assert self.backend is not None, "backend must be set if connection_string is None"
                     backend_module = getattr(ibis, self.backend)
                     self._conn = backend_module.connect(**self.connection_params)
 
@@ -358,6 +352,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             ValueError: If connection_string is not available
 
         Example:
+            <!-- skip next -->
             ```python
             store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
             print(store.sqlalchemy_url)  # postgresql://user:pass@host:5432/db
@@ -373,7 +368,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
 
-    def write_metadata_to_store(
+    def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
@@ -432,7 +427,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                     f"or use proper database migration tools like Alembic to create the table first."
                 ) from e
 
-    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop the table for a feature.
 
         Args:
@@ -444,12 +439,12 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
-    def _delete_metadata_impl(
+    def _delete_feature(
         self,
         feature_key: FeatureKey,
         filters: Sequence[nw.Expr] | None,
         *,
-        current_only: bool,  # noqa: ARG002 - version filtering handled by base class
+        with_feature_history: bool,  # noqa: ARG002 - version filtering handled by base class
     ) -> None:
         """Backend-specific hard delete implementation for SQL databases.
 
@@ -458,7 +453,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature to delete from
             filters: Narwhals expressions to filter records
-            current_only: Not used here - version filtering handled by base class
+            with_feature_history: Not used here - version filtering handled by base class
         """
         from metaxy.metadata_store.utils import (
             _extract_where_expression,
@@ -471,18 +466,14 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Handle empty filters - truncate entire table
         if not filter_list:
             if table_name not in self.conn.list_tables():
-                raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}."
-                )
-            self.conn.truncate_table(table_name)  # ty: ignore[unresolved-attribute]
+                raise TableNotFoundError(f"Table '{table_name}' does not exist for feature {feature_key.to_string()}.")
+            self.conn.truncate_table(table_name)
             return
 
         # Read and filter using store's lazy path to build WHERE clause
-        filtered = self.read_metadata_in_store(feature_key, filters=filter_list)
+        filtered = self._read_feature(feature_key, filters=filter_list)
         if filtered is None:
-            raise FeatureNotFoundError(
-                f"Feature {feature_key.to_string()} not found in store"
-            )
+            raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
 
         # Extract WHERE clause from compiled SELECT statement
         ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
@@ -491,9 +482,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         dialect = self._sql_dialect
         predicate = _extract_where_expression(select_sql, dialect=dialect)
         if predicate is None:
-            raise ValueError(
-                f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}"
-            )
+            raise ValueError(f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}")
 
         # Generate and execute DELETE statement
         predicate = predicate.transform(_strip_table_qualifiers())
@@ -507,7 +496,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Extract SQL dialect from the active backend connection."""
         return self.conn.name
 
-    def read_metadata_in_store(
+    def _read_feature(
         self,
         feature: CoercibleToFeatureKey,
         *,
@@ -549,9 +538,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
+            nw_lazy = nw_lazy.filter(nw.col("metaxy_feature_version") == feature_version)
 
         # Apply generic Narwhals filters (stays in SQL)
         if filters is not None:
@@ -565,9 +552,53 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
 
-    def transform_after_read(
-        self, table: "ibis.Table", feature_key: "FeatureKey"
-    ) -> "ibis.Table":
+    def ibis_type_to_polars(self, ibis_type: Any) -> Any:
+        """Convert an Ibis data type to the corresponding Polars data type.
+
+        Delegates to Ibis's built-in ``DataType.to_polars()`` for most types.
+        Provides fallbacks for types that Ibis cannot convert natively:
+
+        - ``Float16`` → ``pl.Float32``
+        - ``UUID`` → ``pl.String``
+        - ``JSON`` → ``pl.String``
+        - ``MACADDR`` → ``pl.String``
+        - ``INET`` → ``pl.String``
+        - ``GeoSpatial`` → ``pl.Binary``
+
+        Subclasses can override this method to handle store-specific types.
+
+        Args:
+            ibis_type: Ibis data type instance
+
+        Returns:
+            Corresponding Polars data type
+
+        Raises:
+            NotImplementedError: For types with no reasonable Polars mapping
+        """
+        import ibis.expr.datatypes as dt
+        import polars as pl
+
+        try:
+            return ibis_type.to_polars()
+        except NotImplementedError:
+            # Handle types that Ibis's to_polars() doesn't support
+            if isinstance(ibis_type, dt.Float16):
+                return pl.Float32
+            elif isinstance(ibis_type, dt.UUID):
+                return pl.String
+            elif isinstance(ibis_type, dt.JSON):
+                return pl.String
+            elif isinstance(ibis_type, dt.MACADDR):
+                return pl.String
+            elif isinstance(ibis_type, dt.INET):
+                return pl.String
+            elif isinstance(ibis_type, dt.GeoSpatial):
+                return pl.Binary
+            else:
+                raise
+
+    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
         """Transform Ibis table before wrapping with Narwhals.
 
         Override in subclasses to apply backend-specific transformations.
@@ -585,9 +616,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return table
 
-    def transform_before_write(
-        self, df: Frame, feature_key: "FeatureKey", table_name: str
-    ) -> Frame:
+    def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
         """Transform DataFrame before writing to the store.
 
         Override in subclasses to apply backend-specific transformations.
@@ -628,9 +657,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         sanitized_info = sanitize_uri(backend_info)
         return f"{self.__class__.__name__}(backend={sanitized_info})"
 
-    def _get_store_metadata_impl(
-        self, feature_key: CoercibleToFeatureKey
-    ) -> dict[str, Any]:
+    def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         """Return store metadata including table name.
 
         Args:

@@ -1,0 +1,10 @@
+--- a/src/example_expansion/features.py
++++ b/src/example_expansion/features.py
+@@ -9,6 +9,6 @@ class Video(
+         id_columns=["video_id"],
+         fields=[
+-            mx.FieldSpec(key="audio", code_version="1"),
++            mx.FieldSpec(key="audio", code_version="2"),
+             "frames",
+         ],
+     ),

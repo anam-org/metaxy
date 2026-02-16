@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from metaxy._testing import RunbookRunner
-from metaxy._testing.runbook import GraphPushed, PatchApplied
+from metaxy_testing import RunbookRunner
+from metaxy_testing.runbook import GraphPushed, PatchApplied
 
 
 def test_basic_runbook(tmp_path):
@@ -33,26 +33,20 @@ def test_basic_runbook(tmp_path):
         assert len(execution_state.events) > 0, "Should have recorded events"
 
         # Should have at least one GraphPushed event (initial push)
-        graph_pushed_events = [
-            e for e in execution_state.events if isinstance(e, GraphPushed)
-        ]
-        assert len(graph_pushed_events) >= 1, (
-            "Should have at least one GraphPushed event"
-        )
+        graph_pushed_events = [e for e in execution_state.events if isinstance(e, GraphPushed)]
+        assert len(graph_pushed_events) >= 1, "Should have at least one GraphPushed event"
 
         # Verify snapshot versions are non-empty
         for event in graph_pushed_events:
-            assert event.snapshot_version, "Snapshot version should not be empty"
+            assert event.project_version, "Snapshot version should not be empty"
 
         # The latest snapshot in events should match what's actually in the store
-        store_snapshot = runner.get_latest_snapshot_version()
+        store_snapshot = runner.get_latest_project_version()
         assert store_snapshot is not None, "Store should have a snapshot"
         assert execution_state.latest_snapshot == store_snapshot
 
         # Should have PatchApplied events (this example has patches)
-        patch_events = [
-            e for e in execution_state.events if isinstance(e, PatchApplied)
-        ]
+        patch_events = [e for e in execution_state.events if isinstance(e, PatchApplied)]
         assert len(patch_events) >= 1, "Should have at least one PatchApplied event"
 
         # Verify patch snapshots are accessible via property

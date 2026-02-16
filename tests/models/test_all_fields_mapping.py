@@ -1,7 +1,8 @@
 """Tests for AllFieldsMapping functionality."""
 
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.fields_mapping import AllFieldsMapping, FieldsMapping
 
@@ -27,9 +28,7 @@ def test_all_fields_mapping_returns_all():
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
-            deps=[
-                FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())
-            ],
+            deps=[FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())],
             fields=[
                 FieldSpec(
                     key=FieldKey(["combined"]),
@@ -67,9 +66,7 @@ def test_fields_mapping_all_classmethod():
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
-            deps=[
-                FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())
-            ],
+            deps=[FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())],
             fields=[
                 FieldSpec(
                     key=FieldKey(["combined"]),
@@ -187,9 +184,7 @@ def test_all_fields_mapping_vs_explicit_all():
         BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "with_mapping"]),
-            deps=[
-                FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())
-            ],
+            deps=[FeatureDep(feature=UpstreamFeature, fields_mapping=FieldsMapping.all())],
             fields=[
                 FieldSpec(
                     key=FieldKey(["field1"]),

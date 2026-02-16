@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 
 import polars as pl
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._version import __version__
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
@@ -35,7 +35,7 @@ def test_push_graph_snapshot_with_default_tags(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify tags field
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -74,7 +74,7 @@ def test_push_graph_snapshot_with_custom_tags(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot(tags=custom_tags)
 
             # Read and verify tags field
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -108,17 +108,13 @@ def test_push_graph_snapshot_tags_persist_across_pushes(tmp_path: Path):
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
-            SystemTableStorage(store).push_graph_snapshot(
-                tags={"environment": "staging"}
-            )
+            SystemTableStorage(store).push_graph_snapshot(tags={"environment": "staging"})
 
             # Second push (no changes, shouldn't write new rows)
-            SystemTableStorage(store).push_graph_snapshot(
-                tags={"environment": "production"}
-            )
+            SystemTableStorage(store).push_graph_snapshot(tags={"environment": "production"})
 
             # Read and verify - should only have one row (no changes)
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -152,9 +148,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
 
         with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
             # First push
-            SystemTableStorage(store).push_graph_snapshot(
-                tags={"environment": "staging", "build": "123"}
-            )
+            SystemTableStorage(store).push_graph_snapshot(tags={"environment": "staging", "build": "123"})
 
             # Change feature (metadata-only change)
             graph_v2 = FeatureGraph()
@@ -171,12 +165,10 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
                     pass
 
                 # Second push with different tags
-                SystemTableStorage(store).push_graph_snapshot(
-                    tags={"environment": "production", "build": "124"}
-                )
+                SystemTableStorage(store).push_graph_snapshot(tags={"environment": "production", "build": "124"})
 
                 # Read and verify - should have two rows
-                versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
 
@@ -225,13 +217,12 @@ def test_feature_versions_model_has_tags():
         project="test_project",
         feature_key="test/feature",
         metaxy_feature_version="abc123",
-        metaxy_feature_spec_version="def456",
-        metaxy_full_definition_version="ghi789",
+        metaxy_definition_version="ghi789",
         recorded_at=datetime.now(timezone.utc),
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestFeature",
-        metaxy_snapshot_version="jkl012",
+        metaxy_project_version="jkl012",
         tags={"custom_tag": "custom_value"},
     )
 
@@ -257,13 +248,12 @@ def test_feature_versions_model_has_tags():
         project="test_project",
         feature_key="test/feature",
         metaxy_feature_version="abc123",
-        metaxy_feature_spec_version="def456",
-        metaxy_full_definition_version="ghi789",
+        metaxy_definition_version="ghi789",
         recorded_at=datetime.now(timezone.utc),
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestFeature",
-        metaxy_snapshot_version="jkl012",
+        metaxy_project_version="jkl012",
         tags={},  # Explicit empty dict triggers validator
     )
 

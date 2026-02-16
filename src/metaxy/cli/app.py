@@ -5,18 +5,18 @@ from typing import Annotated
 
 import cyclopts
 
-from metaxy import init_metaxy
+from metaxy import init
 from metaxy._version import __version__
 from metaxy.cli.console import console, error_console
 
 # Main app
 app = cyclopts.App(
-    name="metaxy",  # pyrefly: ignore[unexpected-keyword]
-    version=__version__,  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
-    config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]  # ty: ignore[invalid-argument-type]
-        "METAXY_",  # Every environment variable for setting the arguments will begin with this.  # pyrefly: ignore[bad-argument-count]
+    name="metaxy",
+    version=__version__,
+    console=console,
+    error_console=error_console,
+    config=cyclopts.config.Env(  # ty: ignore[invalid-argument-type]
+        "METAXY_",  # Every environment variable for setting the arguments will begin with this.
     ),
     help_epilogue="Learn more in [Metaxy docs](https://docs.metaxy.io)",
 )
@@ -37,29 +37,44 @@ def launcher(
     config_file: Annotated[
         Path | None,
         cyclopts.Parameter(
-            None,
-            help="Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.",
+            None, help="Path to the Metaxy configuration file. Defaults to auto-discovery.", group="Global"
         ),
     ] = None,
     project: Annotated[
         str | None,
         cyclopts.Parameter(
-            None,
-            help="Global option. Metaxy project to work with. Some commands may forbid setting this argument.",
+            None, help="Metaxy project to work with. Some commands may forbid setting this argument.", group="Global"
         ),
     ] = None,
     all_projects: Annotated[
         bool,
         cyclopts.Parameter(
             name=["--all-projects"],
-            help="Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.",
+            help="Operate on all available Metaxy projects. Some commands may forbid setting this argument.",
+            group="Global",
+        ),
+    ] = False,
+    sync: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--sync"],
+            help="Load external feature definitions from the metadata store before executing the command.",
+            group="Global",
+        ),
+    ] = False,
+    locked: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--locked"],
+            help="When used with --sync, raise an error if external feature versions don't match the actual versions from the metadata store.",
+            group="Global",
         ),
     ] = False,
 ):
     """Metaxy CLI.
 
     Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
-    Feature definitions are collected via [feature discovery](https://docs.metaxy.io/main/learn/feature-discovery/).
+    Feature definitions are collected via [feature discovery](https://docs.metaxy.io/latest/learn/feature-discovery/).
     Supports loading environment variables from a `.env` file in the current directory.
     """
     import logging
@@ -69,25 +84,29 @@ def launcher(
 
     # Load Metaxy configuration with parent directory search
     # This handles TOML discovery, env vars, and entrypoint loading
-    config = init_metaxy(config_file=config_file, search_parents=True)
+    config = init(config_file)
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed
     from metaxy.cli.context import AppContext
 
-    AppContext.set(config, cli_project=project, all_projects=all_projects)
+    AppContext.set(config, cli_project=project, all_projects=all_projects, sync=sync, locked=locked)
 
     # Run the actual command
     app(tokens)
 
 
 # Register subcommands (lazy loading via import strings)
+app.command("metaxy.cli.config:app", name="config")
+app.command("metaxy.cli.describe:app", name="describe")
 app.command("metaxy.cli.migrations:app", name="migrations")
 app.command("metaxy.cli.graph:app", name="graph")
 app.command("metaxy.cli.graph_diff:app", name="graph-diff")
 app.command("metaxy.cli.list:app", name="list")
 app.command("metaxy.cli.metadata:app", name="metadata")
 app.command("metaxy.cli.mcp:app", name="mcp")
+app.command("metaxy.cli.push:app", name="push")
+app.command("metaxy.cli.lock:app", name="lock")
 
 
 def main():

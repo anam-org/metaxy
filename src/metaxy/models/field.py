@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal
 from pydantic import BaseModel, BeforeValidator, TypeAdapter
 from pydantic import Field as PydanticField
 
+from metaxy._decorators import public
 from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.types import (
     CoercibleToFieldKey,
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
 
 
+@public
 class SpecialFieldDep(Enum):
     ALL = "__METAXY_ALL_DEP__"
 
@@ -51,13 +53,12 @@ def _validate_field_dep_fields(
         if value == SpecialFieldDep.ALL.value:
             return SpecialFieldDep.ALL
         # Invalid string value - will be caught by Pydantic validation
-        raise ValueError(
-            f"String value must be {SpecialFieldDep.ALL.value}, got {value}"
-        )
+        raise ValueError(f"String value must be {SpecialFieldDep.ALL.value}, got {value}")
     # Validate as list of FieldKeys
     return TypeAdapter(list[FieldKey]).validate_python(value)
 
 
+@public
 class FieldDep(BaseModel):
     model_config = {"extra": "forbid"}
 
@@ -72,13 +73,8 @@ class FieldDep(BaseModel):
         def __init__(
             self,
             *,
-            feature: str
-            | Sequence[str]
-            | FeatureKey
-            | "FeatureSpec"
-            | type["BaseFeature"],
-            fields: list[CoercibleToFieldKey]
-            | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+            feature: str | Sequence[str] | FeatureKey | "FeatureSpec" | type["BaseFeature"],
+            fields: list[CoercibleToFieldKey] | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
         ) -> None: ...
 
 
@@ -109,6 +105,7 @@ def _validate_field_spec_key(value: Any) -> FieldKey:
     return FieldKeyAdapter.validate_python(value)
 
 
+@public
 class FieldSpec(BaseModel):
     model_config = {"extra": "forbid"}
 

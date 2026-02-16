@@ -5,357 +5,19 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
-from metaxy._testing import TempMetaxyProject
-
-
-def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject):
-    """Test that drop requires either --feature or --all-features."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for the feature
-        metaxy_project.write_sample_metadata("video/files")
-
-        # Try to drop without specifying features
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--confirm", "--format", "json"], check=False
-        )
-
-        assert result.returncode == 1
-        error = json.loads(result.stdout)
-        assert error["error"] == "MISSING_REQUIRED_FLAG"
-        assert "--all-features" in str(error["required_flags"])
-        assert "--feature" in str(error["required_flags"])
-
-
-def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
-    """Test that drop requires --confirm flag."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for the feature
-        metaxy_project.write_sample_metadata("video/files")
-
-        # Try to drop without --confirm
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--feature", "video/files", "--format", "json"],
-            check=False,
-        )
-
-        assert result.returncode == 1
-        error = json.loads(result.stdout)
-        assert error["error"] == "MISSING_CONFIRMATION"
-        assert "--confirm" in error["required_flag"]
-
-
-def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
-    """Test dropping metadata for a single feature."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-        class AudioFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for both features
-        metaxy_project.write_sample_metadata("video/files")
-        metaxy_project.write_sample_metadata("audio/files")
-
-        # Drop one feature
-        result = metaxy_project.run_cli(
-            [
-                "metadata",
-                "drop",
-                "--feature",
-                "video/files",
-                "--confirm",
-                "--format",
-                "json",
-            ]
-        )
-
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["success"] is True
-        assert data["features_dropped"] == 1
-        assert "video/files" in data["dropped"]
-
-
-def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
-    """Test dropping metadata for multiple features."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-        class AudioFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-        class TextFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["text", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for all features
-        metaxy_project.write_sample_metadata("video/files")
-        metaxy_project.write_sample_metadata("audio/files")
-        metaxy_project.write_sample_metadata("text/files")
-
-        # Drop multiple features
-        result = metaxy_project.run_cli(
-            [
-                "metadata",
-                "drop",
-                "--feature",
-                "video/files",
-                "--feature",
-                "audio/files",
-                "--confirm",
-                "--format",
-                "json",
-            ]
-        )
-
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["success"] is True
-        assert data["features_dropped"] == 2
-        assert "video/files" in data["dropped"]
-        assert "audio/files" in data["dropped"]
-
-
-def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
-    """Test dropping metadata for all features."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-        class AudioFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for both features
-        metaxy_project.write_sample_metadata("video/files")
-        metaxy_project.write_sample_metadata("audio/files")
-
-        # Drop all features
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--all-features", "--confirm"]
-        )
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for both features
-        metaxy_project.write_sample_metadata("video/files")
-        metaxy_project.write_sample_metadata("audio/files")
-
-        # Drop all features
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"]
-        )
-
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["success"] is True
-        assert data["features_dropped"] == 2
-        assert len(data["dropped"]) == 2
-
-
-def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
-    """Test dropping from an empty store succeeds (idempotent operation)."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Don't write any metadata - store is empty
-
-        # Drop all features from empty store - should succeed (idempotent)
-        result = metaxy_project.run_cli(
-            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"]
-        )
-
-        # Should succeed - drop is idempotent even if no metadata exists
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["success"] is True
-        assert data["features_dropped"] == 1
-
-
-def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
-    """Test that cannot specify both --feature and --all-features."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Try to specify both flags
-        result = metaxy_project.run_cli(
-            [
-                "metadata",
-                "drop",
-                "--feature",
-                "video/files",
-                "--all-features",
-                "--confirm",
-                "--format",
-                "json",
-            ],
-            check=False,
-        )
-
-        assert result.returncode == 1
-        error = json.loads(result.stdout)
-        assert error["error"] == "CONFLICTING_FLAGS"
-
-
-def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
-    """Test dropping metadata with explicit --store flag."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        # Write actual metadata for the feature
-        metaxy_project.write_sample_metadata("video/files")
-
-        # Drop with explicit store
-        result = metaxy_project.run_cli(
-            [
-                "metadata",
-                "drop",
-                "--store",
-                "dev",
-                "--feature",
-                "video/files",
-                "--confirm",
-                "--format",
-                "json",
-            ]
-        )
-
-        assert result.returncode == 0
-        data = json.loads(result.stdout)
-        assert data["success"] is True
-        assert "video/files" in data["dropped"]
+from metaxy_testing import TempMetaxyProject
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_up_to_date(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Status command when metadata is up-to-date for both formats."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         # Create a root feature
         class VideoFilesRoot(
@@ -390,22 +52,22 @@ def test_metadata_status_up_to_date(
         # Now compute and write downstream metadata with correct provenance
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            store.write(feature_key, increment.new.to_polars())
 
         # Check status for the non-root feature
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -427,13 +89,14 @@ def test_metadata_status_up_to_date(
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_missing_metadata(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Status command when metadata is missing."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -463,11 +126,11 @@ def test_metadata_status_missing_metadata(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -487,12 +150,13 @@ def test_metadata_status_missing_metadata(
             assert "3" in result.stdout  # Missing count
 
 
-def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject):
+def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that --assert-in-sync fails when metadata needs updates."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -519,8 +183,9 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
         # Check status with --assert-in-sync
         result = metaxy_project.run_cli(
-            ["metadata", "status", "--feature", "video/files", "--assert-in-sync"],
+            ["metadata", "status", "video/files", "--assert-in-sync"],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
@@ -528,13 +193,14 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_multiple_features(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Status command with multiple features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class FilesRoot(
             BaseFeature,
@@ -575,13 +241,12 @@ def test_metadata_status_multiple_features(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
-                "--feature",
                 "audio/files",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -596,13 +261,14 @@ def test_metadata_status_multiple_features(
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_invalid_feature_key(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Status command with a feature missing from the graph."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -629,12 +295,12 @@ def test_metadata_status_invalid_feature_key(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "nonexistent/feature",
                 "--format",
                 output_format,
             ],
             check=False,
+            capsys=capsys,
         )
 
         # Should show warning and continue
@@ -649,13 +315,14 @@ def test_metadata_status_invalid_feature_key(
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_with_verbose(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Status command with --verbose flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -684,12 +351,12 @@ def test_metadata_status_with_verbose(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
                 "--verbose",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -706,13 +373,14 @@ def test_metadata_status_with_verbose(
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_with_explicit_store(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Status command with explicit --store flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -745,24 +413,24 @@ def test_metadata_status_with_explicit_store(
         # Now compute and write downstream metadata with correct provenance
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            store.write(feature_key, increment.new.to_polars())
 
         # Check status with explicit store
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--store",
                 "dev",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -778,12 +446,13 @@ def test_metadata_status_with_explicit_store(
             assert "✓" in result.stdout
 
 
-def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject):
-    """Test that status requires either --feature or --all-features."""
+def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that status requires either feature arguments or --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -796,23 +465,24 @@ def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProje
 
     with metaxy_project.with_features(features):
         # Try to check status without specifying features
-        result = metaxy_project.run_cli(
-            ["metadata", "status", "--format", "json"], check=False
-        )
+        result = metaxy_project.run_cli(["metadata", "status", "--format", "json"], check=False, capsys=capsys)
 
         assert result.returncode == 1
         error = json.loads(result.stdout)
         assert error["error"] == "MISSING_REQUIRED_FLAG"
         assert "--all-features" in str(error["required_flags"])
-        assert "--feature" in str(error["required_flags"])
+        assert "<features>" in str(error["required_flags"])
 
 
-def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
-    """Test that cannot specify both --feature and --all-features."""
+def test_metadata_status_cannot_specify_both_flags(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
+    """Test that cannot specify both feature arguments and --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -829,13 +499,13 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--all-features",
                 "--format",
                 "json",
             ],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
@@ -845,13 +515,14 @@ def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyPro
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_all_features(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Test status command with --all-features flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class FilesRoot(
             BaseFeature,
@@ -888,7 +559,7 @@ def test_metadata_status_all_features(
 
         # Check status for all features
         result = metaxy_project.run_cli(
-            ["metadata", "status", "--all-features", "--format", output_format]
+            ["metadata", "status", "--all-features", "--format", output_format], capsys=capsys
         )
 
         assert result.returncode == 0
@@ -912,13 +583,14 @@ def test_metadata_status_all_features(
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_root_feature(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Test status command for a root feature (no upstream dependencies)."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -938,11 +610,11 @@ def test_metadata_status_root_feature(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root_feature",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -966,13 +638,14 @@ def test_metadata_status_root_feature(
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_metadata_status_root_feature_missing_metadata(
-    metaxy_project: TempMetaxyProject, output_format: str
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
     """Test status command for a root feature with no metadata."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -991,11 +664,11 @@ def test_metadata_status_root_feature_missing_metadata(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root_feature",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1015,14 +688,19 @@ def test_metadata_status_root_feature_missing_metadata(
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_filter(
-    metaxy_project: TempMetaxyProject, output_format: str
+def test_metadata_status_with_global_filter(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
-    """Test status command with --filter flag to filter metadata by column value."""
+    """Test status command with --global-filter flag to filter metadata by column value.
+
+    --global-filter applies to all features (both upstream and target), which is needed
+    when you want to filter the entire pipeline by a common column like 'category'.
+    """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1055,40 +733,37 @@ def test_metadata_status_with_filter(
                 "sample_uid": [1, 2, 3, 4, 5],
                 "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
                 "category": ["A", "A", "B", "B", "A"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
             }
         )
 
         feature_key_root = FeatureKey(["video", "files_root"])
-        feature_cls_root = graph.get_feature_by_key(feature_key_root)
 
         with graph.use(), store:
-            store.write_metadata(feature_cls_root, upstream_data)
+            store.write(feature_key_root, upstream_data)
 
         # Write downstream metadata for only category A samples (3 samples)
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
+            # feature_cls removed - using feature_key directly
             # Resolve the full increment first
-            increment = store.resolve_update(feature_cls, lazy=False)
+            increment = store.resolve_update(feature_key, lazy=False)
             # Filter to only category A samples and write
-            added_df = increment.added.to_polars().filter(pl.col("category") == "A")
-            store.write_metadata(feature_cls, added_df)
+            added_df = increment.new.to_polars().filter(pl.col("category") == "A")
+            store.write(feature_key, added_df)
 
-        # Check status with filter for category A - should be up-to-date
+        # Check status with global-filter for category A - should be up-to-date
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
-                "--filter",
+                "--global-filter",
                 "category = 'A'",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1106,18 +781,18 @@ def test_metadata_status_with_filter(
             assert "✓" in result.stdout  # Up-to-date icon
             assert "3" in result.stdout  # Materialized count
 
-        # Check status with filter for category B - should need updates
+        # Check status with global-filter for category B - should need updates
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
-                "--filter",
+                "--global-filter",
                 "category = 'B'",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1137,12 +812,13 @@ def test_metadata_status_with_filter(
             assert "2" in result.stdout  # Missing count
 
 
-def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test status command with invalid --filter syntax."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -1159,7 +835,6 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--filter",
                 "invalid syntax !!!",
@@ -1167,6 +842,7 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
                 "json",
             ],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
@@ -1175,14 +851,15 @@ def test_metadata_status_with_invalid_filter(metaxy_project: TempMetaxyProject):
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
-def test_metadata_status_with_multiple_filters(
-    metaxy_project: TempMetaxyProject, output_format: str
+def test_metadata_status_with_multiple_global_filters(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
 ):
-    """Test status command with multiple --filter flags (combined with AND)."""
+    """Test status command with multiple --global-filter flags (combined with AND)."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1216,40 +893,37 @@ def test_metadata_status_with_multiple_filters(
                 "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
                 "category": ["A", "A", "B", "B", "A"],
                 "status": ["active", "inactive", "active", "inactive", "active"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
             }
         )
 
         feature_key_root = FeatureKey(["video", "files_root"])
-        feature_cls_root = graph.get_feature_by_key(feature_key_root)
 
         with graph.use(), store:
-            store.write_metadata(feature_cls_root, upstream_data)
+            store.write(feature_key_root, upstream_data)
 
         # Write downstream metadata for all samples
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
+            store.write(feature_key, increment.new.to_polars())
 
-        # Check status with multiple filters: category A AND status active
+        # Check status with multiple global-filters: category A AND status active
         # Should match sample_uids 1 and 5
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
-                "--filter",
+                "--global-filter",
                 "category = 'A'",
-                "--filter",
+                "--global-filter",
                 "status = 'active'",
                 "--format",
                 output_format,
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1264,6 +938,156 @@ def test_metadata_status_with_multiple_filters(
             assert "video/files" in result.stdout
             assert "✓" in result.stdout  # Up-to-date icon
             assert "2" in result.stdout  # Materialized count
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_root_feature_with_filter_after_overwrites(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
+    """Test status command with --filter on a root feature after writing updated rows.
+
+    This tests the scenario where:
+    1. Initial write has some rows with a column as NULL
+    2. Later writes update those rows with non-NULL values
+    3. Filter by IS NULL / IS NOT NULL should show the correct counts
+       based on the LATEST version of each row (timestamp-based deduplication)
+    """
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class RawVideoRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["raw_video", "root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        feature_key = FeatureKey(["raw_video", "root"])
+        # feature_cls removed - using feature_key directly
+
+        # Step 1: Write initial data where all rows have height=NULL
+        # Cast height to Int64 to avoid DuckDB's NULL-typed column issue
+        initial_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3, 4, 5],
+                "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
+                "height": pl.Series([None, None, None, None, None], dtype=pl.Int64),
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
+            }
+        )
+
+        with graph.use(), store:
+            store.write(feature_key, initial_data)
+
+        # Step 2: Write updated data for samples 1, 2, 3 with height filled
+        # (This simulates overwriting the same samples with updated values)
+        import time
+
+        time.sleep(0.01)  # Ensure different metaxy_created_at timestamps
+        updated_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["val_1_updated", "val_2_updated", "val_3_updated"],
+                "height": [100, 200, 300],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}_v2"} for i in range(1, 4)],
+            }
+        )
+
+        with graph.use(), store:
+            store.write(feature_key, updated_data)
+
+        # After deduplication:
+        # - Samples 1, 2, 3 should have the latest version (height filled)
+        # - Samples 4, 5 should still have height=NULL
+        # Total: 5 unique samples
+
+        # Check status WITHOUT filter - should show 5 rows
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "raw_video/root",
+                "--format",
+                output_format,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["raw_video/root"]
+            assert feature["store_rows"] == 5  # Total unique samples after dedup
+        else:
+            assert "raw_video/root" in result.stdout
+            assert "5" in result.stdout  # Materialized count
+
+        # Check status with filter for height IS NULL - should show 2 rows (samples 4, 5)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "raw_video/root",
+                "--filter",
+                "height IS NULL",
+                "--format",
+                output_format,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["raw_video/root"]
+            # Only samples 4 and 5 should have NULL height after deduplication
+            assert feature["store_rows"] == 2, (
+                f"Expected 2 rows with height IS NULL, got {feature['store_rows']}. "
+                "Filter should apply AFTER deduplication."
+            )
+        else:
+            assert "raw_video/root" in result.stdout
+            # Should show 2 in the Materialized column
+            assert "2" in result.stdout
+
+        # Check status with filter for height IS NOT NULL - should show 3 rows (samples 1, 2, 3)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "raw_video/root",
+                "--filter",
+                "height IS NOT NULL",
+                "--format",
+                output_format,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["raw_video/root"]
+            # Samples 1, 2, 3 should have non-NULL height after deduplication
+            assert feature["store_rows"] == 3, (
+                f"Expected 3 rows with height IS NOT NULL, got {feature['store_rows']}. "
+                "Filter should apply AFTER deduplication."
+            )
+        else:
+            assert "raw_video/root" in result.stdout
+            # Should show 3 in the Materialized column
+            assert "3" in result.stdout
 
 
 def test_metadata_status_error_representation():
@@ -1308,14 +1132,16 @@ def test_metadata_status_with_progress_flag(
     metaxy_project: TempMetaxyProject,
     output_format: str,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test status command with --progress flag."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1343,29 +1169,27 @@ def test_metadata_status_with_progress_flag(
         store = metaxy_project.stores["dev"]
 
         # Write upstream metadata (5 samples)
-        metaxy_project.write_sample_metadata(
-            "video/files_root", id_values={"sample_uid": [1, 2, 3, 4, 5]}
-        )
+        metaxy_project.write_sample_metadata("video/files_root", id_values={"sample_uid": [1, 2, 3, 4, 5]})
 
         # Write downstream metadata for only 2 out of 5 samples (40% processed)
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
-            partial_data = increment.added.to_polars().head(2)
-            store.write_metadata(feature_cls, partial_data)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
+            partial_data = increment.new.to_polars().head(2)
+            store.write(feature_key, partial_data)
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
                 "--progress",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1389,14 +1213,16 @@ def test_metadata_status_verbose_includes_progress(
     metaxy_project: TempMetaxyProject,
     output_format: str,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that --verbose flag also enables progress calculation."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1429,22 +1255,22 @@ def test_metadata_status_verbose_includes_progress(
         # Write downstream for only 1 out of 3 samples
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
-            partial_data = increment.added.to_polars().head(1)
-            store.write_metadata(feature_cls, partial_data)
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
+            partial_data = increment.new.to_polars().head(1)
+            store.write(feature_key, partial_data)
 
         # Check status with --verbose (should also include progress)
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 output_format,
                 "--verbose",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1464,15 +1290,16 @@ def test_metadata_status_verbose_includes_progress(
 
 
 def test_metadata_status_progress_for_root_feature(
-    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     """Test that root features show no progress (None) since they have no upstream input."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -1492,12 +1319,12 @@ def test_metadata_status_progress_for_root_feature(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root_feature",
                 "--format",
                 "json",
                 "--progress",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1505,22 +1332,20 @@ def test_metadata_status_progress_for_root_feature(
         feature = data["features"]["root_feature"]
         assert feature["is_root_feature"] is True
         # Root features should have no progress (None excluded from JSON or null)
-        assert (
-            "progress_percentage" not in feature
-            or feature["progress_percentage"] is None
-        )
+        assert "progress_percentage" not in feature or feature["progress_percentage"] is None
 
 
 def test_metadata_status_progress_100_percent(
-    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     """Test that fully processed features show 100% progress."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -1553,21 +1378,21 @@ def test_metadata_status_progress_100_percent(
         # Write downstream metadata for all samples
         with graph.use(), store:
             feature_key = FeatureKey(["video", "files"])
-            feature_cls = graph.get_feature_by_key(feature_key)
-            increment = store.resolve_update(feature_cls, lazy=False)
-            store.write_metadata(feature_cls, increment.added.to_polars())
+            # feature_cls removed - using feature_key directly
+            increment = store.resolve_update(feature_key, lazy=False)
+            store.write(feature_key, increment.new.to_polars())
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 "json",
                 "--progress",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1588,8 +1413,9 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
     """Test that hard delete without filters requires --yes flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1605,9 +1431,11 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
         metaxy_project.write_sample_metadata("logs")
 
         # Try hard delete without --yes and without filters
+        # Use subprocess=True because error output goes to different streams in direct mode
         result = metaxy_project.run_cli(
-            ["metadata", "delete", "--feature", "logs", "--soft=false"],
+            ["metadata", "delete", "logs", "--soft=false"],
             check=False,
+            subprocess=True,
         )
 
         assert result.returncode == 1
@@ -1615,12 +1443,13 @@ def test_metadata_delete_requires_yes_for_hard_delete_without_filters(
         assert "MISSING_CONFIRMATION" in output or "requires --yes" in output
 
 
-def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test soft delete with a filter."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1652,22 +1481,22 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write(feature_key, test_data)
 
         # Soft delete debug logs
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "level = 'debug'",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1677,25 +1506,22 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
 
         # Verify data was soft deleted
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read(feature_key).collect().to_polars()
             assert remaining.height == 2
             assert set(remaining["level"]) == {"info", "warn"}
 
             # Check soft deleted is still in store when including deleted
-            all_data = (
-                store.read_metadata(feature_cls, include_soft_deleted=True)
-                .collect()
-                .to_polars()
-            )
+            all_data = store.read(feature_key, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 3
 
 
-def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test hard delete with a filter."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1727,22 +1553,22 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write(feature_key, test_data)
 
         # Hard delete debug logs
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "level = 'debug'",
                 "--soft=false",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1752,25 +1578,22 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
 
         # Verify data was physically removed
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read(feature_key).collect().to_polars()
             assert remaining.height == 2
             assert set(remaining["level"]) == {"info", "warn"}
 
             # Check that hard-deleted row is NOT in store even when including deleted
-            all_data = (
-                store.read_metadata(feature_cls, include_soft_deleted=True)
-                .collect()
-                .to_polars()
-            )
+            all_data = store.read(feature_key, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 2
 
 
-def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test deleting metadata from multiple features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class LogsA(
             BaseFeature,
@@ -1800,14 +1623,13 @@ def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs_a",
-                "--feature",
                 "logs_b",
                 "--filter",
                 "sample_uid = 1",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1815,12 +1637,13 @@ def test_metadata_delete_multiple_features(metaxy_project: TempMetaxyProject):
         assert "Deletion complete" in output
 
 
-def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test deleting from all features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class LogsA(
             BaseFeature,
@@ -1854,7 +1677,8 @@ def test_metadata_delete_all_features(metaxy_project: TempMetaxyProject):
                 "--filter",
                 "sample_uid = 1",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -1866,8 +1690,9 @@ def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
     """Test that delete warns about missing features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1880,29 +1705,31 @@ def test_metadata_delete_invalid_feature(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Try to delete from non-existent feature
+        # Use subprocess=True because error output goes to different streams in direct mode
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "nonexistent/feature",
                 "--filter",
                 "sample_uid = 1",
                 "--soft",
             ],
             check=False,
+            subprocess=True,
         )
 
         assert result.returncode == 1
         assert "NO_FEATURES" in result.stdout or "No valid features" in result.stdout
 
 
-def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test delete with multiple filters combined with AND."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1926,48 +1753,47 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "level": ["debug", "debug", "info", "warn"],
                 "status": ["old", "new", "old", "new"],
-                METAXY_PROVENANCE_BY_FIELD: [
-                    {"level": f"p{i}", "status": f"p{i}"} for i in range(1, 5)
-                ],
+                METAXY_PROVENANCE_BY_FIELD: [{"level": f"p{i}", "status": f"p{i}"} for i in range(1, 5)],
             }
         )
 
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            store.write_metadata(feature_cls, test_data)
+            store.write(feature_key, test_data)
 
         # Delete debug AND old (should delete only s1)
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "level = 'debug'",
                 "--filter",
                 "status = 'old'",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
 
         # Verify only s1 was deleted
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read(feature_key).collect().to_polars()
             assert remaining.height == 3
             assert "s1" not in remaining["sample_uid"].to_list()
 
 
-def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test delete with invalid filter syntax."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -1984,25 +1810,26 @@ def test_metadata_delete_with_invalid_filter(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--filter",
                 "invalid syntax !!!",
                 "--soft",
             ],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
         assert "Invalid filter syntax" in result.stderr
 
 
-def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
+def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test deleting all rows with --yes flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -2027,11 +1854,11 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--soft=false",
                 "--yes",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2040,21 +1867,23 @@ def test_metadata_delete_all_rows_with_yes(metaxy_project: TempMetaxyProject):
 
         # Verify all rows were deleted
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read(feature_key).collect().to_polars()
             assert remaining.height == 0
 
 
 def test_metadata_delete_soft_delete_without_filter_no_yes_required(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that soft delete without filters does not require --yes flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -2079,10 +1908,10 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
             [
                 "metadata",
                 "delete",
-                "--feature",
                 "logs",
                 "--soft",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2091,27 +1920,24 @@ def test_metadata_delete_soft_delete_without_filter_no_yes_required(
 
         # Verify rows were soft deleted
         feature_key = FeatureKey(["logs"])
-        feature_cls = graph.get_feature_by_key(feature_key)
+        # feature_cls removed - using feature_key directly
 
         with graph.use(), store:
-            remaining = store.read_metadata(feature_cls).collect().to_polars()
+            remaining = store.read(feature_key).collect().to_polars()
             assert remaining.height == 0
 
             # Check soft deleted rows still exist
-            all_data = (
-                store.read_metadata(feature_cls, include_soft_deleted=True)
-                .collect()
-                .to_polars()
-            )
+            all_data = store.read(feature_key, include_soft_deleted=True).collect().to_polars()
             assert all_data.height == 3
 
 
-def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProject):
-    """Test that delete requires either --feature or --all-features."""
+def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that delete requires either feature arguments or --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class Logs(
             BaseFeature,
@@ -2127,24 +1953,271 @@ def test_metadata_delete_requires_feature_or_all(metaxy_project: TempMetaxyProje
         result = metaxy_project.run_cli(
             ["metadata", "delete", "--filter", "sample_uid = 1", "--soft"],
             check=False,
+            capsys=capsys,
         )
 
         assert result.returncode == 1
+
+
+def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that --dry-run prints features and filters without deleting."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write some metadata
+        test_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2"],
+                "level": ["debug", "info"],
+                METAXY_PROVENANCE_BY_FIELD: [{"level": "p1"}, {"level": "p2"}],
+            }
+        )
+
+        feature_key = FeatureKey(["logs"])
+        # feature_cls removed - using feature_key directly
+
+        with graph.use(), store:
+            store.write(feature_key, test_data)
+
+        # Run dry-run
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "logs",
+                "--filter",
+                "level = 'debug'",
+                "--dry-run",
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Dry run" in output
+        assert "logs" in output
+        assert "level" in output  # Filter should be printed
+        assert "1 rows" in output  # Should show count of rows matching filter
+        assert "Total rows to delete" in output  # Should show total count
+        assert "Deletion complete" not in output  # Should not actually delete
+
+        # Verify data was NOT deleted
+        with graph.use(), store:
+            remaining = store.read(feature_key).collect().to_polars()
+            assert remaining.height == 2  # All rows still present
+
+
+@pytest.mark.parametrize(
+    "soft,with_feature_history",
+    [
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ],
+)
+def test_metadata_delete_dry_run_count_matches_actual_deletion(
+    metaxy_project: TempMetaxyProject,
+    soft: bool,
+    with_feature_history: bool,
+    capsys: pytest.CaptureFixture[str],
+):
+    """Test that --dry-run row counts match the actual number of rows deleted."""
+
+    def features_v1():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class Events(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["events"]),
+                fields=[FieldSpec(key=FieldKey(["status"]), code_version="1")],
+            ),
+        ):
+            status: str | None = None
+
+    def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class Events(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["events"]),
+                fields=[FieldSpec(key=FieldKey(["status"]), code_version="2")],  # bumped version
+            ),
+        ):
+            status: str | None = None
+
+    # Write v1 metadata
+    with metaxy_project.with_features(features_v1):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph_v1 = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        feature_key = FeatureKey(["events"])
+
+        # Write 3 rows with v1 feature version
+        v1_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3"],
+                "status": ["active", "inactive", "active"],
+                METAXY_PROVENANCE_BY_FIELD: [{"status": "p1"}, {"status": "p2"}, {"status": "p3"}],
+            }
+        )
+        with graph_v1.use(), store:
+            store.write(feature_key, v1_data)
+
+    # Write v2 metadata (different feature version)
+    with metaxy_project.with_features(features_v2):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph_v2 = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        feature_key = FeatureKey(["events"])
+
+        # Write 2 rows with v2 feature version
+        v2_data = pl.DataFrame(
+            {
+                "sample_uid": ["s4", "s5"],
+                "status": ["inactive", "inactive"],
+                METAXY_PROVENANCE_BY_FIELD: [{"status": "p4"}, {"status": "p5"}],
+            }
+        )
+        with graph_v2.use(), store:
+            store.write(feature_key, v2_data)
+
+        # Now we have:
+        # - 3 rows with v1 feature version (2 active, 1 inactive)
+        # - 2 rows with v2 feature version (0 active, 2 inactive)
+        # Filter: status = 'inactive' should match:
+        #   - with_feature_history=False: 2 rows (v2 only)
+        #   - with_feature_history=True: 3 rows (1 from v1 + 2 from v2)
+
+        # Run dry-run to get predicted count
+        delete_mode = "--soft" if soft else "--hard"
+        with_feature_history_flag = "--with-feature-history" if with_feature_history else "--no-with-feature-history"
+
+        dry_run_result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "events",
+                "--filter",
+                "status = 'inactive'",
+                delete_mode,
+                with_feature_history_flag,
+                "--dry-run",
+            ],
+            capsys=capsys,
+        )
+        assert dry_run_result.returncode == 0
+
+        # Extract the row count from dry-run output
+        output = dry_run_result.stdout + dry_run_result.stderr
+        # Output format: "events (N rows)"
+        import re
+
+        match = re.search(r"events\s+\((\d+)\s+rows\)", output)
+        assert match, f"Could not find row count in output: {output}"
+        dry_run_count = int(match.group(1))
+
+        # Count rows before deletion
+        with graph_v2.use(), store:
+            before_count = (
+                store.read(
+                    feature_key,
+                    include_soft_deleted=False,
+                    with_feature_history=True,  # count all versions
+                )
+                .collect()
+                .to_polars()
+                .height
+            )
+
+        # Actually delete
+        delete_result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "events",
+                "--filter",
+                "status = 'inactive'",
+                delete_mode,
+                with_feature_history_flag,
+                "--yes",  # needed for hard delete
+            ],
+            capsys=capsys,
+        )
+        assert delete_result.returncode == 0
+
+        # Count rows after deletion
+        with graph_v2.use(), store:
+            after_count = (
+                store.read(
+                    feature_key,
+                    include_soft_deleted=False,
+                    with_feature_history=True,  # count all versions
+                )
+                .collect()
+                .to_polars()
+                .height
+            )
+
+        # Verify the dry-run count matches actual deletion
+        actual_deleted = before_count - after_count
+        assert dry_run_count == actual_deleted, (
+            f"Dry-run predicted {dry_run_count} rows but actually deleted {actual_deleted}. "
+            f"soft={soft}, with_feature_history={with_feature_history}, before={before_count}, after={after_count}"
+        )
+
+        # Verify expected counts based on parameters
+        if with_feature_history:
+            # All historical feature versions (v1 + v2): 1 inactive from v1 + 2 inactive from v2 = 3
+            assert dry_run_count == 3, f"Expected 3 rows for with_feature_history=True, got {dry_run_count}"
+        else:
+            # Only current feature version (v2): 2 inactive rows
+            assert dry_run_count == 2, f"Expected 2 rows for with_feature_history=False, got {dry_run_count}"
 
 
 # ============================================================================
 
 
 def test_metadata_status_progress_no_input_display(
-    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch
+    metaxy_project: TempMetaxyProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):
     """Test that non-root features with no upstream input show '(no input)' in plain format."""
     # Clear METAXY_STORE env var to ensure we use the project's config
     monkeypatch.delenv("METAXY_STORE", raising=False)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFilesRoot(
             BaseFeature,
@@ -2167,24 +2240,22 @@ def test_metadata_status_progress_no_input_display(
 
     with metaxy_project.with_features(features):
         # Write upstream metadata with sample_uids
-        metaxy_project.write_sample_metadata(
-            "video/files_root", id_values={"sample_uid": [1, 2, 3]}
-        )
+        metaxy_project.write_sample_metadata("video/files_root", id_values={"sample_uid": [1, 2, 3]})
 
-        # Check status with --progress flag and a filter that excludes all rows
+        # Check status with --progress flag and a global-filter that excludes all rows
         # This simulates the "no input" scenario when all upstream data is filtered out
         result = metaxy_project.run_cli(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 "plain",
                 "--progress",
-                "--filter",
+                "--global-filter",
                 "sample_uid > 999",  # No samples match this filter
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2196,14 +2267,14 @@ def test_metadata_status_progress_no_input_display(
             [
                 "metadata",
                 "status",
-                "--feature",
                 "video/files",
                 "--format",
                 "json",
                 "--progress",
-                "--filter",
+                "--global-filter",
                 "sample_uid > 999",  # No samples match this filter
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result_json.returncode == 0
@@ -2218,6 +2289,7 @@ def test_metadata_status_progress_no_input_display(
 def test_metadata_status_with_fallback_stores(
     tmp_path: Path,
     output_format: str,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that metadata status correctly uses fallback stores for upstream metadata.
 
@@ -2233,21 +2305,21 @@ def test_metadata_status_with_fallback_stores(
     and work well together without Ibis backend conflicts.
     """
     # Create config with dev store that has prod as fallback (both Delta)
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2256,8 +2328,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class UpstreamFeature(
             BaseFeature,
@@ -2290,32 +2363,26 @@ root_path = "{prod_path}"
             {
                 "sample_uid": [1, 2, 3],
                 "value": ["val_1", "val_2", "val_3"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in [1, 2, 3]
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in [1, 2, 3]],
             }
         )
 
         upstream_key = FeatureKey(["upstream"])
-        upstream_cls = graph.get_feature_by_key(upstream_key)
 
         with graph.use(), prod_store:
-            prod_store.write_metadata(upstream_cls, upstream_data)
+            prod_store.write(upstream_key, upstream_data)
 
         # Now compute downstream metadata using dev store (reads upstream from fallback)
         downstream_key = FeatureKey(["downstream"])
-        downstream_cls = graph.get_feature_by_key(downstream_key)
 
         with graph.use(), dev_store:
             # resolve_update should read upstream from fallback (prod) store
-            increment = dev_store.resolve_update(downstream_cls, lazy=False)
+            increment = dev_store.resolve_update(downstream_key, lazy=False)
             # Write downstream to dev store
-            dev_store.write_metadata(downstream_cls, increment.added.to_polars())
+            dev_store.write(downstream_key, increment.new.to_polars())
 
         # Run CLI status command - should use fallback stores by default
-        result = project.run_cli(
-            ["metadata", "status", "--feature", "downstream", "--format", output_format]
-        )
+        result = project.run_cli(["metadata", "status", "downstream", "--format", output_format], capsys=capsys)
 
         assert result.returncode == 0
 
@@ -2346,6 +2413,7 @@ root_path = "{prod_path}"
 
 def test_metadata_status_fallback_disabled_shows_missing_row_count(
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that disabling fallback stores affects how current feature's metadata is counted.
 
@@ -2359,21 +2427,21 @@ def test_metadata_status_fallback_disabled_shows_missing_row_count(
     NOTE: This test verifies the flag works for reading the CURRENT feature's metadata count.
     """
     # Create config with dev store that has prod as fallback (both Delta)
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2382,8 +2450,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class RootFeature(
             BaseFeature,
@@ -2407,17 +2476,14 @@ root_path = "{prod_path}"
             {
                 "sample_uid": [1, 2, 3],
                 "value": ["val_1", "val_2", "val_3"],
-                "metaxy_provenance_by_field": [
-                    {"default": f"hash{i}"} for i in [1, 2, 3]
-                ],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in [1, 2, 3]],
             }
         )
 
         root_key = FeatureKey(["root"])
-        root_cls = graph.get_feature_by_key(root_key)
 
         with graph.use(), prod_store:
-            prod_store.write_metadata(root_cls, root_data)
+            prod_store.write(root_key, root_data)
 
         # Run CLI status command WITH fallback enabled
         # Should find 3 rows in fallback store
@@ -2425,12 +2491,12 @@ root_path = "{prod_path}"
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root",
                 "--format",
                 "json",
                 # --allow-fallback-stores is True by default
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result_with_fallback.returncode == 0
@@ -2449,12 +2515,12 @@ root_path = "{prod_path}"
             [
                 "metadata",
                 "status",
-                "--feature",
                 "root",
                 "--format",
                 "json",
                 "--no-allow-fallback-stores",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result_no_fallback.returncode == 0
@@ -2475,12 +2541,13 @@ root_path = "{prod_path}"
 # ============================================================================
 
 
-def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
+def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that copy requires both --from and --to flags."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2496,6 +2563,7 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(
             ["metadata", "copy", "video/files", "--to", "dev"],
             check=False,
+            capsys=capsys,
         )
         assert result.returncode != 0
 
@@ -2503,16 +2571,18 @@ def test_metadata_copy_requires_from_and_to(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli(
             ["metadata", "copy", "video/files", "--from", "dev"],
             check=False,
+            capsys=capsys,
         )
         assert result.returncode != 0
 
 
-def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
-    """Test that copy requires at least one feature."""
+def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that copy requires either feature arguments or --all-features."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2524,33 +2594,35 @@ def test_metadata_copy_requires_feature(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
+        # Use subprocess=True because error messages go to different streams in direct mode
         result = metaxy_project.run_cli(
             ["metadata", "copy", "--from", "dev", "--to", "dev"],
             check=False,
+            subprocess=True,
         )
 
-        # Our custom validation requires at least one feature
+        # FeatureSelector validation requires features or --all-features
         assert result.returncode == 1
-        assert "At least one feature must be specified" in result.stdout
+        assert "Must specify either --all-features or feature arguments" in result.stdout
 
 
-def test_metadata_copy_single_feature(tmp_path: Path):
+def test_metadata_copy_single_feature(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test copying metadata for a single feature between stores."""
     # Create config with two stores
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2559,8 +2631,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2577,7 +2650,8 @@ root_path = "{prod_path}"
 
         # Copy from dev to prod (positional args before keyword args)
         result = project.run_cli(
-            ["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"]
+            ["metadata", "copy", "video/files", "--from", "dev", "--to", "prod"],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2586,22 +2660,22 @@ root_path = "{prod_path}"
         assert "3 row(s)" in result.stdout
 
 
-def test_metadata_copy_multiple_features(tmp_path: Path):
+def test_metadata_copy_multiple_features(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test copying metadata for multiple features."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2610,8 +2684,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2647,7 +2722,8 @@ root_path = "{prod_path}"
                 "dev",
                 "--to",
                 "prod",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2656,22 +2732,22 @@ root_path = "{prod_path}"
         assert "6 row(s)" in result.stdout  # 3 rows per feature
 
 
-def test_metadata_copy_with_filter(tmp_path: Path):
+def test_metadata_copy_with_filter(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test copying metadata with filter applied."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2680,8 +2756,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2694,9 +2771,7 @@ root_path = "{prod_path}"
 
     with project.with_features(features):
         # Write metadata with more samples
-        project.write_sample_metadata(
-            "video/files", store_name="dev", id_values={"sample_uid": [1, 2, 3, 4, 5]}
-        )
+        project.write_sample_metadata("video/files", store_name="dev", id_values={"sample_uid": [1, 2, 3, 4, 5]})
 
         # Copy with filter - only sample_uid <= 2
         result = project.run_cli(
@@ -2710,7 +2785,8 @@ root_path = "{prod_path}"
                 "prod",
                 "--filter",
                 "sample_uid <= 2",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -2721,20 +2797,20 @@ root_path = "{prod_path}"
 
 def test_metadata_copy_missing_feature_warning(tmp_path: Path):
     """Test that copy warns about missing features but continues."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2743,8 +2819,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2760,6 +2837,7 @@ root_path = "{prod_path}"
         project.write_sample_metadata("video/files", store_name="dev")
 
         # Try to copy including a non-existent feature
+        # Use subprocess=True because warning goes to different stream in direct mode
         result = project.run_cli(
             [
                 "metadata",
@@ -2770,7 +2848,8 @@ root_path = "{prod_path}"
                 "dev",
                 "--to",
                 "prod",
-            ]
+            ],
+            subprocess=True,
         )
 
         # Should succeed (copy what exists)
@@ -2782,22 +2861,22 @@ root_path = "{prod_path}"
         assert "nonexistent/feature" in result.stdout
 
 
-def test_metadata_copy_no_features_to_copy(tmp_path: Path):
+def test_metadata_copy_no_features_to_copy(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
     """Test that copy handles case when all specified features are missing."""
-    dev_path = tmp_path / "dev"
-    prod_path = tmp_path / "prod"
+    dev_path = (tmp_path / "dev").as_posix()
+    prod_path = (tmp_path / "prod").as_posix()
 
     config_content = f'''project = "test"
 store = "dev"
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{dev_path}"
 
 [stores.prod]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.prod.config]
 root_path = "{prod_path}"
@@ -2806,8 +2885,9 @@ root_path = "{prod_path}"
     project = TempMetaxyProject(tmp_path, config_content=config_content)
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -2829,7 +2909,8 @@ root_path = "{prod_path}"
                 "dev",
                 "--to",
                 "prod",
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0

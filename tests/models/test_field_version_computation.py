@@ -2,11 +2,11 @@
 
 from pathlib import Path
 
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.graph.diff.differ import GraphDiffer
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
@@ -55,12 +55,12 @@ def test_load_snapshot_data_computes_proper_field_versions(
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
-        snapshot_version = result.snapshot_version
+        project_version = result.project_version
 
         _ = result.already_pushed
 
         # Load snapshot data - will load standalone specs since test features can't be imported
-        snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+        snapshot_data = differ.load_snapshot_data(store, project_version)
 
         # Verify structure is correct
         assert "parent" in snapshot_data
@@ -98,12 +98,12 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
-        snapshot_version = result.snapshot_version
+        project_version = result.project_version
 
         _ = result.already_pushed
 
         # Load snapshot data - should load standalone specs
-        snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+        snapshot_data = differ.load_snapshot_data(store, project_version)
 
         # Verify data was loaded
         assert "test/feature" in snapshot_data
@@ -113,9 +113,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
 
         # Verify field versions are computed correctly (captured via snapshot)
         assert feature_data["fields"] == snapshot(name="field_versions")
-        assert feature_data["metaxy_feature_version"] == snapshot(
-            name="feature_version"
-        )
+        assert feature_data["metaxy_feature_version"] == snapshot(name="feature_version")
 
 
 def test_field_key_normalization(graph: FeatureGraph, tmp_path: Path):
@@ -137,12 +135,12 @@ def test_field_key_normalization(graph: FeatureGraph, tmp_path: Path):
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
-        snapshot_version = result.snapshot_version
+        project_version = result.project_version
 
         _ = result.already_pushed
 
         # Load snapshot data (will load standalone spec since feature is in test scope)
-        snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+        snapshot_data = differ.load_snapshot_data(store, project_version)
 
         # Field key should be normalized to "/" format, not "__"
         assert "test" in snapshot_data

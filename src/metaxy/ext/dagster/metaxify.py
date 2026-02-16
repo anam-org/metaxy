@@ -1,4 +1,3 @@
-import inspect
 from typing import Any, TypeVar, overload
 
 import dagster as dg
@@ -9,6 +8,7 @@ from dagster._core.definitions.events import (
 from typing_extensions import Self
 
 import metaxy as mx
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
@@ -19,8 +19,8 @@ from metaxy.ext.dagster.constants import (
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.table_metadata import (
-    _get_type_string,
     build_column_lineage,
+    build_column_schema,
 )
 from metaxy.ext.dagster.utils import (
     build_feature_info_metadata,
@@ -30,6 +30,7 @@ from metaxy.ext.dagster.utils import (
 _T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
 
 
+@public
 class metaxify:
     """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition] or [`AssetSpec`][dg.AssetSpec].
 
@@ -66,11 +67,10 @@ class metaxify:
         import metaxy as mx
         import metaxy.ext.dagster as mxd
 
+
         @mxd.metaxify()
         @dg.asset(
-            metadata={
-                "metaxy/feature": "my/feature/key"
-            },
+            metadata={"metaxy/feature": "my/feature/key"},
         )
         def my_asset(store: mx.MetadataStore):
             with store:
@@ -92,8 +92,7 @@ class metaxify:
                 dg.AssetSpec("output_b", metadata={"metaxy/feature": "feature/b"}),
             ]
         )
-        def my_multi_asset():
-            ...
+        def my_multi_asset(): ...
         ```
 
     ??? example "With `dagster.AssetSpec`"
@@ -113,8 +112,8 @@ class metaxify:
                 "metaxy/partition": {"dataset": "a"},
             },
         )
-        def my_feature_dataset_a():
-            ...
+        def my_feature_dataset_a(): ...
+
 
         @dg.asset(
             metadata={
@@ -122,8 +121,7 @@ class metaxify:
                 "metaxy/partition": {"dataset": "b"},
             },
         )
-        def my_feature_dataset_b():
-            ...
+        def my_feature_dataset_b(): ...
         ```
     """
 
@@ -149,9 +147,7 @@ class metaxify:
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.key = dg.AssetKey.from_coercible(key) if key is not None else None
-        self.key_prefix = (
-            dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
-        )
+        self.key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
         self.inject_metaxy_kind = inject_metaxy_kind
         self.inject_code_version = inject_code_version
         self.set_description = set_description
@@ -191,9 +187,7 @@ class metaxify:
             raise ValueError("Cannot specify both `key` and `key_prefix`")
 
         coerced_key = dg.AssetKey.from_coercible(key) if key is not None else None
-        coerced_key_prefix = (
-            dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
-        )
+        coerced_key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
 
         if _asset is not None:
             # Called as @metaxify without parentheses
@@ -221,7 +215,7 @@ class metaxify:
 
     def __call__(self, asset: _T) -> _T:
         return self._transform(
-            asset,  # ty: ignore[invalid-argument-type]
+            asset,
             key=self.key,
             key_prefix=self.key_prefix,
             inject_metaxy_kind=self.inject_metaxy_kind,
@@ -323,12 +317,9 @@ def _replace_specs_on_assets_definition(
     # If there are key replacements, also update keys_by_output_name and selected_asset_keys
     if keys_to_replace:
         attrs["keys_by_output_name"] = {
-            output_name: keys_to_replace.get(key, key)
-            for output_name, key in attrs["keys_by_output_name"].items()
+            output_name: keys_to_replace.get(key, key) for output_name, key in attrs["keys_by_output_name"].items()
         }
-        attrs["selected_asset_keys"] = {
-            keys_to_replace.get(key, key) for key in attrs["selected_asset_keys"]
-        }
+        attrs["selected_asset_keys"] = {keys_to_replace.get(key, key) for key in attrs["selected_asset_keys"]}
 
     # Create a new AssetsDefinition with the updated attributes
     # This bypasses the buggy code path in Dagster's replace_specs_on_asset
@@ -369,8 +360,8 @@ def _metaxify_spec(
         return spec
 
     feature_key = mx.coerce_to_feature_key(metadata_feature_key)
-    feature_cls = mx.get_feature_by_key(feature_key)
-    feature_spec = feature_cls.spec()
+    feature_def = mx.get_feature_by_key(feature_key)
+    feature_spec = feature_def.spec
 
     # Determine the final asset key
     # Priority: key > key_prefix + resolved_key > resolved_key
@@ -389,8 +380,8 @@ def _metaxify_spec(
     # Build deps from feature dependencies
     metaxy_deps_by_key: dict[dg.AssetKey, dg.AssetDep] = {}
     for dep in feature_spec.deps:
-        upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
-        upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
+        upstream_feature_def = mx.get_feature_by_key(dep.feature)
+        upstream_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_def.spec)
         # Apply key_prefix to upstream deps as well
         if key_prefix is not None:
             upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
@@ -429,16 +420,18 @@ def _metaxify_spec(
     else:
         final_code_version = spec.code_version
 
-    # Use feature class docstring as description if not set on asset spec
+    # Use feature schema description if not set on asset spec
     final_description = spec.description
-    if set_description and final_description is None and feature_cls.__doc__:
-        final_description = inspect.cleandoc(feature_cls.__doc__)
+    if set_description and final_description is None:
+        schema_desc = feature_def.feature_schema.get("description")
+        if schema_desc:
+            final_description = schema_desc
 
     # Build tags for project and feature
     # Note: Dagster tag values only allow alpha-numeric, '_', '-', '.'
     # so we use table_name which uses '__' separator
     tags_to_add: dict[str, str] = {
-        DAGSTER_METAXY_PROJECT_TAG_KEY: mx.MetaxyConfig.get().project,
+        DAGSTER_METAXY_PROJECT_TAG_KEY: feature_def.project,
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
     }
 
@@ -456,16 +449,11 @@ def _metaxify_spec(
 
         # Add Metaxy columns that aren't already defined by user
         # (user-defined columns take precedence)
+        # Skip for external features (no Python class to extract schema from)
         metaxy_columns: list[dg.TableColumn] = []
-        for field_name, field_info in feature_cls.model_fields.items():
-            if field_name not in existing_column_names:
-                metaxy_columns.append(
-                    dg.TableColumn(
-                        name=field_name,
-                        type=_get_type_string(field_info.annotation),
-                        description=field_info.description,
-                    )
-                )
+        if not feature_def.is_external:
+            metaxy_schema = build_column_schema(feature_def)
+            metaxy_columns = [col for col in metaxy_schema.columns if col.name not in existing_column_names]
 
         all_columns = existing_columns + metaxy_columns
         if all_columns:
@@ -475,8 +463,9 @@ def _metaxify_spec(
 
     # Build column lineage from upstream dependencies
     # Respects existing user-defined column lineage and merges with Metaxy lineage
+    # Skip for external features (no Python class to extract columns from)
     column_lineage: dg.TableColumnLineage | None = None
-    if inject_column_lineage and feature_spec.deps:
+    if inject_column_lineage and feature_spec.deps and not feature_def.is_external:
         # Start with user-defined lineage if present
         existing_lineage = spec.metadata.get(DAGSTER_COLUMN_LINEAGE_METADATA_KEY)
         existing_deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
@@ -484,7 +473,7 @@ def _metaxify_spec(
             existing_deps_by_column = dict(existing_lineage.deps_by_column)
 
         metaxy_lineage = build_column_lineage(
-            feature_cls=feature_cls,
+            feature=feature_def,
             feature_spec=feature_spec,
         )
 
@@ -500,15 +489,11 @@ def _metaxify_spec(
                 else:
                     merged_deps_by_column[col] = deps
             # Sort columns alphabetically
-            sorted_deps = {
-                k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)
-            }
+            sorted_deps = {k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)}
             column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
         elif existing_deps_by_column:
             # Sort columns alphabetically
-            sorted_deps = {
-                k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)
-            }
+            sorted_deps = {k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)}
             column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
 
     # Build the replacement attributes

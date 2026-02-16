@@ -5,8 +5,8 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
@@ -169,7 +169,7 @@ def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[SampleFeature
 def selective_field_dep_features(
     graph: FeatureGraph,
 ) -> dict[str, type[SampleFeature]]:
-    """Create features with selective field-level dependencies.
+    """Create features with selective field-level lineage.
 
     Structure:
     - MultiFieldRoot: frames, audio, text fields

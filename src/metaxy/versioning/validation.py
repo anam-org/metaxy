@@ -100,9 +100,7 @@ def _validate_no_column_collisions(plan: FeaturePlan) -> None:
         if renamed_cols is not None:
             # Filter out metaxy system columns from validation
             # (they're handled separately and allowed to collide)
-            user_cols = [
-                c for c in renamed_cols if c not in transformer.renamed_metaxy_cols
-            ]
+            user_cols = [c for c in renamed_cols if c not in transformer.renamed_metaxy_cols]
             column_counter.update(user_cols)
 
         # Allow both upstream ID columns and output ID columns to repeat
@@ -110,16 +108,12 @@ def _validate_no_column_collisions(plan: FeaturePlan) -> None:
         all_id_columns.update(plan.get_input_id_columns_for_dep(dep))
 
     # Find columns that appear more than once but aren't ID columns
-    repeated_columns = [
-        col
-        for col, count in column_counter.items()
-        if count > 1 and col not in all_id_columns
-    ]
+    repeated_columns = [col for col, count in column_counter.items() if count > 1 and col not in all_id_columns]
 
     if repeated_columns:
         raise ValueError(
             f"Feature '{plan.feature.key.to_string()}' would have duplicate column names after renaming: "
             f"{sorted(repeated_columns)}. Only ID columns ({sorted(all_id_columns)}) are allowed to be repeated. "
             f"Use the 'rename' parameter in FeatureDep to resolve conflicts, "
-            "or use 'columns' to select only the columns you need."
+            "or use 'select' to select only the columns you need."
         )

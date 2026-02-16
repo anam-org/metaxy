@@ -1,0 +1,53 @@
+name: CI/CD (main)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      full-matrix:
+        description: 'Run full test matrix (all Python versions, Windows, macOS)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: write
+  pages: write
+  id-token: write
+
+jobs:
+  qa:
+    uses: ./.github/workflows/_qa.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: write
+    with:
+      python-versions: ${{ github.event.inputs.full-matrix == 'true' && '["3.10", "3.11", "3.12", "3.13"]' || '["3.10"]' }}
+      run-windows: ${{ github.event.inputs.full-matrix == 'true' }}
+      run-macos: ${{ github.event.inputs.full-matrix == 'true' }}
+      dependency-matrix: ${{ github.event.inputs.full-matrix == 'true' }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  docs:
+    needs: qa
+    uses: ./.github/workflows/_docs.yml
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    with:
+      environment: github-pages
+      docs-version: ${{ github.ref_name }}
+      docs-alias: 'latest'
+      docs-default: 'latest'

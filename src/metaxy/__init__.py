@@ -1,6 +1,12 @@
 from pathlib import Path
 
+from metaxy._decorators import experimental, public
+from metaxy._exceptions import ExternalFeatureVersionMismatchError
 from metaxy._version import __version__
+from metaxy._warnings import (
+    ExternalFeatureVersionMismatchWarning,
+    UnresolvedExternalFeatureWarning,
+)
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
     load_features,
@@ -24,9 +30,9 @@ from metaxy.models.feature import (
     BaseFeature,
     FeatureGraph,
     current_graph,
-    get_feature_by_key,
     graph,
 )
+from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.feature_spec import (
     FeatureDep,
     FeatureSpec,
@@ -60,9 +66,29 @@ from metaxy.models.types import (
     ValidatedFieldKeySequence,
     ValidatedFieldKeySequenceAdapter,
 )
-from metaxy.versioning.types import HashAlgorithm
+from metaxy.utils import BufferedMetadataWriter
+from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
+from metaxy.utils.external_features import sync_external_features
+from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement, PolarsIncrement, PolarsLazyIncrement
 
 
+@public
+def get_feature_by_key(key: CoercibleToFeatureKey) -> FeatureDefinition:
+    """Get a FeatureDefinition by its key from the current graph.
+
+    Args:
+        key: Feature key to look up (can be FeatureKey, list of strings, slash-separated string, etc.)
+
+    Returns:
+        FeatureDefinition for the feature
+
+    Raises:
+        KeyError: If no feature with the given key is registered
+    """
+    return current_graph().get_feature_definition(key)
+
+
+@public
 def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     """Coerce a value to a [`FeatureKey`][metaxy.FeatureKey].
 
@@ -72,6 +98,8 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     - `Sequence[str]`: `["a", "b", "c"]`
     - `FeatureKey`: pass through
     - `type[BaseFeature]`: extracts `.spec().key`
+    - `FeatureDefinition`: extracts `.key`
+    - `FeatureSpec`: extracts `.key`
 
     Args:
         value: Value to coerce to `FeatureKey`
@@ -85,40 +113,49 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
     return ValidatedFeatureKeyAdapter.validate_python(value)
 
 
-def init_metaxy(
-    config_file: Path | None = None, search_parents: bool = True
+@public
+def init(
+    config: MetaxyConfig | Path | str | None = None,
+    search_parents: bool = True,
 ) -> MetaxyConfig:
-    """Main user-facing initialization function for Metaxy. It loads the configuration and features.
+    """Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy [configuration][metaxy.MetaxyConfig].
 
-    Features are [discovered](../../guide/learn/feature-discovery.md) from installed Python packages metadata.
+    The feature graphs is populated with feature definitions [discovered](/guide/concepts/projects.md#feature-discovery) in the Metaxy project.
+    [External features](/guide/concepts/definitions/external-features.md) are loaded from a `metaxy.lock` if it is found.
 
     Args:
-        config_file (Path | None, optional): Path to the configuration file.
-
-            Will be auto-discovered in current or parent directories if not provided.
+        config: Metaxy configuration to use for initialization. Will be auto-discovered if not provided.
 
             !!! tip
-                `METAXY_CONFIG` environment variable can be used to set this parameter
+                `METAXY_CONFIG` environment variable can be used to set the config file path.
 
-        search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.
+        search_parents: Whether to search parent directories for configuration files during config discovery.
 
     Returns:
-        MetaxyConfig: The initialized Metaxy configuration.
+        The activated Metaxy configuration.
     """
-    cfg = MetaxyConfig.load(
-        config_file=config_file,
-        search_parents=search_parents,
-    )
-    load_features(cfg.entrypoints)
-    return cfg
+    from metaxy.utils.lock_file import load_lock_file
+
+    if isinstance(config, MetaxyConfig):
+        MetaxyConfig.set(config)
+    else:
+        config = MetaxyConfig.load(
+            config_file=config,
+            search_parents=search_parents,
+        )
+    load_lock_file(config)
+    load_features(config.entrypoints)
+    return config
 
 
 __all__ = [
+    "BufferedMetadataWriter",
     "BaseFeature",
+    "experimental",
+    "FeatureDefinition",
     "FeatureGraph",
     "graph",
     "FeatureSpec",
-    "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
     "FeatureSpec",
@@ -135,6 +172,7 @@ __all__ = [
     "CoercibleToFeatureKey",
     "CoercibleToFieldKey",
     "coerce_to_feature_key",
+    "get_feature_by_key",
     "ValidatedFeatureKey",
     "ValidatedFieldKey",
     "ValidatedFeatureKeySequence",
@@ -155,15 +193,24 @@ __all__ = [
     "detect_diff_migration",
     "MetaxyConfig",
     "StoreConfig",
-    "init_metaxy",
+    "init",
+    "sync_external_features",
+    "UnresolvedExternalFeatureWarning",
+    "ExternalFeatureVersionMismatchWarning",
+    "ExternalFeatureVersionMismatchError",
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",
     "AccessMode",
     "current_graph",
+    "MetaxyMissingFeatureDependency",
     "ValidatedFeatureKeyAdapter",
     "ValidatedFieldKeyAdapter",
     "ValidatedFeatureKeySequenceAdapter",
     "ValidatedFieldKeySequenceAdapter",
+    "LazyIncrement",
+    "PolarsLazyIncrement",
+    "PolarsIncrement",
+    "Increment",
     "__version__",
 ]

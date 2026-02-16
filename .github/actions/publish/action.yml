@@ -1,0 +1,34 @@
+name: Publish
+description: Build, smoke-test, and publish the package to PyPI or TestPyPI
+
+inputs:
+  environment:
+    description: 'Target index (testpypi or pypi)'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Build package
+      shell: bash
+      run: uv build
+
+    - name: Smoke test (wheel)
+      shell: bash
+      run: uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
+
+    - name: Smoke test (sdist)
+      shell: bash
+      run: uv run --isolated --no-project --with dist/*.tar.gz tests/smoke_test.py
+
+    - name: Publish
+      shell: bash
+      run: |
+        if [ "${{ inputs.environment }}" = "testpypi" ]; then
+          uv publish --index testpypi --trusted-publishing always
+        else
+          uv publish --trusted-publishing always
+        fi

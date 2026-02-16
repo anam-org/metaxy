@@ -7,9 +7,11 @@ from typing import Any, NamedTuple
 import narwhals as nw
 import polars as pl
 
+from metaxy._decorators import public
 from metaxy._utils import lazy_frame_to_polars
 
 
+@public
 class HashAlgorithm(Enum):
     """Supported hash algorithms for field provenance calculation.
 
@@ -27,28 +29,36 @@ class HashAlgorithm(Enum):
     FARMHASH = "farmhash"  # Better than MD5, available in BigQuery
 
 
+@public
 class PolarsIncrement(NamedTuple):
-    """Like [`Increment`][metaxy.versioning.types.Increment], but converted to Polars frames."""
+    """Like [`Increment`][metaxy.versioning.types.Increment], but converted to Polars frames.
 
-    added: pl.DataFrame
-    changed: pl.DataFrame
-    removed: pl.DataFrame
+    Attributes:
+        new: New samples from upstream not present in current metadata
+        stale: Samples with provenance different to what was processed before
+        orphaned: Samples that have been processed before but are no longer present in upstream
+    """
+
+    new: pl.DataFrame
+    stale: pl.DataFrame
+    orphaned: pl.DataFrame
 
 
+@public
 @dataclass(kw_only=True)
 class PolarsLazyIncrement:
     """Like [`LazyIncrement`][metaxy.versioning.types.LazyIncrement], but converted to Polars lazy frames.
 
     Attributes:
-        added: New samples from upstream not present in current metadata.
-        changed: Samples with different provenance.
-        removed: Samples in current metadata but not in upstream state.
+        new: New samples from upstream not present in current metadata
+        stale: Samples with provenance different to what was processed before
+        orphaned: Samples that have been processed before but are no longer present in upstream
         input: Joined upstream metadata with [`FeatureDep`][metaxy.models.feature_spec.FeatureDep] rules applied.
     """
 
-    added: pl.LazyFrame
-    changed: pl.LazyFrame
-    removed: pl.LazyFrame
+    new: pl.LazyFrame
+    stale: pl.LazyFrame
+    orphaned: pl.LazyFrame
     input: pl.LazyFrame | None = None
 
     def collect(self, **kwargs: Any) -> PolarsIncrement:
@@ -64,27 +74,23 @@ class PolarsLazyIncrement:
         Returns:
             PolarsIncrement: The collected increment.
         """
-        added, changed, removed = pl.collect_all(
-            [self.added, self.changed, self.removed], **kwargs
-        )
-        return PolarsIncrement(added, changed, removed)
+        added, changed, removed = pl.collect_all([self.new, self.stale, self.orphaned], **kwargs)
+        return PolarsIncrement(added, changed, removed)  # ty: ignore[invalid-argument-type]
 
 
+@public
 class Increment(NamedTuple):
     """Result of an incremental update containing eager dataframes.
 
-    Contains three sets of samples:
-
-    - added: New samples from upstream not present in current metadata
-
-    - changed: Samples with different provenance
-
-    - removed: Samples in current metadata but not in upstream state
+    Attributes:
+        new: New samples from upstream not present in current metadata
+        stale: Samples with provenance different to what was processed before
+        orphaned: Samples that have been processed before but are no longer present in upstream
     """
 
-    added: nw.DataFrame[Any]
-    changed: nw.DataFrame[Any]
-    removed: nw.DataFrame[Any]
+    new: nw.DataFrame[Any]
+    stale: nw.DataFrame[Any]
+    orphaned: nw.DataFrame[Any]
 
     def collect(self) -> "Increment":
         """Convenience method that's a no-op."""
@@ -93,26 +99,27 @@ class Increment(NamedTuple):
     def to_polars(self) -> PolarsIncrement:
         """Convert to Polars."""
         return PolarsIncrement(
-            added=self.added.to_polars(),
-            changed=self.changed.to_polars(),
-            removed=self.removed.to_polars(),
+            new=self.new.to_polars(),
+            stale=self.stale.to_polars(),
+            orphaned=self.orphaned.to_polars(),
         )
 
 
+@public
 @dataclass(kw_only=True)
 class LazyIncrement:
     """Result of an incremental update containing lazy dataframes.
 
     Attributes:
-        added: New samples from upstream not present in current metadata.
-        changed: Samples with different provenance.
-        removed: Samples in current metadata but not in upstream state.
+        new: New samples from upstream not present in current metadata
+        stale: Samples with provenance different to what was processed before
+        orphaned: Samples that have been processed before but are no longer present in upstream
         input: Joined upstream metadata with [`FeatureDep`][metaxy.models.feature_spec.FeatureDep] rules applied.
     """
 
-    added: nw.LazyFrame[Any]
-    changed: nw.LazyFrame[Any]
-    removed: nw.LazyFrame[Any]
+    new: nw.LazyFrame[Any]
+    stale: nw.LazyFrame[Any]
+    orphaned: nw.LazyFrame[Any]
     input: nw.LazyFrame[Any] | None = None
 
     def collect(self, **kwargs: Any) -> Increment:
@@ -130,26 +137,26 @@ class LazyIncrement:
             Increment: The collected increment.
         """
         if (
-            self.added.implementation
-            == self.changed.implementation
-            == self.removed.implementation
+            self.new.implementation
+            == self.stale.implementation
+            == self.orphaned.implementation
             == nw.Implementation.POLARS
         ):
             polars_eager_increment = PolarsLazyIncrement(
-                added=self.added.to_native(),
-                changed=self.changed.to_native(),
-                removed=self.removed.to_native(),
+                new=self.new.to_native(),
+                stale=self.stale.to_native(),
+                orphaned=self.orphaned.to_native(),
             ).collect(**kwargs)
             return Increment(
-                added=nw.from_native(polars_eager_increment.added),
-                changed=nw.from_native(polars_eager_increment.changed),
-                removed=nw.from_native(polars_eager_increment.removed),
+                new=nw.from_native(polars_eager_increment.new),
+                stale=nw.from_native(polars_eager_increment.stale),
+                orphaned=nw.from_native(polars_eager_increment.orphaned),
             )
         else:
             return Increment(
-                added=self.added.collect(**kwargs),
-                changed=self.changed.collect(**kwargs),
-                removed=self.removed.collect(**kwargs),
+                new=self.new.collect(**kwargs),
+                stale=self.stale.collect(**kwargs),
+                orphaned=self.orphaned.collect(**kwargs),
             )
 
     def to_polars(self) -> PolarsLazyIncrement:
@@ -163,8 +170,8 @@ class LazyIncrement:
             trigger a full materialization for them.
         """
         return PolarsLazyIncrement(
-            added=lazy_frame_to_polars(self.added),
-            changed=lazy_frame_to_polars(self.changed),
-            removed=lazy_frame_to_polars(self.removed),
+            new=lazy_frame_to_polars(self.new),
+            stale=lazy_frame_to_polars(self.stale),
+            orphaned=lazy_frame_to_polars(self.orphaned),
             input=lazy_frame_to_polars(self.input) if self.input is not None else None,
         )

@@ -6,11 +6,11 @@ import json
 from pathlib import Path
 
 import polars as pl
+from metaxy_testing.models import SampleFeatureSpec
 from pydantic import Field
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
@@ -38,7 +38,7 @@ def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify feature_schema field
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -61,13 +61,8 @@ def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):
             assert "another_field" in schema["properties"]
 
             # Verify field descriptions are preserved
-            assert (
-                schema["properties"]["custom_field"]["description"] == "A custom field"
-            )
-            assert (
-                schema["properties"]["another_field"]["description"]
-                == "An integer field"
-            )
+            assert schema["properties"]["custom_field"]["description"] == "A custom field"
+            assert schema["properties"]["another_field"]["description"] == "An integer field"
 
             # Verify field types
             assert schema["properties"]["custom_field"]["type"] == "string"
@@ -111,7 +106,7 @@ def test_feature_schema_differs_between_features(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -201,13 +196,12 @@ def test_feature_versions_model_has_feature_schema():
         project="test_project",
         feature_key="test/feature",
         metaxy_feature_version="abc123",
-        metaxy_feature_spec_version="def456",
-        metaxy_full_definition_version="ghi789",
+        metaxy_definition_version="ghi789",
         recorded_at=datetime.now(timezone.utc),
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestClass",
-        metaxy_snapshot_version="snapshot123",
+        metaxy_project_version="snapshot123",
         tags="{}",
     )
 
@@ -243,7 +237,7 @@ def test_feature_schema_for_feature_without_custom_fields(tmp_path: Path):
             SystemTableStorage(store).push_graph_snapshot()
 
             # Read and verify
-            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 

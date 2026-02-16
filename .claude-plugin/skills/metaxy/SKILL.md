@@ -1,11 +1,11 @@
 ---
 name: metaxy
-description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level dependencies", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, or testing patterns.
+description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, or testing patterns.
 ---
 
 # Metaxy
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks feature versions, dependencies, and data lineage across complex computational graphs.
+Metaxy is a metadata layer for multimodal Data and ML pipelines that manages and tracks feature versions, dependencies, and data lineage across complex computational graphs.
 
 ## Core Concepts
 
@@ -30,7 +30,7 @@ class MyFeature(
     score: float
 ```
 
-To add dependencies between features, use the `deps` parameter with `FeatureDep`. To specify field-level dependencies (for partial data dependencies processing), use `FieldSpec` with `FieldDep` or `FieldsMapping`.
+To add dependencies between features, use the `deps` parameter with `FeatureDep`. To specify field-level lineage (for partial data dependencies), use `FieldSpec` with `FieldDep` or `FieldsMapping`.
 
 ### Data Versioning
 
@@ -47,9 +47,7 @@ fields = [
 To configure a metadata store, create a `metaxy.toml` file or use programmatic configuration:
 
 ```python
-with mx.MetaxyConfig(
-    stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy")}
-).use() as config:
+with mx.MetaxyConfig(stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy")}).use() as config:
     store = config.get_store("dev")
 ```
 
@@ -61,7 +59,7 @@ To visualize and manage the feature dependency graph, use the CLI:
 
 ```bash
 mx graph render            # Terminal visualization
-mx graph push --store dev  # Push graph to store
+mx push --store dev        # Push graph to store
 ```
 
 ## CLI
@@ -72,7 +70,6 @@ Metaxy provides a CLI (`metaxy` or `mx` alias) for managing features, metadata, 
 mx list features --verbose     # List features with dependencies
 mx graph render                # Visualize feature graph
 mx metadata status --all-features  # Check metadata freshness (expensive!)
-mx migrations apply            # Apply pending migrations
 mx mcp                         # Start MCP server for AI assistants
 ```
 
@@ -83,7 +80,7 @@ To test features in isolation, use context managers to avoid polluting the globa
 ```python
 import pytest
 import metaxy as mx
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 @pytest.fixture
@@ -110,9 +107,9 @@ For comprehensive documentation: https://anam-org.github.io/metaxy/
 
 Key pages:
 
-- **Quickstart**: https://anam-org.github.io/metaxy/guide/overview/quickstart/
-- **Feature Definitions**: https://anam-org.github.io/metaxy/guide/learn/feature-definitions/
-- **Data Versioning**: https://anam-org.github.io/metaxy/guide/learn/data-versioning/
-- **Metadata Stores**: https://anam-org.github.io/metaxy/guide/learn/metadata-stores/
+- **Quickstart**: https://anam-org.github.io/metaxy/guide/quickstart/quickstart/
+- **Feature Definitions**: https://anam-org.github.io/metaxy/guide/concepts/feature-definitions/
+- **Data Versioning**: https://anam-org.github.io/metaxy/guide/concepts/versioning/
+- **Metadata Stores**: https://anam-org.github.io/metaxy/guide/concepts/metadata-stores/
 - **CLI Reference**: https://anam-org.github.io/metaxy/reference/cli/
 - **API Reference**: https://anam-org.github.io/metaxy/reference/api/

@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: write
+  pages: write
+  id-token: write
+
+jobs:
+  qa:
+    uses: ./.github/workflows/_qa.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: write
+    with:
+      python-versions: '["3.10", "3.11", "3.12", "3.13"]'
+      run-windows: true
+      run-macos: true
+      run-all-checks: true
+      dependency-matrix: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  testpypi:
+    needs: qa
+    runs-on: depot-ubuntu-latest
+    environment: testpypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/publish
+        with:
+          environment: testpypi
+
+  pypi:
+    needs: testpypi
+    runs-on: depot-ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/publish
+        with:
+          environment: pypi
+
+  check-stable-release:
+    needs: pypi
+    runs-on: depot-ubuntu-latest
+    outputs:
+      is-stable: ${{ steps.check.outputs.stable }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease' | grep -q 'false'; then
+            echo "stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stable=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  docs:
+    needs: check-stable-release
+    if: needs.check-stable-release.outputs.is-stable == 'true'
+    uses: ./.github/workflows/_docs.yml
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    with:
+      environment: github-pages
+      docs-version: ${{ needs.check-stable-release.outputs.version }}
+      docs-alias: 'stable'

@@ -6,6 +6,8 @@ used for calculating progress percentage in features with different lineage type
 
 from __future__ import annotations
 
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -14,7 +16,6 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.lineage import LineageRelationship
 
 
@@ -225,9 +226,7 @@ class TestInputIdColumns:
                 deps=[
                     FeatureDep(
                         feature=SensorReadings,
-                        lineage=LineageRelationship.aggregation(
-                            on=["sensor_id", "hour"]
-                        ),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["avg_temp"]), code_version="1")],
@@ -309,9 +308,7 @@ class TestInputIdColumns:
                 deps=[
                     FeatureDep(
                         feature=UpstreamA,
-                        lineage=LineageRelationship.aggregation(
-                            on=["sensor_id", "hour"]
-                        ),
+                        lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]),
                     ),
                     # UpstreamB has identity lineage (default) - its input columns are its ID columns
                     FeatureDep(feature=UpstreamB),

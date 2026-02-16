@@ -20,15 +20,17 @@ from metaxy.models.constants import (
 )
 
 
-def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
+def build_column_schema(feature: mx.FeatureDefinition | type[mx.BaseFeature]) -> dg.TableSchema:
     """Build a Dagster TableSchema from a Metaxy feature class.
 
     Creates column definitions from Pydantic model fields, including inherited
     system columns. Field types are converted to strings and field descriptions
     are used as column descriptions.
 
+    For FeatureDefinition objects, imports the feature class from its class path.
+
     Args:
-        feature_cls: The Metaxy feature class to extract schema from.
+        feature: The Metaxy feature definition or class to extract schema from.
 
     Returns:
         A TableSchema with columns derived from Pydantic model fields,
@@ -37,6 +39,12 @@ def build_column_schema(feature_cls: type[mx.BaseFeature]) -> dg.TableSchema:
     !!! tip
         This is automatically injected by [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify]
     """
+    # Get the feature class
+    if isinstance(feature, mx.FeatureDefinition):
+        feature_cls = feature._get_feature_class()
+    else:
+        feature_cls = feature
+
     columns: list[dg.TableColumn] = []
     for field_name, field_info in feature_cls.model_fields.items():
         columns.append(
@@ -104,7 +112,7 @@ def _get_type_string(annotation: Any) -> str:
 
 
 def build_column_lineage(
-    feature_cls: type[mx.BaseFeature],
+    feature: mx.FeatureDefinition | type[mx.BaseFeature],
     feature_spec: mx.FeatureSpec | None = None,
 ) -> dg.TableColumnLineage | None:
     """Build column-level lineage from feature dependencies.
@@ -117,8 +125,8 @@ def build_column_lineage(
       from corresponding upstream columns
 
     Args:
-        feature_cls: The downstream feature class.
-        feature_spec: The downstream feature specification. If None, uses feature_cls.spec().
+        feature: The downstream feature definition or class.
+        feature_spec: The downstream feature specification. If None, extracted from feature.
 
     Returns:
         TableColumnLineage mapping downstream columns to their upstream sources,
@@ -127,22 +135,28 @@ def build_column_lineage(
     !!! tip
         This is automatically injected by [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify]
     """
-    if feature_spec is None:
-        feature_spec = feature_cls.spec()
+    # Get spec and columns from either FeatureDefinition or feature class
+    if isinstance(feature, mx.FeatureDefinition):
+        if feature_spec is None:
+            feature_spec = feature.spec
+        downstream_columns = set(feature.columns)
+    else:
+        if feature_spec is None:
+            feature_spec = feature.spec()
+        downstream_columns = set(feature.model_fields.keys())
+
+    assert feature_spec is not None
 
     if not feature_spec.deps:
         return None
 
     deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
-    downstream_columns = set(feature_cls.model_fields.keys())
 
     for dep in feature_spec.deps:
-        upstream_feature_cls = mx.get_feature_by_key(dep.feature)
-        upstream_feature_spec = upstream_feature_cls.spec()
-        upstream_asset_key = get_asset_key_for_metaxy_feature_spec(
-            upstream_feature_spec
-        )
-        upstream_columns = set(upstream_feature_cls.model_fields.keys())
+        upstream_feature_def = mx.get_feature_by_key(dep.feature)
+        upstream_feature_spec = upstream_feature_def.spec
+        upstream_asset_key = get_asset_key_for_metaxy_feature_spec(upstream_feature_spec)
+        upstream_columns = set(upstream_feature_def.columns)
 
         # Build reverse rename map: downstream_name -> upstream_name
         # FeatureDep.rename is {old_upstream_name: new_downstream_name}
@@ -175,10 +189,7 @@ def build_column_lineage(
 
         # Process renamed columns (that aren't ID columns)
         for downstream_col, upstream_col in reverse_rename.items():
-            if (
-                downstream_col in downstream_columns
-                and downstream_col not in id_column_mapping
-            ):
+            if downstream_col in downstream_columns and downstream_col not in id_column_mapping:
                 if upstream_col in upstream_columns:
                     if downstream_col not in deps_by_column:
                         deps_by_column[downstream_col] = []
@@ -191,11 +202,7 @@ def build_column_lineage(
 
         # Process direct pass-through columns (same name in both, not renamed, ID, or system)
         # System columns are handled separately below since only some have lineage
-        handled_columns = (
-            set(id_column_mapping.keys())
-            | set(reverse_rename.keys())
-            | ALL_SYSTEM_COLUMNS
-        )
+        handled_columns = set(id_column_mapping.keys()) | set(reverse_rename.keys()) | ALL_SYSTEM_COLUMNS
         for col in downstream_columns - handled_columns:
             if col in upstream_columns:
                 if col not in deps_by_column:
@@ -301,9 +308,7 @@ def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
     Returns:
         A Polars DataFrame containing the last n_rows.
     """
-    if hasattr(
-        lazy_df._compliant_frame, "tail"
-    ):  # there is no better way to check whether .tail is supported :)
+    if hasattr(lazy_df._compliant_frame, "tail"):  # there is no better way to check whether .tail is supported :)
         # Polars and other backends that support tail()
         return lazy_df.tail(n_rows).collect().to_polars()
     else:
@@ -311,11 +316,7 @@ def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
         # Sort descending by metaxy_created_at (latest first), take head(n_rows),
         # then sort ascending to restore chronological order
         return (
-            lazy_df.sort(METAXY_CREATED_AT, descending=True)
-            .head(n_rows)
-            .sort(METAXY_CREATED_AT)
-            .collect()
-            .to_polars()
+            lazy_df.sort(METAXY_CREATED_AT, descending=True).head(n_rows).sort(METAXY_CREATED_AT).collect().to_polars()
         )
 
 
@@ -392,9 +393,7 @@ def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
             exprs.append(_truncate_list_expr(pl.col(col_name), alias=col_name))
         elif isinstance(dtype, pl.Array):
             # Array types: convert to list first, then truncate
-            exprs.append(
-                _truncate_list_expr(pl.col(col_name).arr.to_list(), alias=col_name)
-            )
+            exprs.append(_truncate_list_expr(pl.col(col_name).arr.to_list(), alias=col_name))
         elif dtype in (pl.Datetime, pl.Date, pl.Time, pl.Duration) or isinstance(
             dtype, (pl.Datetime, pl.Date, pl.Time, pl.Duration)
         ):
@@ -432,11 +431,7 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
 
     # Convert to JSON string via struct wrapper
     def to_json(expr: pl.Expr) -> pl.Expr:
-        return (
-            pl.struct(expr.alias("_"))
-            .struct.json_encode()
-            .str.extract(r'\{"_":(.*)\}', 1)
-        )
+        return pl.struct(expr.alias("_")).struct.json_encode().str.extract(r'\{"_":(.*)\}', 1)
 
     short_result = to_json(list_expr)
     # For truncated: insert ".." after the first half elements
@@ -450,9 +445,4 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
         "$1,..,",
     )
 
-    return (
-        pl.when(list_len <= max_items)
-        .then(short_result)
-        .otherwise(long_result)
-        .alias(alias)
-    )
+    return pl.when(list_len <= max_items).then(short_result).otherwise(long_result).alias(alias)

@@ -18,9 +18,19 @@ repos:
       entry: uv run ruff check --fix
       language: system
       pass_filenames: false
-    - id: format
+    - id: ruff-format
+      name: Ruff Format
+      entry: uv run ruff format
+      language: system
+      pass_filenames: false
+    - id: dprint-format
       name: Dprint Format
       entry: uv run dprint fmt
+      language: system
+      pass_filenames: false
+    - id: deptry
+      name: Deptry
+      entry: uv run deptry src
       language: system
       pass_filenames: false
     - id: typecheck
@@ -31,6 +41,12 @@ repos:
     - id: build-docs
       name: Build Docs
       entry: uv run --group docs mkdocs build --strict
+      language: system
+      pass_filenames: false
+      files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)
+    - id: test-docs
+      name: Test Docs Codeblocks
+      entry: uv run pytest ./docs
       language: system
       pass_filenames: false
       files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)

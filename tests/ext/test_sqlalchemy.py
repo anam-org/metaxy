@@ -43,13 +43,14 @@ def config_project_a(_clear_sqlmodel_metadata):
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
     )
     with config.use():
         # Define ProjectAFeature within the config context
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectAFeature(
             BaseSQLModelFeature,
             table=True,
@@ -61,28 +62,26 @@ def config_project_a(_clear_sqlmodel_metadata):
         ):
             """Feature for project A."""
 
+            __metaxy_project__ = "project_a"
             sample_uid: str = Field(primary_key=True)
             value: str
 
         # Also define ProjectBFeature (for explicit_project test)
-        # Need to temporarily switch project context
-        with MetaxyConfig(
-            project="project_b",
-        ).use():
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
+        class ProjectBFeature(
+            BaseSQLModelFeature,
+            table=True,
+            spec=FeatureSpec(
+                key=FeatureKey(["project_b", "feature"]),
+                id_columns=["sample_uid"],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+            ),
+        ):
+            """Feature for project B."""
 
-            class ProjectBFeature(
-                BaseSQLModelFeature,
-                table=True,
-                spec=FeatureSpec(
-                    key=FeatureKey(["project_b", "feature"]),
-                    id_columns=["sample_uid"],
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-                ),
-            ):
-                """Feature for project B."""
-
-                sample_uid: str = Field(primary_key=True)
-                value: str
+            __metaxy_project__ = "project_b"
+            sample_uid: str = Field(primary_key=True)
+            value: str
 
         yield config
 
@@ -95,13 +94,14 @@ def config_project_b(_clear_sqlmodel_metadata):
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
     )
     with config.use():
         # Define ProjectBFeature within the config context
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectBFeature(
             BaseSQLModelFeature,
             table=True,
@@ -113,6 +113,7 @@ def config_project_b(_clear_sqlmodel_metadata):
         ):
             """Feature for project B."""
 
+            __metaxy_project__ = "project_b"
             sample_uid: str = Field(primary_key=True)
             value: str
 
@@ -127,13 +128,14 @@ def config_no_filter(_clear_sqlmodel_metadata):
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
     )
     with config.use():
         # Define both features for the no-filter test
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectAFeature(
             BaseSQLModelFeature,
             table=True,
@@ -145,9 +147,11 @@ def config_no_filter(_clear_sqlmodel_metadata):
         ):
             """Feature for project A."""
 
+            __metaxy_project__ = "project_a"
             sample_uid: str = Field(primary_key=True)
             value: str
 
+        # Set __metaxy_project__ as class attribute to ensure it's captured at registration time
         class ProjectBFeature(
             BaseSQLModelFeature,
             table=True,
@@ -159,6 +163,7 @@ def config_no_filter(_clear_sqlmodel_metadata):
         ):
             """Feature for project B."""
 
+            __metaxy_project__ = "project_b"
             sample_uid: str = Field(primary_key=True)
             value: str
 
@@ -175,7 +180,7 @@ def test_get_metaxy_system_metadata():
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -205,7 +210,7 @@ def test_feature_versions_table_columns_match_polars_schema():
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
             }
         },
@@ -257,9 +262,7 @@ def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
 
     # Get metadata for project_b even though current project is project_a
     store = config_project_a.get_store()
-    url, metadata = filter_feature_sqla_metadata(
-        store, SQLModel.metadata, project="project_b"
-    )
+    url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata, project="project_b")
 
     assert "project_b__feature" in metadata.tables
     assert "project_a__feature" not in metadata.tables
@@ -270,9 +273,7 @@ def test_get_features_sqlalchemy_metadata_no_filter(config_no_filter):
     from sqlmodel import SQLModel
 
     store = config_no_filter.get_store()
-    url, metadata = filter_feature_sqla_metadata(
-        store, SQLModel.metadata, filter_by_project=False
-    )
+    url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata, filter_by_project=False)
 
     # Should contain all features when filtering is disabled
     assert "project_a__feature" in metadata.tables
@@ -286,7 +287,7 @@ def test_get_store_sqlalchemy_url_default_store():
         store="test_store",
         stores={  # ty: ignore[invalid-argument-type]
             "test_store": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": "test.db"},
             }
         },
@@ -304,11 +305,11 @@ def test_get_store_sqlalchemy_url_named_store():
         project="test",
         stores={  # ty: ignore[invalid-argument-type]
             "store1": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": "store1.db"},
             },
             "store2": {
-                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 "config": {"database": "store2.db"},
             },
         },
@@ -323,16 +324,14 @@ def test_get_store_sqlalchemy_url_named_store():
         assert url2 == "duckdb:///store2.db"
 
 
-@pytest.mark.skip(
-    reason="Function now requires IbisMetadataStore - non-Ibis stores are not supported"
-)
+@pytest.mark.skip(reason="Function now requires IbisMetadataStore - non-Ibis stores are not supported")
 def test_get_store_sqlalchemy_url_error_no_property():
     """Test error when store doesn't support sqlalchemy_url."""
     config = MetaxyConfig(
         project="test",
         stores={  # ty: ignore[invalid-argument-type]
             "delta_store": {
-                "type": "metaxy.metadata_store.delta.DeltaMetadataStore",
+                "type": "metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
                 "config": {},
             }
         },
@@ -340,9 +339,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
 
     with config.use():
         store = config.get_store("delta_store", expected_type=IbisMetadataStore)
-        with pytest.raises(
-            AttributeError, match="does not have a `sqlalchemy_url` property"
-        ):
+        with pytest.raises(AttributeError, match="does not have a `sqlalchemy_url` property"):
             get_system_slqa_metadata(store)
 
 
@@ -364,7 +361,7 @@ class TestProtocolParameter:
             store="test_store",
             stores={  # ty: ignore[invalid-argument-type]
                 "test_store": {
-                    "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     "config": {"database": "test.db"},
                 }
             },
@@ -378,9 +375,7 @@ class TestProtocolParameter:
             assert url_default == "duckdb:///test.db"
 
             # With protocol override
-            url_override, _ = get_system_slqa_metadata(
-                store, protocol="clickhouse+native"
-            )
+            url_override, _ = get_system_slqa_metadata(store, protocol="clickhouse+native")
             assert url_override == "clickhouse+native:///test.db"
 
     def test_get_system_slqa_metadata_protocol_none_preserves_original(self):
@@ -390,7 +385,7 @@ class TestProtocolParameter:
             store="test_store",
             stores={  # ty: ignore[invalid-argument-type]
                 "test_store": {
-                    "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    "type": "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     "config": {"database": "mydb.db"},
                 }
             },
@@ -412,9 +407,7 @@ class TestProtocolParameter:
         assert url_default.startswith("duckdb://")
 
         # With protocol override
-        url_override, metadata = filter_feature_sqla_metadata(
-            store, SQLModel.metadata, protocol="postgresql+psycopg2"
-        )
+        url_override, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata, protocol="postgresql+psycopg2")
         assert url_override.startswith("postgresql+psycopg2://")
         # Metadata should still be filtered correctly
         assert "project_a__feature" in metadata.tables
@@ -427,9 +420,7 @@ class TestProtocolParameter:
 
         # Create a mock store with a complex URL
         mock_store = MagicMock(spec=IbisMetadataStore)
-        mock_store.sqlalchemy_url = (
-            "clickhouse://user:pass@localhost:9000/mydb?secure=true"
-        )
+        mock_store.sqlalchemy_url = "clickhouse://user:pass@localhost:9000/mydb?secure=true"
 
         # Test protocol replacement preserves everything after ://
         url = _get_store_sqlalchemy_url(mock_store, protocol="clickhouse+native")
@@ -490,9 +481,7 @@ class TestProtocolParameter:
         mock_store.sqlalchemy_url = "clickhouse://user:pass@localhost:8443/mydb"
 
         # Test both protocol and port replacement
-        url = _get_store_sqlalchemy_url(
-            mock_store, protocol="clickhouse+native", port=9000
-        )
+        url = _get_store_sqlalchemy_url(mock_store, protocol="clickhouse+native", port=9000)
         assert url == "clickhouse+native://user:pass@localhost:9000/mydb"
 
     def test_port_override_preserves_other_components(self):
@@ -502,9 +491,7 @@ class TestProtocolParameter:
         from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
 
         mock_store = MagicMock(spec=IbisMetadataStore)
-        mock_store.sqlalchemy_url = (
-            "clickhouse://user:pass@localhost:8443/mydb?secure=true"
-        )
+        mock_store.sqlalchemy_url = "clickhouse://user:pass@localhost:8443/mydb?secure=true"
 
         url = _get_store_sqlalchemy_url(mock_store, port=9000)
         assert url == "clickhouse://user:pass@localhost:9000/mydb?secure=true"

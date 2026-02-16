@@ -6,13 +6,11 @@ Metaxy system including FeatureGraph, FeatureDep renames, and filters.
 
 from __future__ import annotations
 
-from typing import cast
-
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec
@@ -148,7 +146,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["upstream"]),
-                    columns=("field_a", "field_c"),  # Only select specific columns
+                    select=("field_a", "field_c"),  # Only select specific columns
                 )
             ],
             fields=[
@@ -229,9 +227,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
     assert provenance_data == snapshot
 
 
-def test_multi_upstream_join_on_common_id_columns(
-    graph: FeatureGraph, snapshot
-) -> None:
+def test_multi_upstream_join_on_common_id_columns(graph: FeatureGraph, snapshot) -> None:
     """Test that multiple upstreams are joined on common ID columns."""
 
     class UpstreamA(
@@ -406,12 +402,8 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
             {
                 "sample_uid": [1, 2, 3, 4, 5],
                 "value": [10, 20, 30, 40, 50],
-                "metaxy_provenance_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
-                "metaxy_data_version_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
+                "metaxy_data_version_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
                 "metaxy_provenance": [f"prov_{i}" for i in range(1, 6)],
                 "metaxy_data_version": [f"prov_{i}" for i in range(1, 6)],
             }
@@ -423,12 +415,8 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
             {
                 "sample_uid": [1, 2, 3, 4, 5],
                 "value": [15, 25, 35, 45, 55],
-                "metaxy_provenance_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
-                "metaxy_data_version_by_field": [
-                    {"value": f"hash_{i}"} for i in range(1, 6)
-                ],
+                "metaxy_provenance_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
+                "metaxy_data_version_by_field": [{"value": f"hash_{i}"} for i in range(1, 6)],
                 "metaxy_provenance": [f"prov_{i}" for i in range(1, 6)],
                 "metaxy_data_version": [f"prov_{i}" for i in range(1, 6)],
             }
@@ -452,7 +440,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         filters=filters,
     )
 
-    prepared_df = cast(pl.LazyFrame, prepared.to_native()).collect()
+    prepared_df = prepared.collect().to_polars()
 
     # After filtering: upstream_a has [3, 4, 5], upstream_b has [1, 2, 3, 4]
     # After join: should have [3, 4] (intersection)
@@ -750,9 +738,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
         )
 
 
-def test_feature_graph_integration_with_provenance_by_field(
-    graph: FeatureGraph, snapshot
-) -> None:
+def test_feature_graph_integration_with_provenance_by_field(graph: FeatureGraph, snapshot) -> None:
     """Test integration with FeatureGraph's provenance_by_field() method."""
     # This test verifies that engines work correctly with the Feature.provenance_by_field()
     # class method that returns the expected field provenance structure

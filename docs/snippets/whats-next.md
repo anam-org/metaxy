@@ -1,0 +1,6 @@
+- Learn more about Metaxy [concepts](/guide/concepts/index.md)
+- View complete, end-to-end [examples](/examples/index.md)
+- Explore [Metaxy integrations](/integrations/index.md)
+- Invoke `mx` CLI [from your terminal](/reference/cli.md)
+- Learn how to [configure Metaxy](/reference/configuration.md)
+- Get lost in our [API Reference](/reference/api/index.md)

@@ -2,6 +2,7 @@
 
 from metaxy.graph.diff.rendering.base import BaseRenderer, RenderConfig
 from metaxy.graph.diff.rendering.cards import CardsRenderer
+from metaxy.graph.diff.rendering.field_deps import render_field_deps_mermaid
 from metaxy.graph.diff.rendering.graphviz import GraphvizRenderer
 from metaxy.graph.diff.rendering.mermaid import MermaidRenderer
 from metaxy.graph.diff.rendering.rich import TerminalRenderer
@@ -15,4 +16,5 @@ __all__ = [
     "MermaidRenderer",
     "GraphvizRenderer",
     "Theme",
+    "render_field_deps_mermaid",
 ]

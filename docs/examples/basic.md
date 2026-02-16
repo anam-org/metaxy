@@ -8,8 +8,7 @@ description: "Basic example of upstream change detection and recomputation."
 ## Overview
 
 ::: metaxy-example source-link
-example: basic
-:::
+    example: basic
 
 This example demonstrates how Metaxy automatically detects changes in upstream features and triggers recomputation of downstream features. It shows the core value proposition of Metaxy: avoiding unnecessary recomputation while ensuring data consistency.
 
@@ -20,35 +19,43 @@ We will build a simple two-feature pipeline where a child feature depends on a p
 Let's define a pipeline with two features:
 
 ::: metaxy-example graph
-example: basic
-scenario: "Setup upstream data"
-:::
+    example: basic
+    scenario: "Setup upstream data"
+    direction: LR
 
-### Defining features: `ParentFeature`
+### Defining features: `"examples/parent"`
 
 The parent feature represents raw embeddings computed from source data. It has a single field `embeddings` with a `code_version` that tracks the algorithm version.
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_basic/features.py"
---8<-- "example-basic/src/example_basic/features.py:1:26"
+--8<-- "example-basic/src/example_basic/features.py:parent_feature"
 ```
 <!-- dprint-ignore-end -->
 
-### Defining features: `ChildFeature`
+### Defining features: `"examples/child"`
 
-The child feature depends on the parent and produces predictions. The key configuration is the `FeatureDep` which declares that `ChildFeature` depends on `ParentFeature`.
+The child feature depends on the parent and produces predictions. The key configuration is the `FeatureDep` which declares that `"examples/child"` depends on `"examples/parent"`.
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_basic/features.py" hl_lines="5"
---8<-- "example-basic/src/example_basic/features.py:29:45"
+--8<-- "example-basic/src/example_basic/features.py:child_feature"
 ```
 <!-- dprint-ignore-end -->
 
 The `FeatureDep` declaration tells Metaxy:
 
-1. `ChildFeature` depends on `ParentFeature`
+1. `"examples/child"` depends on `"examples/parent"`
 2. When the parent's field provenance changes, the child must be recomputed
 3. This dependency is tracked automatically, enabling incremental recomputation
+
+## Getting Started
+
+Install the example's dependencies:
+
+```shell
+uv sync
+```
 
 ## Walkthrough
 
@@ -57,10 +64,9 @@ The `FeatureDep` declaration tells Metaxy:
 Run the pipeline to create parent embeddings and child predictions:
 
 ::: metaxy-example output
-example: basic
-scenario: "Initial pipeline run"
-step: "initial_run"
-:::
+    example: basic
+    scenario: "Initial pipeline run"
+    step: "initial_run"
 
 The pipeline materialized 3 samples for the child feature. Each sample has its provenance tracked.
 
@@ -69,10 +75,9 @@ The pipeline materialized 3 samples for the child feature. Each sample has its p
 Run the pipeline again without any changes:
 
 ::: metaxy-example output
-example: basic
-scenario: "Idempotent rerun"
-step: "idempotent_run"
-:::
+    example: basic
+    scenario: "Idempotent rerun"
+    step: "idempotent_run"
 
 **Key observation:** No recomputation occurred.
 
@@ -81,11 +86,10 @@ step: "idempotent_run"
 Now let's simulate an algorithm improvement by changing the parent's `code_version` from `"1"` to `"2"`:
 
 ::: metaxy-example patch-with-diff
-example: basic
-path: patches/01_update_parent_algorithm.patch
-scenario: "Code evolution"
-step: "update_parent_version"
-:::
+    example: basic
+    path: patches/01_update_parent_algorithm.patch
+    scenario: "Code evolution"
+    step: "update_parent_version"
 
 This change means that the existing embeddings and the downstream feature have to be recomputed.
 
@@ -94,10 +98,9 @@ This change means that the existing embeddings and the downstream feature have t
 Run the pipeline again after the algorithm change:
 
 ::: metaxy-example output
-example: basic
-scenario: "Code evolution"
-step: "recompute_after_change"
-:::
+    example: basic
+    scenario: "Code evolution"
+    step: "recompute_after_change"
 
 **Key observation:** The child feature was automatically recomputed because:
 
@@ -108,16 +111,11 @@ step: "recompute_after_change"
 
 ## How It Works
 
-Metaxy tracks provenance at the field level using content hashes:
+Metaxy tracks provenance at the field level using:
 
-1. **Feature Version**: A hash of the feature specification (including `code_version` of all fields)
-2. **Field Provenance**: A hash combining the field's `code_version` and upstream provenance
+1. **Field Version**: A hash combining the field's `code_version` and provenances of upstream fields
+2. **Feature Version**: A hash combining the field versions of all fields in the feature
 3. **Dependency Resolution**: When resolving updates, Metaxy computes what the provenance _would be_ and compares it to what's stored
-
-The `resolve_update()` method returns:
-
-- `added`: New samples that don't exist in the store
-- `changed`: Existing samples whose computed provenance differs from stored provenance
 
 This enables precise, incremental recomputation without re-processing unchanged data.
 
@@ -125,16 +123,16 @@ This enables precise, incremental recomputation without re-processing unchanged 
 
 Metaxy provides automatic change detection and incremental recomputation through:
 
-- Feature dependency tracking via `FeatureDep`
-- Algorithm versioning via `code_version`
-- Provenance-based change detection via `resolve_update()`
+- Feature dependency tracking via [`FeatureDep`][metaxy.FeatureDep]
+- Algorithm versioning via [`FieldSpec.code_version`][metaxy.FieldSpec]
+- Provenance-based change detection via [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update]
 
-This ensures your pipelines are efficient data stays up to date.
+This mechanism ensures your pipelines are both efficient and keep relevant data up to date.
 
 ## Related Materials
 
 Learn more about:
 
-- [Features and Fields](../guide/learn/feature-definitions.md)
-- [Data Versioning](../guide/learn/data-versioning.md)
-- [Relationships](../guide/learn/relationship.md)
+- [Features and Fields](../guide/concepts/definitions/features.md)
+- [Data Versioning](../guide/concepts/versioning.md)
+- [Relationships](/guide/concepts/definitions/relationship.md)

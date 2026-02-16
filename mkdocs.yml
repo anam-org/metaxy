@@ -1,13 +1,17 @@
 site_name: Metaxy
-site_description: Pluggable metadata layer for multi-modal pipelines
+site_description: Pluggable metadata layer for multimodal pipelines
 site_url: https://docs.metaxy.io
 repo_url: https://github.com/anam-org/metaxy
 repo_name: anam-org/metaxy
 
 theme:
   name: material
+  custom_dir: docs/.overrides
+  homepage: index.md
   logo: assets/metaxy.svg
   favicon: assets/favicon.ico
+  icon:
+    annotation: fontawesome/solid/magic-wand-sparkles
   features:
     # Content features
     - content.code.copy
@@ -52,17 +56,30 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
+hooks:
+  - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_public.py
+  - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_glossary.py
+  - docs/hooks.py
+
 plugins:
   - search
+  - exclude:
+      glob:
+        - snippets/*
   - metaxy-examples:
       examples_dir: "../examples"
   - cyclopts
   - autorefs
   - section-index
   - gh-admonitions
+  # - optimize
   - macros:
       module_name: docs/main
-  - social
+  - social:
+      # check the rendered images during local development at
+      # http://localhost:8000/assets/images/social/index.png
+      cards_layout_dir: docs/.overrides
+      cards_layout: social_card
 
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:
@@ -86,8 +103,13 @@ plugins:
             docstring_options:
               ignore_init_summary: true
             show_source: true
+            separate_signature: true
+            overloads_only: true
+            modernize_annotations: true
+            line_length: 60
             show_docstring_classes: true
             show_docstring_description: true
+            show_docstring_examples: true
             show_docstring_parameters: true
             show_root_heading: true
             show_root_full_path: true
@@ -95,13 +117,11 @@ plugins:
             scoped_crossrefs: true
             show_category_heading: true
             show_signature_annotations: true
-            separate_signature: true
-            line_length: 120
             merge_init_into_class: true
             docstring_section_style: list
             members_order: source
             show_submodules: false
-            inherited_members: true
+            inherited_members: false
             show_bases: true
             show_signature: true
             signature_crossrefs: true
@@ -113,15 +133,16 @@ plugins:
               - griffe_inherited_docstrings
               - griffe_pydantic:
                   schema: true
+              - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_public.py:PublicAPIExtension
+              - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_experimental.py:ExperimentalAPIExtension
           inventories:
             - https://docs.python.org/3/objects.inv
             - https://docs.pydantic.dev/latest/objects.inv
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
             - https://docs.dagster.io/objects.inv
-
-hooks:
-  - docs/hooks.py
+            - https://docs.ray.io/en/latest/objects.inv
+            - https://delta-io.github.io/delta-rs/objects.inv
 
 markdown_extensions:
   # Core extensions
@@ -164,7 +185,10 @@ markdown_extensions:
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets:
-      base_path: ['examples']
+      base_path: ['examples', 'docs/snippets', 'docs']
+      dedent_subsections: true
+      auto_append:
+        - .glossary.md
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
   - metaxy_config
   - metaxy_examples
@@ -185,26 +209,34 @@ markdown_extensions:
   - pymdownx.tilde
 
 nav:
-  - Overview: index.md
-  - User Guide:
+  - 📖 User Guide:
     - guide/index.md
-    - Getting Started:
-      - Quickstart: guide/overview/quickstart.md
-      - Feature Dependencies: guide/overview/feature-dependencies.md
-    - Concepts:
-      - Metadata Stores: guide/learn/metadata-stores.md
-      - Feature Definitions: guide/learn/feature-definitions.md
-      - Versioning: guide/learn/data-versioning.md
-      - Feature Discovery: guide/learn/feature-discovery.md
-      - Syntactic Sugar: guide/learn/syntactic-sugar.md
-      - Lineage Relationship: guide/learn/relationship.md
-      - Optional Dependencies: guide/learn/optional-dependencies.md
-      - Filters: guide/learn/filters.md
-      - Deletions: guide/learn/deletions.md
-      - System Columns: guide/learn/system-columns.md
-      - Testing: guide/learn/testing.md
-  - Slides: slides/intro.md
-  - Integrations:
+    - 🎯 Overview:
+      - Introduction: index.md
+      - Pitch: metaxy/pitch.md
+      - Design Choices: metaxy/design.md
+    - 🚀 Quickstart: guide/quickstart/quickstart.md
+    - 💡 Concepts:
+      - Overview: guide/concepts/index.md
+      - Metadata Stores:
+        - Metadata Stores: guide/concepts/metadata-stores.md
+        - Deletions: guide/concepts/deletions.md
+      - Defining Features:
+        - Features: guide/concepts/definitions/features.md
+        - Optional Dependencies: guide/concepts/definitions/optional-dependencies.md
+        - Lineage Types: guide/concepts/definitions/relationship.md
+        - External Features: guide/concepts/definitions/external-features.md
+      - Versioning: guide/concepts/versioning.md
+      - Metaxy Projects: guide/concepts/projects.md
+      - Filters: guide/concepts/filters.md
+      - Syntactic Sugar: guide/concepts/syntactic-sugar.md
+    - ⚙️ Application Lifecycle:
+      - Local Development: guide/concepts/lifecycle/development.md
+      - Testing: guide/concepts/lifecycle/testing.md
+      - Deployment: guide/concepts/lifecycle/deployment.md
+    - ❓ Q&A: guide/qa.md
+  - 🎬 Slides: slides/intro.md
+  - 🧩 Integrations:
     - integrations/index.md
     - Orchestration:
       - integrations/orchestration/index.md
@@ -216,53 +248,33 @@ nav:
       - integrations/metadata-stores/index.md
       - Databases:
         - integrations/metadata-stores/databases/index.md
-        - BigQuery:
-          - integrations/metadata-stores/databases/bigquery/index.md
-          - Configuration: integrations/metadata-stores/databases/bigquery/configuration.md
-          - API: integrations/metadata-stores/databases/bigquery/api.md
-        - ClickHouse:
-          - integrations/metadata-stores/databases/clickhouse/index.md
-          - Configuration: integrations/metadata-stores/databases/clickhouse/configuration.md
-          - API: integrations/metadata-stores/databases/clickhouse/api.md
-        - DuckDB:
-          - integrations/metadata-stores/databases/duckdb/index.md
-          - Configuration: integrations/metadata-stores/databases/duckdb/configuration.md
-          - API: integrations/metadata-stores/databases/duckdb/api.md
-        - LanceDB:
-          - integrations/metadata-stores/databases/lancedb/index.md
-          - Configuration: integrations/metadata-stores/databases/lancedb/configuration.md
-          - API: integrations/metadata-stores/databases/lancedb/api.md
-        - Ibis:
-          - integrations/metadata-stores/databases/ibis/index.md
-          - API: integrations/metadata-stores/databases/ibis/api.md
+        - BigQuery: integrations/metadata-stores/databases/bigquery.md
+        - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
+        - DuckDB: integrations/metadata-stores/databases/duckdb.md
+        - LanceDB: integrations/metadata-stores/databases/lancedb.md
+        - Ibis: integrations/metadata-stores/databases/ibis.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
-        - Delta Lake:
-          - integrations/metadata-stores/storage/delta/index.md
-          - Configuration: integrations/metadata-stores/storage/delta/configuration.md
-          - API: integrations/metadata-stores/storage/delta/api.md
+        - Delta Lake: integrations/metadata-stores/storage/delta.md
+    - Compute:
+      - Ray: integrations/compute/ray.md
     - Plugins:
       - integrations/plugins/index.md
-      - SQLModel:
-        - integrations/plugins/sqlmodel/index.md
-        - Configuration: integrations/plugins/sqlmodel/configuration.md
-        - API: integrations/plugins/sqlmodel/api.md
-      - SQLAlchemy:
-        - integrations/plugins/sqlalchemy/index.md
-        - Configuration: integrations/plugins/sqlalchemy/configuration.md
-        - API: integrations/plugins/sqlalchemy/api.md
+      - SQLModel: integrations/plugins/sqlmodel.md
+      - SQLAlchemy: integrations/plugins/sqlalchemy.md
     - AI:
       - Claude Code: integrations/ai/claude.md
       - MCP Server: integrations/ai/mcp.md
-  - Examples:
+  - 💻 Examples:
     - examples/index.md
     - Basic: examples/basic.md
     - Aggregation: examples/aggregation.md
     - Expansion: examples/expansion.md
-  - Reference:
+  - 📚 Reference:
     - reference/index.md
     - API:
       - reference/api/index.md
+      - Initialization: reference/api/initialization.md
       - Definitions:
         - reference/api/definitions/index.md
         - Feature Spec: reference/api/definitions/feature-spec.md
@@ -272,14 +284,18 @@ nav:
         - Lineage Relationship: reference/api/definitions/relationship.md
         - Graph: reference/api/definitions/graph.md
         - Filters: reference/api/definitions/filters.md
-      - Config: reference/api/config.md
-      - Types: reference/api/types.md
-      - Constants: reference/api/constants.md
-      - Metadata Stores:
-        - reference/api/metadata-stores/index.md
+      - MetadataStore:
+        - Base: reference/api/metadata-stores/base.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
+      - Miscellaneous:
+        - Types: reference/api/types.md
+        - Constants: reference/api/constants.md
+        - Utils: reference/api/utils.md
+        - MetaxyConfig: reference/api/config.md
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
+    - System Columns: reference/system-columns.md
+  - 📝 Changelog: changelog.md
 
 extra:
   social:
@@ -290,12 +306,13 @@ extra:
 
 validation:
   omitted_files: warn
-  absolute_links: warn
+  absolute_links: relative_to_docs
   unrecognized_links: warn
   anchors: warn
 
 extra_javascript:
-- javascripts/scarf.js
+- javascripts/telemetry.js
+- javascripts/glossary-tooltips.js
 
 extra_css:
 - css/code_select.css

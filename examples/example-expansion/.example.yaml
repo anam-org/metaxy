@@ -1,0 +1,83 @@
+name: "One-to-Many Expansion Example"
+description: "Demonstrates 1:N expansion relationships and field-level provenance tracking"
+package_name: "example_expansion"
+
+scenarios:
+  - name: "Initial pipeline run"
+    description: "First execution creates videos, chunks, and face recognition"
+    steps:
+      - name: "initial_run"
+        type: "run_command"
+        command: "python pipeline.py"
+        description: "Run pipeline to create videos, chunks, and face recognition"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify pipeline processed all features"
+        returncode: 0
+        contains:
+          - "Found 3 new videos"
+          - "Found 3 new videos and 0 stale videos that need chunking"
+          - "Writing"
+          - "chunks for video"
+          - "new video chunks and 0 stale video chunks that need face recognition"
+          - "Writing face recognition"
+
+  - name: "Idempotent rerun"
+    description: "Second execution should detect no changes"
+    steps:
+      - name: "idempotent_run"
+        type: "run_command"
+        command: "python pipeline.py"
+        description: "Rerun pipeline without any code changes"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify nothing needs recomputation (idempotent)"
+        returncode: 0
+        contains:
+          - "Found 0 new videos and 0 stale videos that need chunking"
+          - "Found 0 new video chunks and 0 stale video chunks that need face recognition"
+
+  - name: "Code change - audio field only"
+    description: "Apply patch to change Video audio code_version, observe field-level tracking"
+    steps:
+      - name: "update_audio_version"
+        type: "apply_patch"
+        patch_path: "patches/01_update_video_code_version.patch"
+        description: "Change Video audio field code_version from 1 to 2"
+
+      - name: "recompute_after_audio_change"
+        type: "run_command"
+        command: "python pipeline.py"
+        description: "Run pipeline after audio code_version change"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify VideoChunks recompute but FaceRecognition does NOT (field-level tracking)"
+        returncode: 0
+        contains:
+          - "Found 3 new videos and 0 stale videos that need chunking"
+          - "new video chunks and 0 stale video chunks that need face recognition"
+          - "Writing"
+          - "chunks for video"
+
+  - name: "Final idempotent check"
+    description: "Verify no further recomputation needed after code change processed"
+    steps:
+      - name: "final_idempotent_check"
+        type: "run_command"
+        command: "python pipeline.py"
+        description: "Rerun pipeline after code change"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify everything is up-to-date"
+        returncode: 0
+        contains:
+          - "Found 0 new videos and 0 stale videos that need chunking"
+          - "Found 0 new video chunks and 0 stale video chunks that need face recognition"

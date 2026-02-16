@@ -29,11 +29,9 @@ class TerminalRenderer(BaseRenderer):
         filtered_graph = self._get_filtered_graph_data()
 
         # Create root node
-        if self.config.show_snapshot_version:
-            snapshot_version = self._format_hash(filtered_graph.snapshot_version)
-            root = Tree(
-                f"📊 [bold]Graph[/bold] [dim](snapshot: {snapshot_version})[/dim]"
-            )
+        if self.config.show_project_version:
+            project_version = self._format_hash(filtered_graph.project_version)
+            root = Tree(f"📊 [bold]Graph[/bold] [dim](snapshot: {project_version})[/dim]")
         else:
             root = Tree("📊 [bold]Graph[/bold]")
 
@@ -60,9 +58,7 @@ class TerminalRenderer(BaseRenderer):
         status_color = self._get_status_color(node.status)
 
         # Build feature label
-        label_parts = [
-            f"[{status_color}]{self._format_feature_key(node.key)}[/{status_color}]"
-        ]
+        label_parts = [f"[{status_color}]{self._format_feature_key(node.key)}[/{status_color}]"]
 
         # Show project if configured
         if self.config.show_projects and node.project:
@@ -72,9 +68,7 @@ class TerminalRenderer(BaseRenderer):
         if self.config.show_feature_versions:
             if node.status == NodeStatus.CHANGED and node.old_version is not None:
                 # Show version transition for changed nodes
-                version_transition = self._format_version_transition(
-                    node.old_version, node.version
-                )
+                version_transition = self._format_version_transition(node.old_version, node.version)
                 label_parts.append(version_transition)
             else:
                 # Normal version display
@@ -103,9 +97,7 @@ class TerminalRenderer(BaseRenderer):
             deps_branch = feature_branch.add("⬅️  [blue]depends on[/blue]")
             for dep_key in node.dependencies:
                 dep_color = status_color  # Use same color as parent for simplicity
-                deps_branch.add(
-                    f"[{dep_color}]{self._format_feature_key(dep_key)}[/{dep_color}]"
-                )
+                deps_branch.add(f"[{dep_color}]{self._format_feature_key(dep_key)}[/{dep_color}]")
 
     def _render_field_node(self, parent, field_node):
         """Add a field node to the tree.
@@ -117,20 +109,13 @@ class TerminalRenderer(BaseRenderer):
         # Get status color
         status_color = self._get_status_color(field_node.status)
 
-        label_parts = [
-            f"[{status_color}]{self._format_field_key(field_node.key)}[/{status_color}]"
-        ]
+        label_parts = [f"[{status_color}]{self._format_field_key(field_node.key)}[/{status_color}]"]
 
         # Show version info
         if self.config.show_field_versions:
-            if (
-                field_node.status == NodeStatus.CHANGED
-                and field_node.old_version is not None
-            ):
+            if field_node.status == NodeStatus.CHANGED and field_node.old_version is not None:
                 # Show version transition for changed fields
-                version_transition = self._format_version_transition(
-                    field_node.old_version, field_node.version
-                )
+                version_transition = self._format_version_transition(field_node.old_version, field_node.version)
                 label_parts.append(version_transition)
             else:
                 # Normal version display

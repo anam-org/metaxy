@@ -55,8 +55,8 @@ class TestMetaxyIOManagerHandleOutput:
         """Test that handle_output with None logs metadata when feature data exists externally."""
         # First write data externally (not via IOManager)
         store = mx.MetaxyConfig.get().get_store("dev")
-        with store.open("write"):
-            store.write_metadata(
+        with store.open("w"):
+            store.write(
                 upstream_feature,
                 pl.DataFrame(
                     {
@@ -135,8 +135,8 @@ class TestMetaxyIOManagerHandleOutput:
         )
         def my_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Write data directly to store inside the asset
-            with store.open("write"):
-                store.write_metadata(
+            with store.open("w"):
+                store.write(
                     upstream_feature,
                     pl.DataFrame(
                         {
@@ -206,9 +206,7 @@ class TestMetaxyIOManagerHandleOutput:
         @dg.asset(deps=[my_asset])
         def verify_asset(store: dg.ResourceParam[mx.MetadataStore]):
             with store:
-                captured_data["rows"] = len(
-                    store.read_metadata(upstream_feature).collect()
-                )
+                captured_data["rows"] = len(store.read(upstream_feature).collect())
 
         result2 = dg.materialize(
             [verify_asset],
@@ -237,7 +235,7 @@ class TestMetaxyIOManagerLoadInput:
         metadata to the LOADED_INPUT event.
         """
         import metaxy.ext.dagster as mxd
-        from metaxy.metadata_store.delta import DeltaMetadataStore
+        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
         # Create fallback and primary stores
         fallback_path = tmp_path / "fallback"
@@ -246,8 +244,8 @@ class TestMetaxyIOManagerLoadInput:
         fallback_store = DeltaMetadataStore(root_path=fallback_path)
 
         # Write upstream data to fallback store only
-        with fallback_store.open("write"):
-            fallback_store.write_metadata(
+        with fallback_store.open("w"):
+            fallback_store.write(
                 upstream_feature,
                 pl.DataFrame(
                     {
@@ -262,20 +260,18 @@ class TestMetaxyIOManagerLoadInput:
 
         # Configure MetaxyConfig with primary store having fallback
         fallback_store_config = mx.StoreConfig(
-            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
             config={"root_path": str(fallback_path)},
         )
         primary_store_config = mx.StoreConfig(
-            type="metaxy.metadata_store.delta.DeltaMetadataStore",
+            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
             config={
                 "root_path": str(primary_path),
                 "fallback_stores": ["fallback"],
             },
         )
 
-        with mx.MetaxyConfig(
-            stores={"dev": primary_store_config, "fallback": fallback_store_config}
-        ).use():
+        with mx.MetaxyConfig(stores={"dev": primary_store_config, "fallback": fallback_store_config}).use():
             store_resource = mxd.MetaxyStoreFromConfigResource(name="dev")
             resources = {
                 "store": store_resource,
@@ -326,9 +322,7 @@ class TestMetaxyIOManagerLoadInput:
             assert captured_data["ids"] == {"f1", "f2"}
 
             # Find the LOADED_INPUT event for the upstream_asset input
-            loaded_input_events = [
-                e for e in result2.all_events if e.event_type_value == "LOADED_INPUT"
-            ]
+            loaded_input_events = [e for e in result2.all_events if e.event_type_value == "LOADED_INPUT"]
             assert len(loaded_input_events) == 1
 
             # Check the input metadata shows the fallback store
@@ -378,7 +372,7 @@ class TestMetaxyIOManagerLoadInput:
         def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Manually load the upstream data to verify it works
             with store:
-                upstream_data = store.read_metadata(upstream_feature).collect()
+                upstream_data = store.read(upstream_feature).collect()
                 captured_input["data"] = upstream_data
             return None
 
@@ -416,8 +410,8 @@ class TestMetaxyIOManagerMetadata:
         """Test that output metadata includes feature version info."""
         # First write data externally so metadata can be read
         store = mx.MetaxyConfig.get().get_store("dev")
-        with store.open("write"):
-            store.write_metadata(
+        with store.open("w"):
+            store.write(
                 upstream_feature,
                 pl.DataFrame(
                     {
@@ -477,6 +471,9 @@ class TestMetaxyIOManagerMetadata:
         # Type should be fully qualified class name
         expected_type = f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["type"] == expected_type
+
+        # Name should match store.name (from config key)
+        assert store_meta["name"] == actual_store.name
 
         # Display should match store.display()
         assert store_meta["display"] == actual_store.display()
@@ -634,7 +631,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify all data was written (6 rows total: 2 per partition)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamPartitioned).collect()
+            all_data = store.read(UpstreamPartitioned).collect()
             assert len(all_data) == 6
 
         # Materialize downstream for partition "b" only
@@ -651,8 +648,7 @@ class TestMetaxyIOManagerPartitions:
         # Verify downstream received ONLY partition "b" data via IO manager
         assert captured_data["partition"] == "b"
         assert captured_data["row_count"] == 2, (
-            f"Expected 2 rows for partition 'b', got {captured_data['row_count']}. "
-            f"IDs received: {captured_data['ids']}"
+            f"Expected 2 rows for partition 'b', got {captured_data['row_count']}. IDs received: {captured_data['ids']}"
         )
         assert captured_data["ids"] == {"b_1", "b_2"}
         assert captured_data["partitions"] == {"b"}
@@ -714,11 +710,7 @@ class TestMetaxyIOManagerPartitions:
         @dg.asset(
             metadata={"metaxy/feature": "features/downstream_unpart"},
             io_manager_key="metaxy_io_manager",
-            ins={
-                "upstream_partitioned": dg.AssetIn(
-                    partition_mapping=dg.AllPartitionMapping()
-                )
-            },
+            ins={"upstream_partitioned": dg.AssetIn(partition_mapping=dg.AllPartitionMapping())},
         )
         def downstream_unpartitioned(
             upstream_partitioned: nw.LazyFrame,
@@ -743,7 +735,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify all data was written (6 rows total: 2 per partition)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamPartToUnpart).collect()
+            all_data = store.read(UpstreamPartToUnpart).collect()
             assert len(all_data) == 6
 
         # Materialize unpartitioned downstream
@@ -758,8 +750,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify downstream received ALL data via IO manager
         assert captured_data["row_count"] == 6, (
-            f"Expected 6 rows (all partitions), got {captured_data['row_count']}. "
-            f"IDs received: {captured_data['ids']}"
+            f"Expected 6 rows (all partitions), got {captured_data['row_count']}. IDs received: {captured_data['ids']}"
         )
         assert captured_data["ids"] == {"a_1", "a_2", "b_1", "b_2", "c_1", "c_2"}
         assert captured_data["partitions"] == {"a", "b", "c"}
@@ -822,11 +813,7 @@ class TestMetaxyIOManagerPartitions:
             },
             io_manager_key="metaxy_io_manager",
             partitions_def=partitions_def,
-            ins={
-                "upstream_unpartitioned": dg.AssetIn(
-                    partition_mapping=dg.AllPartitionMapping()
-                )
-            },
+            ins={"upstream_unpartitioned": dg.AssetIn(partition_mapping=dg.AllPartitionMapping())},
         )
         def downstream_partitioned(
             context: dg.AssetExecutionContext,
@@ -851,7 +838,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify upstream data was written
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamUnpart).collect()
+            all_data = store.read(UpstreamUnpart).collect()
             assert len(all_data) == 4
 
         # Materialize downstream for partition "b"
@@ -904,9 +891,7 @@ class TestMetaxyIOManagerPartitions:
             id: str
 
         # Use different partition schemes
-        upstream_partitions = dg.StaticPartitionsDefinition(
-            ["2024-01", "2024-02", "2024-03"]
-        )
+        upstream_partitions = dg.StaticPartitionsDefinition(["2024-01", "2024-02", "2024-03"])
         downstream_partitions = dg.StaticPartitionsDefinition(["q1"])
 
         captured_data: dict[str, Any] = {}
@@ -971,7 +956,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify all upstream data was written (6 rows total)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(UpstreamSpecificMapping).collect()
+            all_data = store.read(UpstreamSpecificMapping).collect()
             assert len(all_data) == 6
 
         # Materialize downstream for partition "q1"
@@ -987,8 +972,7 @@ class TestMetaxyIOManagerPartitions:
 
         # Verify downstream received only data from 2024-01 and 2024-02
         assert captured_data["row_count"] == 4, (
-            f"Expected 4 rows (Jan + Feb), got {captured_data['row_count']}. "
-            f"IDs received: {captured_data['ids']}"
+            f"Expected 4 rows (Jan + Feb), got {captured_data['row_count']}. IDs received: {captured_data['ids']}"
         )
         assert captured_data["ids"] == {
             "2024-01_1",
@@ -1033,9 +1017,7 @@ class TestMetaxyIOManagerPartitions:
                 {
                     "id": [f"{partition}_{i}" for i in range(count)],
                     "partition": [partition] * count,
-                    "metaxy_provenance_by_field": [
-                        {"value": f"v{i}"} for i in range(count)
-                    ],
+                    "metaxy_provenance_by_field": [{"value": f"v{i}"} for i in range(count)],
                 }
             )
 
@@ -1058,10 +1040,7 @@ class TestMetaxyIOManagerPartitions:
             metadata = event.step_materialization_data.materialization.metadata
 
             assert metadata["dagster/row_count"].value == expected_totals[partition]
-            assert (
-                metadata["dagster/partition_row_count"].value
-                == expected_partition_counts[partition]
-            )
+            assert metadata["dagster/partition_row_count"].value == expected_partition_counts[partition]
 
 
 class TestMultipleAssetsPerFeature:
@@ -1132,7 +1111,7 @@ class TestMultipleAssetsPerFeature:
 
         # Verify first asset's data is in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            data_after_a = store.read_metadata(shared_feature).collect()
+            data_after_a = store.read(shared_feature).collect()
             assert len(data_after_a) == 3
 
         # Materialize second asset
@@ -1145,7 +1124,7 @@ class TestMultipleAssetsPerFeature:
 
         # Verify both assets' data is now in the store (append-only behavior)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(shared_feature).collect()
+            all_data = store.read(shared_feature).collect()
             assert len(all_data) == 5  # 3 from A + 2 from B
 
             # Verify all IDs are present (convert to list via Narwhals for backend compatibility)
@@ -1215,7 +1194,7 @@ class TestMultipleAssetsPerFeature:
 
         # Verify all data is in the store
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            all_data = store.read_metadata(shared_feature).collect()
+            all_data = store.read(shared_feature).collect()
             assert len(all_data) == 5  # 2 from producer_one + 3 from producer_two
 
     def test_downstream_reads_from_multi_producer_feature(
@@ -1255,7 +1234,7 @@ class TestMultipleAssetsPerFeature:
         def consumer(store: dg.ResourceParam[mx.MetadataStore]):
             """Consumes all data from the shared feature."""
             with store:
-                data = store.read_metadata(shared_feature).collect()
+                data = store.read(shared_feature).collect()
                 captured_data["count"] = len(data)
                 captured_data["ids"] = set(data["id"].to_list())
 

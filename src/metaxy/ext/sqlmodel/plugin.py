@@ -12,6 +12,7 @@ from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy import FeatureSpec
+from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 from metaxy.models.constants import (
@@ -20,12 +21,12 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_DELETED_AT,
-    METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
+    METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
+    METAXY_UPDATED_AT,
     SYSTEM_COLUMN_PREFIX,
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph, MetaxyMeta
@@ -39,11 +40,7 @@ if TYPE_CHECKING:
 
 RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
     set(ALL_SYSTEM_COLUMNS)
-    | {
-        name.removeprefix(SYSTEM_COLUMN_PREFIX)
-        for name in ALL_SYSTEM_COLUMNS
-        if name.startswith(SYSTEM_COLUMN_PREFIX)
-    }
+    | {name.removeprefix(SYSTEM_COLUMN_PREFIX) for name in ALL_SYSTEM_COLUMNS if name.startswith(SYSTEM_COLUMN_PREFIX)}
 )
 
 
@@ -71,9 +68,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
             inject_primary_key: If True, automatically create composite primary key
-                including (metaxy_feature_version, *id_columns, metaxy_created_at).
+                including (metaxy_feature_version, *id_columns, metaxy_updated_at).
             inject_index: If True, automatically create composite index
-                including (metaxy_feature_version, *id_columns, metaxy_created_at).
+                including (metaxy_feature_version, *id_columns, metaxy_updated_at).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -103,11 +100,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 )
 
             # Prevent user-defined fields from shadowing system-managed columns
-            conflicts = {
-                attr_name
-                for attr_name in namespace
-                if attr_name in RESERVED_SQLMODEL_FIELD_NAMES
-            }
+            conflicts = {attr_name for attr_name in namespace if attr_name in RESERVED_SQLMODEL_FIELD_NAMES}
 
             # Also guard against explicit sa_column_kwargs targeting system columns
             for attr_name, attr_value in namespace.items():
@@ -130,15 +123,11 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             namespace["__tablename__"] = spec.key.table_name
 
             # Inject table args (info metadata + optional constraints)
-            cls._inject_table_args(
-                namespace, spec, cls_name, inject_primary_key, inject_index
-            )
+            cls._inject_table_args(namespace, spec, cls_name, inject_primary_key, inject_index)
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
-        new_class = super().__new__(
-            cls, cls_name, bases, namespace, spec=spec, **kwargs
-        )
+        new_class = super().__new__(cls, cls_name, bases, namespace, spec=spec, **kwargs)
 
         return new_class
 
@@ -169,9 +158,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         from sqlalchemy import Index, PrimaryKeyConstraint
 
         # Prepare info dict with Metaxy metadata (always added)
-        metaxy_info = {
-            "metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()
-        }
+        metaxy_info = {"metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()}
 
         # Base table kwargs that are always applied
         base_table_kwargs = {"extend_existing": True}
@@ -179,8 +166,8 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         # Prepare constraints if requested
         constraints = []
         if inject_primary_key or inject_index:
-            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_created_at
-            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_CREATED_AT]
+            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_updated_at
+            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_UPDATED_AT]
 
             if inject_primary_key:
                 constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
@@ -227,13 +214,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                     table_kwargs.setdefault(key, value)
 
                 # Combine: existing constraints + new constraints + table kwargs
-                namespace["__table_args__"] = (
-                    existing_constraints + tuple(constraints) + (table_kwargs,)
-                )
+                namespace["__table_args__"] = existing_constraints + tuple(constraints) + (table_kwargs,)
             else:
-                raise ValueError(
-                    f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}"
-                )
+                raise ValueError(f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}")
         else:
             # No existing __table_args__
             table_kwargs = {**base_table_kwargs, "info": metaxy_info}
@@ -245,33 +228,32 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 namespace["__table_args__"] = table_kwargs
 
 
-class BaseSQLModelFeature(
-    SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
-):
+@public
+class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None):
     """Base class for `Metaxy` features that are also `SQLModel` tables.
 
     !!! example
 
+        <!-- skip next -->
         ```py
         from metaxy.integrations.sqlmodel import BaseSQLModelFeature
-        from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
+
 
         class VideoFeature(
             BaseSQLModelFeature,
             table=True,
-            spec=FeatureSpec(
-                key=FeatureKey(["video"]),
+            spec=mx.FeatureSpec(
+                key=mx.FeatureKey(["video"]),
                 id_columns=["uid"],
                 fields=[
-                    FieldSpec(
-                        key=FieldKey(["video_file"]),
+                    mx.FieldSpec(
+                        key=mx.FieldKey(["video_file"]),
                         code_version="1",
                     ),
                 ],
             ),
         ):
-
             uid: str = Field(primary_key=True)
             path: str
             duration: float
@@ -323,20 +305,11 @@ class BaseSQLModelFeature(
         nullable=False,
     )
 
-    metaxy_feature_spec_version: str | None = Field(
-        default=None,
-        description="Hash of the complete feature specification.",
-        sa_column_kwargs={
-            "name": METAXY_FEATURE_SPEC_VERSION,
-        },
-        nullable=False,
-    )
-
-    metaxy_snapshot_version: str | None = Field(
+    metaxy_project_version: str | None = Field(
         default=None,
         description="Hash of the entire feature graph snapshot",
         sa_column_kwargs={
-            "name": METAXY_SNAPSHOT_VERSION,
+            "name": METAXY_PROJECT_VERSION,
         },
         nullable=False,
     )
@@ -363,9 +336,19 @@ class BaseSQLModelFeature(
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
+        },
+        nullable=False,
+    )
+
+    metaxy_updated_at: AwareDatetime | None = Field(
+        default=None,
+        description="Timestamp when the metadata row was last updated (UTC)",
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={
+            "name": METAXY_UPDATED_AT,
         },
         nullable=False,
     )
@@ -382,7 +365,7 @@ class BaseSQLModelFeature(
     metaxy_deleted_at: AwareDatetime | None = Field(
         default=None,
         description="Soft delete timestamp (UTC); null means active row",
-        sa_type=DateTime(timezone=True),  # type: ignore[arg-type]
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={
             "name": METAXY_DELETED_AT,
         },
@@ -393,6 +376,7 @@ class BaseSQLModelFeature(
 # Convenience wrappers for filtering SQLModel metadata
 
 
+@public
 def filter_feature_sqlmodel_metadata(
     store: "IbisMetadataStore",
     source_metadata: "MetaData",
@@ -412,7 +396,7 @@ def filter_feature_sqlmodel_metadata(
     by adding the store's `table_prefix`. The returned metadata will have prefixed table
     names that match the actual database tables.
 
-    This function must be called after init_metaxy() to ensure features are loaded.
+    This function must be called after init() to ensure features are loaded.
 
     Args:
         store: IbisMetadataStore instance (provides table_prefix and sqlalchemy_url)
@@ -441,24 +425,23 @@ def filter_feature_sqlmodel_metadata(
 
     Example: Basic Usage
 
+        <!-- skip next -->
         ```py
         from sqlmodel import SQLModel
         from metaxy.ext.sqlmodel import filter_feature_sqlmodel_metadata
-        from metaxy import init_metaxy
-        from metaxy.config import MetaxyConfig
+        from alembic import context
 
         # Load features first
-        init_metaxy()
+        mx.init()
 
         # Get store instance
-        config = MetaxyConfig.get()
+        config = mx.MetaxyConfig.get()
         store = config.get_store("my_store")
 
         # Filter SQLModel metadata with prefix transformation
         url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
 
         # Use with Alembic env.py
-        from alembic import context
         url, target_metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
         context.configure(url=url, target_metadata=target_metadata)
         ```
@@ -497,16 +480,15 @@ def filter_feature_sqlmodel_metadata(
             feature_key = metaxy_info.feature_key
         else:
             continue
-        # Look up the feature class from the FeatureGraph
-        feature_cls = feature_graph.features_by_key.get(feature_key)
-        if feature_cls is None:
+        # Look up the feature definition from the FeatureGraph
+        definition = feature_graph.feature_definitions_by_key.get(feature_key)
+        if definition is None:
             # Skip tables for features that aren't registered
             continue
 
         # Filter by project if requested
         if filter_by_project:
-            feature_project = getattr(feature_cls, "project", None)
-            if feature_project != project:
+            if definition.project != project:
                 continue
 
         # Compute prefixed name using store's table_prefix
@@ -519,10 +501,9 @@ def filter_feature_sqlmodel_metadata(
         if inject_primary_key or inject_index:
             from metaxy.ext.sqlalchemy.plugin import _inject_constraints
 
-            spec = feature_cls.spec()
             _inject_constraints(
                 table=new_table,
-                spec=spec,
+                spec=definition.spec,
                 inject_primary_key=inject_primary_key,
                 inject_index=inject_index,
             )

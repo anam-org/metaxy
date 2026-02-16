@@ -65,7 +65,7 @@ class GraphNode(FrozenBaseModel):
     fields: list[FieldNode] = Field(default_factory=list)
     dependencies: list[FeatureKey] = Field(default_factory=list)
     status: NodeStatus = NodeStatus.NORMAL
-    project: str | None = None  # Project name (None for legacy features)
+    project: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -89,14 +89,14 @@ class GraphData(FrozenBaseModel):
     Attributes:
         nodes: Map from feature key string to GraphNode
         edges: List of edges
-        snapshot_version: Optional snapshot version
-        old_snapshot_version: Optional old snapshot version (for diffs)
+        project_version: Optional project version
+        old_project_version: Optional old project version (for diffs)
     """
 
     nodes: dict[str, GraphNode]  # Key is feature_key.to_string()
     edges: list[EdgeData] = Field(default_factory=list)
-    snapshot_version: str | None = None
-    old_snapshot_version: str | None = None  # For diff mode
+    project_version: str | None = None
+    old_project_version: str | None = None  # For diff mode
 
     def get_node(self, key: FeatureKey) -> GraphNode | None:
         """Get node by feature key.
@@ -149,9 +149,7 @@ class GraphData(FrozenBaseModel):
                 )
 
             if node.code_version is None:
-                raise MetaxyEmptyCodeVersionError(
-                    f"Feature {node.key.to_string()} has empty code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Feature {node.key.to_string()} has empty code_version.")
             nodes_list.append(
                 {
                     "key": node.key.to_string(),
@@ -177,13 +175,13 @@ class GraphData(FrozenBaseModel):
             "edges": edges_list,
         }
 
-        # Include snapshot_version if present
-        if self.snapshot_version is not None:
-            result["metaxy_snapshot_version"] = self.snapshot_version
+        # Include project_version if present
+        if self.project_version is not None:
+            result["metaxy_project_version"] = self.project_version
 
-        # Include old_snapshot_version if present (for diffs)
-        if self.old_snapshot_version is not None:
-            result["old_snapshot_version"] = self.old_snapshot_version
+        # Include old_project_version if present (for diffs)
+        if self.old_project_version is not None:
+            result["old_project_version"] = self.old_project_version
 
         return result
 
@@ -212,9 +210,7 @@ class GraphData(FrozenBaseModel):
                 fields.append(
                     FieldNode(
                         key=FieldKey(field_data["key"].split("/")),
-                        version=field_data["version"]
-                        if field_data["version"]
-                        else None,
+                        version=field_data["version"] if field_data["version"] else None,
                         code_version=field_data["code_version"],
                     )
                 )
@@ -224,17 +220,13 @@ class GraphData(FrozenBaseModel):
                 or node_data["code_version"] is None
                 or node_data["code_version"] == DEFAULT_CODE_VERSION
             ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Feature {node_data['key']} has empty code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Feature {node_data['key']} has empty code_version.")
             node = GraphNode(
                 key=FeatureKey(node_data["key"].split("/")),
                 version=node_data["version"] if node_data["version"] else None,
                 code_version=node_data["code_version"],
                 fields=fields,
-                dependencies=[
-                    FeatureKey(dep.split("/")) for dep in node_data["dependencies"]
-                ],
+                dependencies=[FeatureKey(dep.split("/")) for dep in node_data["dependencies"]],
                 project=node_data.get("project") if node_data.get("project") else None,
             )
             nodes[node_data["key"]] = node
@@ -248,17 +240,17 @@ class GraphData(FrozenBaseModel):
                 )
             )
 
-        # Extract snapshot_version if present
-        snapshot_version = struct_data.get("metaxy_snapshot_version")
+        # Extract project_version if present
+        project_version = struct_data.get("metaxy_project_version")
 
-        # Extract old_snapshot_version if present (for diffs)
-        old_snapshot_version = struct_data.get("old_snapshot_version")
+        # Extract old_project_version if present (for diffs)
+        old_project_version = struct_data.get("old_project_version")
 
         return cls(
             nodes=nodes,
             edges=edges,
-            snapshot_version=snapshot_version,
-            old_snapshot_version=old_snapshot_version,
+            project_version=project_version,
+            old_project_version=old_project_version,
         )
 
     @classmethod
@@ -277,9 +269,9 @@ class GraphData(FrozenBaseModel):
         edges: list[EdgeData] = []
 
         # Convert each feature to a GraphNode
-        for feature_key, feature_cls in graph.features_by_key.items():
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
-            spec = feature_cls.spec()
+            spec = definition.spec
 
             # Get feature version
             feature_version = graph.get_feature_version(feature_key)
@@ -305,8 +297,8 @@ class GraphData(FrozenBaseModel):
             if spec.deps:
                 dependencies = [dep.feature for dep in spec.deps]
 
-            # Get project from feature class
-            feature_project = feature_cls.project
+            # Get project from feature definition
+            feature_project = definition.project
 
             # Create node
             node = GraphNode(
@@ -326,7 +318,7 @@ class GraphData(FrozenBaseModel):
         return cls(
             nodes=nodes,
             edges=edges,
-            snapshot_version=graph.snapshot_version,
+            project_version=graph.project_version,
         )
 
     @classmethod
@@ -413,17 +405,13 @@ class GraphData(FrozenBaseModel):
             feature_key = FeatureKey(feature_key_str.split("/"))
 
             # Map status strings to NodeStatus enum
-            status_str = node_data["status"]
-            if status_str == "added":
-                status = NodeStatus.ADDED
-            elif status_str == "removed":
-                status = NodeStatus.REMOVED
-            elif status_str == "changed":
-                status = NodeStatus.CHANGED
-            elif status_str == "unchanged":
-                status = NodeStatus.UNCHANGED
-            else:
-                status = NodeStatus.NORMAL
+            status_map = {
+                "added": NodeStatus.ADDED,
+                "removed": NodeStatus.REMOVED,
+                "changed": NodeStatus.CHANGED,
+                "unchanged": NodeStatus.UNCHANGED,
+            }
+            status = status_map.get(node_data["status"], NodeStatus.NORMAL)
 
             # Convert fields
             fields_dict = node_data.get("fields", {})
@@ -478,10 +466,7 @@ class GraphData(FrozenBaseModel):
                 field_nodes.append(field_node)
 
             # Parse dependencies
-            dependencies = [
-                FeatureKey(dep_str.split("/"))
-                for dep_str in node_data.get("dependencies", [])
-            ]
+            dependencies = [FeatureKey(dep_str.split("/")) for dep_str in node_data.get("dependencies", [])]
 
             # Create node
             node = GraphNode(

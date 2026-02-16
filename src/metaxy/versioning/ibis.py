@@ -79,9 +79,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Get hash function
@@ -122,18 +120,11 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Build struct expression - reference columns by name
-        struct_expr = ibis.struct(
-            {
-                field_name: ibis_table[col_name]
-                for field_name, col_name in field_columns.items()
-            }
-        )
+        struct_expr = ibis.struct({field_name: ibis_table[col_name] for field_name, col_name in field_columns.items()})
 
         # Add struct column
         result_table = ibis_table.mutate(**{struct_name: struct_expr})
@@ -158,9 +149,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis
         import ibis.expr.types
 
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Create window spec with ordering for deterministic results
@@ -172,12 +161,7 @@ class IbisVersioningEngine(VersioningEngine):
         )
 
         # Use group_concat over window to concatenate values
-        concat_expr = (
-            ibis_table[source_column]
-            .cast("string")
-            .group_concat(sep=separator)
-            .over(window)
-        )
+        concat_expr = ibis_table[source_column].cast("string").group_concat(sep=separator).over(window)
         ibis_table = ibis_table.mutate(**{target_column: concat_expr})
 
         return cast(FrameT, nw.from_native(ibis_table))
@@ -207,9 +191,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
+        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
 
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
@@ -223,10 +205,7 @@ class IbisVersioningEngine(VersioningEngine):
         non_group_columns = all_columns - set(group_columns) - {TEMP_TABLE_NAME}
 
         # Build aggregation dict: for each non-group column, use argmax(timestamp)
-        agg_exprs = {
-            col: ibis_table[col].argmax(ibis_table[TEMP_TABLE_NAME])
-            for col in non_group_columns
-        }
+        agg_exprs = {col: ibis_table[col].argmax(ibis_table[TEMP_TABLE_NAME]) for col in non_group_columns}
 
         # Perform groupby and aggregate
         result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)

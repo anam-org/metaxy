@@ -29,7 +29,7 @@ def test_filter_feature_sqlmodel_metadata_applies_table_prefix():
         project="test_project",
         stores={
             "prefixed_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "myprefix_",
@@ -51,7 +51,7 @@ def test_filter_feature_sqlmodel_metadata_applies_table_prefix():
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
-            project = "test_project"  # Must match config project
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             value: str
 
@@ -75,7 +75,7 @@ def test_filter_feature_sqlmodel_metadata_no_prefix():
         project="test_project",
         stores={
             "no_prefix_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                 },
@@ -96,7 +96,7 @@ def test_filter_feature_sqlmodel_metadata_no_prefix():
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
-            project = "test_project"
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             value: str
 
@@ -117,14 +117,14 @@ def test_filter_feature_sqlmodel_metadata_different_prefixes():
         project="test_project",
         stores={
             "store_a": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "a_",
                 },
             ),
             "store_b": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "b_",
@@ -146,7 +146,7 @@ def test_filter_feature_sqlmodel_metadata_different_prefixes():
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
-            project = "test_project"
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             data: str
 
@@ -178,7 +178,7 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
         project="test_project",
         stores={
             "prefixed_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "table_prefix": "env_",
@@ -200,7 +200,7 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
-            # Will auto-detect project from config = "test_project"
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             value: str
 
@@ -213,7 +213,7 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
-            # Will auto-detect project from config = "test_project"
+            __metaxy_project__ = "test_project"
             id: str = Field(primary_key=True)
             data: str
 
@@ -243,7 +243,7 @@ def test_custom_tablename_raises_error():
         project="test_project",
         stores={
             "default_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={"database": ":memory:"},
             )
         },
@@ -279,7 +279,7 @@ class TestProtocolParameter:
             project="test_project",
             stores={
                 "test_store": StoreConfig(
-                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     config={"database": "test.db"},
                 )
             },
@@ -298,6 +298,7 @@ class TestProtocolParameter:
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
+                __metaxy_project__ = "test_project"
                 id: str = Field(primary_key=True)
                 value: str
 
@@ -321,7 +322,7 @@ class TestProtocolParameter:
             project="test_project",
             stores={
                 "test_store": StoreConfig(
-                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     config={"database": "mydb.db"},
                 )
             },
@@ -344,9 +345,7 @@ class TestProtocolParameter:
                 value: str
 
             store = config.get_store(expected_type=IbisMetadataStore)
-            url, _ = filter_feature_sqlmodel_metadata(
-                store, SQLModel.metadata, protocol=None
-            )
+            url, _ = filter_feature_sqlmodel_metadata(store, SQLModel.metadata, protocol=None)
             assert url == "duckdb:///mydb.db"
 
     def test_protocol_override_with_table_prefix(self):
@@ -355,7 +354,7 @@ class TestProtocolParameter:
             project="test_project",
             stores={
                 "prefixed_store": StoreConfig(
-                    type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                     config={
                         "database": "test.db",
                         "table_prefix": "myprefix_",
@@ -377,15 +376,14 @@ class TestProtocolParameter:
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
+                __metaxy_project__ = "test_project"
                 id: str = Field(primary_key=True)
                 value: str
 
             store = config.get_store(expected_type=IbisMetadataStore)
 
             # With protocol override
-            url, metadata = filter_feature_sqlmodel_metadata(
-                store, SQLModel.metadata, protocol="postgresql+psycopg2"
-            )
+            url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata, protocol="postgresql+psycopg2")
 
             # Protocol should be replaced
             assert url.startswith("postgresql+psycopg2://")

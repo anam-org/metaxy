@@ -9,10 +9,11 @@ from metaxy.graph import RenderConfig
 
 # Graph-diff subcommand app
 app = cyclopts.App(
-    name="graph-diff",  # pyrefly: ignore[unexpected-keyword]
-    help="Compare and visualize graph snapshots",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="graph-diff",
+    help="Compare and visualize graph snapshots",
+    console=console,
+    error_console=error_console,
+    show=False,
 )
 
 
@@ -121,9 +122,7 @@ def render(
     # Validate format
     valid_formats = ["terminal", "cards", "mermaid", "graphviz", "json", "yaml"]
     if format not in valid_formats:
-        console.print(
-            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
-        )
+        console.print(f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}")
         raise SystemExit(1)
 
     # Resolve configuration from presets
@@ -153,9 +152,7 @@ def render(
 
     # Validate filtering options
     if (config.up is not None or config.down is not None) and config.feature is None:
-        console.print(
-            "[red]Error:[/red] --up and --down require --feature to be specified"
-        )
+        console.print("[red]Error:[/red] --up and --down require --feature to be specified")
         raise SystemExit(1)
 
     from metaxy.cli.context import AppContext
@@ -166,15 +163,11 @@ def render(
     project = context.get_required_project()  # This command needs a specific project
 
     with metadata_store:
-        # Resolve snapshot versions
+        # Resolve project versions
         resolver = SnapshotResolver()
         try:
-            from_snapshot_version = resolver.resolve_snapshot(
-                from_snapshot, metadata_store, graph
-            )
-            to_snapshot_version = resolver.resolve_snapshot(
-                to_snapshot, metadata_store, graph
-            )
+            from_project_version = resolver.resolve_snapshot(from_snapshot, metadata_store, graph, project)
+            to_project_version = resolver.resolve_snapshot(to_snapshot, metadata_store, graph, project)
         except ValueError as e:
             console.print(f"[red]Error:[/red] {e}")
             raise SystemExit(1)
@@ -187,12 +180,12 @@ def render(
         try:
             from_snapshot_data = differ.load_snapshot_data(
                 metadata_store,
-                from_snapshot_version,
+                from_project_version,
                 project,
             )
             to_snapshot_data = differ.load_snapshot_data(
                 metadata_store,
-                to_snapshot_version,
+                to_project_version,
                 project,
             )
         except ValueError as e:
@@ -203,9 +196,7 @@ def render(
         graph_diff = differ.diff(from_snapshot_data, to_snapshot_data)
 
         # Create merged graph data
-        merged_data = differ.create_merged_graph_data(
-            from_snapshot_data, to_snapshot_data, graph_diff
-        )
+        merged_data = differ.create_merged_graph_data(from_snapshot_data, to_snapshot_data, graph_diff)
 
         # Apply graph slicing if requested
         if config.feature is not None:
@@ -226,19 +217,13 @@ def render(
         if format in ("terminal", "mermaid", "json", "yaml"):
             from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
-            formatter = DiffFormatter(console)
-
-            # Determine show_all_fields based on config
-            # TODO: add show_changed_fields_only to config
-            show_all_fields = True  # Default: show all fields
-
             try:
-                rendered = formatter.format(
+                rendered = DiffFormatter(console).format(
                     merged_data=merged_data,
                     format=format,
                     verbose=verbose,
                     diff_only=False,  # Always use merged view for graph-diff render
-                    show_all_fields=show_all_fields,
+                    show_all_fields=True,
                 )
             except Exception as e:
                 from metaxy.cli.utils import print_error
@@ -253,15 +238,12 @@ def render(
             from metaxy.graph.diff.rendering.theme import Theme
 
             theme = Theme.default()
-            graph_data = GraphData.from_merged_diff(merged_data)
 
             if format == "cards":
-                renderer = CardsRenderer(
-                    graph_data=graph_data, config=config, theme=theme
-                )
+                renderer = CardsRenderer(graph_data=GraphData.from_merged_diff(merged_data), config=config, theme=theme)
             elif format == "graphviz":
                 renderer = GraphvizRenderer(
-                    graph_data=graph_data, config=config, theme=theme
+                    graph_data=GraphData.from_merged_diff(merged_data), config=config, theme=theme
                 )
             else:
                 console.print(f"[red]Error:[/red] Unknown format: {format}")
@@ -287,9 +269,7 @@ def render(
             except Exception as e:
                 from metaxy.cli.utils import print_error
 
-                print_error(
-                    console, "Failed to write to file", e, prefix="[red]Error:[/red]"
-                )
+                print_error(console, "Failed to write to file", e, prefix="[red]Error:[/red]")
                 raise SystemExit(1)
         else:
             # Print to stdout using data_console

@@ -5,9 +5,9 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 import dagster as dg
-from dagster import Nothing
 
 import metaxy as mx
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
@@ -25,6 +25,7 @@ from metaxy.metadata_store.exceptions import FeatureNotFoundError
 logger = logging.getLogger(__name__)
 
 
+@public
 def build_metaxy_multi_observation_job(
     name: str,
     *,
@@ -82,15 +83,16 @@ def build_metaxy_multi_observation_job(
         import dagster as dg
         import metaxy.ext.dagster as mxd
 
+
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature_a"})
-        def feature_a():
-            ...
+        def feature_a(): ...
+
 
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature_b"})
-        def feature_b():
-            ...
+        def feature_b(): ...
+
 
         # Option 1: Using asset_selection + defs
         my_defs = dg.Definitions(assets=[feature_a, feature_b])
@@ -139,10 +141,7 @@ def build_metaxy_multi_observation_job(
         for asset_def in all_assets_defs:
             for spec in asset_def.specs:
                 if spec.key in selected_keys:
-                    if (
-                        spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-                        is not None
-                    ):
+                    if spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None:
                         metaxy_specs.append(spec)
                         partitions_defs.append(asset_def.partitions_def)
     else:
@@ -158,20 +157,14 @@ def build_metaxy_multi_observation_job(
                     partitions_defs.append(asset.partitions_def)
             elif isinstance(asset, dg.AssetsDefinition):
                 for spec in asset.specs:
-                    if (
-                        spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-                        is not None
-                    ):
+                    if spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None:
                         metaxy_specs.append(spec)
                         partitions_defs.append(asset.partitions_def)
             elif isinstance(asset, dg.SourceAsset):
                 # SourceAsset doesn't have metaxy/feature metadata typically
                 pass
             else:
-                raise TypeError(
-                    f"Expected AssetSpec, AssetsDefinition, or SourceAsset, "
-                    f"got {type(asset).__name__}"
-                )
+                raise TypeError(f"Expected AssetSpec, AssetsDefinition, or SourceAsset, got {type(asset).__name__}")
 
     if not metaxy_specs:
         raise ValueError(
@@ -191,8 +184,7 @@ def build_metaxy_multi_observation_job(
 
     # Build feature keys for description (may have duplicates when multiple assets share a feature)
     feature_keys = [
-        mx.coerce_to_feature_key(spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY])
-        for spec in metaxy_specs
+        mx.coerce_to_feature_key(spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY]) for spec in metaxy_specs
     ]
 
     # Build a mapping of asset key -> spec for the dynamic op
@@ -241,9 +233,7 @@ def build_metaxy_multi_observation_job(
         "metaxy/features": [fk.to_string() for fk in feature_keys],
     }
     for spec in metaxy_specs:
-        job_metadata[f"metaxy/asset/{spec.key.to_user_string()}"] = (
-            dg.MetadataValue.asset(spec.key)
-        )
+        job_metadata[f"metaxy/asset/{spec.key.to_user_string()}"] = dg.MetadataValue.asset(spec.key)
 
     # Build description as markdown list showing both assets and features
     asset_list = "\n".join(
@@ -267,6 +257,7 @@ def build_metaxy_multi_observation_job(
     return observation_job
 
 
+@public
 def build_metaxy_observation_job(
     asset: dg.AssetSpec | dg.AssetsDefinition,
     *,
@@ -300,10 +291,11 @@ def build_metaxy_observation_job(
         import dagster as dg
         import metaxy.ext.dagster as mxd
 
+
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature"})
-        def my_asset():
-            ...
+        def my_asset(): ...
+
 
         # Build the observation job - partitions_def is extracted automatically
         observation_job = mxd.build_metaxy_observation_job(my_asset)
@@ -323,16 +315,10 @@ def build_metaxy_observation_job(
         specs = list(asset.specs)
         partitions_def = asset.partitions_def
     else:
-        raise TypeError(
-            f"Expected AssetSpec or AssetsDefinition, got {type(asset).__name__}"
-        )
+        raise TypeError(f"Expected AssetSpec or AssetsDefinition, got {type(asset).__name__}")
 
     # Filter to specs with metaxy/feature metadata
-    metaxy_specs = [
-        spec
-        for spec in specs
-        if spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None
-    ]
+    metaxy_specs = [spec for spec in specs if spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY) is not None]
 
     if not metaxy_specs:
         raise ValueError(
@@ -424,7 +410,7 @@ def _build_observation_op_for_specs(
     @dg.op(
         name=name,
         required_resource_keys={store_resource_key},
-        out=dg.Out(Nothing),
+        out=dg.Out(dg.Nothing),
     )
     def observe_asset(context: dg.OpExecutionContext, asset_key_str: str) -> None:
         spec = spec_by_asset_key[asset_key_str]
@@ -433,9 +419,7 @@ def _build_observation_op_for_specs(
         partition_col = spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
         metaxy_partition = spec.metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
 
-        store: mx.MetadataStore | MetaxyStoreFromConfigResource = getattr(
-            context.resources, store_resource_key
-        )
+        store: mx.MetadataStore | MetaxyStoreFromConfigResource = getattr(context.resources, store_resource_key)
 
         # Build partition filters:
         # 1. Dagster partition filter (for time/date partitions)
@@ -448,11 +432,10 @@ def _build_observation_op_for_specs(
 
         with store:
             try:
-                lazy_df = store.read_metadata(feature_key, filters=all_filters)
+                lazy_df = store.read(feature_key, filters=all_filters)
             except FeatureNotFoundError:
                 context.log.warning(
-                    f"Feature {feature_key.to_string()} not found in store, "
-                    "returning empty observation"
+                    f"Feature {feature_key.to_string()} not found in store, returning empty observation"
                 )
                 context.log_event(
                     dg.AssetObservation(
@@ -469,7 +452,7 @@ def _build_observation_op_for_specs(
 
             if context.has_partition_key:
                 # Read entire feature (no partition filter) for total count
-                full_lazy_df = store.read_metadata(feature_key)
+                full_lazy_df = store.read(feature_key)
                 metadata["dagster/row_count"] = compute_row_count(full_lazy_df)
                 metadata["dagster/partition_row_count"] = partition_row_count
             else:

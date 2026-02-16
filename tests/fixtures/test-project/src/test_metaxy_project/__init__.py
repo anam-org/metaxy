@@ -1,4 +1,6 @@
-"""Test Metaxy project for testing entry point detection."""
+"""Test Metaxy project for testing package-based project detection."""
+
+__metaxy_project__ = "test-metaxy-project"
 
 
 def init():

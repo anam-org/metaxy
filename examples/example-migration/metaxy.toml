@@ -1,9 +1,9 @@
-project = "example-_migration"
+project = "example_migration"
 entrypoints = ["example_migration.__entrypoint__"]
 auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
-type = "metaxy.metadata_store.delta.DeltaMetadataStore"
+type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "/tmp/example_migration"

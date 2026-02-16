@@ -10,8 +10,8 @@
         "source": "url",
         "url": "https://github.com/anam-org/metaxy.git"
       },
-      "description": "Feature metadata management for multi-modal data and ML pipelines. Provides guidance on feature definitions, versioning, metadata stores, and testing.",
-      "version": "0.1.1",
+      "description": "Feature metadata management for multimodal data and ML pipelines. Provides guidance on feature definitions, versioning, metadata stores, and testing.",
+      "version": "0.1.6",
       "homepage": "https://anam-org.github.io/metaxy/"
     }
   ]

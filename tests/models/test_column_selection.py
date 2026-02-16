@@ -5,10 +5,10 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
+from metaxy_testing.pytest_helpers import add_metaxy_system_columns
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy._testing.pytest_helpers import add_metaxy_system_columns
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine
@@ -53,9 +53,7 @@ class TestJoiner:
         for upstream_key_str in upstream_refs.keys():
             upstream_key = FeatureKey(upstream_key_str)
             # The provenance_by_field column is renamed using to_column_suffix()
-            provenance_col_name = (
-                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
-            )
+            provenance_col_name = f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
             mapping[upstream_key_str] = provenance_col_name
 
         return joined, mapping  # ty: ignore[invalid-return-type]
@@ -107,9 +105,7 @@ class TestColumnSelection:
 
         # Join upstream
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, mapping = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -141,7 +137,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("custom_col1",),
+                        select=("custom_col1",),
                     )
                 ],
             ),
@@ -168,9 +164,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -201,7 +195,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=(),  # Only system columns
+                        select=(),  # Only system columns
                     )
                 ],
             ),
@@ -228,21 +222,17 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
 
         # Verify only essential system columns are present
-        # Note: feature_version and snapshot_version are NOT considered essential for joining
+        # Note: feature_version and project_version are NOT considered essential for joining
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
         assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
-        assert (
-            "metaxy_feature_version" not in joined_df.columns
-        )  # Not essential, dropped to avoid conflicts
+        assert "metaxy_feature_version" not in joined_df.columns  # Not essential, dropped to avoid conflicts
         assert "custom_col1" not in joined_df.columns
         assert "custom_col2" not in joined_df.columns
 
@@ -294,9 +284,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -330,8 +318,8 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("custom_col1", "custom_col2"),
                         rename={"custom_col1": "renamed_col1"},
+                        select=("renamed_col1", "custom_col2"),
                     )
                 ],
             ),
@@ -358,9 +346,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -553,7 +539,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("custom_col",),  # Don't explicitly list system columns
+                        select=("custom_col",),  # Don't explicitly list system columns
                     )
                 ],
             ),
@@ -574,16 +560,14 @@ class TestColumnSelection:
                     {"default": "h3"},
                 ],
                 "metaxy_feature_version": ["v1", "v1", "v1"],
-                "metaxy_snapshot_version": ["s1", "s1", "s1"],
+                "metaxy_project_version": ["s1", "s1", "s1"],
                 "custom_col": ["a", "b", "c"],
                 "other_col": [10, 20, 30],
             }
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -591,16 +575,16 @@ class TestColumnSelection:
         # Verify essential system columns are preserved
         assert "sample_uid" in joined_df.columns
         assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
-        # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
+        # Note: feature_version and project_version are NOT preserved to avoid conflicts
         assert "metaxy_feature_version" not in joined_df.columns
-        assert "metaxy_snapshot_version" not in joined_df.columns
+        assert "metaxy_project_version" not in joined_df.columns
         # Verify selected column
         assert "custom_col" in joined_df.columns
         # Verify non-selected column is not present
         assert "other_col" not in joined_df.columns
 
-    def test_pydantic_validation_rename_to_system_column(self):
-        """Test that renaming to system column names is forbidden."""
+    def test_pydantic_validation_rename_to_system_column(self, graph: FeatureGraph):
+        """Test that renaming to system column names is forbidden at plan creation time."""
 
         # Create upstream feature first
         class UpstreamFeature(
@@ -611,69 +595,68 @@ class TestColumnSelection:
         ):
             pass
 
-        # Renaming to provenance_by_field should raise an error
+        # Renaming to provenance_by_field should raise an error when getting the plan
+        class BadFeature1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad1"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={"old_col": "metaxy_provenance_by_field"},  # Not allowed
+                    )
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(
             ValueError,
             match="Cannot rename column.*to system column name.*provenance_by_field",
         ):
-
-            class BadFeature1(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad1"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "old_col": "metaxy_provenance_by_field"
-                            },  # Not allowed
-                        )
-                    ],
-                ),
-            ):
-                pass
+            graph.get_feature_plan(FeatureKey(["test", "bad1"]))
 
         # Renaming to feature_version should raise an error
+        class BadFeature2(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad2"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={"old_col": "metaxy_feature_version"},  # Not allowed
+                    )
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(
             ValueError,
             match="Cannot rename column.*to system column name.*feature_version",
         ):
-
-            class BadFeature2(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad2"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={"old_col": "metaxy_feature_version"},  # Not allowed
-                        )
-                    ],
-                ),
-            ):
-                pass
+            graph.get_feature_plan(FeatureKey(["test", "bad2"]))
 
         # Renaming to sample_uid should raise an error because upstream has sample_uid as its ID column
+        class BadFeature3(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad3"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={"old_col": "sample_uid"},  # Not allowed - it's upstream's ID column
+                    )
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(
             ValueError,
             match="Cannot rename column.*to ID column.*sample_uid",
         ):
-
-            class BadFeature3(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad3"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "old_col": "sample_uid"
-                            },  # Not allowed - it's upstream's ID column
-                        )
-                    ],
-                ),
-            ):
-                pass
+            graph.get_feature_plan(FeatureKey(["test", "bad3"]))
 
     def test_rename_to_sample_uid_allowed_when_not_id_column(self):
         """Test that renaming to sample_uid is allowed when it's not an upstream ID column."""
@@ -738,9 +721,7 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        rename={
-                            "some_col": "user_id_renamed"
-                        },  # Allowed - not renaming to actual ID column name
+                        rename={"some_col": "user_id_renamed"},  # Allowed - not renaming to actual ID column name
                     )
                 ],
                 id_columns=[
@@ -770,9 +751,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         # This should now work without raising an error
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
@@ -786,8 +765,8 @@ class TestColumnSelection:
         """Test that FeatureDep with columns and rename serializes correctly."""
         dep = FeatureDep(
             feature=FeatureKey(["test", "upstream"]),
-            columns=("col1", "col2"),
             rename={"col1": "new_col1"},
+            select=("new_col1", "col2"),
             filters=["col1 = 'x'"],
         )
 
@@ -796,7 +775,7 @@ class TestColumnSelection:
         dep_dict = dep.model_dump(by_alias=True)
         # FeatureKey now serializes to string format for JSON dict key compatibility
         assert dep_dict["feature"] == "test/upstream"
-        assert dep_dict["columns"] == ("col1", "col2")
+        assert dep_dict["select"] == ("new_col1", "col2")
         assert dep_dict["rename"] == {"col1": "new_col1"}
         assert dep_dict["filters"] == ("col1 = 'x'",)
         assert "sql_filters" not in dep_dict
@@ -809,7 +788,7 @@ class TestColumnSelection:
         dep_json = dep.model_dump_json(by_alias=True)
         dep_restored = FeatureDep.model_validate_json(dep_json)
         assert dep_restored.feature == FeatureKey(["test", "upstream"])
-        assert dep_restored.columns == ("col1", "col2")
+        assert dep_restored.select == ("new_col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
         # Verify filters work after deserialization
         assert dep_restored.filters
@@ -853,13 +832,13 @@ class TestColumnSelection:
                     # Select specific columns from upstream2
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=("important_col",),
+                        select=("important_col",),
                     ),
                     # Rename columns from upstream3
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream3"]),
-                        columns=("shared_col", "unique_col"),
                         rename={"shared_col": "upstream3_shared"},
+                        select=("upstream3_shared", "unique_col"),
                     ),
                 ],
             ),
@@ -972,8 +951,8 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("value", "category"),
                         rename={"value": "upstream_value"},
+                        select=("upstream_value", "category"),
                     )
                 ],
             ),
@@ -1027,9 +1006,7 @@ class TestColumnSelection:
         )
 
         joiner = TestJoiner()
-        upstream_refs = {
-            "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
-        }
+        upstream_refs = {"test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)}
 
         joined, mapping = CustomFilterFeature.load_input(joiner, upstream_refs)
         joined_df = joined.collect().to_polars()
@@ -1050,13 +1027,11 @@ class TestColumnSelection:
         # Verify mapping
         assert mapping["test/upstream"] == "metaxy_provenance_by_field__test_upstream"
 
-    def test_columns_and_rename_serialized_to_snapshot(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph, tmp_path):
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
         import json
 
-        from metaxy.metadata_store.delta import DeltaMetadataStore
+        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
         from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Create features with columns and rename specified
@@ -1075,8 +1050,8 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream"]),
-                        columns=("col1", "col2"),
                         rename={"col1": "renamed_col1"},
+                        select=("renamed_col1", "col2"),
                     )
                 ],
             ),
@@ -1088,16 +1063,10 @@ class TestColumnSelection:
             _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table
-            versions = (
-                store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
-                .collect()
-                .to_polars()
-            )
+            versions = store.read(FEATURE_VERSIONS_KEY, with_feature_history=True).collect().to_polars()
 
             # Find the downstream feature record
-            downstream_record = versions.filter(
-                pl.col("feature_key") == "test/downstream"
-            )
+            downstream_record = versions.filter(pl.col("feature_key") == "test/downstream")
             assert len(downstream_record) == 1
 
             # Parse the feature_spec JSON
@@ -1112,8 +1081,8 @@ class TestColumnSelection:
             dep = feature_spec_dict["deps"][0]
             # FeatureKey serializes to string format for JSON dict key compatibility
             assert dep["feature"] == "test/upstream"
-            assert dep["columns"] == [
-                "col1",
+            assert dep["select"] == [
+                "renamed_col1",
                 "col2",
             ]  # Pydantic serializes tuple as list
             assert dep["rename"] == {"col1": "renamed_col1"}
@@ -1128,18 +1097,18 @@ class TestColumnSelection:
             dep_dict = downstream_spec_dict["deps"][0]
             # FeatureKey serializes to string format for JSON dict key compatibility
             assert dep_dict["feature"] == "test/upstream"
-            assert dep_dict["columns"] == ["col1", "col2"]
+            assert dep_dict["select"] == ["renamed_col1", "col2"]
             assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
             # Verify Pydantic can deserialize it back
             reconstructed_spec = SampleFeatureSpec.model_validate(downstream_spec_dict)
             assert reconstructed_spec.deps and len(reconstructed_spec.deps) == 1
             reconstructed_dep = reconstructed_spec.deps[0]
-            assert reconstructed_dep.columns == ("col1", "col2")
+            assert reconstructed_dep.select == ("renamed_col1", "col2")
             assert reconstructed_dep.rename == {"col1": "renamed_col1"}
 
-    def test_duplicate_renamed_columns_within_single_dependency(self):
-        """Test that renaming multiple columns to the same name within a dependency is rejected."""
+    def test_duplicate_renamed_columns_within_single_dependency(self, graph: FeatureGraph):
+        """Test that renaming multiple columns to the same name within a dependency is rejected at plan creation."""
 
         # Create upstream feature first
         class UpstreamFeature(
@@ -1150,28 +1119,29 @@ class TestColumnSelection:
         ):
             pass
 
-        # Should raise error when trying to rename multiple columns to the same name
+        # Feature class definition succeeds, but plan creation fails
+        class BadFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={
+                            "col1": "same_name",
+                            "col2": "same_name",
+                        },  # Both renamed to same name
+                    )
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(ValueError, match="Duplicate column names after renaming"):
+            graph.get_feature_plan(FeatureKey(["test", "bad"]))
 
-            class BadFeature(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "col1": "same_name",
-                                "col2": "same_name",
-                            },  # Both renamed to same name
-                        )
-                    ],
-                ),
-            ):
-                pass
-
-    def test_duplicate_columns_across_dependencies_validation(self):
-        """Test that duplicate columns across dependencies are detected at graph assembly time."""
+    def test_duplicate_columns_across_dependencies_validation(self, graph: FeatureGraph):
+        """Test that duplicate columns across dependencies are detected at plan creation time."""
 
         # Create two upstream features
         class Upstream1(
@@ -1190,32 +1160,33 @@ class TestColumnSelection:
         ):
             pass
 
-        # This should raise an error at graph assembly time
+        # Feature class definition succeeds, but plan creation fails
         # because both dependencies rename columns to "duplicate_col"
+        class BadDownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad_downstream"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream1"]),
+                        rename={"col1": "duplicate_col"},
+                        select=("duplicate_col",),
+                    ),
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream2"]),
+                        rename={"col2": "duplicate_col"},
+                        select=("duplicate_col",),
+                    ),
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(ValueError, match="would have duplicate column names"):
+            graph.get_feature_plan(FeatureKey(["test", "bad_downstream"]))
 
-            class BadDownstreamFeature(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad_downstream"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream1"]),
-                            columns=("col1",),
-                            rename={"col1": "duplicate_col"},
-                        ),
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream2"]),
-                            columns=("col2",),
-                            rename={"col2": "duplicate_col"},
-                        ),
-                    ],
-                ),
-            ):
-                pass
-
-    def test_duplicate_columns_with_selected_columns(self):
-        """Test that duplicate detection works with column selection."""
+    def test_duplicate_columns_with_selected_columns(self, graph: FeatureGraph):
+        """Test that duplicate detection works with column selection at plan creation time."""
 
         # Create two upstream features
         class Upstream1(
@@ -1234,32 +1205,34 @@ class TestColumnSelection:
         ):
             pass
 
-        # This should raise because both select "shared_col" without renaming
+        # Feature class definition succeeds, but plan creation fails
+        # because both select "shared_col" without renaming
+        class BadDownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad_downstream"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream1"]),
+                        select=("shared_col", "col1"),  # Selects shared_col
+                    ),
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream2"]),
+                        select=(
+                            "shared_col",
+                            "col2",
+                        ),  # Also selects shared_col
+                    ),
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(ValueError, match="would have duplicate column names"):
+            graph.get_feature_plan(FeatureKey(["test", "bad_downstream"]))
 
-            class BadDownstreamFeature(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad_downstream"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream1"]),
-                            columns=("shared_col", "col1"),  # Selects shared_col
-                        ),
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream2"]),
-                            columns=(
-                                "shared_col",
-                                "col2",
-                            ),  # Also selects shared_col
-                        ),
-                    ],
-                ),
-            ):
-                pass
-
-    def test_renaming_to_upstream_id_columns_forbidden(self):
-        """Test that renaming to upstream's ID columns is forbidden."""
+    def test_renaming_to_upstream_id_columns_forbidden(self, graph: FeatureGraph):
+        """Test that renaming to upstream's ID columns is forbidden at plan creation time."""
 
         # Create upstream with custom ID columns
         class UpstreamWithCustomIDs(
@@ -1271,52 +1244,50 @@ class TestColumnSelection:
         ):
             pass
 
-        # Renaming to upstream's ID column should raise an error
-        with pytest.raises(
-            ValueError, match="Cannot rename column.*to ID column.*user_id"
+        # Feature class definition succeeds, but plan creation fails
+        class BadFeature1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad1"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={
+                            "some_col": "user_id",  # Not allowed - upstream's ID column
+                        },
+                    )
+                ],
+                id_columns=["user_id", "session_id"],
+            ),
         ):
+            pass
 
-            class BadFeature1(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad1"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "some_col": "user_id",  # Not allowed - upstream's ID column
-                            },
-                        )
-                    ],
-                    id_columns=["user_id", "session_id"],
-                ),
-            ):
-                pass
+        with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*user_id"):
+            graph.get_feature_plan(FeatureKey(["test", "bad1"]))
 
         # Renaming to another upstream ID column should also raise an error
-        with pytest.raises(
-            ValueError, match="Cannot rename column.*to ID column.*session_id"
+        class BadFeature2(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "bad2"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={
+                            "some_col": "session_id",  # Not allowed - upstream's ID column
+                        },
+                    )
+                ],
+                id_columns=["user_id", "session_id"],
+            ),
         ):
+            pass
 
-            class BadFeature2(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "bad2"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "some_col": "session_id",  # Not allowed - upstream's ID column
-                            },
-                        )
-                    ],
-                    id_columns=["user_id", "session_id"],
-                ),
-            ):
-                pass
+        with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*session_id"):
+            graph.get_feature_plan(FeatureKey(["test", "bad2"]))
 
-    def test_renaming_to_system_columns_forbidden(self):
-        """Test that renaming to system columns and ID columns is forbidden."""
+    def test_renaming_to_system_columns_forbidden(self, graph: FeatureGraph):
+        """Test that renaming to system columns and ID columns is forbidden at plan creation time."""
 
         class UpstreamFeature(
             BaseFeature,
@@ -1327,48 +1298,48 @@ class TestColumnSelection:
         ):
             pass
 
-        # Renaming to system column provenance_by_field should raise an error
+        # Feature class definition succeeds, but plan creation fails
+        class DownstreamFeature1(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "downstream1"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={
+                            "old_version": "metaxy_provenance_by_field",  # Not allowed - system column
+                        },
+                    )
+                ],
+            ),
+        ):
+            pass
+
         with pytest.raises(
             ValueError,
             match="Cannot rename column.*to system column name.*provenance_by_field",
         ):
-
-            class DownstreamFeature1(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "downstream1"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "old_version": "metaxy_provenance_by_field",  # Not allowed - system column
-                            },
-                        )
-                    ],
-                ),
-            ):
-                pass
+            graph.get_feature_plan(FeatureKey(["test", "downstream1"]))
 
         # Renaming to ID column sample_uid should raise an error
-        with pytest.raises(
-            ValueError, match="Cannot rename column.*to ID column.*sample_uid"
+        class DownstreamFeature2(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "downstream2"]),
+                deps=[
+                    FeatureDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        rename={
+                            "old_sample": "sample_uid",  # Not allowed - upstream's ID column
+                        },
+                    )
+                ],
+            ),
         ):
+            pass
 
-            class DownstreamFeature2(
-                BaseFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "downstream2"]),
-                    deps=[
-                        FeatureDep(
-                            feature=FeatureKey(["test", "upstream"]),
-                            rename={
-                                "old_sample": "sample_uid",  # Not allowed - upstream's ID column
-                            },
-                        )
-                    ],
-                ),
-            ):
-                pass
+        with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*sample_uid"):
+            graph.get_feature_plan(FeatureKey(["test", "downstream2"]))
 
     def test_aggregation_lineage_column_selection_drops_non_join_id_columns(self):
         """Test that aggregation lineage drops upstream ID columns not in the aggregation key.
@@ -1411,16 +1382,12 @@ class TestColumnSelection:
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream1"]),
-                        columns=(
-                            "col1",
-                        ),  # Only select col1, group_id comes from aggregation
+                        select=("col1",),  # Only select col1, group_id comes from aggregation
                         lineage=LineageRelationship.aggregation(on=["group_id"]),
                     ),
                     FeatureDep(
                         feature=FeatureKey(["test", "upstream2"]),
-                        columns=(
-                            "col2",
-                        ),  # Only select col2, group_id comes from aggregation
+                        select=("col2",),  # Only select col2, group_id comes from aggregation
                         lineage=LineageRelationship.aggregation(on=["group_id"]),
                     ),
                 ],

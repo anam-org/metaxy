@@ -1,11 +1,11 @@
 """Record feature graph snapshot (normally done in CI/CD)."""
 
-from metaxy import init_metaxy
+import metaxy as mx
 from metaxy.metadata_store.system import SystemTableStorage
 
-config = init_metaxy()
+config = mx.init()
 with config.get_store() as store:
     result = SystemTableStorage(store).push_graph_snapshot()
-    snapshot_version = result.snapshot_version
-    print(f"📸 Recorded feature graph snapshot: {snapshot_version[:16]}...")
-    print(f"   Full ID: {snapshot_version}")
+    project_version = result.project_version
+    print(f"📸 Recorded feature graph snapshot: {project_version[:16]}...")
+    print(f"   Full ID: {project_version}")

@@ -55,6 +55,7 @@ You **must** delegate testing to @agent-python-test-engineer.
 - Use early returns to reduce nesting
 - Add docstrings for public APIs (Google or NumPy style)
 - Comment only when necessary to explain "why", not "what"
+- Write comments about the current state of the code, not its history (avoid "using X because Y was removed" or references to deleted code)
 
 **Minimalism**:
 
@@ -92,6 +93,8 @@ When working on code, you must:
 7. Ensure linters: `uv run ruff check --fix` and `uv run ty check` do not fail.
 
 ## Your Workflow
+
+**Before writing or reviewing any Python code, invoke the `/dignified-python` skill** to load project-specific Python coding standards (LBYL patterns, modern type syntax, pathlib usage, etc.).
 
 When writing new code:
 

@@ -120,9 +120,7 @@ class TestFeatureToDagsterType:
         dagster_type = feature_to_dagster_type(simple_feature)
         assert dagster_type.description == "A simple test feature."
 
-    def test_description_fallback_no_docstring(
-        self, feature_no_docstring: type[mx.BaseFeature]
-    ):
+    def test_description_fallback_no_docstring(self, feature_no_docstring: type[mx.BaseFeature]):
         """Test fallback description when feature has no docstring."""
         dagster_type = feature_to_dagster_type(feature_no_docstring)
         assert dagster_type.description is not None
@@ -131,9 +129,7 @@ class TestFeatureToDagsterType:
 
     def test_custom_description(self, simple_feature: type[mx.BaseFeature]):
         """Test that a custom description can be provided."""
-        dagster_type = feature_to_dagster_type(
-            simple_feature, description="Custom description"
-        )
+        dagster_type = feature_to_dagster_type(simple_feature, description="Custom description")
         assert dagster_type.description == "Custom description"
 
     def test_column_schema_metadata(self, simple_feature: type[mx.BaseFeature]):
@@ -152,16 +148,12 @@ class TestFeatureToDagsterType:
 
     def test_column_schema_disabled(self, simple_feature: type[mx.BaseFeature]):
         """Test that column schema can be disabled."""
-        dagster_type = feature_to_dagster_type(
-            simple_feature, inject_column_schema=False
-        )
+        dagster_type = feature_to_dagster_type(simple_feature, inject_column_schema=False)
         # metaxy/info is always present, but column schema should not be
         assert dagster_type.metadata is not None
         assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in dagster_type.metadata
 
-    def test_type_check_valid_polars_dataframe(
-        self, simple_feature: type[mx.BaseFeature]
-    ):
+    def test_type_check_valid_polars_dataframe(self, simple_feature: type[mx.BaseFeature]):
         """Test type check passes for Polars DataFrame."""
         dagster_type = feature_to_dagster_type(simple_feature)
         df = pl.DataFrame({"id": [1, 2], "name": ["a", "b"], "value": [1.0, 2.0]})
@@ -169,9 +161,7 @@ class TestFeatureToDagsterType:
         result = dagster_type.type_check(cast(Any, None), df)
         assert result.success is True
 
-    def test_type_check_valid_polars_lazyframe(
-        self, simple_feature: type[mx.BaseFeature]
-    ):
+    def test_type_check_valid_polars_lazyframe(self, simple_feature: type[mx.BaseFeature]):
         """Test type check passes for Polars LazyFrame."""
         dagster_type = feature_to_dagster_type(simple_feature)
         lf = pl.LazyFrame({"id": [1, 2], "name": ["a", "b"], "value": [1.0, 2.0]})
@@ -179,9 +169,7 @@ class TestFeatureToDagsterType:
         result = dagster_type.type_check(cast(Any, None), lf)
         assert result.success is True
 
-    def test_type_check_valid_pandas_dataframe(
-        self, simple_feature: type[mx.BaseFeature]
-    ):
+    def test_type_check_valid_pandas_dataframe(self, simple_feature: type[mx.BaseFeature]):
         """Test type check passes for Pandas DataFrame."""
         dagster_type = feature_to_dagster_type(simple_feature)
         df = pd.DataFrame({"id": [1, 2], "name": ["a", "b"], "value": [1.0, 2.0]})
@@ -296,17 +284,13 @@ class TestBuildColumnLineage:
         lineage = build_column_lineage(simple_feature)
         assert lineage is None
 
-    def test_builds_lineage_for_downstream(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_builds_lineage_for_downstream(self, downstream_feature: type[mx.BaseFeature]):
         """Test that lineage is built for downstream features."""
         lineage = build_column_lineage(downstream_feature)
         assert lineage is not None
         assert isinstance(lineage, dg.TableColumnLineage)
 
-    def test_includes_pass_through_columns(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_includes_pass_through_columns(self, downstream_feature: type[mx.BaseFeature]):
         """Test that pass-through columns are tracked."""
         lineage = build_column_lineage(downstream_feature)
         assert lineage is not None
@@ -320,9 +304,7 @@ class TestBuildColumnLineage:
         # 'id' is an ID column in both
         assert "id" in lineage.deps_by_column
 
-    def test_includes_system_columns_with_lineage(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_includes_system_columns_with_lineage(self, downstream_feature: type[mx.BaseFeature]):
         """Test that system columns with lineage are tracked."""
         lineage = build_column_lineage(downstream_feature)
         assert lineage is not None
@@ -342,9 +324,7 @@ class TestColumnLineageInDagsterType:
         assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY in dagster_type.metadata
         assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in dagster_type.metadata
 
-    def test_lineage_for_downstream_feature(
-        self, downstream_feature: type[mx.BaseFeature]
-    ):
+    def test_lineage_for_downstream_feature(self, downstream_feature: type[mx.BaseFeature]):
         """Test that downstream features have lineage metadata."""
         dagster_type = feature_to_dagster_type(downstream_feature)
         assert dagster_type.metadata is not None
@@ -352,9 +332,7 @@ class TestColumnLineageInDagsterType:
 
     def test_lineage_disabled(self, downstream_feature: type[mx.BaseFeature]):
         """Test that column lineage can be disabled."""
-        dagster_type = feature_to_dagster_type(
-            downstream_feature, inject_column_lineage=False
-        )
+        dagster_type = feature_to_dagster_type(downstream_feature, inject_column_lineage=False)
         assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in (dagster_type.metadata or {})
 
 
@@ -376,3 +354,54 @@ class TestWithDagsterAsset:
         assert isinstance(my_asset, dg.AssetsDefinition)
         output_def = my_asset.node_def.output_defs[0]
         assert output_def.dagster_type.display_name == "test__simple"
+
+
+@pytest.fixture
+def external_feature_definition(graph: mx.FeatureGraph) -> mx.FeatureDefinition:
+    """Create an external feature definition for testing."""
+    spec = mx.FeatureSpec(
+        key=["test", "external"],
+        id_columns=["id"],
+        fields=["data"],
+    )
+    schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "string"},
+            "data": {"type": "number"},
+        },
+    }
+    external_def = mx.FeatureDefinition.external(
+        spec=spec,
+        feature_schema=schema,
+        project="external-project",
+    )
+    graph.add_feature_definition(external_def)
+    return external_def
+
+
+class TestExternalFeatureDefinitions:
+    """Tests for external feature definitions in Dagster integration."""
+
+    def test_build_column_schema_raises_for_external(self, external_feature_definition: mx.FeatureDefinition):
+        """build_column_schema raises ImportError for external features."""
+        with pytest.raises(ImportError, match="external feature"):
+            build_column_schema(external_feature_definition)
+
+    def test_build_column_lineage_returns_none_for_external(self, external_feature_definition: mx.FeatureDefinition):
+        """build_column_lineage returns None for external features (no deps)."""
+        # External feature has no deps, so lineage should be None
+        lineage = build_column_lineage(external_feature_definition)
+        assert lineage is None
+
+    def test_feature_to_dagster_type_skips_schema_for_external(self, external_feature_definition: mx.FeatureDefinition):
+        """feature_to_dagster_type works without errors for external features."""
+        # Should not raise, should just skip column schema/lineage
+        dagster_type = feature_to_dagster_type(external_feature_definition)
+
+        assert dagster_type is not None
+        assert dagster_type.metadata is not None
+        # Column schema should NOT be present (skipped for external)
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in dagster_type.metadata
+        # Column lineage should NOT be present (no deps)
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in dagster_type.metadata

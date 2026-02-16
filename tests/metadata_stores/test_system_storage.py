@@ -21,16 +21,10 @@ def test_write_and_read_system_events(store: MetadataStore):
         migration_id = "mig_001"
 
         # Write started event
-        storage.write_event(
-            Event.migration_started(project="test", migration_id=migration_id)
-        )
+        storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
 
         # Write feature events
-        storage.write_event(
-            Event.feature_started(
-                project="test", migration_id=migration_id, feature_key="feature/a"
-            )
-        )
+        storage.write_event(Event.feature_started(project="test", migration_id=migration_id, feature_key="feature/a"))
         storage.write_event(
             Event.feature_completed(
                 project="test",
@@ -41,9 +35,7 @@ def test_write_and_read_system_events(store: MetadataStore):
         )
 
         # Write completed event
-        storage.write_event(
-            Event.migration_completed(project="test", migration_id=migration_id)
-        )
+        storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
 
         # Read all events
         events = storage.get_migration_events(migration_id, project="test")
@@ -64,19 +56,11 @@ def test_get_migration_status_across_stores(store: MetadataStore):
         migration_id = "mig_002"
 
         # Not started
-        assert (
-            storage.get_migration_status(migration_id, project="test")
-            == MigrationStatus.NOT_STARTED
-        )
+        assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.NOT_STARTED
 
         # Started
-        storage.write_event(
-            Event.migration_started(project="test", migration_id=migration_id)
-        )
-        assert (
-            storage.get_migration_status(migration_id, project="test")
-            == MigrationStatus.IN_PROGRESS
-        )
+        storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
+        assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.IN_PROGRESS
 
         # Feature completed
         storage.write_event(
@@ -87,19 +71,11 @@ def test_get_migration_status_across_stores(store: MetadataStore):
                 rows_affected=50,
             )
         )
-        assert (
-            storage.get_migration_status(migration_id, project="test")
-            == MigrationStatus.IN_PROGRESS
-        )
+        assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.IN_PROGRESS
 
         # Migration completed
-        storage.write_event(
-            Event.migration_completed(project="test", migration_id=migration_id)
-        )
-        assert (
-            storage.get_migration_status(migration_id, project="test")
-            == MigrationStatus.COMPLETED
-        )
+        storage.write_event(Event.migration_completed(project="test", migration_id=migration_id))
+        assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.COMPLETED
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
@@ -110,9 +86,7 @@ def test_migration_failed_status(store: MetadataStore):
         migration_id = "mig_003"
 
         # Start migration
-        storage.write_event(
-            Event.migration_started(project="test", migration_id=migration_id)
-        )
+        storage.write_event(Event.migration_started(project="test", migration_id=migration_id))
 
         # Fail migration
         storage.write_event(
@@ -123,10 +97,7 @@ def test_migration_failed_status(store: MetadataStore):
             )
         )
 
-        assert (
-            storage.get_migration_status(migration_id, project="test")
-            == MigrationStatus.FAILED
-        )
+        assert storage.get_migration_status(migration_id, project="test") == MigrationStatus.FAILED
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
@@ -145,9 +116,7 @@ def test_multiple_migrations_sequence(store: MetadataStore):
                 rows_affected=10,
             )
         )
-        storage.write_event(
-            Event.migration_completed(project="test", migration_id="m1")
-        )
+        storage.write_event(Event.migration_completed(project="test", migration_id="m1"))
 
         # Second migration
         storage.write_event(Event.migration_started(project="test", migration_id="m2"))
@@ -159,19 +128,11 @@ def test_multiple_migrations_sequence(store: MetadataStore):
                 rows_affected=20,
             )
         )
-        storage.write_event(
-            Event.migration_completed(project="test", migration_id="m2")
-        )
+        storage.write_event(Event.migration_completed(project="test", migration_id="m2"))
 
         # Both should be completed
-        assert (
-            storage.get_migration_status("m1", project="test")
-            == MigrationStatus.COMPLETED
-        )
-        assert (
-            storage.get_migration_status("m2", project="test")
-            == MigrationStatus.COMPLETED
-        )
+        assert storage.get_migration_status("m1", project="test") == MigrationStatus.COMPLETED
+        assert storage.get_migration_status("m2", project="test") == MigrationStatus.COMPLETED
 
         # List all executed migrations
         executed = storage.list_executed_migrations(project="test")

@@ -10,10 +10,11 @@ from metaxy.cli.console import console, data_console, error_console
 
 # Migrations subcommand app
 app = cyclopts.App(
-    name="migrations",  # pyrefly: ignore[unexpected-keyword]
-    help="Metadata migration commands",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="migrations",
+    help="Metadata migration commands",
+    console=console,
+    error_console=error_console,
+    show=False,
 )
 
 
@@ -30,9 +31,7 @@ def generate(
     ] = None,
     from_snapshot: Annotated[
         str | None,
-        cyclopts.Parameter(
-            help="Compare from this historical snapshot version (defaults to latest)"
-        ),
+        cyclopts.Parameter(help="Compare from this historical project version (defaults to latest)"),
     ] = None,
     op: Annotated[
         list[str],
@@ -90,8 +89,7 @@ def generate(
     # Convert op_type list to ops format
     if len(op) == 0:
         app.console.print(
-            "[red]✗[/red] --op is required. "
-            "Example: --op metaxy.migrations.ops.DataVersionReconciliation"
+            "[red]✗[/red] --op is required. Example: --op metaxy.migrations.ops.DataVersionReconciliation"
         )
         raise SystemExit(1)
 
@@ -105,13 +103,20 @@ def generate(
     # Reconstruct CLI command for YAML comment
     cli_command = shlex.join(sys.argv)
 
-    with metadata_store.open("write"):
+    with metadata_store.open("w"):
+        # Load feature definitions from the store to ensure version hashes are computed
+        # correctly against actual stored definitions. External feature version checking
+        # is handled by sync_external_features when --sync flag is used.
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
+        SystemTableStorage(metadata_store)._load_feature_definitions_raw()
+
         if type == "diff":
             # Detect migration and write YAML
             migration = detect_diff_migration(
                 metadata_store,
                 project=project,
-                from_snapshot_version=from_snapshot,
+                from_project_version=from_snapshot,
                 ops=ops,
                 migrations_dir=migrations_dir,
                 name=name,
@@ -128,14 +133,12 @@ def generate(
             app.console.print("\n[green]✓[/green] DiffMigration generated")
             app.console.print(f"  Migration ID: {migration.migration_id}")
             app.console.print(f"  YAML file: {yaml_path}")
-            app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
-            app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+            app.console.print(f"  From snapshot: {migration.from_project_version}")
+            app.console.print(f"  To snapshot: {migration.to_project_version}")
 
         else:  # type == "full"
             if from_snapshot is not None:
-                app.console.print(
-                    "[yellow]Warning:[/yellow] --from-snapshot is ignored for full graph migrations"
-                )
+                app.console.print("[yellow]Warning:[/yellow] --from-snapshot is ignored for full graph migrations")
 
             migration = generate_full_graph_migration(
                 metadata_store,
@@ -151,7 +154,7 @@ def generate(
             app.console.print("\n[green]✓[/green] FullGraphMigration generated")
             app.console.print(f"  Migration ID: {migration.migration_id}")
             app.console.print(f"  YAML file: {yaml_path}")
-            app.console.print(f"  Snapshot: {migration.snapshot_version}")
+            app.console.print(f"  Snapshot: {migration.project_version}")
 
         # Output migration ID to stdout for scripting
         data_console.print(migration.migration_id)
@@ -175,9 +178,7 @@ def generate(
 def apply(
     migration_id: Annotated[
         str | None,
-        cyclopts.Parameter(
-            help="Migration ID to apply (applies all unapplied if not specified)"
-        ),
+        cyclopts.Parameter(help="Migration ID to apply (applies all unapplied if not specified)"),
     ] = None,
     store: Annotated[
         str | None,
@@ -227,8 +228,13 @@ def apply(
     metadata_store = context.get_store(store)
     migrations_dir = Path(".metaxy/migrations")
 
-    with metadata_store.open("write"):
+    with metadata_store.open("w"):
         storage = SystemTableStorage(metadata_store)
+
+        # Load feature definitions from the store to ensure version hashes are computed
+        # correctly against actual stored definitions. External feature version checking
+        # is handled by sync_external_features when --sync flag is used.
+        storage._load_feature_definitions_raw()
 
         # Build migration chain
         try:
@@ -252,9 +258,7 @@ def apply(
             # Get expected features from migration to verify all operations completed
             expected_features = m.get_affected_features(metadata_store, project)
             if (
-                storage.get_migration_status(
-                    m.migration_id, project, expected_features=expected_features
-                )
+                storage.get_migration_status(m.migration_id, project, expected_features=expected_features)
                 == MigrationStatus.COMPLETED
             ):
                 completed_ids.add(m.migration_id)
@@ -276,9 +280,7 @@ def apply(
                     break
 
             if target_index is None:
-                app.console.print(
-                    f"[red]✗[/red] Migration '{migration_id}' not found in chain"
-                )
+                app.console.print(f"[red]✗[/red] Migration '{migration_id}' not found in chain")
                 raise SystemExit(1)
 
             if rerun:
@@ -286,11 +288,7 @@ def apply(
                 to_apply = list(chain[: target_index + 1])
             else:
                 # Include all unapplied migrations up to and including target
-                to_apply = [
-                    m
-                    for m in chain[: target_index + 1]
-                    if m.migration_id not in completed_ids
-                ]
+                to_apply = [m for m in chain[: target_index + 1] if m.migration_id not in completed_ids]
 
         if not to_apply:
             app.console.print("[blue]ℹ[/blue] All migrations already completed")
@@ -316,22 +314,16 @@ def apply(
             app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
             if rerun:
                 # In rerun mode, all features from YAML will be reprocessed
-                app.console.print(
-                    f"  Reprocessing all {status_info.features_total} feature(s)"
-                )
+                app.console.print(f"  Reprocessing all {status_info.features_total} feature(s)")
             elif status_info.features_remaining > 0:
                 app.console.print(
                     f"  Processing {status_info.features_remaining} feature(s) "
                     f"({len(status_info.completed_features)} already completed)"
                 )
             else:
-                app.console.print(
-                    f"  All {status_info.features_total} feature(s) already completed"
-                )
+                app.console.print(f"  All {status_info.features_total} feature(s) already completed")
 
-            result = executor.execute(
-                migration, metadata_store, project, dry_run=dry_run, rerun=rerun
-            )
+            result = executor.execute(migration, metadata_store, project, dry_run=dry_run, rerun=rerun)
 
             # Print result
             if result.status == "completed":
@@ -356,10 +348,7 @@ def apply(
                 )
 
             if result.status == "failed":
-                app.console.print(
-                    f"\n[red]Migration {migration.migration_id} failed. "
-                    "Stopping chain execution.[/red]"
-                )
+                app.console.print(f"\n[red]Migration {migration.migration_id} failed. Stopping chain execution.[/red]")
                 raise SystemExit(1)
 
             app.console.print()  # Blank line between migrations
@@ -432,24 +421,16 @@ def status():
 
             # Print status icon
             if migration_status == MigrationStatus.COMPLETED:
-                app.console.print(
-                    f"[green]✓[/green] {migration_id} (parent: {migration.parent})"
-                )
+                app.console.print(f"[green]✓[/green] {migration_id} (parent: {migration.parent})")
                 app.console.print("  Status: [green]COMPLETED[/green]")
             elif migration_status == MigrationStatus.FAILED:
-                app.console.print(
-                    f"[red]✗[/red] {migration_id} (parent: {migration.parent})"
-                )
+                app.console.print(f"[red]✗[/red] {migration_id} (parent: {migration.parent})")
                 app.console.print("  Status: [red]FAILED[/red]")
             elif migration_status == MigrationStatus.IN_PROGRESS:
-                app.console.print(
-                    f"[yellow]⚠[/yellow] {migration_id} (parent: {migration.parent})"
-                )
+                app.console.print(f"[yellow]⚠[/yellow] {migration_id} (parent: {migration.parent})")
                 app.console.print("  Status: [yellow]IN PROGRESS[/yellow]")
             else:
-                app.console.print(
-                    f"[blue]○[/blue] {migration_id} (parent: {migration.parent})"
-                )
+                app.console.print(f"[blue]○[/blue] {migration_id} (parent: {migration.parent})")
                 app.console.print("  Status: [blue]NOT STARTED[/blue]")
 
             # Show snapshot info for DiffMigration
@@ -457,8 +438,8 @@ def status():
 
             if isinstance(migration, DiffMigration):
                 app.console.print("  Snapshots:")
-                app.console.print(f"    From: {migration.from_snapshot_version}")
-                app.console.print(f"    To:   {migration.to_snapshot_version}")
+                app.console.print(f"    From: {migration.from_project_version}")
+                app.console.print(f"    To:   {migration.to_project_version}")
 
             # Show operation-level progress for FullGraphMigration
             from metaxy.migrations.models import FullGraphMigration, OperationConfig
@@ -482,13 +463,10 @@ def status():
                         icon = "[yellow]⚠[/yellow]"  # In progress
 
                     app.console.print(
-                        f"    {icon} {i}. {op_type_short} "
-                        f"({len(op_completed)}/{len(op_features)} features)"
+                        f"    {icon} {i}. {op_type_short} ({len(op_completed)}/{len(op_features)} features)"
                     )
 
-            app.console.print(
-                f"  Features: {len(completed_features)}/{total_affected} completed"
-            )
+            app.console.print(f"  Features: {len(completed_features)}/{total_affected} completed")
 
             if failed_features:
                 from metaxy.cli.utils import print_error_list
@@ -580,9 +558,7 @@ def list_migrations():
 def explain(
     migration_id: Annotated[
         str | None,
-        cyclopts.Parameter(
-            help="Migration ID to explain (explains latest if not specified)"
-        ),
+        cyclopts.Parameter(help="Migration ID to explain (explains latest if not specified)"),
     ] = None,
 ):
     """Show detailed diff for a migration.
@@ -639,18 +615,14 @@ def explain(
         from metaxy.migrations.models import DiffMigration
 
         if not isinstance(migration, DiffMigration):
-            app.console.print(
-                f"[red]✗[/red] Migration '{migration_id}' is not a DiffMigration"
-            )
-            app.console.print(
-                f"  Type: {type(migration).__name__} (explain only supports DiffMigration)"
-            )
+            app.console.print(f"[red]✗[/red] Migration '{migration_id}' is not a DiffMigration")
+            app.console.print(f"  Type: {type(migration).__name__} (explain only supports DiffMigration)")
             raise SystemExit(1)
 
         # Print header
         app.console.print(f"\n[bold]Migration: {migration_id}[/bold]")
-        app.console.print(f"From: {migration.from_snapshot_version}")
-        app.console.print(f"To:   {migration.to_snapshot_version}")
+        app.console.print(f"From: {migration.from_project_version}")
+        app.console.print(f"To:   {migration.to_project_version}")
         app.console.print()
 
         # Compute diff on-demand
@@ -669,104 +641,69 @@ def explain(
 
         # Added nodes
         if graph_diff.added_nodes:
-            app.console.print(
-                f"[green]Added Features ({len(graph_diff.added_nodes)}):[/green]"
-            )
+            app.console.print(f"[green]Added Features ({len(graph_diff.added_nodes)}):[/green]")
             for node in graph_diff.added_nodes:
                 app.console.print(f"  ✓ {node.feature_key}")
                 if node.fields:
                     app.console.print(f"    Fields ({len(node.fields)}):")
                     for field in node.fields[:3]:
-                        app.console.print(
-                            f"      - {field['key']} (cv={field.get('code_version', '?')})"
-                        )
+                        app.console.print(f"      - {field['key']} (cv={field.get('code_version', '?')})")
                     if len(node.fields) > 3:
                         app.console.print(f"      ... and {len(node.fields) - 3} more")
             app.console.print()
 
         # Removed nodes
         if graph_diff.removed_nodes:
-            app.console.print(
-                f"[red]Removed Features ({len(graph_diff.removed_nodes)}):[/red]"
-            )
+            app.console.print(f"[red]Removed Features ({len(graph_diff.removed_nodes)}):[/red]")
             for node in graph_diff.removed_nodes:
                 app.console.print(f"  ✗ {node.feature_key}")
                 if node.fields:
                     app.console.print(f"    Fields ({len(node.fields)}):")
                     for field in node.fields[:3]:
-                        app.console.print(
-                            f"      - {field['key']} (cv={field.get('code_version', '?')})"
-                        )
+                        app.console.print(f"      - {field['key']} (cv={field.get('code_version', '?')})")
                     if len(node.fields) > 3:
                         app.console.print(f"      ... and {len(node.fields) - 3} more")
             app.console.print()
 
         # Changed nodes
         if graph_diff.changed_nodes:
-            app.console.print(
-                f"[yellow]Changed Features ({len(graph_diff.changed_nodes)}):[/yellow]"
-            )
+            app.console.print(f"[yellow]Changed Features ({len(graph_diff.changed_nodes)}):[/yellow]")
             for node in graph_diff.changed_nodes:
                 app.console.print(f"  ⚠ {node.feature_key}")
                 old_ver = node.old_version if node.old_version else "None"
                 new_ver = node.new_version if node.new_version else "None"
                 app.console.print(f"    Version: {old_ver} → {new_ver}")
 
-                if (
-                    node.old_code_version is not None
-                    or node.new_code_version is not None
-                ):
-                    app.console.print(
-                        f"    Code version: {node.old_code_version} → {node.new_code_version}"
-                    )
+                if node.old_code_version is not None or node.new_code_version is not None:
+                    app.console.print(f"    Code version: {node.old_code_version} → {node.new_code_version}")
 
                 # Show field changes
-                total_field_changes = (
-                    len(node.added_fields)
-                    + len(node.removed_fields)
-                    + len(node.changed_fields)
-                )
+                total_field_changes = len(node.added_fields) + len(node.removed_fields) + len(node.changed_fields)
                 if total_field_changes > 0:
                     app.console.print(f"    Field changes ({total_field_changes}):")
 
                     if node.added_fields:
-                        app.console.print(
-                            f"      [green]Added ({len(node.added_fields)}):[/green]"
-                        )
+                        app.console.print(f"      [green]Added ({len(node.added_fields)}):[/green]")
                         for field in node.added_fields[:2]:
-                            app.console.print(
-                                f"        + {field.field_key} (cv={field.new_code_version})"
-                            )
+                            app.console.print(f"        + {field.field_key} (cv={field.new_code_version})")
                         if len(node.added_fields) > 2:
-                            app.console.print(
-                                f"        ... and {len(node.added_fields) - 2} more"
-                            )
+                            app.console.print(f"        ... and {len(node.added_fields) - 2} more")
 
                     if node.removed_fields:
-                        app.console.print(
-                            f"      [red]Removed ({len(node.removed_fields)}):[/red]"
-                        )
+                        app.console.print(f"      [red]Removed ({len(node.removed_fields)}):[/red]")
                         for field in node.removed_fields[:2]:
-                            app.console.print(
-                                f"        - {field.field_key} (cv={field.old_code_version})"
-                            )
+                            app.console.print(f"        - {field.field_key} (cv={field.old_code_version})")
                         if len(node.removed_fields) > 2:
-                            app.console.print(
-                                f"        ... and {len(node.removed_fields) - 2} more"
-                            )
+                            app.console.print(f"        ... and {len(node.removed_fields) - 2} more")
 
                     if node.changed_fields:
-                        app.console.print(
-                            f"      [yellow]Changed ({len(node.changed_fields)}):[/yellow]"
-                        )
+                        app.console.print(f"      [yellow]Changed ({len(node.changed_fields)}):[/yellow]")
                         for field in node.changed_fields[:2]:
                             app.console.print(
                                 f"        ~ {field.field_key} (cv={field.old_code_version}→{field.new_code_version})"
                             )
                         if len(node.changed_fields) > 2:
-                            app.console.print(
-                                f"        ... and {len(node.changed_fields) - 2} more"
-                            )
+                            app.console.print(f"        ... and {len(node.changed_fields) - 2} more")
 
             app.console.print()
 
@@ -783,9 +720,7 @@ def explain(
 def describe(
     migration_ids: Annotated[
         list[str],
-        cyclopts.Parameter(
-            help="Migration IDs to describe (default: all migrations in order)"
-        ),
+        cyclopts.Parameter(help="Migration IDs to describe (default: all migrations in order)"),
     ] = [],
     store: Annotated[
         str | None,
@@ -869,9 +804,7 @@ def describe(
             app.console.print("\n[bold]Migration Description[/bold]")
             app.console.print("─" * 60)
             app.console.print(f"[bold]ID:[/bold] {migration_obj.migration_id}")
-            app.console.print(
-                f"[bold]Created:[/bold] {migration_obj.created_at.isoformat()}"
-            )
+            app.console.print(f"[bold]Created:[/bold] {migration_obj.created_at.isoformat()}")
             app.console.print(f"[bold]Parent:[/bold] {migration_obj.parent}")
             app.console.print(f"[bold]YAML:[/bold] {yaml_path}")
             app.console.print()
@@ -881,8 +814,8 @@ def describe(
 
             if isinstance(migration_obj, DiffMigration):
                 app.console.print("[bold]Snapshots:[/bold]")
-                app.console.print(f"  From: {migration_obj.from_snapshot_version}")
-                app.console.print(f"  To:   {migration_obj.to_snapshot_version}")
+                app.console.print(f"  From: {migration_obj.from_project_version}")
+                app.console.print(f"  To:   {migration_obj.to_project_version}")
                 app.console.print()
 
             # Operations (for FullGraphMigration)
@@ -896,18 +829,12 @@ def describe(
             # Get affected features
             app.console.print("[bold]Computing affected features...[/bold]")
             try:
-                affected_features = migration_obj.get_affected_features(
-                    metadata_store, project
-                )
+                affected_features = migration_obj.get_affected_features(metadata_store, project)
             except Exception as e:
-                app.console.print(
-                    f"[red]✗[/red] Failed to compute affected features: {e}"
-                )
+                app.console.print(f"[red]✗[/red] Failed to compute affected features: {e}")
                 continue  # Skip to next migration
 
-            app.console.print(
-                f"\n[bold]Affected Features ({len(affected_features)}):[/bold]"
-            )
+            app.console.print(f"\n[bold]Affected Features ({len(affected_features)}):[/bold]")
             app.console.print("─" * 60)
 
             from metaxy.models.feature import FeatureGraph
@@ -916,29 +843,22 @@ def describe(
             graph = FeatureGraph.get_active()
 
             # Get events for this migration to extract rows_affected per feature
-            events_df = storage.get_migration_events(
-                migration_obj.migration_id, project
-            )
+            events_df = storage.get_migration_events(migration_obj.migration_id, project)
 
             for feature_key_str in affected_features:
                 feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
-                # Get feature class
-                if feature_key_obj not in graph.features_by_key:
+                # Check feature exists in graph
+                if feature_key_obj not in graph.feature_definitions_by_key:
                     app.console.print(f"[yellow]⚠[/yellow] {feature_key_str}")
-                    app.console.print(
-                        "    [yellow]Feature not in current graph[/yellow]"
-                    )
+                    app.console.print("    [yellow]Feature not in current graph[/yellow]")
                     continue
-
-                graph.features_by_key[feature_key_obj]
 
                 # Get rows affected from events (sum of all completed events for this feature)
                 import polars as pl
 
                 feature_events = events_df.filter(
-                    (pl.col("feature_key") == feature_key_str)
-                    & (pl.col("event_type") == "feature_migration_completed")
+                    (pl.col("feature_key") == feature_key_str) & (pl.col("event_type") == "feature_migration_completed")
                 )
 
                 if feature_events.height > 0:
@@ -987,14 +907,10 @@ def describe(
             app.console.print("[bold]Execution Status:[/bold]")
             if migration_status == MigrationStatus.COMPLETED:
                 app.console.print("  [green]✓ COMPLETED[/green]")
-                app.console.print(
-                    f"    Features processed: {len(completed_features)}/{len(affected_features)}"
-                )
+                app.console.print(f"    Features processed: {len(completed_features)}/{len(affected_features)}")
             elif migration_status == MigrationStatus.FAILED:
                 app.console.print("  [red]✗ FAILED[/red]")
-                app.console.print(
-                    f"    Features completed: {len(completed_features)}/{len(affected_features)}"
-                )
+                app.console.print(f"    Features completed: {len(completed_features)}/{len(affected_features)}")
                 app.console.print(f"    Features failed: {len(failed_features)}")
                 if failed_features:
                     from metaxy.cli.utils import print_error_list
@@ -1009,9 +925,7 @@ def describe(
                     )
             elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print("  [yellow]⚠ IN PROGRESS[/yellow]")
-                app.console.print(
-                    f"    Features completed: {len(completed_features)}/{len(affected_features)}"
-                )
+                app.console.print(f"    Features completed: {len(completed_features)}/{len(affected_features)}")
             else:
                 app.console.print("  [blue]○ NOT STARTED[/blue]")
                 app.console.print(f"    Features to process: {len(affected_features)}")

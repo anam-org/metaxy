@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 
@@ -46,9 +46,9 @@ def upstream_features(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
         pass
 
     # Verify features registered in graph
-    assert FeatureKey(["test", "upstream1"]) in graph.features_by_key
-    assert FeatureKey(["test", "upstream2"]) in graph.features_by_key
-    assert FeatureKey(["test", "upstream3"]) in graph.features_by_key
+    assert FeatureKey(["test", "upstream1"]) in graph.feature_definitions_by_key
+    assert FeatureKey(["test", "upstream2"]) in graph.feature_definitions_by_key
+    assert FeatureKey(["test", "upstream3"]) in graph.feature_definitions_by_key
 
     return {
         "upstream1": Upstream1,

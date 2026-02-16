@@ -18,6 +18,22 @@ from mkdocs_metaxy.examples.core import RunbookLoader
 from mkdocs_metaxy.examples.renderer import ExampleRenderer
 
 
+def _write_if_changed(path: Path, content: str) -> bool:
+    """Write content to file only if it differs from existing content.
+
+    This prevents unnecessary file modifications that would trigger
+    the MkDocs file watcher and cause rebuild loops.
+
+    Returns True if file was written, False if unchanged.
+    """
+    if path.exists():
+        existing = path.read_text()
+        if existing == content:
+            return False
+    path.write_text(content)
+    return True
+
+
 class MetaxyExamplesPluginConfig(Config):
     """Configuration for MetaxyExamplesPlugin."""
 
@@ -100,66 +116,87 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return markdown
 
-        # Pattern to match directive blocks (allow hyphens in directive type)
+        # Pattern to match directive opening line (allow hyphens in directive type)
         directive_pattern = re.compile(
-            r"^:::\s+metaxy-example\s+([\w-]+)\s*\n(.*?)\n:::\s*$",
-            re.MULTILINE | re.DOTALL,
+            r"^:::\s+metaxy-example\s+([\w-]+)\s*$",
+            re.MULTILINE,
         )
 
-        def replace_directive(match: re.Match[str]) -> str:
+        result_parts: list[str] = []
+        pos = 0
+
+        for match in directive_pattern.finditer(markdown):
             # These are guaranteed to be non-None due to the check above
             assert self.loader is not None
             assert self.renderer is not None
 
-            directive_type = match.group(1)
-            directive_content = match.group(2)
+            result_parts.append(markdown[pos : match.start()])
 
-            # Parse YAML content
-            # Dedent the content - must NOT strip before splitting to preserve
-            # relative indentation
-            lines = directive_content.split("\n")
-            non_empty = [line for line in lines if line.strip()]
+            directive_type = match.group(1)
+
+            # Collect indented content lines after the opening directive
+            remaining = markdown[match.end() :]
+            content_lines: list[str] = []
+            end_pos = match.end()
+            for line in remaining.split("\n")[1:]:  # skip first empty split
+                if line.strip() == "":
+                    content_lines.append(line)
+                elif line.startswith("    "):
+                    content_lines.append(line)
+                else:
+                    break
+                end_pos += len(line) + 1  # +1 for newline
+            end_pos += 1  # account for newline after opening line
+
+            # Strip trailing empty lines and un-consume them so they remain
+            # as separators between the replacement and subsequent content
+            while content_lines and not content_lines[-1].strip():
+                end_pos -= len(content_lines[-1]) + 1
+                content_lines.pop()
+
+            # Dedent the content
+            non_empty = [line for line in content_lines if line.strip()]
             if non_empty:
                 min_indent = min(len(line) - len(line.lstrip()) for line in non_empty)
                 directive_content = "\n".join(
-                    line[min_indent:] if len(line) >= min_indent else line
-                    for line in lines
+                    line[min_indent:] if len(line) >= min_indent else line for line in content_lines
                 ).strip()
+            else:
+                directive_content = ""
 
             params = yaml.safe_load(directive_content) or {}
             example_name = params.get("example")
             if not example_name:
-                raise ValueError(
-                    f"Missing required 'example' parameter in {directive_type} directive"
-                )
+                raise ValueError(f"Missing required 'example' parameter in {directive_type} directive")
 
             # Process based on directive type
             if directive_type == "scenarios":
                 scenarios = self.loader.get_scenarios(example_name)
-                return self.renderer.render_scenarios(scenarios, example_name)
+                html = self.renderer.render_scenarios(scenarios, example_name)
             elif directive_type == "source-link" or directive_type == "github":
-                # Render GitHub source link
                 button_style = params.get("button", True)
                 text = params.get("text", None)
-                return self.renderer.render_source_link(
-                    example_name, button_style=button_style, text=text
-                )
+                html = self.renderer.render_source_link(example_name, button_style=button_style, text=text)
             elif directive_type == "file":
-                return self._render_file(example_name, params)
+                html = self._render_file(example_name, params)
             elif directive_type == "patch":
-                return self._render_patch(example_name, params)
+                html = self._render_patch(example_name, params)
             elif directive_type == "patch-with-diff":
-                return self._render_patch_with_diff(example_name, params)
+                html = self._render_patch_with_diff(example_name, params)
             elif directive_type == "output":
-                return self._render_output(example_name, params)
+                html = self._render_output(example_name, params)
             elif directive_type == "graph":
-                return self._render_graph(example_name, params)
+                html = self._render_graph(example_name, params)
             elif directive_type == "graph-diff":
-                return self._render_graph_diff(example_name, params)
+                html = self._render_graph_diff(example_name, params)
             else:
                 raise ValueError(f"Unknown directive type: {directive_type}")
 
-        return directive_pattern.sub(replace_directive, markdown)
+            result_parts.append(html)
+            pos = end_pos
+
+        result_parts.append(markdown[pos:])
+        return "".join(result_parts)
 
     def _get_patch_enumeration(self, example_name: str) -> dict[str, int]:
         """Get patch enumeration for an example."""
@@ -241,11 +278,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         patches = params.get("patches", [])
         show_linenos = params.get("linenos", True)
 
-        example_name_full = (
-            example_name
-            if example_name.startswith("example-")
-            else f"example-{example_name}"
-        )
+        example_name_full = example_name if example_name.startswith("example-") else f"example-{example_name}"
 
         hl_lines = None
         snippets_path = f"{example_name_full}/{file_path}"
@@ -258,31 +291,25 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
             content = self.loader.read_file(example_name, file_path, patches)
 
             # Extract changed line numbers by comparing patch additions with actual content
-            hl_lines = self._extract_changed_lines_from_patches(
-                example_name, patches, content
-            )
+            hl_lines = self._extract_changed_lines_from_patches(example_name, patches, content)
 
             # Write patched file to generated directory, preserving directory structure
             file_path_obj = Path(file_path)
             # Create versioned filename: dir/file_v2.ext
             if file_path_obj.parent != Path("."):
                 # Preserve directory structure
-                versioned_name = (
-                    f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
-                )
+                versioned_name = f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
                 versioned_path = file_path_obj.parent / versioned_name
                 generated_file = self.generated_dir / versioned_path
                 generated_file.parent.mkdir(parents=True, exist_ok=True)
                 snippets_path = f".generated/{versioned_path}"
             else:
                 # No directory structure
-                versioned_name = (
-                    f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
-                )
+                versioned_name = f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
                 generated_file = self.generated_dir / versioned_name
                 snippets_path = f".generated/{versioned_name}"
 
-            generated_file.write_text(content)
+            _write_if_changed(generated_file, content)
 
         return self.renderer.render_snippet(
             path=snippets_path,
@@ -308,7 +335,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         # Preserve the full path structure for patches
         generated_file = self.generated_dir / patch_path
         generated_file.parent.mkdir(parents=True, exist_ok=True)
-        generated_file.write_text(content)
+        _write_if_changed(generated_file, content)
 
         snippets_path = f".generated/{patch_path}"
 
@@ -316,9 +343,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if snapshots and snapshots[0] and snapshots[1] and snapshots[0] != snapshots[1]:
             # Create tabbed output with patch and graph diff
             example_dir = self.loader.get_example_dir(example_name)
-            graph_diff = self.renderer.render_graph_diff(
-                snapshots[0], snapshots[1], example_name, example_dir
-            )
+            graph_diff = self.renderer.render_graph_diff(snapshots[0], snapshots[1], example_name, example_dir)
 
             if graph_diff:
                 # For tabs, render the patch without collapsible wrapper
@@ -330,14 +355,10 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 )
                 # Indent the content for proper tab rendering
                 patch_lines = patch_render.strip().split("\n")
-                patch_indented = "\n".join(
-                    f"    {line}" if line else "" for line in patch_lines
-                )
+                patch_indented = "\n".join(f"    {line}" if line else "" for line in patch_lines)
 
                 graph_lines = graph_diff.strip().split("\n")
-                graph_indented = "\n".join(
-                    f"    {line}" if line else "" for line in graph_lines
-                )
+                graph_indented = "\n".join(f"    {line}" if line else "" for line in graph_lines)
 
                 return f"""
 === "Patch"
@@ -367,16 +388,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Markdown string with tabbed content.
         """
-        from metaxy._testing import PatchApplied
+        from metaxy_testing import PatchApplied
 
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return ""
 
         patch_path = params.get("path")
         if not patch_path:
-            raise ValueError(
-                "Missing required parameter for patch-with-diff directive: path"
-            )
+            raise ValueError("Missing required parameter for patch-with-diff directive: path")
 
         scenario_name = params.get("scenario")
         step_name = params.get("step")
@@ -385,7 +404,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         content = self.loader.read_patch(example_name, patch_path)
         generated_file = self.generated_dir / patch_path
         generated_file.parent.mkdir(parents=True, exist_ok=True)
-        generated_file.write_text(content)
+        _write_if_changed(generated_file, content)
         snippets_path = f".generated/{patch_path}"
 
         # Render the patch content (without collapsible wrapper for tabs)
@@ -414,8 +433,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         if matching_event is None:
             raise ValueError(
-                f"No PatchApplied event found for patch '{patch_path}' "
-                f"(scenario={scenario_name}, step={step_name})"
+                f"No PatchApplied event found for patch '{patch_path}' (scenario={scenario_name}, step={step_name})"
             )
 
         if not matching_event.before_graph or not matching_event.after_graph:
@@ -424,20 +442,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 f"Re-run the example tests to regenerate the execution result."
             )
 
-        graph_diff_md = self._render_graph_diff_from_snapshots(
-            matching_event.before_graph, matching_event.after_graph
-        )
+        graph_diff_md = self._render_graph_diff_from_snapshots(matching_event.before_graph, matching_event.after_graph)
 
         # Build tabbed content using pymdownx.tabbed syntax
         patch_lines = patch_md.strip().split("\n")
-        patch_indented = "\n".join(
-            f"    {line}" if line else "" for line in patch_lines
-        )
+        patch_indented = "\n".join(f"    {line}" if line else "" for line in patch_lines)
 
         graph_lines = graph_diff_md.strip().split("\n")
-        graph_indented = "\n".join(
-            f"    {line}" if line else "" for line in graph_lines
-        )
+        graph_indented = "\n".join(f"    {line}" if line else "" for line in graph_lines)
 
         return f"""
 === "Patch"
@@ -459,7 +471,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Markdown string with execution output.
         """
-        from metaxy._testing import CommandExecuted
+        from metaxy_testing import CommandExecuted
 
         if self.loader is None or self.renderer is None:
             return ""
@@ -484,21 +496,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         for event in events:
             if isinstance(event, CommandExecuted):
                 show_command = params.get("show_command", True)
-                md_parts.append(
-                    self.renderer.render_command_output(event, show_command)
-                )
+                md_parts.append(self.renderer.render_command_output(event, show_command))
 
         if not md_parts:
-            raise ValueError(
-                f"No events matched the specified criteria: "
-                f"scenario={scenario_name}, step={step_name}"
-            )
+            raise ValueError(f"No events matched the specified criteria: scenario={scenario_name}, step={step_name}")
 
         return "\n".join(md_parts)
 
-    def _render_graph_diff_from_snapshots(
-        self, before_graph: dict, after_graph: dict, direction: str = "TB"
-    ) -> str:
+    def _render_graph_diff_from_snapshots(self, before_graph: dict, after_graph: dict, direction: str = "TB") -> str:
         """Render graph diff as mermaid from saved graph snapshots.
 
         Args:
@@ -536,12 +541,12 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         Args:
             example_name: Name of the example.
-            params: Directive parameters (scenario, step, direction).
+            params: Directive parameters (scenario, step, direction, show_field_deps, features).
 
         Returns:
             Mermaid diagram markdown string.
         """
-        from metaxy._testing import GraphPushed
+        from metaxy_testing import GraphPushed
 
         if self.loader is None:
             return ""
@@ -551,6 +556,8 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         scenario_name = params.get("scenario")
         step_name = params.get("step")
         direction = params.get("direction", "TB")
+        show_field_deps = params.get("show_field_deps", False)
+        features = params.get("features")
 
         # Find the matching GraphPushed event
         for event in result.execution_state.events:
@@ -568,15 +575,14 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                     "Re-run the example tests to regenerate the execution result."
                 )
 
+            if show_field_deps:
+                return self._render_field_deps_from_snapshot(event.graph, features=features, direction=direction)
+
             return self._render_graph_from_snapshot(event.graph, direction=direction)
 
-        raise ValueError(
-            f"No GraphPushed event found for scenario={scenario_name}, step={step_name}"
-        )
+        raise ValueError(f"No GraphPushed event found for scenario={scenario_name}, step={step_name}")
 
-    def _render_graph_from_snapshot(
-        self, graph_data: dict, direction: str = "TB"
-    ) -> str:
+    def _render_graph_from_snapshot(self, graph_data: dict, direction: str = "TB") -> str:
         """Render graph as mermaid from saved graph snapshot.
 
         Args:
@@ -602,6 +608,27 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         return f"```mermaid\n{mermaid}\n```"
 
+    def _render_field_deps_from_snapshot(
+        self,
+        graph_data: dict,
+        features: list[str] | None = None,
+        direction: str = "TB",
+    ) -> str:
+        """Render field-level dependency graph as mermaid from saved graph snapshot.
+
+        Args:
+            graph_data: Serialized graph data.
+            features: Optional list of feature key strings to filter to.
+            direction: Graph layout direction.
+
+        Returns:
+            Markdown string with mermaid code block.
+        """
+        from metaxy.graph.diff.rendering.field_deps import render_field_deps_mermaid
+
+        mermaid = render_field_deps_mermaid(graph_data, features=features, direction=direction)
+        return f"```mermaid\n{mermaid}\n```"
+
     def _render_graph_diff(self, example_name: str, params: dict[str, Any]) -> str:
         """Render graph diff from PatchApplied event as mermaid diagram.
 
@@ -612,7 +639,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         Returns:
             Mermaid diagram markdown string.
         """
-        from metaxy._testing import PatchApplied
+        from metaxy_testing import PatchApplied
 
         if self.loader is None:
             return ""
@@ -639,10 +666,6 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                     "Re-run the example tests to regenerate the execution result."
                 )
 
-            return self._render_graph_diff_from_snapshots(
-                event.before_graph, event.after_graph, direction=direction
-            )
+            return self._render_graph_diff_from_snapshots(event.before_graph, event.after_graph, direction=direction)
 
-        raise ValueError(
-            f"No PatchApplied event found for scenario={scenario_name}, step={step_name}"
-        )
+        raise ValueError(f"No PatchApplied event found for scenario={scenario_name}, step={step_name}")

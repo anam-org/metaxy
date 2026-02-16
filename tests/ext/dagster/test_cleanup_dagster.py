@@ -7,11 +7,11 @@ from unittest.mock import MagicMock
 import dagster as dg
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 import metaxy.ext.dagster as mxd
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 
@@ -29,8 +29,8 @@ def feature_cls():
     return Logs
 
 
-def test_delete_metadata_op_with_mock():
-    """Test delete_metadata op with mocked store using simple feature key."""
+def test_delete_op_with_mock():
+    """Test delete op with mocked store using simple feature key."""
     store = MagicMock()
 
     ctx = dg.build_op_context(
@@ -42,15 +42,15 @@ def test_delete_metadata_op_with_mock():
         },
     )
 
-    mxd.delete_metadata(ctx)
-    store.delete_metadata.assert_called_once()
-    args, kwargs = store.delete_metadata.call_args
+    mxd.delete(ctx)
+    store.delete.assert_called_once()
+    args, kwargs = store.delete.call_args
     assert args[0] == FeatureKey(["logs"])
     assert kwargs["soft"] is True
 
 
-def test_delete_metadata_op_with_slashed_key():
-    """Test delete_metadata op with slashed feature key format."""
+def test_delete_op_with_slashed_key():
+    """Test delete op with slashed feature key format."""
     store = MagicMock()
 
     ctx = dg.build_op_context(
@@ -62,15 +62,15 @@ def test_delete_metadata_op_with_slashed_key():
         },
     )
 
-    mxd.delete_metadata(ctx)
-    store.delete_metadata.assert_called_once()
-    args, kwargs = store.delete_metadata.call_args
+    mxd.delete(ctx)
+    store.delete.assert_called_once()
+    args, kwargs = store.delete.call_args
     assert args[0] == FeatureKey(["customer", "segment"])
     assert kwargs["soft"] is True
 
 
-def test_delete_metadata_op_hard_delete_with_mock():
-    """Test delete_metadata op with hard delete."""
+def test_delete_op_hard_delete_with_mock():
+    """Test delete op with hard delete."""
     store = MagicMock()
 
     ctx = dg.build_op_context(
@@ -82,25 +82,23 @@ def test_delete_metadata_op_hard_delete_with_mock():
         },
     )
 
-    mxd.delete_metadata(ctx)
-    store.delete_metadata.assert_called_once()
-    args, kwargs = store.delete_metadata.call_args
+    mxd.delete(ctx)
+    store.delete.assert_called_once()
+    args, kwargs = store.delete.call_args
     assert args[0] == FeatureKey(["logs"])
     assert kwargs["soft"] is False
 
 
-def test_delete_metadata_integration(feature_cls, tmp_path):
+def test_delete_integration(feature_cls, tmp_path):
     """Integration test: create job, write data, run delete, verify results."""
 
     # Create a delta store
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
-    @dg.job(
-        resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)}
-    )
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
     def cleanup_job():
-        mxd.delete_metadata()
+        mxd.delete()
 
     # Write some test data
     test_data = pl.DataFrame(
@@ -115,19 +113,19 @@ def test_delete_metadata_integration(feature_cls, tmp_path):
         }
     )
 
-    with store.open("write"):
-        store.write_metadata(feature_cls, test_data)
+    with store.open("w"):
+        store.write(feature_cls, test_data)
 
     # Verify data was written
     with store:
-        initial_data = store.read_metadata(feature_cls).collect().to_polars()
+        initial_data = store.read(feature_cls).collect().to_polars()
         assert initial_data.height == 3
 
     # Execute the job with config to delete debug logs
     result = cleanup_job.execute_in_process(
         run_config={
             "ops": {
-                "delete_metadata": {
+                "delete": {
                     "config": {
                         "feature_key": ["logs"],
                         "filters": ["level = 'debug'"],
@@ -143,31 +141,25 @@ def test_delete_metadata_integration(feature_cls, tmp_path):
 
     # Verify the data was soft-deleted (only 2 rows remain)
     with store:
-        remaining_data = store.read_metadata(feature_cls).collect().to_polars()
+        remaining_data = store.read(feature_cls).collect().to_polars()
         assert remaining_data.height == 2
         assert set(remaining_data["level"]) == {"info", "warn"}
 
         # Verify soft-deleted row is still in store when including deleted
-        all_data = (
-            store.read_metadata(feature_cls, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-        )
+        all_data = store.read(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 3
 
 
-def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
+def test_delete_integration_hard_delete(feature_cls, tmp_path):
     """Integration test for hard delete: data is physically removed."""
 
     # Create a delta store
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     # Define a job with the delete op
-    @dg.job(
-        resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)}
-    )
+    @dg.job(resource_defs={"metaxy_store": dg.ResourceDefinition.hardcoded_resource(store)})
     def hard_cleanup_job():
-        mxd.delete_metadata()
+        mxd.delete()
 
     # Write some test data
     test_data = pl.DataFrame(
@@ -182,14 +174,14 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
         }
     )
 
-    with store.open("write"):
-        store.write_metadata(feature_cls, test_data)
+    with store.open("w"):
+        store.write(feature_cls, test_data)
 
     # Execute the job with hard delete
     result = hard_cleanup_job.execute_in_process(
         run_config={
             "ops": {
-                "delete_metadata": {
+                "delete": {
                     "config": {
                         "feature_key": ["logs"],
                         "filters": ["level = 'debug'"],
@@ -205,14 +197,10 @@ def test_delete_metadata_integration_hard_delete(feature_cls, tmp_path):
 
     # Verify the data was physically removed (only 2 rows remain)
     with store:
-        remaining_data = store.read_metadata(feature_cls).collect().to_polars()
+        remaining_data = store.read(feature_cls).collect().to_polars()
         assert remaining_data.height == 2
         assert set(remaining_data["level"]) == {"info", "warn"}
 
         # Verify hard-deleted row is NOT in store even when including deleted
-        all_data = (
-            store.read_metadata(feature_cls, include_soft_deleted=True)
-            .collect()
-            .to_polars()
-        )
+        all_data = store.read(feature_cls, include_soft_deleted=True).collect().to_polars()
         assert all_data.height == 2  # Hard delete means it's gone

@@ -17,9 +17,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
 
-def _is_upstream_of(
-    upstream_key: FeatureKey, downstream_key: FeatureKey, graph: "FeatureGraph"
-) -> bool:
+def _is_upstream_of(upstream_key: FeatureKey, downstream_key: FeatureKey, graph: "FeatureGraph") -> bool:
     """Check if upstream_key is in the dependency chain of downstream_key.
 
     Args:
@@ -52,21 +50,21 @@ def generate_migration(
     store: "MetadataStore",
     *,
     project: str,
-    from_snapshot_version: str | None = None,
-    to_snapshot_version: str | None = None,
+    from_project_version: str | None = None,
+    to_project_version: str | None = None,
     class_path_overrides: dict[str, str] | None = None,
 ) -> DiffMigration | None:
     """Generate migration from detected feature changes or between snapshots.
 
     Two modes of operation:
 
-    1. **Default mode** (both snapshot_versions None):
+    1. **Default mode** (both project_versions None):
        - Compares latest recorded snapshot (store) vs current active graph (code)
        - This is the normal workflow: detect code changes
 
-    2. **Historical mode** (both snapshot_versions provided):
-       - Reconstructs from_graph from from_snapshot_version
-       - Reconstructs to_graph from to_snapshot_version
+    2. **Historical mode** (both project_versions provided):
+       - Reconstructs from_graph from from_project_version
+       - Reconstructs to_graph from to_project_version
        - Compares these two historical registries
        - Useful for: backfilling migrations, testing, recovery
 
@@ -76,102 +74,92 @@ def generate_migration(
     Args:
         store: Metadata store to check
         project: Project name for filtering snapshots
-        from_snapshot_version: Optional snapshot version to compare from (historical mode)
-        to_snapshot_version: Optional snapshot version to compare to (historical mode)
+        from_project_version: Optional snapshot version to compare from (historical mode)
+        to_project_version: Optional snapshot version to compare to (historical mode)
         class_path_overrides: Optional overrides for moved/renamed feature classes
 
     Returns:
         Migration object, or None if no changes detected
 
     Raises:
-        ValueError: If only one snapshot_version is provided, or snapshots not found
+        ValueError: If only one project_version is provided, or snapshots not found
 
     Example (default mode):
+        <!-- skip next -->
         ```py
         migration = generate_migration(store, project="my_project")
         if migration:
-        migration.to_yaml("migrations/001_update.yaml")
-
+            migration.to_yaml("migrations/001_update.yaml")
         ```
+
     Example (historical mode):
+        <!-- skip next -->
         ```py
         migration = generate_migration(
             store,
             project="my_project",
-            from_snapshot_version="abc123...",
-            to_snapshot_version="def456...",
-            )
+            from_project_version="abc123...",
+            to_project_version="def456...",
+        )
         ```
     """
     from metaxy.models.feature import FeatureGraph
 
-    if from_snapshot_version is None:
+    if from_project_version is None:
         # Default mode: get from store's latest snapshot
         from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_KEY
 
         try:
-            feature_versions = store.read_metadata(
-                FEATURE_VERSIONS_KEY, current_only=False
-            )
+            feature_versions = store.read(FEATURE_VERSIONS_KEY, with_feature_history=True)
             # Get most recent snapshot - only collect the top row
-            latest_snapshot = nw.from_native(
-                feature_versions.sort("recorded_at", descending=True).head(1).collect()
-            )
+            latest_snapshot = nw.from_native(feature_versions.sort("recorded_at", descending=True).head(1).collect())
             if latest_snapshot.shape[0] > 0:
-                from_snapshot_version = latest_snapshot["metaxy_snapshot_version"][0]
-                print(f"From: latest snapshot {from_snapshot_version}...")
+                from_project_version = latest_snapshot["metaxy_project_version"][0]
+                print(f"From: latest snapshot {from_project_version}...")
             else:
                 raise ValueError(
                     "No feature graph snapshot found in metadata store. "
-                    "Run 'metaxy graph push' first to record feature versions before generating migrations."
+                    "Run 'metaxy push' first to record feature versions before generating migrations."
                 )
         except FeatureNotFoundError:
             raise ValueError(
-                "No feature versions recorded yet. "
-                "Run 'metaxy graph push' first to record the feature graph snapshot."
+                "No feature versions recorded yet. Run 'metaxy push' first to record the feature graph snapshot."
             )
     else:
-        print(f"From: snapshot {from_snapshot_version}...")
+        print(f"From: snapshot {from_project_version}...")
 
-    # Step 2: Determine to_graph and to_snapshot_version
-    if to_snapshot_version is None:
+    # Step 2: Determine to_graph and to_project_version
+    if to_project_version is None:
         # Default mode: record current active graph and use its snapshot
         # This ensures the to_snapshot is available in the store for comparison
-        snapshot_result = SystemTableStorage(store).push_graph_snapshot()
-        to_snapshot_version = snapshot_result.snapshot_version
+        snapshot_result = SystemTableStorage(store).push_graph_snapshot(project=project)
+        to_project_version = snapshot_result.project_version
         was_already_pushed = snapshot_result.already_pushed
         to_graph = FeatureGraph.get_active()
         if was_already_pushed:
-            print(
-                f"To: current active graph (snapshot {to_snapshot_version}... already pushed)"
-            )
+            print(f"To: current active graph (snapshot {to_project_version}... already pushed)")
         else:
-            print(
-                f"To: current active graph (snapshot {to_snapshot_version}... pushed)"
-            )
+            print(f"To: current active graph (snapshot {to_project_version}... pushed)")
 
     else:
-        # Historical mode: load from snapshot with force_reload
-        # force_reload ensures we get current code from disk, not cached imports
+        # Historical mode: load from snapshot
         to_graph = SystemTableStorage(store).load_graph_from_snapshot(
-            snapshot_version=to_snapshot_version,
-            class_path_overrides=class_path_overrides,
-            force_reload=True,
+            project_version=to_project_version,
         )
-        print(f"To: snapshot {to_snapshot_version}...")
+        print(f"To: snapshot {to_project_version}...")
 
-    # Step 3: Detect changes by comparing snapshot_versions directly
-    # We don't reconstruct from_graph - just compare snapshot_versions from the store
+    # Step 3: Detect changes by comparing project_versions directly
+    # We don't reconstruct from_graph - just compare project_versions from the store
     # This avoids issues with stale cached imports when files have changed
-    assert from_snapshot_version is not None, "from_snapshot_version must be set by now"
-    assert to_snapshot_version is not None, "to_snapshot_version must be set by now"
+    assert from_project_version is not None, "from_project_version must be set by now"
+    assert to_project_version is not None, "to_project_version must be set by now"
 
     # Use GraphDiffer to detect changes
     differ = GraphDiffer()
 
     # Load snapshot data using GraphDiffer
     try:
-        from_snapshot_data = differ.load_snapshot_data(store, from_snapshot_version)
+        from_snapshot_data = differ.load_snapshot_data(store, from_project_version)
     except ValueError:
         # Snapshot not found - nothing to migrate from
         print("No from_snapshot found in store.")
@@ -184,8 +172,8 @@ def generate_migration(
     graph_diff = differ.diff(
         from_snapshot_data,
         to_snapshot_data,
-        from_snapshot_version,
-        to_snapshot_version,
+        from_project_version,
+        to_project_version,
     )
 
     # Check if there are any changes
@@ -224,21 +212,18 @@ def generate_migration(
     downstream_operations = []
 
     if downstream_keys:
-        print(
-            f"\nGenerating explicit operations for {len(downstream_keys)} downstream feature(s):"
-        )
+        print(f"\nGenerating explicit operations for {len(downstream_keys)} downstream feature(s):")
 
     for downstream_key in downstream_keys:
         feature_key_str = downstream_key.to_string()
-        feature_cls = to_graph.features_by_key[downstream_key]
 
         # Check if feature exists in from_snapshot (if not, it's new - skip)
         try:
-            from_metadata = store.read_metadata(
-                feature_cls,
-                current_only=False,
+            from_metadata = store.read(
+                downstream_key,
+                with_feature_history=True,
                 allow_fallback=False,
-                filters=[nw.col("metaxy_snapshot_version") == from_snapshot_version],
+                filters=[nw.col("metaxy_project_version") == from_project_version],
             )
             # Only collect head(1) to check existence
             from_metadata_sample = nw.from_native(from_metadata.head(1).collect())
@@ -287,18 +272,16 @@ def generate_migration(
 
     parent_migration_id = None
     try:
-        existing_migrations = store.read_metadata(EVENTS_KEY, current_only=False)
+        existing_migrations = store.read(EVENTS_KEY, with_feature_history=True)
         # Get most recent migration by timestamp - only collect the top row
-        latest = nw.from_native(
-            existing_migrations.sort("timestamp", descending=True).head(1).collect()
-        )
+        latest = nw.from_native(existing_migrations.sort("timestamp", descending=True).head(1).collect())
         if latest.shape[0] > 0:
             parent_migration_id = latest["migration_id"][0]
     except FeatureNotFoundError:
         # No migrations yet
         pass
 
-    # Note: from_snapshot_version and to_snapshot_version were already resolved earlier
+    # Note: from_project_version and to_project_version were already resolved earlier
 
     # Create migration (serialize operations to dicts)
     len(root_operations)
@@ -310,8 +293,8 @@ def generate_migration(
     migration = DiffMigration(
         migration_id=migration_id,
         parent=parent_migration_id or "initial",
-        from_snapshot_version=from_snapshot_version,
-        to_snapshot_version=to_snapshot_version,
+        from_project_version=from_project_version,
+        to_project_version=to_project_version,
         created_at=timestamp,
         ops=ops,
     )

@@ -8,8 +8,7 @@ description: "Example of many-to-one aggregation relationships."
 ## Overview
 
 ::: metaxy-example source-link
-example: aggregation
-:::
+    example: aggregation
 
 This example demonstrates how to implement aggregation (`N:1`) relationships with Metaxy.
 In such relationships multiple parent samples produce a single child sample.
@@ -23,11 +22,11 @@ We will use a speaker embedding pipeline as an example, where multiple audio rec
 Let's define a pipeline with two features:
 
 ::: metaxy-example graph
-example: aggregation
-scenario: "Initial pipeline run"
-:::
+    example: aggregation
+    scenario: "Initial pipeline run"
+    direction: LR
 
-### Defining features: `Audio`
+### Defining features: `"audio"`
 
 Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (which speaker it belongs to). Multiple audio recordings can belong to the same speaker.
 
@@ -37,9 +36,9 @@ Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (w
 ```
 <!-- dprint-ignore-end -->
 
-### Defining features: `SpeakerEmbedding`
+### Defining features: `"speaker/embedding"`
 
-`SpeakerEmbedding` aggregates all audio recordings from a speaker into a single embedding. The key configuration is the `lineage` parameter which tells Metaxy that multiple `Audio` records with the same `speaker_id` are aggregated into one `SpeakerEmbedding`.
+`"speaker/embedding"` aggregates all audio recordings from a speaker into a single embedding. The key configuration is the `lineage` parameter which tells Metaxy that multiple `"audio"` records with the same `speaker_id` are aggregated into one `"speaker/embedding"`.
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_aggregation/features.py" hl_lines="6-11"
@@ -49,28 +48,34 @@ Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (w
 
 The `LineageRelationship.aggregation(on=["speaker_id"])` declaration is the key part. It tells Metaxy:
 
-1. Multiple `Audio` rows are aggregated into one `SpeakerEmbedding` row
+1. Multiple `"audio"` rows are aggregated into one `"speaker/embedding"` row
 2. The aggregation is keyed on `speaker_id` - all audio with the same speaker_id contributes to one embedding
 3. When **any** audio for a speaker changes, the aggregated provenance changes, triggering recomputation of that speaker's embedding
+
+## Getting Started
+
+Install the example's dependencies:
+
+```shell
+uv sync
+```
 
 ## Walkthrough
 
 Here is the pipeline code that processes audio and computes speaker embeddings:
 
 ::: metaxy-example file
-example: aggregation
-path: pipeline.py
-:::
+    example: aggregation
+    path: pipeline.py
 
 ### Step 1: Initial Run
 
 Run the pipeline to create audio recordings and speaker embeddings:
 
 ::: metaxy-example output
-example: aggregation
-scenario: "Initial pipeline run"
-step: "run_pipeline"
-:::
+    example: aggregation
+    scenario: "Initial pipeline run"
+    step: "run_pipeline"
 
 All features have been materialized:
 
@@ -82,9 +87,8 @@ All features have been materialized:
 Run the pipeline again without any changes:
 
 ::: metaxy-example output
-example: aggregation
-scenario: "Idempotent rerun"
-:::
+    example: aggregation
+    scenario: "Idempotent rerun"
 
 Nothing needs recomputation - the system correctly detects no changes.
 
@@ -93,9 +97,8 @@ Nothing needs recomputation - the system correctly detects no changes.
 Now let's update the provenance of audio `a1` (belonging to speaker `s1`):
 
 ::: metaxy-example patch
-example: aggregation
-path: patches/01_update_audio_provenance.patch
-:::
+    example: aggregation
+    path: patches/01_update_audio_provenance.patch
 
 This represents a change to one audio recording (perhaps it was re-processed or updated).
 
@@ -104,9 +107,8 @@ This represents a change to one audio recording (perhaps it was re-processed or 
 Run the pipeline again after the audio change:
 
 ::: metaxy-example output
-example: aggregation
-scenario: "Update one audio - only affected speaker recomputed"
-:::
+    example: aggregation
+    scenario: "Update one audio - only affected speaker recomputed"
 
 **Key observation:**
 
@@ -120,18 +122,16 @@ This demonstrates that Metaxy correctly tracks aggregation lineage - when any au
 Now let's add a new audio recording for speaker `s1`:
 
 ::: metaxy-example patch
-example: aggregation
-path: patches/02_add_audio.patch
-:::
+    example: aggregation
+    path: patches/02_add_audio.patch
 
 ### Step 6: Observe Aggregation Update
 
 Run the pipeline again:
 
 ::: metaxy-example output
-example: aggregation
-scenario: "Add new audio - only affected speaker recomputed"
-:::
+    example: aggregation
+    scenario: "Add new audio - only affected speaker recomputed"
 
 **Key observation:**
 
@@ -141,14 +141,12 @@ scenario: "Add new audio - only affected speaker recomputed"
 
 ## How It Works
 
-Metaxy uses window functions to compute aggregated provenance without reducing rows. When resolving updates for `SpeakerEmbedding`:
+Metaxy uses window functions to compute aggregated provenance without reducing rows. When resolving updates for `"speaker/embedding"`:
 
 1. All audio rows for the same speaker get identical aggregated provenance values
 2. The aggregated provenance is computed from the individual audio provenances
 3. When any audio for a speaker changes, the aggregated provenance changes
 4. This triggers recomputation of only the affected speaker's embedding
-
-The user's pipeline code performs the actual aggregation (grouping by `speaker_id`). Metaxy only tracks the provenance and determines what needs recomputation.
 
 ## Conclusion
 
@@ -158,6 +156,6 @@ Metaxy provides a convenient API for modeling aggregation relationships: [Lineag
 
 Learn more about:
 
-- [Features and Fields](../guide/learn/feature-definitions.md)
-- [Relationships](../guide/learn/relationship.md)
+- [Features and Fields](../guide/concepts/definitions/features.md)
+- [Relationships](/guide/concepts/definitions/relationship.md)
 - [One-to-Many Expansion](./expansion.md) (the inverse relationship)

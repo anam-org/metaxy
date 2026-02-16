@@ -18,8 +18,8 @@ def test_migration_type_property():
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
@@ -31,8 +31,8 @@ def test_migration_to_storage_dict():
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
@@ -41,11 +41,9 @@ def test_migration_to_storage_dict():
     assert storage_dict["migration_id"] == "test_001"
     assert storage_dict["migration_type"] == "metaxy.migrations.models.DiffMigration"
     assert storage_dict["parent"] == "initial"
-    assert storage_dict["from_snapshot_version"] == "snap1"
-    assert storage_dict["to_snapshot_version"] == "snap2"
-    assert storage_dict["ops"] == [
-        {"type": "metaxy.migrations.ops.DataVersionReconciliation"}
-    ]
+    assert storage_dict["from_project_version"] == "snap1"
+    assert storage_dict["to_project_version"] == "snap2"
+    assert storage_dict["ops"] == [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}]
 
 
 def test_migration_from_storage_dict():
@@ -56,8 +54,8 @@ def test_migration_from_storage_dict():
         "migration_id": "test_001",
         "created_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
         "parent": "initial",
-        "from_snapshot_version": "snap1",
-        "to_snapshot_version": "snap2",
+        "from_project_version": "snap1",
+        "to_project_version": "snap2",
         "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     }
 
@@ -65,8 +63,8 @@ def test_migration_from_storage_dict():
 
     assert isinstance(migration, DiffMigration)
     assert migration.migration_id == "test_001"
-    assert migration.from_snapshot_version == "snap1"
-    assert migration.to_snapshot_version == "snap2"
+    assert migration.from_project_version == "snap1"
+    assert migration.to_project_version == "snap2"
 
 
 def test_migration_from_storage_dict_invalid_type():
@@ -106,15 +104,15 @@ def test_diff_migration_get_affected_features():
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
     # We can't call get_affected_features() without a store since it computes on-demand
     # Just verify the migration was created successfully
-    assert migration.from_snapshot_version == "snap1"
-    assert migration.to_snapshot_version == "snap2"
+    assert migration.from_project_version == "snap1"
+    assert migration.to_project_version == "snap2"
 
 
 def test_full_graph_migration(tmp_path):
@@ -122,13 +120,13 @@ def test_full_graph_migration(tmp_path):
         migration_id="test_002",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[],  # Required field
     )
 
     assert migration.migration_type == "metaxy.migrations.models.FullGraphMigration"
     # FullGraphMigration.get_affected_features() returns sorted list from ops
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         assert migration.get_affected_features(store, "default") == []
@@ -169,12 +167,10 @@ def test_custom_migration(tmp_path):
     # Migration type should be automatically set from class path
     assert "TestCustomMigration" in migration.migration_type
     # get_affected_features() requires store parameter
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-        assert (
-            migration.get_affected_features(store, "default") == []
-        )  # Default implementation
+        assert migration.get_affected_features(store, "default") == []  # Default implementation
 
 
 def test_custom_migration_serialization():
@@ -249,8 +245,8 @@ def test_diff_migration_roundtrip():
         migration_id="diff_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
         parent="initial",
-        from_snapshot_version="snap1",
-        to_snapshot_version="snap2",
+        from_project_version="snap1",
+        to_project_version="snap2",
         ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
     )
 
@@ -260,8 +256,8 @@ def test_diff_migration_roundtrip():
     assert isinstance(restored, DiffMigration)
     assert restored.migration_id == original.migration_id
     assert restored.parent == original.parent
-    assert restored.from_snapshot_version == original.from_snapshot_version
-    assert restored.to_snapshot_version == original.to_snapshot_version
+    assert restored.from_project_version == original.from_project_version
+    assert restored.to_project_version == original.to_project_version
     assert restored.ops == original.ops
 
 
@@ -305,11 +301,7 @@ def test_operation_config_roundtrip():
     restored = OperationConfig.model_validate(dict_form)
 
     # type is now a string (lazy loading)
-    assert (
-        restored.type
-        == original.type
-        == "metaxy.migrations.ops.DataVersionReconciliation"
-    )
+    assert restored.type == original.type == "metaxy.migrations.ops.DataVersionReconciliation"
     assert restored.features == original.features
     # Extra fields are preserved
     assert dict_form["custom_field"] == "value"
@@ -331,8 +323,8 @@ def test_operation_with_basesettings_env_vars():
             store,
             feature_key,
             *,
-            snapshot_version,
-            from_snapshot_version=None,
+            project_version,
+            from_project_version=None,
             dry_run=False,
         ):
             return 0
@@ -343,9 +335,7 @@ def test_operation_with_basesettings_env_vars():
 
     try:
         # Instantiate from config dict (mimics YAML loading)
-        op = TestOperation(
-            database_url="postgresql://localhost:5432/test", api_key="secret123"
-        )
+        op = TestOperation(database_url="postgresql://localhost:5432/test", api_key="secret123")
 
         assert op.database_url == "postgresql://localhost:5432/test"
         assert op.api_key == "secret123"
@@ -372,7 +362,7 @@ def test_full_graph_migration_get_affected_features(tmp_path):
         migration_id="test_full_001",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -385,7 +375,7 @@ def test_full_graph_migration_get_affected_features(tmp_path):
         ],
     )
 
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         affected = migration.get_affected_features(store, "default")
@@ -399,7 +389,7 @@ def test_full_graph_migration_deduplicates_features(tmp_path):
         migration_id="test_full_002",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -412,7 +402,7 @@ def test_full_graph_migration_deduplicates_features(tmp_path):
         ],
     )
 
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
         affected = migration.get_affected_features(store, "default")
@@ -426,8 +416,8 @@ def test_full_graph_migration_with_from_snapshot():
         migration_id="test_full_003",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap2",
-        from_snapshot_version="snap1",  # Cross-snapshot migration
+        project_version="snap2",
+        from_project_version="snap1",  # Cross-snapshot migration
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -436,8 +426,8 @@ def test_full_graph_migration_with_from_snapshot():
         ],
     )
 
-    assert migration.snapshot_version == "snap2"
-    assert migration.from_snapshot_version == "snap1"
+    assert migration.project_version == "snap2"
+    assert migration.from_project_version == "snap1"
 
 
 def test_get_failed_features_with_retry(store):
@@ -453,50 +443,30 @@ def test_get_failed_features_with_retry(store):
         # Feature 1: fails then succeeds
         storage.write_event(Event.migration_started(project, migration_id))
         storage.write_event(Event.feature_started(project, migration_id, "feature_1"))
-        storage.write_event(
-            Event.feature_failed(project, migration_id, "feature_1", "First error")
-        )
+        storage.write_event(Event.feature_failed(project, migration_id, "feature_1", "First error"))
         # Retry - now succeeds
         storage.write_event(Event.feature_started(project, migration_id, "feature_1"))
-        storage.write_event(
-            Event.feature_completed(
-                project, migration_id, "feature_1", rows_affected=100
-            )
-        )
+        storage.write_event(Event.feature_completed(project, migration_id, "feature_1", rows_affected=100))
 
         # Feature 2: fails and stays failed
         storage.write_event(Event.feature_started(project, migration_id, "feature_2"))
-        storage.write_event(
-            Event.feature_failed(project, migration_id, "feature_2", "Permanent error")
-        )
+        storage.write_event(Event.feature_failed(project, migration_id, "feature_2", "Permanent error"))
 
         # Feature 3: succeeds on first try
         storage.write_event(Event.feature_started(project, migration_id, "feature_3"))
-        storage.write_event(
-            Event.feature_completed(
-                project, migration_id, "feature_3", rows_affected=50
-            )
-        )
+        storage.write_event(Event.feature_completed(project, migration_id, "feature_3", rows_affected=50))
 
         # Get completed and failed features
         completed = storage.get_completed_features(migration_id, project)
         failed = storage.get_failed_features(migration_id, project)
 
         # Assertions
-        assert "feature_1" in completed, (
-            "Feature that succeeded after retry should be in completed"
-        )
-        assert "feature_3" in completed, (
-            "Feature that succeeded first try should be in completed"
-        )
-        assert "feature_1" not in failed, (
-            "Feature that succeeded after retry should NOT be in failed"
-        )
+        assert "feature_1" in completed, "Feature that succeeded after retry should be in completed"
+        assert "feature_3" in completed, "Feature that succeeded first try should be in completed"
+        assert "feature_1" not in failed, "Feature that succeeded after retry should NOT be in failed"
         assert "feature_2" in failed, "Feature that never succeeded should be in failed"
         assert failed["feature_2"] == "Permanent error"
-        assert "feature_3" not in failed, (
-            "Feature that succeeded should NOT be in failed"
-        )
+        assert "feature_3" not in failed, "Feature that succeeded should NOT be in failed"
 
         # Check migration summary
         summary = storage.get_migration_summary(migration_id, project)
@@ -610,7 +580,7 @@ def test_full_graph_migration_get_status_info(store):
             migration_id="test_status_info",
             parent="initial",
             created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-            snapshot_version="snap1",
+            project_version="snap1",
             ops=[
                 {
                     "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -630,9 +600,7 @@ def test_full_graph_migration_get_status_info(store):
         assert status_info.features_remaining == 3
 
         # Start migration and complete some features
-        storage.write_event(
-            Event.migration_started(project="test", migration_id=migration.migration_id)
-        )
+        storage.write_event(Event.migration_started(project="test", migration_id=migration.migration_id))
         storage.write_event(
             Event.feature_completed(
                 project="test",
@@ -676,7 +644,7 @@ def test_operations_property_lazy_import():
         migration_id="test_lazy_001",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -697,7 +665,7 @@ def test_operations_property_invalid_import():
         migration_id="test_invalid_001",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "nonexistent.module.FakeOperation",
@@ -717,7 +685,7 @@ def test_operations_property_invalid_class_name():
         migration_id="test_invalid_002",
         parent="initial",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        snapshot_version="snap1",
+        project_version="snap1",
         ops=[
             {
                 "type": "metaxy.migrations.ops.NonExistentClass",

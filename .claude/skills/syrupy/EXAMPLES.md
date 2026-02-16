@@ -122,9 +122,7 @@ def test_exclude_nested_paths(snapshot):
     }
 
     # Exclude by full paths
-    assert user_data == snapshot(
-        exclude=paths("user.password", "session.token", "session.expires_at")
-    )
+    assert user_data == snapshot(exclude=paths("user.password", "session.token", "session.expires_at"))
 ```
 
 ### Including Only Specific Properties
@@ -485,9 +483,7 @@ def test_performance_metrics(snapshot):
         process_items(size)
         duration = time.time() - start
 
-        metrics.append(
-            {"size": size, "duration_category": "fast" if duration < 0.1 else "slow"}
-        )
+        metrics.append({"size": size, "duration_category": "fast" if duration < 0.1 else "slow"})
 
     # Snapshot categories, not exact times
     assert metrics == snapshot

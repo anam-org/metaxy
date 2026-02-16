@@ -1,4 +1,5 @@
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
@@ -133,7 +134,7 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
 
 
 def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
-    """Test feature with specific field-level dependencies."""
+    """Test feature with specific field-level lineage."""
 
     class MultiField(
         SampleFeature,
@@ -413,8 +414,6 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
 
     # Verify that different fields have different versions
     z_versions = versions["z"]
-    assert len(set(z_versions.values())) == 3, (
-        "All fields should have different versions"
-    )
+    assert len(set(z_versions.values())) == 3, "All fields should have different versions"
 
     assert versions == snapshot

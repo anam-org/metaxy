@@ -6,6 +6,7 @@ from typing import Any
 import dagster as dg
 
 import metaxy as mx
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_METADATA_KEY,
@@ -18,6 +19,7 @@ from metaxy.ext.dagster.utils import (
 )
 
 
+@public
 def observable_metaxy_asset(
     feature: mx.CoercibleToFeatureKey,
     *,
@@ -52,9 +54,11 @@ def observable_metaxy_asset(
         import metaxy.ext.dagster as mxd
         from myproject.features import ExternalFeature
 
+
         @mxd.observable_metaxy_asset(feature=ExternalFeature)
         def external_data(context, store, lazy_df):
             pass
+
 
         # With custom metadata - return a dict
         @mxd.observable_metaxy_asset(feature=ExternalFeature)
@@ -94,13 +98,11 @@ def observable_metaxy_asset(
             store: mx.MetadataStore = getattr(context.resources, store_resource_key)
 
             # Check for metaxy/partition metadata to apply filtering
-            metaxy_partition = enriched.metadata.get(
-                DAGSTER_METAXY_PARTITION_METADATA_KEY
-            )
+            metaxy_partition = enriched.metadata.get(DAGSTER_METAXY_PARTITION_METADATA_KEY)
             filters = build_metaxy_partition_filter(metaxy_partition)
 
             with store:
-                lazy_df = store.read_metadata(feature_key, filters=filters)
+                lazy_df = store.read(feature_key, filters=filters)
                 stats = compute_stats_from_lazy_frame(lazy_df)
 
                 # Call the user's function - it can return additional metadata

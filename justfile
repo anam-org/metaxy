@@ -8,6 +8,9 @@ ruff:
 typecheck:
     uv run ty check
 
+nox *args:
+    uv run nox {{args}}
+
 sync:
     uv sync --all-extras --all-groups
 
@@ -79,13 +82,10 @@ init-example name:
     uv add --project examples ./examples/{{name}}
     uv add --project ./examples/{{name}} . --editable
 
-version-bump:
-    uv version --bump dev
+# Bump version: dev, rc, stable, patch, minor, major
+release bump:
+    uv version --bump {{bump}}
     echo "__version__ = \"$(uv version --short)\"" > src/metaxy/_version.py
-
-publish-dev:
-    uv build
-    uv publish "./dist/metaxy-$(uv version --short)-py3-none-any.whl"
 
 # Update snapshots for all examples or specific examples
 example-snapshot-update *EXAMPLES:

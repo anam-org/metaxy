@@ -1,9 +1,9 @@
 """Tests for SampleFeatureSpec validation, especially duplicate field keys."""
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import BaseFeature
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 
@@ -28,9 +28,7 @@ def test_duplicate_field_keys_with_different_code_versions_still_fails():
             key="test/feature",
             fields=[
                 FieldSpec(key=FieldKey(["analysis"]), code_version="v1"),
-                FieldSpec(
-                    key=FieldKey(["analysis"]), code_version="v2"
-                ),  # Still duplicate!
+                FieldSpec(key=FieldKey(["analysis"]), code_version="v2"),  # Still duplicate!
             ],
         )
 
@@ -128,9 +126,7 @@ def test_feature_spec_requires_id_columns():
 
     # This should fail - id_columns is required
     with pytest.raises(ValidationError, match="id_columns"):
-        FeatureSpec(
-            key="test/feature"
-        )  # Missing id_columns  # ty: ignore[no-matching-overload]
+        FeatureSpec(key="test/feature")  # Missing id_columns  # ty: ignore[no-matching-overload]
 
     # This should work
     spec = FeatureSpec(key="test/feature", id_columns=["sample_uid"])
@@ -155,17 +151,17 @@ def test_feature_dep_from_feature_class():
     # Test 1: Create FeatureDep directly from Feature class
     dep = FeatureDep(feature=ParentFeature)
     assert dep.feature == ParentFeature.spec().key
-    assert dep.columns is None
+    assert dep.select is None
     assert dep.rename is None
 
     # Test 2: Create FeatureDep from Feature class with options
     dep_with_columns = FeatureDep(
         feature=ParentFeature,
-        columns=("value",),
         rename={"value": "parent_value"},
+        select=("parent_value",),
     )
     assert dep_with_columns.feature == ParentFeature.spec().key
-    assert dep_with_columns.columns == ("value",)
+    assert dep_with_columns.select == ("parent_value",)
     assert dep_with_columns.rename == {"value": "parent_value"}
 
     # Test 3: Verify FeatureDep works in FeatureSpec.deps

@@ -1,3 +1,6 @@
+.coverage
+.test-timing
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -31,6 +34,19 @@ examples/.generated
 
 # Claude stuff
 PLAN.md
+.claude/plans
 plans/*.md
 .cache/
 docs/slides/.node_modules/
+.pg-wrappers/initdb
+.pg-wrappers/pg_ctl
+.pg-wrappers/postgres
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.devenv/
+.devenv.flake.nix

@@ -24,21 +24,17 @@ METAXY_PROVENANCE = f"{SYSTEM_COLUMN_PREFIX}provenance"
 METAXY_FEATURE_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_version"
 """Hash of the feature definition (dependencies + fields + code_versions)."""
 
-METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
-"""Hash of the entire feature graph snapshot (recorded during deployment)."""
+METAXY_PROJECT_VERSION = f"{SYSTEM_COLUMN_PREFIX}project_version"
+"""Hash of the entire feature graph project version (recorded during deployment)."""
 
-METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
-"""Hash of the complete feature specification."""
+METAXY_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}definition_version"
+"""Hash of the complete feature definition including Pydantic schema and feature spec.
 
-METAXY_FULL_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}full_definition_version"
-"""Hash of the complete feature definition including Pydantic schema, feature spec, and project.
-
-This comprehensive hash captures ALL aspects of a feature definition:
+This comprehensive hash captures the feature definition (excluding project):
 - Pydantic model schema (field types, descriptions, validators, serializers, etc.)
 - Feature specification (dependencies, fields, code_versions, metadata)
-- Project name
 
-Used in system tables to detect when ANY part of a feature changes."""
+Project is stored separately. Used in system tables to detect when ANY part of a feature changes."""
 
 METAXY_DATA_VERSION_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}data_version_by_field"
 """Field-level data version hashes (struct column mapping field names to version hashes).
@@ -52,10 +48,11 @@ METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
 METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
 """Timestamp when the metadata row was created."""
 
+METAXY_UPDATED_AT = f"{SYSTEM_COLUMN_PREFIX}updated_at"
+"""Timestamp when the metadata row was last updated (written to the store)."""
+
 METAXY_DELETED_AT = f"{SYSTEM_COLUMN_PREFIX}deleted_at"
 """Timestamp when the metadata row was soft-deleted."""
-
-"""Temporary ordering column name used for deduplication."""
 
 METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
 """External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
@@ -67,11 +64,11 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_PROVENANCE_BY_FIELD,
         METAXY_PROVENANCE,
         METAXY_FEATURE_VERSION,
-        METAXY_FEATURE_SPEC_VERSION,
-        METAXY_SNAPSHOT_VERSION,
+        METAXY_PROJECT_VERSION,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
         METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
         METAXY_DELETED_AT,
         METAXY_MATERIALIZATION_ID,
     }
@@ -82,9 +79,9 @@ ALL_SYSTEM_COLUMNS = frozenset(
 _DROPPABLE_COLUMNS = frozenset(
     {
         METAXY_FEATURE_VERSION,
-        METAXY_FEATURE_SPEC_VERSION,
-        METAXY_SNAPSHOT_VERSION,
+        METAXY_PROJECT_VERSION,
         METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
         METAXY_DELETED_AT,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
@@ -98,9 +95,9 @@ _DROPPABLE_COLUMNS = frozenset(
 _COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
     {
         METAXY_FEATURE_VERSION,
-        METAXY_FEATURE_SPEC_VERSION,
-        METAXY_SNAPSHOT_VERSION,
+        METAXY_PROJECT_VERSION,
         METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
         METAXY_MATERIALIZATION_ID,
     }
 )
@@ -130,7 +127,7 @@ def is_system_column(name: str) -> bool:
 def is_droppable_system_column(name: str) -> bool:
     """Check whether a column should be dropped when joining upstream features.
 
-    Droppable columns (feature_version, snapshot_version) are recalculated for
+    Droppable columns (feature_version, project_version) are recalculated for
     each feature, so keeping them from upstream would cause conflicts.
 
     Args:

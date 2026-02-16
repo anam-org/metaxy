@@ -1,5 +1,6 @@
 """ClickHouse-specific tests that don't apply to other stores."""
 
+import ibis.expr.datatypes as dt
 import polars as pl
 import pytest
 
@@ -11,14 +12,12 @@ try:
 except ImportError:
     pytest.skip("ibis-clickhouse not installed", allow_module_level=True)
 
-from metaxy._testing.models import SampleFeature
+from metaxy import FeatureDefinition
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
+from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 
 
-def test_clickhouse_table_naming(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
@@ -35,7 +34,7 @@ def test_clickhouse_table_naming(
                 "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
         # Check table was created with correct name using Ibis
         table_names = store.conn.list_tables()
@@ -43,7 +42,7 @@ def test_clickhouse_table_naming(
 
 
 def test_clickhouse_uses_ibis_backend(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that ClickHouse store uses Ibis backend.
 
@@ -60,7 +59,7 @@ def test_clickhouse_uses_ibis_backend(
 
 
 def test_clickhouse_conn_property_enforcement(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that conn property enforces store is open.
 
@@ -82,14 +81,12 @@ def test_clickhouse_conn_property_enforcement(
         conn = store.conn
         assert conn is not None
 
-    with store.open("write"):
+    with store.open("w"):
         conn = store.conn
         assert conn is not None
 
 
-def test_clickhouse_persistence(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_clickhouse_persistence(clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]) -> None:
     """Test that data persists across different store instances.
 
     Args:
@@ -110,20 +107,18 @@ def test_clickhouse_persistence(
                 ],
             }
         )
-        store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store1.write(test_features["UpstreamFeatureA"], metadata)
 
     # Read data in second instance
     with ClickHouseMetadataStore(clickhouse_db) as store2:
-        result = collect_to_polars(
-            store2.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store2.read(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
 def test_clickhouse_hash_algorithms(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that ClickHouse supports MD5, XXHASH32, and XXHASH64 hash algorithms.
 
@@ -155,16 +150,14 @@ def test_clickhouse_hash_algorithms(
                     ],
                 }
             )
-            store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+            store.write(test_features["UpstreamFeatureA"], metadata)
 
-            result = collect_to_polars(
-                store.read_metadata(test_features["UpstreamFeatureA"])
-            )
+            result = collect_to_polars(store.read(test_features["UpstreamFeatureA"]))
             assert len(result) == 2
 
 
 def test_clickhouse_config_instantiation(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test instantiating ClickHouse store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -172,7 +165,7 @@ def test_clickhouse_config_instantiation(
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                 },
@@ -184,20 +177,18 @@ def test_clickhouse_config_instantiation(
     assert isinstance(store, ClickHouseMetadataStore)
 
     # Verify store can be opened
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
-def test_clickhouse_config_with_connection_params(
-    test_graph, test_features: dict[str, type[SampleFeature]]
-) -> None:
+def test_clickhouse_config_with_connection_params(test_graph, test_features: dict[str, FeatureDefinition]) -> None:
     """Test ClickHouse store config with connection_params."""
     from metaxy.config import MetaxyConfig, StoreConfig
 
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_params": {
                         "host": "localhost",
@@ -216,7 +207,7 @@ def test_clickhouse_config_with_connection_params(
 
 
 def test_clickhouse_config_with_hash_algorithm(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test ClickHouse store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -225,7 +216,7 @@ def test_clickhouse_config_with_hash_algorithm(
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                     "hash_algorithm": "md5",
@@ -238,12 +229,12 @@ def test_clickhouse_config_with_hash_algorithm(
     assert isinstance(store, ClickHouseMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
 def test_clickhouse_config_with_fallback_stores(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test ClickHouse store config with fallback stores."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -251,14 +242,14 @@ def test_clickhouse_config_with_fallback_stores(
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                 },
@@ -271,12 +262,12 @@ def test_clickhouse_config_with_fallback_stores(
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], ClickHouseMetadataStore)
 
-    with dev_store.open("write"):
+    with dev_store.open("w"):
         assert dev_store._is_open
 
 
 def test_clickhouse_json_column_type(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that native ClickHouse JSON columns are handled correctly.
 
@@ -294,7 +285,7 @@ def test_clickhouse_json_column_type(
     import json
 
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -312,14 +303,13 @@ def test_clickhouse_json_column_type(
                 metaxy_provenance_by_field JSON,
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field JSON,
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -335,24 +325,23 @@ def test_clickhouse_json_column_type(
                 metaxy_provenance_by_field,
                 metaxy_provenance,
                 metaxy_feature_version,
-                metaxy_snapshot_version,
+                metaxy_project_version,
                 metaxy_data_version_by_field,
                 metaxy_data_version,
                 metaxy_created_at,
                 metaxy_deleted_at,
-                metaxy_materialization_id,
-                metaxy_feature_spec_version
+                metaxy_materialization_id
             ) VALUES
-            (1, '{provenance_json}', 'prov1', 'v1', 'sv1', '{version_json}', 'dv1', now(), NULL, 'm1', 'fs1'),
-            (2, '{provenance_json}', 'prov2', 'v1', 'sv1', '{version_json}', 'dv2', now(), NULL, 'm1', 'fs1')
+            (1, '{provenance_json}', 'prov1', 'v1', 'sv1', '{version_json}', 'dv1', now(), NULL, 'm1'),
+            (2, '{provenance_json}', 'prov2', 'v1', 'sv1', '{version_json}', 'dv2', now(), NULL, 'm1')
         """
         )
 
-        # Read via read_metadata_in_store (no feature_version filter)
+        # Read via _read_feature (no feature_version filter)
         # This uses transform_after_read internally
         # Without the fix, this would raise:
         # "pyarrow.lib.ArrowTypeError: Expected bytes, got a 'dict' object"
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -371,7 +360,7 @@ def test_clickhouse_json_column_type(
 
 
 def test_clickhouse_map_column_type(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that ClickHouse Map(K,V) columns are converted to Struct on read.
 
@@ -383,7 +372,7 @@ def test_clickhouse_map_column_type(
     to Map-compatible format when inserting into tables with Map columns.
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -401,14 +390,13 @@ def test_clickhouse_map_column_type(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -422,22 +410,21 @@ def test_clickhouse_map_column_type(
                 metaxy_provenance_by_field,
                 metaxy_provenance,
                 metaxy_feature_version,
-                metaxy_snapshot_version,
+                metaxy_project_version,
                 metaxy_data_version_by_field,
                 metaxy_data_version,
                 metaxy_created_at,
                 metaxy_deleted_at,
-                metaxy_materialization_id,
-                metaxy_feature_spec_version
+                metaxy_materialization_id
             ) VALUES
-            (1, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), NULL, 'm1', 'fs1'),
-            (2, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), NULL, 'm1', 'fs1')
+            (1, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), NULL, 'm1'),
+            (2, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), NULL, 'm1')
         """
         )
 
-        # Read via read_metadata_in_store
+        # Read via _read_feature
         # This uses transform_after_read which should convert Map to Struct
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -457,7 +444,7 @@ def test_clickhouse_map_column_type(
 
 
 def test_clickhouse_map_column_empty_table_read(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test reading from an EMPTY table with Map(String, String) columns.
 
@@ -473,7 +460,7 @@ def test_clickhouse_map_column_empty_table_read(
     The fix uses map.get(key, "") instead of map[key] to safely handle empty maps.
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -491,14 +478,13 @@ def test_clickhouse_map_column_empty_table_read(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -507,7 +493,7 @@ def test_clickhouse_map_column_empty_table_read(
         # This should NOT raise KeyError even though the Map is empty
         # The error was: KeyError: 'frames'
         # Because the Map->Struct conversion couldn't handle empty maps
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
 
         # Reading from an empty table should return None or empty result
         if read_result is not None:
@@ -518,22 +504,22 @@ def test_clickhouse_map_column_empty_table_read(
         conn.drop_table(table_name)
 
 
-def test_clickhouse_map_column_resolve_update_write_metadata(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+def test_clickhouse_map_column_resolve_update_write(
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Test resolve_update and write_metadata with Map(String, String) columns.
+    """Test resolve_update and write with Map(String, String) columns.
 
     This tests the full workflow that was failing in production:
     1. Create table with Map columns
     2. Call resolve_update with Polars DataFrame (has Struct columns)
-    3. Call write_metadata which should transform Struct -> JSON for Map insertion
+    3. Call write which should transform Struct -> JSON for Map insertion
     4. Read back and verify data
 
     The key issue was that Polars Struct -> pl.Object conversion failed because
     Ibis doesn't know how to handle pl.Object type.
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -551,14 +537,13 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -578,16 +563,16 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
         # resolve_update should work (materializes to Polars for comparison)
         increment = store.resolve_update(feature_cls, samples=samples)
         assert increment is not None
-        assert len(increment.added) == 3
-        assert len(increment.changed) == 0
-        assert len(increment.removed) == 0
+        assert len(increment.new) == 3
+        assert len(increment.stale) == 0
+        assert len(increment.orphaned) == 0
 
-        # write_metadata should work (Struct -> JSON string for Map columns)
+        # write should work (Struct -> JSON string for Map columns)
         # This is where the original error occurred: KeyError: Object
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -605,7 +590,7 @@ def test_clickhouse_map_column_resolve_update_write_metadata(
 
 
 def test_clickhouse_map_column_write_from_ibis_struct(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test writing Ibis-backed DataFrame with Struct columns to Map columns.
 
@@ -630,7 +615,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
     )
 
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
     plan = test_graph.get_feature_plan(feature_key)
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
@@ -649,14 +634,13 @@ def test_clickhouse_map_column_write_from_ibis_struct(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -676,9 +660,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
 
         # Use the store's versioning engine to build the struct column
         # This is exactly how resolve_update builds metaxy_provenance_by_field
-        with store.create_versioning_engine(
-            plan, implementation=nw.Implementation.IBIS
-        ) as engine:
+        with store.create_versioning_engine(plan, implementation=nw.Implementation.IBIS) as engine:
             # Build struct using the engine's method (same as production code)
             nw_df = engine.build_struct_column(
                 nw_df,
@@ -700,10 +682,10 @@ def test_clickhouse_map_column_write_from_ibis_struct(
         # Write to the store - this should transform Ibis Struct -> Map
         # Before the fix, this raised:
         # "CAST AS Map from tuple requires 2 elements. Left type: Tuple(Nullable(String)), right type: Map(String, String)"
-        store.write_metadata(feature_cls, nw_df)
+        store.write(feature_cls, nw_df)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -723,7 +705,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
 
 
 def test_clickhouse_user_defined_map_column(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that user-defined Map(String, T) columns are preserved (not transformed).
 
@@ -741,7 +723,7 @@ def test_clickhouse_user_defined_map_column(
     3. Metaxy Map columns are converted to dict (Struct)
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -760,14 +742,13 @@ def test_clickhouse_user_defined_map_column(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -781,23 +762,22 @@ def test_clickhouse_user_defined_map_column(
                 metaxy_provenance_by_field,
                 metaxy_provenance,
                 metaxy_feature_version,
-                metaxy_snapshot_version,
+                metaxy_project_version,
                 metaxy_data_version_by_field,
                 metaxy_data_version,
                 metaxy_created_at,
-                metaxy_materialization_id,
-                metaxy_feature_spec_version
+                metaxy_materialization_id
             ) VALUES
-            (1, {{'source': 'camera1', 'quality': 'high'}}, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), 'm1', 'fs1'),
-            (2, {{'source': 'camera2', 'resolution': '4k'}}, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), 'm1', 'fs1')
+            (1, {{'source': 'camera1', 'quality': 'high'}}, {{'frames': 'hash1', 'audio': 'hash2'}}, 'prov1', 'v1', 'sv1', {{'frames': 'v1', 'audio': 'v1'}}, 'dv1', now(), 'm1'),
+            (2, {{'source': 'camera2', 'resolution': '4k'}}, {{'frames': 'hash3', 'audio': 'hash4'}}, 'prov2', 'v1', 'sv1', {{'frames': 'v2', 'audio': 'v2'}}, 'dv2', now(), 'm1')
         """
         )
 
-        # Read via read_metadata_in_store
+        # Read via _read_feature
         # This uses transform_after_read which should:
         # - Convert metaxy Map columns to Struct (dict)
         # - Leave user_metadata Map column as-is (List[Struct{key,value}])
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -813,9 +793,7 @@ def test_clickhouse_user_defined_map_column(
         # This is the Arrow Map representation - NOT converted to dict
         user_meta = result["user_metadata"][0]
         # In Polars, each row's Map value is a Series of struct{key, value}
-        assert isinstance(user_meta, pl.Series), (
-            f"Expected pl.Series, got {type(user_meta)}"
-        )
+        assert isinstance(user_meta, pl.Series), f"Expected pl.Series, got {type(user_meta)}"
         # Verify we can access the data
         assert len(user_meta) == 2  # Two key-value pairs: source, quality
 
@@ -824,7 +802,7 @@ def test_clickhouse_user_defined_map_column(
 
 
 def test_clickhouse_auto_cast_struct_for_map_true(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test auto_cast_struct_for_map=True converts user Struct columns to Map on write.
 
@@ -833,7 +811,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
     is Map type. This allows users to write Polars Struct data directly to Map columns.
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     # auto_cast_struct_for_map=True is the default
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
@@ -853,14 +831,13 @@ def test_clickhouse_auto_cast_struct_for_map_true(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -881,10 +858,10 @@ def test_clickhouse_auto_cast_struct_for_map_true(
         )
 
         # Write should succeed - user Struct is auto-converted to Map
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -893,9 +870,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
 
         # Verify user_tags Map data is readable (as List[Struct{key,value}] in Polars)
         user_tags = result["user_tags"][0]
-        assert isinstance(user_tags, pl.Series), (
-            f"Expected pl.Series, got {type(user_tags)}"
-        )
+        assert isinstance(user_tags, pl.Series), f"Expected pl.Series, got {type(user_tags)}"
         # Convert to dict for easier assertion
         tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
         assert tags_dict["env"] == "prod"
@@ -906,7 +881,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
 
 
 def test_clickhouse_auto_cast_struct_for_map_false(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test auto_cast_struct_for_map=False does NOT convert user Struct columns.
 
@@ -915,11 +890,9 @@ def test_clickhouse_auto_cast_struct_for_map_false(
     when the target column is Map type (ClickHouse can't insert Struct into Map).
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(
-        clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False
-    ) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False) as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -936,14 +909,13 @@ def test_clickhouse_auto_cast_struct_for_map_false(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -960,7 +932,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
         # Write should FAIL because user Struct won't be converted to Map
         # ClickHouse will reject the insert with a type mismatch error
         with pytest.raises(Exception):  # Ibis/ClickHouse error on type mismatch
-            store.write_metadata(feature_cls, samples)
+            store.write(feature_cls, samples)
 
         # Clean up
         if table_name in conn.list_tables():
@@ -968,7 +940,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
 
 
 def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test auto_cast_struct_for_map=True works with Ibis-backed DataFrames.
 
@@ -979,7 +951,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
     import narwhals as nw
 
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -998,14 +970,13 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -1023,9 +994,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
         # Build struct columns using ibis.struct()
         ibis_table = ibis_table.mutate(
-            user_tags=ibis.struct(
-                {"env": ibis_table["_tag_env"], "team": ibis_table["_tag_team"]}
-            ),
+            user_tags=ibis.struct({"env": ibis_table["_tag_env"], "team": ibis_table["_tag_team"]}),
             metaxy_provenance_by_field=ibis.struct(
                 {
                     "frames": ibis_table["_prov_frames"],
@@ -1033,9 +1002,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
                 }
             ),
         )
-        ibis_table = ibis_table.drop(
-            "_tag_env", "_tag_team", "_prov_frames", "_prov_audio"
-        )
+        ibis_table = ibis_table.drop("_tag_env", "_tag_team", "_prov_frames", "_prov_audio")
 
         # Wrap in Narwhals
         nw_df = nw.from_native(ibis_table, eager_only=False)
@@ -1044,10 +1011,10 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
         assert nw_df.implementation == nw.Implementation.IBIS
 
         # Write should succeed - both user and metaxy Struct columns are converted to Map
-        store.write_metadata(feature_cls, nw_df)
+        store.write(feature_cls, nw_df)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1056,9 +1023,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
         # Verify user_tags Map data is readable
         user_tags = result["user_tags"][0]
-        assert isinstance(user_tags, pl.Series), (
-            f"Expected pl.Series, got {type(user_tags)}"
-        )
+        assert isinstance(user_tags, pl.Series), f"Expected pl.Series, got {type(user_tags)}"
         tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
         assert tags_dict["env"] == "prod"
         assert tags_dict["team"] == "ml"
@@ -1073,7 +1038,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
 
 def test_clickhouse_auto_cast_struct_for_map_non_string_values(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test auto_cast_struct_for_map with non-string Map value types.
 
@@ -1081,7 +1046,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
     Struct fields are correctly cast to Int64 before insertion.
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -1100,14 +1065,13 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -1128,10 +1092,10 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
         )
 
         # Write should succeed - Struct int values are cast to Int64 for Map(String, Int64)
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1139,9 +1103,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
 
         # Verify field_counts Map data has correct integer values
         field_counts = result["field_counts"][0]
-        assert isinstance(field_counts, pl.Series), (
-            f"Expected pl.Series, got {type(field_counts)}"
-        )
+        assert isinstance(field_counts, pl.Series), f"Expected pl.Series, got {type(field_counts)}"
         counts_dict = {row["key"]: row["value"] for row in field_counts.to_list()}
         assert counts_dict["frames_count"] == 10
         assert counts_dict["audio_count"] == 5
@@ -1151,7 +1113,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
 
 
 def test_clickhouse_auto_cast_struct_for_map_empty_struct(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test auto_cast_struct_for_map handles empty structs gracefully.
 
@@ -1159,7 +1121,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
     transformation since they can't be converted to a Map.
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
     with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
         conn = store.conn
@@ -1178,14 +1140,13 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -1209,10 +1170,10 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
         assert len(samples.schema["empty_metadata"].fields) == 0
 
         # Write should succeed - empty struct is skipped, other structs converted
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1224,7 +1185,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
 
 
 def test_clickhouse_auto_cast_struct_for_map_null_values(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[SampleFeature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that Struct columns with NULL values are handled correctly.
 
@@ -1238,11 +1199,9 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
     column selected_frame_indices to destination column selected_frame_indices"
     """
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key
+    feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(
-        clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True
-    ) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True) as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1259,14 +1218,13 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
                 metaxy_provenance_by_field Map(String, String),
                 metaxy_provenance String,
                 metaxy_feature_version String,
-                metaxy_snapshot_version String,
+                metaxy_project_version String,
                 metaxy_data_version_by_field Map(String, String),
                 metaxy_data_version String,
                 metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
                 metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
-                metaxy_materialization_id String,
-                metaxy_feature_spec_version String
-            ) ENGINE = MergeTree()
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
             ORDER BY sample_uid
         """
         )
@@ -1300,10 +1258,10 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
         assert isinstance(struct_type, pl.Struct)
 
         # Write should succeed - NULL values are filtered out
-        store.write_metadata(feature_cls, samples)
+        store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store.read_metadata_in_store(feature_cls)
+        read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1325,3 +1283,31 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
 
         # Clean up
         conn.drop_table(table_name)
+
+
+# -- ibis_type_to_polars override (no live ClickHouse needed) --
+
+
+@pytest.fixture
+def ch_store() -> ClickHouseMetadataStore:
+    """ClickHouseMetadataStore for type conversion tests (no connection needed)."""
+    return ClickHouseMetadataStore(connection_string="clickhouse://localhost:8443/default")
+
+
+def test_clickhouse_ibis_type_to_polars_map(ch_store: ClickHouseMetadataStore) -> None:
+    result = ch_store.ibis_type_to_polars(dt.Map(key_type=dt.String(), value_type=dt.Int64()))
+    assert result == pl.List(pl.Struct({"key": pl.String, "value": pl.Int64}))
+
+
+def test_clickhouse_ibis_type_to_polars_nested_map(ch_store: ClickHouseMetadataStore) -> None:
+    nested = dt.Map(
+        key_type=dt.String(),
+        value_type=dt.Map(key_type=dt.String(), value_type=dt.Float64()),
+    )
+    inner = pl.List(pl.Struct({"key": pl.String, "value": pl.Float64}))
+    assert ch_store.ibis_type_to_polars(nested) == pl.List(pl.Struct({"key": pl.String, "value": inner}))
+
+
+def test_clickhouse_ibis_type_to_polars_delegates_non_map(ch_store: ClickHouseMetadataStore) -> None:
+    assert ch_store.ibis_type_to_polars(dt.String()) == pl.String
+    assert ch_store.ibis_type_to_polars(dt.UUID()) == pl.String

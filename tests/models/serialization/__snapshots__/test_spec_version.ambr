@@ -1,17 +1,17 @@
 # serializer version: 1
-# name: test_feature_spec_version_deterministic
-  'a1324dfb386fb264f3dd53c841672277c34177558418f20a0aa8ee007e73c06b'
-# ---
-# name: test_feature_spec_version_includes_all_properties
-  '7758641505115c2ea87c4d136c4dacbb183db886aa9290c633bf2c90babe85a9'
-# ---
-# name: test_feature_spec_version_recorded_in_metadata_store
+# name: test_feature_definition_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_feature_spec_version': '4ea1c65aa5270149fa2625b8f4e5df5c1bb760635541c634dab843f3d665be7e',
-    'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
-    'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
+    'metaxy_definition_version': '2770c11d',
+    'metaxy_feature_version': '3599b5f9',
+    'metaxy_project_version': 'd99f5c77',
   })
+# ---
+# name: test_feature_spec_version_deterministic
+  'a5eea973'
+# ---
+# name: test_feature_spec_version_includes_all_properties
+  '6d18d012'
 # ---
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
@@ -88,6 +88,19 @@
           'description': 'External orchestration run ID (e.g., Dagster Run ID)',
           'title': 'Metaxy Materialization Id',
         }),
+        'metaxy_project_version': dict({
+          'anyOf': list([
+            dict({
+              'type': 'string',
+            }),
+            dict({
+              'type': 'null',
+            }),
+          ]),
+          'default': None,
+          'description': 'Hash of the entire feature graph project version',
+          'title': 'Metaxy Project Version',
+        }),
         'metaxy_provenance': dict({
           'anyOf': list([
             dict({
@@ -109,19 +122,6 @@
           'title': 'Metaxy Provenance By Field',
           'type': 'object',
         }),
-        'metaxy_snapshot_version': dict({
-          'anyOf': list([
-            dict({
-              'type': 'string',
-            }),
-            dict({
-              'type': 'null',
-            }),
-          ]),
-          'default': None,
-          'description': 'Hash of the entire feature graph snapshot',
-          'title': 'Metaxy Snapshot Version',
-        }),
       }),
       'title': 'SnapshotFeature',
       'type': 'object',
@@ -129,6 +129,7 @@
     'feature_spec': dict({
       'deps': list([
       ]),
+      'description': None,
       'fields': list([
         dict({
           'code_version': '1',
@@ -144,15 +145,14 @@
       'metadata': dict({
       }),
     }),
-    'metaxy_feature_spec_version': '26736b45eeb37186ef6678426b85f3265cdba9eb5b782a8f41496123d5649cd4',
-    'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
-    'metaxy_full_definition_version': '9a61cb119a3953cfc47a366ea0abc789635c20f89ff5a866437186085d5cd665',
-    'project': 'test',
+    'metaxy_definition_version': 'c4763fb4',
+    'metaxy_feature_version': 'd22026d5',
+    'project': 'test_spec_version',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '45f321c88cda17c6af8c8a8a431e8faca5f4cd0dff9ac7f74adc76131a8abb72'
+  '64c42b1b'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'dac7f36d487dd0e1243482b57fb91892eedf1ee2e49eb7ef7b8d35138df8bc76'
+  '8d025e6b'
 # ---

@@ -14,16 +14,18 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
+    FeatureDefinition,
     FeatureDep,
     FeatureGraph,
     FeatureKey,
+    FeatureSpec,
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 
 
 class TestAddFeature:
@@ -42,17 +44,15 @@ class TestAddFeature:
             pass
 
         # Feature is already registered via metaclass
-        assert MyFeature.spec().key in graph.features_by_key
+        assert MyFeature.spec().key in graph.feature_definitions_by_key
 
         # Re-adding the same class should not raise an error
         graph.add_feature(MyFeature)
 
         # Should still be registered
-        assert graph.features_by_key[MyFeature.spec().key] is MyFeature
+        assert graph.feature_definitions_by_key[MyFeature.spec().key].key == MyFeature.spec().key
 
-    def test_add_feature_different_class_same_key_raises_during_definition(
-        self, graph: FeatureGraph
-    ):
+    def test_add_feature_different_class_same_key_raises_during_definition(self, graph: FeatureGraph):
         """Test that defining a different class with the same key raises ValueError."""
 
         class FeatureV1(
@@ -76,9 +76,7 @@ class TestAddFeature:
             ):
                 pass
 
-    def test_add_feature_different_module_same_key_raises_error(
-        self, graph: FeatureGraph
-    ):
+    def test_add_feature_different_module_same_key_raises_error(self, graph: FeatureGraph):
         """Test that different classes with same key from different modules raise ValueError."""
 
         class OriginalFeature(
@@ -101,9 +99,7 @@ class TestAddFeature:
         class ConflictingFeature(
             BaseFeature,
             spec=SampleFeatureSpec(
-                key=FeatureKey(
-                    ["test", "conflict_key"]
-                ),  # Use different key for definition
+                key=FeatureKey(["test", "conflict_key"]),  # Use different key for definition
                 fields=[FieldSpec(key=FieldKey(["y"]))],
             ),
         ):
@@ -1150,3 +1146,532 @@ class TestComplexGraphs:
         frames_idx = sorted_keys.index(FeatureA.spec().key)
         embeddings_idx = sorted_keys.index(FeatureB.spec().key)
         assert frames_idx < embeddings_idx
+
+
+class TestExternalDefinitions:
+    """Test external feature definitions with FeatureGraph."""
+
+    def test_add_external_definition_to_graph(self, graph: FeatureGraph):
+        """External definitions can be added to a FeatureGraph."""
+
+        spec = FeatureSpec(
+            key=FeatureKey(["external", "test"]),
+            id_columns=["id"],
+            fields=["data"],
+        )
+        schema = {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "data": {"type": "number"},
+            },
+        }
+
+        external_def = FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="other-project",
+        )
+
+        graph.add_feature_definition(external_def)
+
+        # Verify it can be retrieved
+        retrieved = graph.get_feature_definition(["external", "test"])
+        assert retrieved == external_def
+        assert retrieved.is_external is True
+        assert retrieved.project == "other-project"
+
+    def test_external_definition_excluded_from_graph_snapshot(self, graph: FeatureGraph):
+        """External definitions are excluded from graph snapshots."""
+
+        spec = FeatureSpec(
+            key=FeatureKey(["snap", "external"]),
+            id_columns=["uid"],
+        )
+        schema = {"type": "object", "properties": {"uid": {"type": "string"}}}
+
+        external_def = FeatureDefinition.external(
+            spec=spec,
+            feature_schema=schema,
+            project="snapshot-proj",
+        )
+
+        graph.add_feature_definition(external_def)
+        # Pass project explicitly since graph only has external features
+        snapshot = graph.to_snapshot(project="snapshot-proj")
+
+        # External features should NOT be in the snapshot
+        assert "snap/external" not in snapshot
+        assert len(snapshot) == 0
+
+    def test_external_definition_coexists_with_class_definitions(self, graph: FeatureGraph):
+        """External definitions and class-based definitions can coexist in the same graph."""
+
+        # Add a class-based feature
+        class ClassFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "class_based"]),
+                fields=[FieldSpec(key=FieldKey(["x"]))],
+            ),
+        ):
+            pass
+
+        # Add an external feature
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "external_based"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Both should be retrievable
+        class_def = graph.get_feature_definition(["test", "class_based"])
+        ext_def = graph.get_feature_definition(["test", "external_based"])
+
+        assert class_def.is_external is False
+        assert ext_def.is_external is True
+
+        # Both should appear in list_features
+        all_keys = graph.list_features(only_current_project=False)
+        assert FeatureKey(["test", "class_based"]) in all_keys
+        assert FeatureKey(["test", "external_based"]) in all_keys
+
+    def test_external_definition_in_topological_sort(self, graph: FeatureGraph):
+        """External definitions participate in topological sorting."""
+
+        # Add two external features (no dependencies between them)
+        for name in ["alpha", "beta"]:
+            spec = FeatureSpec(
+                key=FeatureKey(["topo", name]),
+                id_columns=["id"],
+            )
+            definition = FeatureDefinition.external(
+                spec=spec,
+                feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+                project="topo-proj",
+            )
+            graph.add_feature_definition(definition)
+
+        sorted_keys = graph.topological_sort_features()
+
+        # Both should be in sorted result in alphabetical order (alpha before beta)
+        assert len(sorted_keys) == 2
+        alpha_idx = sorted_keys.index(FeatureKey(["topo", "alpha"]))
+        beta_idx = sorted_keys.index(FeatureKey(["topo", "beta"]))
+        assert alpha_idx < beta_idx
+
+    def test_normal_feature_replaces_external_feature(self, graph: FeatureGraph):
+        """Non-external feature replaces external feature with same key."""
+
+        # First add an external feature
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "replaceable"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Verify it's in the graph as external
+        assert graph.get_feature_definition(["test", "replaceable"]).is_external is True
+
+        # Now define a class-based feature with the same key
+        class ReplaceableFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "replaceable"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+        ):
+            pass
+
+        # The class-based feature should replace the external one
+        retrieved = graph.get_feature_definition(["test", "replaceable"])
+        assert retrieved.is_external is False
+        assert retrieved.feature_class_path is not None
+        assert "ReplaceableFeature" in retrieved.feature_class_path
+
+    def test_external_feature_does_not_overwrite_normal_feature(self, graph: FeatureGraph):
+        """External feature does not overwrite existing non-external feature."""
+
+        # First define a class-based feature
+        class ExistingFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "existing"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+        ):
+            pass
+
+        original_class_path = graph.get_feature_definition(["test", "existing"]).feature_class_path
+
+        # Try to add an external feature with the same key
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "existing"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # The original class-based feature should still be there
+        retrieved = graph.get_feature_definition(["test", "existing"])
+        assert retrieved.is_external is False
+        assert retrieved.feature_class_path == original_class_path
+
+    def test_external_features_excluded_from_snapshot_with_normal_features(self, graph: FeatureGraph):
+        """Snapshot only includes non-external features."""
+
+        # Add a class-based feature
+        class NormalFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "normal"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+        ):
+            pass
+
+        # Add an external feature
+        external_spec = FeatureSpec(
+            key=FeatureKey(["test", "external_snap"]),
+            id_columns=["id"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}}},
+            project="external-proj",
+        )
+        graph.add_feature_definition(external_def)
+
+        # Both should be in the graph
+        assert len(graph.feature_definitions_by_key) == 2
+
+        # Only the normal feature should be in the snapshot
+        snapshot = graph.to_snapshot()
+        assert "test/normal" in snapshot
+        assert "test/external_snap" not in snapshot
+        assert len(snapshot) == 1
+
+    def test_external_feature_with_missing_external_dependency_raises_error(self, graph: FeatureGraph):
+        """External feature depending on missing external parent should raise error on graph operations."""
+        import pytest
+
+        from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
+
+        # Add an external feature that depends on another external feature that doesn't exist
+        child_spec = FeatureSpec(
+            key=FeatureKey(["external", "child"]),
+            id_columns=["id"],
+            deps=[FeatureDep(feature=FeatureKey(["external", "parent"]))],
+        )
+        child_def = FeatureDefinition.external(
+            spec=child_spec,
+            feature_schema={"type": "object"},
+            project="external-project",
+        )
+        graph.add_feature_definition(child_def)
+
+        # The child is in the graph
+        assert FeatureKey(["external", "child"]) in graph.feature_definitions_by_key
+
+        # But the parent is NOT in the graph
+        assert FeatureKey(["external", "parent"]) not in graph.feature_definitions_by_key
+
+        # Trying to get the feature plan should raise an error
+        with pytest.raises(MetaxyMissingFeatureDependency) as exc_info:
+            graph.get_feature_plan(["external", "child"])
+
+        assert "external/parent" in str(exc_info.value)
+        assert "external/child" in str(exc_info.value)
+
+
+class TestExternalProvenanceOverride:
+    """Tests for external features with provenance overrides in FeatureGraph."""
+
+    def test_get_field_version_returns_override_for_external(self, graph: FeatureGraph):
+        """get_field_version returns provenance override instead of computing."""
+        from metaxy.models.plan import FQFieldKey
+
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "upstream"]),
+            id_columns=["id"],
+            fields=["value", "other"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={
+                "type": "object",
+                "properties": {"id": {}, "value": {}, "other": {}},
+            },
+            project="external-proj",
+            provenance_by_field={"value": "override_abc", "other": "override_def"},
+        )
+        graph.add_feature_definition(external_def)
+
+        # get_field_version should return the override directly
+        value_version = graph.get_field_version(
+            FQFieldKey(feature=FeatureKey(["ext", "upstream"]), field=FieldKey(["value"]))
+        )
+        other_version = graph.get_field_version(
+            FQFieldKey(feature=FeatureKey(["ext", "upstream"]), field=FieldKey(["other"]))
+        )
+
+        assert value_version == "override_abc"
+        assert other_version == "override_def"
+
+    def test_get_feature_version_uses_overridden_field_versions(self, graph: FeatureGraph):
+        """get_feature_version computes correctly from overridden field versions."""
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "versioned"]),
+            id_columns=["id"],
+            fields=["field_a", "field_b"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={
+                "type": "object",
+                "properties": {"id": {}, "field_a": {}, "field_b": {}},
+            },
+            project="ext-proj",
+            provenance_by_field={"field_a": "hash_a", "field_b": "hash_b"},
+        )
+        graph.add_feature_definition(external_def)
+
+        # get_feature_version_by_field should return the overrides
+        version_by_field = graph.get_feature_version_by_field(["ext", "versioned"])
+        assert version_by_field == {"field_a": "hash_a", "field_b": "hash_b"}
+
+        # get_feature_version should be deterministic based on overrides
+        version1 = graph.get_feature_version(["ext", "versioned"])
+        version2 = graph.get_feature_version(["ext", "versioned"])
+        assert version1 == version2
+        assert len(version1) > 0
+
+    def test_downstream_version_uses_upstream_override(self, graph: FeatureGraph):
+        """Downstream feature version is computed correctly from external override."""
+        # Add external feature with provenance override
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "parent"]),
+            id_columns=["id"],
+            fields=["parent_field"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={
+                "type": "object",
+                "properties": {"id": {}, "parent_field": {}},
+            },
+            project="ext-proj",
+            provenance_by_field={"parent_field": "stable_hash_123"},
+        )
+        graph.add_feature_definition(external_def)
+
+        # Add downstream feature that depends on the external
+        class DownstreamFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "downstream"]),
+                fields=[FieldSpec(key=FieldKey(["child_field"]), code_version="1")],
+                deps=[FeatureDep(feature=FeatureKey(["ext", "parent"]))],
+            ),
+        ):
+            pass
+
+        # Version should be computable
+        version = graph.get_feature_version(["test", "downstream"])
+        assert len(version) > 0
+
+        # Version should be stable (based on override, not dynamically computed)
+        version2 = graph.get_feature_version(["test", "downstream"])
+        assert version == version2
+
+    def test_snapshot_succeeds_with_provenance_override(self, graph: FeatureGraph):
+        """to_snapshot succeeds when external deps have provenance overrides."""
+        # Add external feature with provenance override
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "snap_parent"]),
+            id_columns=["id"],
+            fields=["data"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {}, "data": {}}},
+            project="ext-proj",
+            provenance_by_field={"data": "provenance_hash"},
+        )
+        graph.add_feature_definition(external_def)
+
+        # Add downstream feature that depends on external
+        class SnapshotableFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "snapshotable"]),
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+                deps=[FeatureDep(feature=FeatureKey(["ext", "snap_parent"]))],
+            ),
+        ):
+            pass
+
+        # Snapshot should succeed (external has override)
+        snapshot = graph.to_snapshot()
+
+        # Downstream feature is in snapshot
+        assert "test/snapshotable" in snapshot
+        # External feature is NOT in snapshot (still external)
+        assert "ext/snap_parent" not in snapshot
+
+    def test_snapshot_succeeds_without_provenance_override(self, graph: FeatureGraph):
+        """to_snapshot succeeds even when external deps lack provenance override.
+
+        This enables entangled multi-project setups where projects can push
+        to fresh stores without requiring external dependencies to be resolved first.
+        External features are excluded from the snapshot.
+        """
+        # Add external feature WITHOUT provenance override
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "no_override"]),
+            id_columns=["id"],
+            fields=["data"],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {}, "data": {}}},
+            project="ext-proj",
+            # No provenance_by_field!
+        )
+        graph.add_feature_definition(external_def)
+
+        # Add downstream feature that depends on external
+        class SnapshotFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "snap_feature"]),
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+                deps=[FeatureDep(feature=FeatureKey(["ext", "no_override"]))],
+            ),
+        ):
+            pass
+
+        # Snapshot should succeed - external features are excluded
+        snapshot = graph.to_snapshot()
+
+        # Only the non-external feature should be in snapshot
+        assert "test/snap_feature" in snapshot
+        assert "ext/no_override" not in snapshot
+
+    def test_external_without_override_works_when_chain_loaded(self, graph: FeatureGraph):
+        """External feature without override works when full chain is loaded in graph."""
+
+        # Add the "real" parent feature (non-external) first
+        class RealParentFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["real", "parent"]),
+                fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Add external feature that depends on the real parent
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "middle"]),
+            id_columns=["id"],
+            fields=["middle_data"],
+            deps=[FeatureDep(feature=FeatureKey(["real", "parent"]))],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {}, "middle_data": {}}},
+            project="ext-proj",
+            # No provenance override - relies on full chain
+        )
+        graph.add_feature_definition(external_def)
+
+        # Version computation should work because full chain is available
+        version = graph.get_feature_version(["ext", "middle"])
+        assert len(version) > 0
+
+    def test_version_differs_with_different_overrides(self, graph: FeatureGraph):
+        """Feature versions differ based on different provenance overrides."""
+        from metaxy import FeatureGraph
+
+        # Create two graphs with same structure but different overrides
+        graph1 = FeatureGraph()
+        graph2 = FeatureGraph()
+
+        for g, override_value in [(graph1, "hash_v1"), (graph2, "hash_v2")]:
+            ext_spec = FeatureSpec(
+                key=FeatureKey(["ext", "ver_test"]),
+                id_columns=["id"],
+                fields=["field"],
+            )
+            ext_def = FeatureDefinition.external(
+                spec=ext_spec,
+                feature_schema={"type": "object", "properties": {"id": {}, "field": {}}},
+                project="proj",
+                provenance_by_field={"field": override_value},
+            )
+            g.add_feature_definition(ext_def)
+
+        # Versions should differ
+        version1 = graph1.get_feature_version(["ext", "ver_test"])
+        version2 = graph2.get_feature_version(["ext", "ver_test"])
+        assert version1 != version2
+
+    def test_partial_override_falls_back_to_computation(self, graph: FeatureGraph):
+        """Fields not in override fall back to normal computation."""
+        from metaxy.models.plan import FQFieldKey
+
+        # Add a root feature that the external depends on
+        class RootFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "root"]),
+                fields=[FieldSpec(key=FieldKey(["root_field"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Add external with partial override (only some fields)
+        external_spec = FeatureSpec(
+            key=FeatureKey(["ext", "partial"]),
+            id_columns=["id"],
+            fields=[
+                FieldSpec(key=FieldKey(["overridden"]), code_version="1"),
+                FieldSpec(key=FieldKey(["computed"]), code_version="1"),
+            ],
+            deps=[FeatureDep(feature=FeatureKey(["test", "root"]))],
+        )
+        external_def = FeatureDefinition.external(
+            spec=external_spec,
+            feature_schema={"type": "object", "properties": {"id": {}, "overridden": {}, "computed": {}}},
+            project="ext-proj",
+            provenance_by_field={"overridden": "manual_hash"},  # Only override one field
+        )
+        graph.add_feature_definition(external_def)
+
+        # Overridden field returns override
+        overridden_version = graph.get_field_version(
+            FQFieldKey(feature=FeatureKey(["ext", "partial"]), field=FieldKey(["overridden"]))
+        )
+        assert overridden_version == "manual_hash"
+
+        # Non-overridden field is computed normally (has normal hash format)
+        computed_version = graph.get_field_version(
+            FQFieldKey(feature=FeatureKey(["ext", "partial"]), field=FieldKey(["computed"]))
+        )
+        assert computed_version != "manual_hash"
+        assert len(computed_version) > 0  # Has a computed hash

@@ -18,6 +18,7 @@ from pathlib import Path
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from sqlmodel import Field
 from syrupy.assertion import SnapshotAssertion
 
@@ -28,10 +29,9 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # Basic Creation and Registration Tests
@@ -58,9 +58,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
-                FieldSpec(
-                    key=FieldKey(["frames"]), code_version="1"
-                ),  # Logical data component
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),  # Logical data component
             ],
         ),
     ):
@@ -69,8 +67,10 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
 
     # Check registration in active graph
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["video"]) in graph.features_by_key
-    assert graph.features_by_key[FeatureKey(["video"])] is VideoFeature
+    assert FeatureKey(["video"]) in graph.feature_definitions_by_key
+    defn = graph.feature_definitions_by_key[FeatureKey(["video"])]
+    assert defn.feature_class_path is not None and defn.feature_class_path.endswith("VideoFeature")
+    assert defn.spec == VideoFeature.spec()
 
     # Check Metaxy attributes
     assert hasattr(VideoFeature, "spec")
@@ -79,7 +79,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
 
     # Check feature version
     version = VideoFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
     assert version == snapshot
 
 
@@ -129,7 +129,7 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
 
     # Check feature version
     version = MultiFieldFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
     assert version == snapshot
 
 
@@ -260,8 +260,8 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     # Should be deterministic
     assert version == VersionedFeature.feature_version()
 
-    # Should be 64-character hex string
-    assert len(version) == 64
+    # Should be 8-character hex string
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot
@@ -273,7 +273,7 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
 
     Verifies that:
     - provenance_by_field() returns dict mapping field keys to hashes
-    - Each hash is 64 characters
+    - Each hash is 8 characters
     """
 
     class DataVersionFeature(
@@ -299,8 +299,8 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
     assert "processed_data" in provenance_by_field
     assert "embeddings" in provenance_by_field
 
-    # Each hash should be 64 characters
-    assert all(len(v) == 64 for v in provenance_by_field.values())
+    # Each hash Should be 8 characters
+    assert all(len(v) == 8 for v in provenance_by_field.values())
 
     # Snapshot
     assert provenance_by_field == snapshot
@@ -342,10 +342,10 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
 
     # Check parent registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["parent"]) in graph.features_by_key
+    assert FeatureKey(["parent"]) in graph.feature_definitions_by_key
 
     # Check child registered with dependency
-    assert FeatureKey(["child"]) in graph.features_by_key
+    assert FeatureKey(["child"]) in graph.feature_definitions_by_key
     deps = ChildFeature.spec().deps
     assert deps is not None
     assert len(deps) == 1
@@ -361,7 +361,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
 
 
 def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
-    """Test SQLModelFeature with field-level dependencies.
+    """Test SQLModelFeature with field-level lineage.
 
     Verifies that:
     - Field dependencies are correctly tracked
@@ -425,7 +425,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
 
     # Feature version reflects dependencies
     version = DownstreamFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
     assert version == snapshot
 
 
@@ -462,9 +462,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
             inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
-                fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version="2")
-                ],  # Changed!
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="2")],  # Changed!
             ),
         ):
             uid: str = Field(primary_key=True)
@@ -503,12 +501,12 @@ def test_custom_graph_context() -> None:
             uid: str = Field(primary_key=True)
 
         # Should be in custom graph
-        assert FeatureKey(["custom", "graph"]) in custom_graph.features_by_key
+        assert FeatureKey(["custom", "graph"]) in custom_graph.feature_definitions_by_key
         assert CustomGraphFeature.graph is custom_graph
 
     # Should NOT be in default graph
     default_graph = FeatureGraph.get_active()
-    assert FeatureKey(["custom", "graph"]) not in default_graph.features_by_key
+    assert FeatureKey(["custom", "graph"]) not in default_graph.feature_definitions_by_key
 
 
 def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
@@ -632,9 +630,7 @@ def test_duplicate_key_raises() -> None:
         uid: str = Field(primary_key=True)
 
     # Try to create another with same key
-    with pytest.raises(
-        ValueError, match="Feature with key duplicate already registered"
-    ):
+    with pytest.raises(ValueError, match="Feature with key duplicate already registered"):
 
         class Feature2(
             SQLModelFeature,
@@ -675,7 +671,7 @@ def test_inheritance_chain() -> None:
 
     # Check concrete feature registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["concrete"]) in graph.features_by_key
+    assert FeatureKey(["concrete"]) in graph.feature_definitions_by_key
 
     # Check both SQLModel and Metaxy functionality
     assert hasattr(ConcreteFeature, "metaxy_feature_version")
@@ -685,9 +681,7 @@ def test_inheritance_chain() -> None:
 # DuckDB Metadata Store Integration Test
 
 
-def test_sqlmodel_feature_with_duckdb_store(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test SQLModelFeature with DuckDB metadata store.
 
     This is a practical integration test showing that SQLModelFeature works
@@ -714,6 +708,9 @@ def test_sqlmodel_feature_with_duckdb_store(
         path: str
         duration: float
 
+    # Override project to match default config
+    VideoFeature.__metaxy_project__ = "test"
+
     # Create DuckDB store
     db_path = tmp_path / "test.duckdb"
 
@@ -733,10 +730,10 @@ def test_sqlmodel_feature_with_duckdb_store(
         )
 
         # Write metadata
-        store.write_metadata(VideoFeature, nw.from_native(metadata_df))
+        store.write(VideoFeature, nw.from_native(metadata_df))
 
         # Read metadata back
-        result = store.read_metadata(VideoFeature)
+        result = store.read(VideoFeature)
         result_df = collect_to_polars(result)
 
         # Verify data
@@ -748,13 +745,10 @@ def test_sqlmodel_feature_with_duckdb_store(
 
         # Check feature_version column
         assert "metaxy_feature_version" in result_df.columns
-        assert all(
-            v == VideoFeature.feature_version()
-            for v in result_df["metaxy_feature_version"].to_list()
-        )
+        assert all(v == VideoFeature.feature_version() for v in result_df["metaxy_feature_version"].to_list())
 
-        # Snapshot result (exclude timestamp which varies between runs)
-        result_for_snapshot = result_df.drop("metaxy_created_at").to_dicts()
+        # Snapshot result (exclude timestamps which vary between runs)
+        result_for_snapshot = result_df.drop("metaxy_created_at", "metaxy_updated_at").to_dicts()
         assert result_for_snapshot == snapshot
 
 
@@ -792,16 +786,14 @@ def test_basic_custom_id_columns() -> None:
 
     # Verify feature is registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["user", "session"]) in graph.features_by_key
+    assert FeatureKey(["user", "session"]) in graph.feature_definitions_by_key
 
     # Verify spec has custom id_columns
     assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
     assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
 
 
-def test_sqlmodel_duckdb_custom_id_columns(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test SQLModelFeature with DuckDB store using custom id_columns.
 
     Verifies that:
@@ -831,6 +823,9 @@ def test_sqlmodel_duckdb_custom_id_columns(
         duration: float
         timestamp: int
 
+    # Override project to match default config
+    UserActivityFeature.__metaxy_project__ = "test"
+
     # Create child feature with same custom ID columns
     class UserSummaryFeature(
         SQLModelFeature,
@@ -859,6 +854,9 @@ def test_sqlmodel_duckdb_custom_id_columns(
         total_duration: float
         summary: str
 
+    # Override project to match default config
+    UserSummaryFeature.__metaxy_project__ = "test"
+
     # Create DuckDB store
     db_path = tmp_path / "test_custom_ids.duckdb"
 
@@ -882,10 +880,10 @@ def test_sqlmodel_duckdb_custom_id_columns(
         )
 
         # Write parent metadata
-        store.write_metadata(UserActivityFeature, nw.from_native(parent_df))
+        store.write(UserActivityFeature, nw.from_native(parent_df))
 
         # Read back parent metadata
-        parent_result = store.read_metadata(UserActivityFeature)
+        parent_result = store.read(UserActivityFeature)
         parent_result_df = collect_to_polars(parent_result)
 
         # Verify parent data
@@ -928,10 +926,10 @@ def test_sqlmodel_duckdb_custom_id_columns(
         )
 
         # Write child metadata
-        store.write_metadata(UserSummaryFeature, nw.from_native(child_df))
+        store.write(UserSummaryFeature, nw.from_native(child_df))
 
         # Read back child metadata
-        child_result = store.read_metadata(UserSummaryFeature)
+        child_result = store.read(UserSummaryFeature)
         child_result_df = collect_to_polars(child_result)
 
         # Verify child data
@@ -946,12 +944,12 @@ def test_sqlmodel_duckdb_custom_id_columns(
         )
         assert sorted(child_composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30)]
 
-        # Snapshot results (exclude timestamp which varies between runs)
+        # Snapshot results (exclude timestamps which vary between runs)
         assert {
-            "parent": parent_result_df.drop("metaxy_created_at")
+            "parent": parent_result_df.drop("metaxy_created_at", "metaxy_updated_at")
             .sort(["user_id", "session_id"])
             .to_dicts(),
-            "child": child_result_df.drop("metaxy_created_at")
+            "child": child_result_df.drop("metaxy_created_at", "metaxy_updated_at")
             .sort(["user_id", "session_id"])
             .to_dicts(),
         } == snapshot
@@ -990,7 +988,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
 
     # Verify feature version is deterministic
     version = MultiKeyFeature.feature_version()
-    assert len(version) == 64
+    assert len(version) == 8
 
     # Verify field provenance structure
     provenance_by_field = MultiKeyFeature.provenance_by_field()
@@ -1058,8 +1056,8 @@ def test_parent_child_different_id_columns() -> None:
 
     # Both should be registered
     graph = FeatureGraph.get_active()
-    assert FeatureKey(["detailed", "parent"]) in graph.features_by_key
-    assert FeatureKey(["aggregated", "child"]) in graph.features_by_key
+    assert FeatureKey(["detailed", "parent"]) in graph.feature_definitions_by_key
+    assert FeatureKey(["aggregated", "child"]) in graph.feature_definitions_by_key
 
     # Child should have parent as dependency
     deps = AggregatedChildFeature.spec().deps
@@ -1068,9 +1066,7 @@ def test_parent_child_different_id_columns() -> None:
     assert deps[0].feature == FeatureKey(["detailed", "parent"])
 
 
-def test_sqlmodel_feature_id_columns_with_joins(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_feature_id_columns_with_joins(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test that joins work correctly with custom ID columns in SQLModelFeature.
 
     Verifies that:
@@ -1146,6 +1142,11 @@ def test_sqlmodel_feature_id_columns_with_joins(
         date: str = Field(primary_key=True)
         combined: float
 
+    # Override projects to match default config
+    FeatureA.__metaxy_project__ = "test"
+    FeatureB.__metaxy_project__ = "test"
+    FeatureC.__metaxy_project__ = "test"
+
     db_path = tmp_path / "test_joins.duckdb"
 
     with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
@@ -1170,7 +1171,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
                 ],
             }
         )
-        store.write_metadata(FeatureA, nw.from_native(df_a))
+        store.write(FeatureA, nw.from_native(df_a))
 
         # Write metadata for FeatureB (missing some combinations)
         df_b = pl.DataFrame(
@@ -1186,15 +1187,15 @@ def test_sqlmodel_feature_id_columns_with_joins(
                 ],
             }
         )
-        store.write_metadata(FeatureB, nw.from_native(df_b))
+        store.write(FeatureB, nw.from_native(df_b))
 
         # Now test that joining works correctly
         # Inner join should only keep rows present in both A and B
         # Expected matches: (1, 2024-01-01), (1, 2024-01-02), (2, 2024-01-01), (3, 2024-01-01)
 
         # Read both features to verify
-        result_a = collect_to_polars(store.read_metadata(FeatureA))
-        result_b = collect_to_polars(store.read_metadata(FeatureB))
+        result_a = collect_to_polars(store.read(FeatureA))
+        result_b = collect_to_polars(store.read(FeatureB))
 
         # Verify the data was written correctly
         assert len(result_a) == 5
@@ -1387,7 +1388,7 @@ def test_sqlmodel_with_column_selection() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["wide", "upstream"]),
-                    columns=("col1", "col3"),  # Only select these columns
+                    select=("col1", "col3"),  # Only select these columns
                 )
             ],
             fields=[
@@ -1402,7 +1403,7 @@ def test_sqlmodel_with_column_selection() -> None:
     deps = SelectiveDownstreamFeature.spec().deps
     assert deps is not None
     dep = deps[0]
-    assert dep.columns == ("col1", "col3")
+    assert dep.select == ("col1", "col3")
 
 
 def test_sqlmodel_rename_prevents_conflicts() -> None:
@@ -1517,12 +1518,12 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["complex", "upstream"]),
-                    columns=("important1", "important2", "status"),  # Select only these
                     rename={
                         "important1": "upstream_imp1",
                         "important2": "upstream_imp2",
                         "status": "upstream_status",
-                    },  # Then rename them
+                    },
+                    select=("upstream_imp1", "upstream_imp2", "upstream_status"),
                 )
             ],
             fields=[
@@ -1538,7 +1539,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     deps = OptimizedDownstreamFeature.spec().deps
     assert deps is not None
     dep = deps[0]
-    assert dep.columns == ("important1", "important2", "status")
+    assert dep.select == ("upstream_imp1", "upstream_imp2", "upstream_status")
     assert dep.rename is not None
     assert len(dep.rename) == 3
     assert dep.rename["status"] == "upstream_status"
@@ -1577,7 +1578,7 @@ def test_sqlmodel_empty_column_selection() -> None:
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["data", "upstream"]),
-                    columns=(),  # Empty tuple - only keep system columns
+                    select=(),  # Empty tuple - only keep system columns
                 )
             ],
             fields=[
@@ -1592,12 +1593,10 @@ def test_sqlmodel_empty_column_selection() -> None:
     deps = MinimalDownstreamFeature.spec().deps
     assert deps is not None
     dep = deps[0]
-    assert dep.columns == ()  # Empty tuple, not None
+    assert dep.select == ()  # Empty tuple, not None
 
 
-def test_sqlmodel_rename_validation_with_store(
-    tmp_path: Path, snapshot: SnapshotAssertion
-) -> None:
+def test_sqlmodel_rename_validation_with_store(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
     """Test that column renaming works correctly with actual metadata store operations.
 
     Verifies that:
@@ -1631,8 +1630,8 @@ def test_sqlmodel_rename_validation_with_store(
             deps=[
                 FeatureDep(
                     feature=FeatureKey(["source", "feature"]),
-                    columns=("status", "priority"),  # Select only these
                     rename={"status": "source_status", "priority": "source_priority"},
+                    select=("source_status", "source_priority"),
                 )
             ],
             fields=[
@@ -1643,6 +1642,10 @@ def test_sqlmodel_rename_validation_with_store(
         sample_uid: int = Field(primary_key=True)
         status: str  # Own status field
         result: str
+
+    # Override projects to match default config
+    SourceFeature.__metaxy_project__ = "test"
+    TargetFeature.__metaxy_project__ = "test"
 
     db_path = tmp_path / "rename_test.duckdb"
 
@@ -1661,7 +1664,7 @@ def test_sqlmodel_rename_validation_with_store(
                 ],
             }
         )
-        store.write_metadata(SourceFeature, nw.from_native(source_df))
+        store.write(SourceFeature, nw.from_native(source_df))
 
         # Write target metadata
         target_df = pl.DataFrame(
@@ -1676,7 +1679,7 @@ def test_sqlmodel_rename_validation_with_store(
                 ],
             }
         )
-        store.write_metadata(TargetFeature, nw.from_native(target_df))
+        store.write(TargetFeature, nw.from_native(target_df))
 
         # When loading input for TargetFeature, the rename should be applied
         # This would be used in the actual pipeline when computing features
@@ -1688,12 +1691,12 @@ def test_sqlmodel_rename_validation_with_store(
         assert len(deps) == 1
         dep = deps[0]
         assert dep.rename == {"status": "source_status", "priority": "source_priority"}
-        assert dep.columns == ("status", "priority")
+        assert dep.select == ("source_status", "source_priority")
 
         # Snapshot the configuration
         assert {
             "dep_key": dep.feature.to_string(),
-            "dep_columns": dep.columns,
+            "dep_columns": dep.select,
             "dep_rename": dep.rename,
         } == snapshot
 
@@ -1706,7 +1709,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
 
     Verifies that:
     - When explicitly enabled, composite PK is injected
-    - PK includes: metaxy_feature_version + id_columns + metaxy_created_at
+    - PK includes: metaxy_feature_version + id_columns + metaxy_updated_at
     - Works with both default and custom id_columns
     """
 
@@ -1730,9 +1733,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
     # Find the PrimaryKeyConstraint
     from sqlalchemy import PrimaryKeyConstraint
 
-    pk_constraints = [
-        arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
-    ]
+    pk_constraints = [arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)]
     assert len(pk_constraints) == 1
 
     pk_constraint = pk_constraints[0]
@@ -1741,7 +1742,7 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
     assert column_names == [
         "metaxy_feature_version",
         "sample_uid",
-        "metaxy_created_at",
+        "metaxy_updated_at",
     ]
 
 
@@ -1771,9 +1772,7 @@ def test_inject_primary_key_false_skips_composite_pk() -> None:
 
         table_args = NoPKFeature.__table_args__
         if isinstance(table_args, tuple):
-            pk_constraints = [
-                arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
-            ]
+            pk_constraints = [arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)]
             # Should have no composite PK constraint named 'metaxy_pk'
             for pk in pk_constraints:
                 assert pk.name != "metaxy_pk"
@@ -1784,7 +1783,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
 
     Verifies that:
     - Composite PK is created from spec.id_columns (not hardcoded column names)
-    - PK includes: metaxy_feature_version + custom id_columns + metaxy_created_at
+    - PK includes: metaxy_feature_version + custom id_columns + metaxy_updated_at
     - Works with multi-column id_columns
     """
 
@@ -1810,9 +1809,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
     # Find the PrimaryKeyConstraint
     from sqlalchemy import PrimaryKeyConstraint
 
-    pk_constraints = [
-        arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
-    ]
+    pk_constraints = [arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)]
     assert len(pk_constraints) == 1
 
     pk_constraint = pk_constraints[0]
@@ -1822,7 +1819,7 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
         "metaxy_feature_version",
         "user_id",  # From spec.id_columns
         "session_id",  # From spec.id_columns
-        "metaxy_created_at",
+        "metaxy_updated_at",
     ]
 
 

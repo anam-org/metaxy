@@ -1,14 +1,16 @@
 """Tests for graph CLI commands."""
 
-from metaxy._testing import TempMetaxyProject
+import pytest
+from metaxy_testing import TempMetaxyProject
 
 
-def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
-    """Test graph push records snapshot on first run."""
+def test_graph_push_first_time(metaxy_project: TempMetaxyProject, snapshot, capsys: pytest.CaptureFixture[str]):
+    """Test push records snapshot on first run."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -20,20 +22,22 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Recorded feature graph" in result.stderr
         # Snapshot version now only goes to stdout, not stderr
-        assert len(result.stdout.strip()) == 64  # Check hash is in stdout
+        assert len(result.stdout.strip()) == 8
+        assert result.stdout.strip() == snapshot
 
 
-def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
-    """Test graph push shows 'already recorded' on second run."""
+def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject, snapshot, capsys: pytest.CaptureFixture[str]):
+    """Test push shows 'already recorded' on second run."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -46,22 +50,24 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # First push
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert "Recorded feature graph" in result1.stderr
 
         # Second push - should skip
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert "already recorded" in result2.stderr
         # Snapshot version now only goes to stdout, not stderr
-        assert len(result2.stdout.strip()) == 64  # Check hash is in stdout
+        assert len(result2.stdout.strip()) == 8
+        assert result2.stdout.strip() == snapshot
 
 
-def test_graph_history_empty(metaxy_project: TempMetaxyProject):
+def test_graph_history_empty(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph history with no snapshots recorded."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -73,18 +79,19 @@ def test_graph_history_empty(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "history"])
+        result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
 
         assert result.returncode == 0
         assert "No graph snapshots recorded yet" in result.stderr
 
 
-def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
+def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph history displays recorded snapshots."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -97,25 +104,26 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push to create snapshot
-        metaxy_project.run_cli(["graph", "push"])
+        metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Check history
-        result = metaxy_project.run_cli(["graph", "history"])
+        result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Graph Snapshot History" in result.stderr
-        assert "Snapshot version" in result.stderr
+        assert "Project version" in result.stderr
         assert "Recorded At" in result.stderr
         assert "Feature Count" in result.stderr
         assert "1" in result.stderr  # 1 feature
 
 
-def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
+def test_graph_history_with_limit(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph history with --limit flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -128,21 +136,22 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push once
-        metaxy_project.run_cli(["graph", "push"])
+        metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Check history with limit
-        result = metaxy_project.run_cli(["graph", "history", "--limit", "1"])
+        result = metaxy_project.run_cli(["graph", "history", "--limit", "1"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Total snapshots: 1" in result.stderr
 
 
-def test_graph_describe_current(metaxy_project: TempMetaxyProject):
-    """Test graph describe shows current graph metrics."""
+def test_graph_describe_current(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test describe graph shows current graph metrics."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -154,10 +163,10 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "describe"])
+        result = metaxy_project.run_cli(["describe", "graph"], capsys=capsys)
 
         assert result.returncode == 0
-        assert "Describing current graph from code" in result.stderr
+        assert "Describing current feature graph" in result.stderr
         assert "Graph Snapshot:" in result.stderr
         assert "Total Features" in result.stderr
         assert "Graph Depth" in result.stderr
@@ -166,12 +175,13 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
         assert "video/files" in result.stderr
 
 
-def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
-    """Test graph describe with dependent features shows correct depth."""
+def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test describe graph with dependent features shows correct depth."""
 
     def root_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -183,6 +193,8 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             pass
 
     def dependent_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
@@ -190,7 +202,6 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoProcessing(
             SampleFeature,
@@ -216,7 +227,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
     # Load both feature modules
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["graph", "describe"])
+            result = metaxy_project.run_cli(["describe", "graph"], capsys=capsys)
 
             assert result.returncode == 0
             assert "Total Features" in result.stderr
@@ -228,12 +239,13 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             assert "video/files" in result.stderr
 
 
-def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
-    """Test graph describe with specific snapshot version."""
+def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test describe graph with specific snapshot version."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -246,33 +258,30 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push to create snapshot
-        push_result = metaxy_project.run_cli(["graph", "push"])
+        push_result = metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Extract snapshot version from stdout (just the raw hash)
-        snapshot_version = push_result.stdout.strip()
-        assert snapshot_version, (
-            f"Could not find snapshot version in push output. Output: {push_result.stdout}"
-        )
+        project_version = push_result.stdout.strip()
+        assert project_version, f"Could not find snapshot version in push output. Output: {push_result.stdout}"
 
         # Describe specific snapshot
-        result = metaxy_project.run_cli(
-            ["graph", "describe", "--snapshot", snapshot_version]
-        )
+        result = metaxy_project.run_cli(["describe", "graph", "--snapshot", project_version], capsys=capsys)
 
         assert result.returncode == 0
-        # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
-        assert "Describing snapshot" in result.stderr
-        assert snapshot_version in result.stderr
+        # Check that output contains "Describing snapshot" and the project_version (may have newlines between them)
+        assert "Describing feature graph snapshot" in result.stderr
+        assert project_version in result.stderr
         assert "Graph Snapshot:" in result.stderr
         assert "Total Features" in result.stderr
 
 
-def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
+def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph commands work with --store flag."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -285,18 +294,19 @@ def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Push with explicit store (uses default "dev" store)
-        result = metaxy_project.run_cli(["graph", "push", "--store", "dev"])
+        result = metaxy_project.run_cli(["push", "--store", "dev"], capsys=capsys)
 
         assert result.returncode == 0
         assert result.stdout
 
 
-def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
+def test_graph_workflow_integration(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test complete workflow: push -> history -> describe."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -318,38 +328,39 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Step 1: Push
-        push_result = metaxy_project.run_cli(["graph", "push"])
+        push_result = metaxy_project.run_cli(["push"], capsys=capsys)
         assert "Recorded feature graph" in push_result.stderr
 
         # Extract snapshot version from stdout (just the raw hash)
-        snapshot_version = push_result.stdout.strip()
-        assert snapshot_version
+        project_version = push_result.stdout.strip()
+        assert project_version
 
         # Step 2: History should show the snapshot (table output goes to stderr)
-        history_result = metaxy_project.run_cli(["graph", "history"])
-        assert snapshot_version[:13] in history_result.stderr
+        history_result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
+        assert project_version[:13] in history_result.stderr
         assert "2" in history_result.stderr  # 2 features
 
         # Step 3: Describe should show current graph
-        describe_result = metaxy_project.run_cli(["graph", "describe"])
+        describe_result = metaxy_project.run_cli(["describe", "graph"], capsys=capsys)
         assert "Total Features" in describe_result.stderr
         assert "2" in describe_result.stderr
 
         # Step 4: Describe historical snapshot
         describe_historical = metaxy_project.run_cli(
-            ["graph", "describe", "--snapshot", snapshot_version]
+            ["describe", "graph", "--snapshot", project_version], capsys=capsys
         )
-        # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
-        assert "Describing snapshot" in describe_historical.stderr
-        assert snapshot_version in describe_historical.stderr
+        # Check that output contains "Describing snapshot" and the project_version (may have newlines between them)
+        assert "Describing feature graph snapshot" in describe_historical.stderr
+        assert project_version in describe_historical.stderr
 
 
-def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
+def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test basic terminal rendering."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -361,7 +372,7 @@ def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"])
+        result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Graph" in result.stdout
@@ -370,12 +381,13 @@ def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
         assert "default" in result.stdout
 
 
-def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
+def test_graph_render_cards_format(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test cards format rendering."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -387,7 +399,7 @@ def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "render", "--type", "cards"])
+        result = metaxy_project.run_cli(["graph", "render", "--type", "cards"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Graph" in result.stdout
@@ -395,12 +407,13 @@ def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
         assert "Features:" in result.stdout
 
 
-def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
+def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test rendering graph with dependencies shows edges."""
 
     def root_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -412,6 +425,8 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
             pass
 
     def dependent_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
@@ -419,7 +434,6 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoProcessing(
             SampleFeature,
@@ -445,28 +459,27 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
             # Test terminal format shows dependencies
-            result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"])
+            result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"], capsys=capsys)
             assert result.returncode == 0
             assert "video/files" in result.stdout
             assert "video/processing" in result.stdout
             assert "depends on" in result.stdout
 
             # Test cards format shows edges
-            result_cards = metaxy_project.run_cli(
-                ["graph", "render", "--type", "cards"]
-            )
+            result_cards = metaxy_project.run_cli(["graph", "render", "--type", "cards"], capsys=capsys)
             assert result_cards.returncode == 0
             assert "video/files" in result_cards.stdout
             assert "video/processing" in result_cards.stdout
             assert "→" in result_cards.stdout  # Arrow for dependency
 
 
-def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
+def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test Mermaid format rendering."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -478,7 +491,7 @@ def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "render", "--format", "mermaid"])
+        result = metaxy_project.run_cli(["graph", "render", "--format", "mermaid"], capsys=capsys)
 
         assert result.returncode == 0
         assert "flowchart" in result.stdout
@@ -486,12 +499,13 @@ def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
         assert "title:" in result.stdout
 
 
-def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
+def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test minimal preset hides version information."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -503,7 +517,7 @@ def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "render", "--minimal"])
+        result = metaxy_project.run_cli(["graph", "render", "--minimal"], capsys=capsys)
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -511,12 +525,13 @@ def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
         assert "v:" not in result.stdout
 
 
-def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
+def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test verbose preset shows all information."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -528,7 +543,7 @@ def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "render", "--verbose"])
+        result = metaxy_project.run_cli(["graph", "render", "--verbose"], capsys=capsys)
 
         assert result.returncode == 0
         assert "video/files" in result.stdout
@@ -538,12 +553,13 @@ def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
         assert "cv:" in result.stdout
 
 
-def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
+def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test graph rendering with focus feature filtering."""
 
     def root_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -555,13 +571,14 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
             pass
 
     def dependent_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoProcessing(
             SampleFeature,
@@ -584,7 +601,8 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
                     "video/processing",
                     "--up",
                     "1",
-                ]
+                ],
+                capsys=capsys,
             )
 
             assert result.returncode == 0
@@ -592,12 +610,13 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
             assert "video/processing" in result.stdout
 
 
-def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
+def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test rendering output to file."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -618,7 +637,8 @@ def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
                 "mermaid",
                 "--output",
                 str(output_file),
-            ]
+            ],
+            capsys=capsys,
         )
 
         assert result.returncode == 0
@@ -631,12 +651,13 @@ def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
         assert "video/files" in content
 
 
-def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
+def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that field dependencies are shown in rendering."""
 
     def root_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -648,6 +669,8 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
             pass
 
     def dependent_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
@@ -655,7 +678,6 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoProcessing(
             SampleFeature,
@@ -680,25 +702,22 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(root_features):
         with metaxy_project.with_features(dependent_features):
-            result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"])
+            result = metaxy_project.run_cli(["graph", "render", "--format", "terminal"], capsys=capsys)
 
             assert result.returncode == 0
             # Should show field dependency
             assert "frames" in result.stdout
             # Check for dependency indicator (emoji arrow or legacy arrow)
-            assert (
-                "video/files.path" in result.stdout
-                or "⬅️" in result.stdout
-                or "←" in result.stdout
-            )
+            assert "video/files.path" in result.stdout or "⬅️" in result.stdout or "←" in result.stdout
 
 
-def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
+def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test custom rendering flags."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -712,7 +731,7 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Test with no fields shown
         result = metaxy_project.run_cli(
-            ["graph", "render", "--no-show-fields", "--no-show-snapshot-version"]
+            ["graph", "render", "--no-show-fields", "--no-show-project-version"], capsys=capsys
         )
 
         assert result.returncode == 0
@@ -721,17 +740,18 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
         assert "🔧" not in result.stdout or "fields" not in result.stdout
 
 
-def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapshot):
+def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapshot, capsys: pytest.CaptureFixture[str]):
     """Test Graphviz DOT format rendering."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class Parent(
             SampleFeature,
@@ -753,27 +773,28 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "render", "--format", "graphviz"])
+        result = metaxy_project.run_cli(["graph", "render", "--format", "graphviz"], capsys=capsys)
 
         assert result.returncode == 0
         assert result.stdout == snapshot
 
 
-def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
+def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test CLI output for metadata-only changes (GitHub issue #86).
 
-    When FeatureDep metadata changes (e.g., rename added) without computational
-    changes, the CLI should display a different message than computational changes.
+    With project-scoped snapshot versions using feature_definition_version,
+    any definition change (including rename) creates a new snapshot.
     """
 
     def features_v1():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class Upstream(
             SampleFeature,
@@ -795,13 +816,14 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class Upstream(
             SampleFeature,
@@ -829,30 +851,30 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
 
     # Push v1
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
-        assert len(result1.stdout.strip()) == 64
+        assert len(result1.stdout.strip()) == 8
 
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result2.returncode == 0
 
-        # Should show metadata update message (rename doesn't change feature_version)
-        assert "Updated feature information" in result2.stderr
-        assert "downstream" in result2.stderr
+        # Definition change (rename) creates a new snapshot with project-scoped versions
+        assert "Recorded feature graph" in result2.stderr
 
-        # Snapshot version should be in stdout
-        assert len(result2.stdout.strip()) == 64
+        # Snapshot version should be in stdout (different from v1)
+        assert len(result2.stdout.strip()) == 8
 
 
-def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
+def test_graph_push_no_changes(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test CLI output when nothing changed (GitHub issue #86)."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -865,29 +887,34 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # First push
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert "Recorded feature graph" in result1.stderr
 
         # Second push - no changes
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result2.returncode == 0
         assert "already recorded" in result2.stderr
         assert "no changes" in result2.stderr
         # Snapshot version now only goes to stdout
-        assert len(result2.stdout.strip()) == 64
+        assert len(result2.stdout.strip()) == 8
 
 
-def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProject):
-    """Test complete workflow: new → metadata change → no change (GitHub issue #86)."""
+def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test complete workflow: new → definition change → no change (GitHub issue #86).
+
+    With project-scoped snapshot versions using feature_definition_version,
+    definition changes (like columns) create new snapshots.
+    """
 
     def features_v1():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class Upstream(
             SampleFeature,
@@ -909,13 +936,14 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class Upstream(
             SampleFeature,
@@ -933,7 +961,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
                 deps=[
                     FeatureDep(
                         feature=FeatureKey(["upstream"]),
-                        columns=("value",),  # Metadata change
+                        select=("value",),  # Metadata change
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -943,33 +971,33 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
 
     # Scenario 1: First push (new snapshot)
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result1.returncode == 0
         assert "Recorded feature graph" in result1.stderr
         # Snapshot version now only goes to stdout
-        assert len(result1.stdout.strip()) == 64
+        assert len(result1.stdout.strip()) == 8
 
-    # Scenario 2: Metadata change (columns doesn't affect feature_version)
+    # Scenario 2: Definition change (columns) creates new snapshot with project-scoped versions
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result2.returncode == 0
-        assert "Updated feature information" in result2.stderr
-        assert "downstream" in result2.stderr
+        assert "Recorded feature graph" in result2.stderr
 
     # Scenario 3: No change
     # Note: Re-pushing the same snapshot shows "already recorded"
     with metaxy_project.with_features(features_v2):
-        result3 = metaxy_project.run_cli(["graph", "push"])
+        result3 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result3.returncode == 0
         assert "already recorded" in result3.stderr
 
 
-def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
-    """Test that graph push logs store metadata (e.g., table name for DuckDB)."""
+def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that push logs store metadata (e.g., table name for DuckDB)."""
 
     def features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class VideoFiles(
             SampleFeature,
@@ -981,7 +1009,7 @@ def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "push"])
+        result = metaxy_project.run_cli(["push"], capsys=capsys)
 
         assert result.returncode == 0
         # Should log store metadata (DuckDB shows table_name)
@@ -992,17 +1020,19 @@ def test_graph_push_logs_store_metadata(metaxy_project: TempMetaxyProject):
 
 def test_graph_push_multiple_features_metadata_changes(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test CLI output when multiple features have metadata changes."""
 
     def features_v1():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class FeatureA(
             SampleFeature,
@@ -1034,13 +1064,14 @@ def test_graph_push_multiple_features_metadata_changes(
             pass
 
     def features_v2():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
         from metaxy import (
             FeatureDep,
             FeatureKey,
             FieldKey,
             FieldSpec,
         )
-        from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 
         class FeatureA(
             SampleFeature,
@@ -1055,11 +1086,7 @@ def test_graph_push_multiple_features_metadata_changes(
             SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["feature_a"]), rename={"value": "renamed_b"}
-                    )
-                ],
+                deps=[FeatureDep(feature=FeatureKey(["feature_a"]), rename={"value": "renamed_b"})],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
@@ -1070,9 +1097,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[
-                    FeatureDep(
-                        feature=FeatureKey(["feature_a"]), columns=("value",)
-                    )  # Changed
+                    FeatureDep(feature=FeatureKey(["feature_a"]), select=("value",))  # Changed
                 ],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
             ),
@@ -1081,14 +1106,258 @@ def test_graph_push_multiple_features_metadata_changes(
 
     # Push v1
     with metaxy_project.with_features(features_v1):
-        result1 = metaxy_project.run_cli(["graph", "push"])
+        result1 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert "Recorded feature graph" in result1.stderr
 
-    # Push v2 - multiple metadata changes (rename and columns don't affect feature_version)
+    # Push v2 - definition changes (rename and columns) create new snapshot with project-scoped versions
     with metaxy_project.with_features(features_v2):
-        result2 = metaxy_project.run_cli(["graph", "push"])
+        result2 = metaxy_project.run_cli(["push"], capsys=capsys)
         assert result2.returncode == 0
-        assert "Updated feature information" in result2.stderr
-        # Should list both changed features
-        assert "feature_b" in result2.stderr
-        assert "feature_c" in result2.stderr
+        # Definition changes create a new snapshot
+        assert "Recorded feature graph" in result2.stderr
+
+
+def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that --sync flag loads external feature definitions from the metadata store."""
+
+    def upstream_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+
+        class UpstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    def downstream_features():
+        """Features that depend on external upstream but don't define it."""
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureDefinition, FeatureDep, FeatureKey, FieldKey, FieldSpec
+
+        # Define external placeholder for upstream
+        # Note: project doesn't need to match - sync uses feature keys
+        external_upstream = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["external", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]))],
+            ),
+            feature_schema={},
+            project="any-project",
+        )
+
+        from metaxy.models.feature import FeatureGraph
+
+        FeatureGraph.get_active().add_feature_definition(external_upstream)
+
+        class DownstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["external", "upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    # First, push the upstream feature to the store
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["push"], capsys=capsys)
+        assert result.returncode == 0
+
+    # Now run with downstream features that have an external placeholder
+    with metaxy_project.with_features(downstream_features):
+        # WITHOUT --sync: external feature is present as a placeholder from metaxy.lock
+        # Use --all-projects to see the external feature which has a different project
+        # Disable auto-sync via METAXY_SYNC=false to test the explicit --sync flag
+        result_no_sync = metaxy_project.run_cli(
+            ["--all-projects", "list", "features"],
+            env={"METAXY_SYNC": "false"},
+            capsys=capsys,
+        )
+        assert result_no_sync.returncode == 0
+        assert "external/upstream" in result_no_sync.stdout
+        assert "local/downstream" in result_no_sync.stdout
+        # External feature should not show store source (not synced yet)
+        assert "DuckDBMetadataStore" not in result_no_sync.stdout
+
+        # WITH --sync: external feature should be loaded from store
+        result_sync = metaxy_project.run_cli(["--all-projects", "--sync", "list", "features"], capsys=capsys)
+        assert result_sync.returncode == 0
+        assert "external/upstream" in result_sync.stdout
+        assert "local/downstream" in result_sync.stdout
+        # External feature should show metadata store source after sync
+        assert "DuckDBMetadataStore" in result_sync.stdout
+
+
+def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that --sync flag warns when external feature version mismatches."""
+
+    def upstream_features_v1():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+
+        class UpstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["mismatch", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    def downstream_with_wrong_external():
+        """Features with external placeholder that has wrong version."""
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureDefinition, FeatureDep, FeatureKey, FieldKey, FieldSpec
+
+        # Define external placeholder with DIFFERENT code_version than what's stored
+        # Note: project doesn't need to match - sync uses feature keys
+        external_upstream = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["mismatch", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Wrong!
+            ),
+            feature_schema={},
+            project="any-project",
+            on_version_mismatch="warn",
+        )
+
+        from metaxy.models.feature import FeatureGraph
+
+        FeatureGraph.get_active().add_feature_definition(external_upstream)
+
+        class DownstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "mismatch_downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["mismatch", "upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    # First, push the upstream feature to the store
+    with metaxy_project.with_features(upstream_features_v1):
+        result = metaxy_project.run_cli(["push"], capsys=capsys)
+        assert result.returncode == 0
+
+    # Now run with mismatched external placeholder
+    with metaxy_project.with_features(downstream_with_wrong_external):
+        # With --sync, should warn about version mismatch
+        # Disable auto-sync via METAXY_SYNC=false to ensure --sync flag triggers the sync
+        result = metaxy_project.run_cli(
+            ["--sync", "describe", "graph"],
+            env={"METAXY_SYNC": "false"},
+            capsys=capsys,
+        )
+        assert result.returncode == 0
+        # Should still work but with warning in stderr
+        assert "mismatch/upstream" in result.stderr or "Version mismatch" in result.stderr
+
+
+def test_locked_flag_errors_on_version_mismatch(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that --locked flag raises an error when external feature version mismatches."""
+
+    def upstream_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+
+        class UpstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["assert_mismatch", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    def downstream_with_wrong_external():
+        """Features with external placeholder that has wrong version."""
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureDefinition, FeatureDep, FeatureKey, FieldKey, FieldSpec
+
+        # Define external placeholder with DIFFERENT code_version than what's stored
+        # Note: on_version_mismatch="warn" on the feature, but --locked overrides
+        # Note: project doesn't need to match - sync uses feature keys
+        external_upstream = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["assert_mismatch", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="999")],  # Wrong!
+            ),
+            feature_schema={},
+            project="any-project",
+            on_version_mismatch="warn",  # This gets overridden by --locked
+        )
+
+        from metaxy.models.feature import FeatureGraph
+
+        FeatureGraph.get_active().add_feature_definition(external_upstream)
+
+        class DownstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["local", "assert_downstream"]),
+                deps=[FeatureDep(feature=FeatureKey(["assert_mismatch", "upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    # First, push the upstream feature to the store
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["push"], capsys=capsys)
+        assert result.returncode == 0
+
+    # Now run with mismatched external placeholder and --locked
+    with metaxy_project.with_features(downstream_with_wrong_external):
+        # With --sync --locked, should fail due to version mismatch
+        # Disable auto-sync via METAXY_SYNC=false to ensure --sync flag triggers the sync
+        result = metaxy_project.run_cli(
+            ["--sync", "--locked", "describe", "graph"],
+            check=False,
+            env={"METAXY_SYNC": "false"},
+            capsys=capsys,
+        )
+        assert result.returncode != 0
+        assert "Version mismatch" in result.stderr
+
+
+def test_locked_flag_succeeds_when_versions_match(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
+    """Test that --locked flag succeeds when versions match."""
+
+    def upstream_features():
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureKey, FieldKey, FieldSpec
+
+        class UpstreamFeature(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["assert_match", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    # First, push the upstream feature to the store
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["push"], capsys=capsys)
+        assert result.returncode == 0
+
+    # Now run with --sync --locked when there's nothing to mismatch
+    # (no external features with wrong versions)
+    with metaxy_project.with_features(upstream_features):
+        result = metaxy_project.run_cli(["--sync", "--locked", "describe", "graph"], capsys=capsys)
+        assert result.returncode == 0

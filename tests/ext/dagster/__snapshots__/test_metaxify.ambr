@@ -1,12 +1,12 @@
 # serializer version: 1
 # name: TestMetaxifyCodeVersion.test_metaxify_appends_to_existing_code_version
-  'v1.0.0,metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
+  'v1.0.0,metaxy:16616c82'
 # ---
 # name: TestMetaxifyCodeVersion.test_metaxify_asset_spec_injects_code_version
-  'metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
+  'metaxy:16616c82'
 # ---
 # name: TestMetaxifyCodeVersion.test_metaxify_injects_code_version
-  'metaxy:16616c823b97d8b6a52db066bd0282ba9adf0e6797d7be0e4061a202ae7bd469'
+  'metaxy:16616c82'
 # ---
 # name: TestMetaxifyDescription.test_metaxify_asset_spec_injects_description
   '''

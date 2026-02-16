@@ -33,7 +33,7 @@ plugins:
 
 #### Usage
 
-The plugin provides the following directives:
+The plugin provides the following directives. Content is determined by indentation (4 spaces), like MkDocs admonitions.
 
 ##### 1. GitHub Source Link
 
@@ -41,15 +41,14 @@ Display a link to the example source code on GitHub:
 
 ```markdown
 ::: metaxy-example source-link
-example: basic
-:::
+    example: basic
 ```
 
 Parameters:
 
 - `example` (required): Example name
 - `button` (optional): Display as button (default: true) or inline link (false)
-- `text` (optional): Custom link text (default: "View Example Source on GitHub")
+- `text` (optional): Custom link text (default: "View Source on GitHub")
 
 Examples:
 
@@ -57,28 +56,24 @@ Examples:
 # As a button (default)
 
 ::: metaxy-example source-link
-example: basic
-:::
+    example: basic
 
 # As an inline link
 
 ::: metaxy-example source-link
-example: basic
-button: false
-:::
+    example: basic
+    button: false
 
 # With custom text
 
 ::: metaxy-example source-link
-example: basic
-text: "Browse Example Code"
-:::
+    example: basic
+    text: "Browse Example Code"
 
 # Alternative directive name
 
 ::: metaxy-example github
-example: basic
-:::
+    example: basic
 ```
 
 ##### 2. Display Scenarios
@@ -87,8 +82,7 @@ Show the scenarios from a runbook:
 
 ```markdown
 ::: metaxy-example scenarios
-example: basic
-:::
+    example: basic
 ```
 
 This displays:
@@ -103,9 +97,8 @@ Show a Python source file with syntax highlighting and collapsible wrapper:
 
 ```markdown
 ::: metaxy-example file
-example: basic
-path: src/example_basic/features.py
-:::
+    example: basic
+    path: src/example_basic/features.py
 ```
 
 Parameters:
@@ -121,10 +114,9 @@ Show how a file looks after applying patches:
 
 ```markdown
 ::: metaxy-example file
-example: basic
-path: src/example_basic/features.py
-patches: ["patches/01_update_parent_algorithm.patch"]
-:::
+    example: basic
+    path: src/example_basic/features.py
+    patches: ["patches/01_update_parent_algorithm.patch"]
 ```
 
 The plugin will:
@@ -140,9 +132,8 @@ Show the diff patch itself:
 
 ```markdown
 ::: metaxy-example patch
-example: basic
-path: patches/01_update_parent_algorithm.patch
-:::
+    example: basic
+    path: patches/01_update_parent_algorithm.patch
 ```
 
 This displays the patch with diff syntax highlighting.
@@ -198,17 +189,17 @@ The plugin consists of:
 
 1. **plugin.py**: MkDocs plugin that registers the markdown extension
 2. **markdown_ext.py**: Markdown preprocessor that parses directives
-3. **core.py**: Loader that wraps `metaxy._testing.Runbook` for MkDocs integration
+3. **core.py**: Loader that wraps `metaxy_testing.Runbook` for MkDocs integration
 4. **renderer.py**: HTML rendering with syntax highlighting
 
-The plugin uses the official runbook system from `metaxy._testing` to load and parse `.example.yaml` files, ensuring consistency between test execution and documentation.
+The plugin uses the official runbook system from `metaxy_testing` to load and parse `.example.yaml` files, ensuring consistency between test execution and documentation.
 
 The plugin hooks into MkDocs' build process to:
 
 1. Register as an MkDocs plugin
 2. Add a markdown extension to process directives
 3. Parse directive blocks in markdown files
-4. Load runbooks using `metaxy._testing.Runbook`
+4. Load runbooks using `metaxy_testing.Runbook`
 5. Apply patches to temporary copies of examples
 6. Render HTML with syntax highlighting
 7. Inject the HTML into the final documentation

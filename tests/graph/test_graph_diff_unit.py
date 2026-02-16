@@ -3,8 +3,9 @@
 from typing import Any
 
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,
@@ -13,7 +14,6 @@ from metaxy.graph.diff.diff_models import (
     RemovedNode,
 )
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -24,27 +24,21 @@ class TestFieldChange:
 
     def test_field_added(self):
         """Test field addition detection."""
-        change = FieldChange(
-            field_key=FieldKey(["test"]), old_version=None, new_version="abc123"
-        )
+        change = FieldChange(field_key=FieldKey(["test"]), old_version=None, new_version="abc123")
         assert change.is_added
         assert not change.is_removed
         assert not change.is_changed
 
     def test_field_removed(self):
         """Test field removal detection."""
-        change = FieldChange(
-            field_key=FieldKey(["test"]), old_version="abc123", new_version=None
-        )
+        change = FieldChange(field_key=FieldKey(["test"]), old_version="abc123", new_version=None)
         assert change.is_removed
         assert not change.is_added
         assert not change.is_changed
 
     def test_field_changed(self):
         """Test field version change detection."""
-        change = FieldChange(
-            field_key=FieldKey(["test"]), old_version="abc123", new_version="def456"
-        )
+        change = FieldChange(field_key=FieldKey(["test"]), old_version="abc123", new_version="def456")
         assert change.is_changed
         assert not change.is_added
         assert not change.is_removed
@@ -55,25 +49,19 @@ class TestNodeChange:
 
     def test_feature_added(self):
         """Test feature addition detection."""
-        change = NodeChange(
-            feature_key=FeatureKey(["test"]), old_version=None, new_version="abc123"
-        )
+        change = NodeChange(feature_key=FeatureKey(["test"]), old_version=None, new_version="abc123")
         assert change.is_added
         assert not change.is_removed
 
     def test_feature_removed(self):
         """Test feature removal detection."""
-        change = NodeChange(
-            feature_key=FeatureKey(["test"]), old_version="abc123", new_version=None
-        )
+        change = NodeChange(feature_key=FeatureKey(["test"]), old_version="abc123", new_version=None)
         assert change.is_removed
         assert not change.is_added
 
     def test_feature_with_field_changes(self):
         """Test feature with field changes."""
-        field_change = FieldChange(
-            field_key=FieldKey(["field1"]), old_version="v1", new_version="v2"
-        )
+        field_change = FieldChange(field_key=FieldKey(["field1"]), old_version="v1", new_version="v2")
         change = NodeChange(
             feature_key=FeatureKey(["test"]),
             old_version="abc123",
@@ -81,10 +69,7 @@ class TestNodeChange:
             changed_fields=[field_change],
         )
         assert change.has_field_changes
-        assert (
-            len(change.added_fields + change.removed_fields + change.changed_fields)
-            == 1
-        )
+        assert len(change.added_fields + change.removed_fields + change.changed_fields) == 1
 
 
 class TestGraphDiff:
@@ -92,14 +77,14 @@ class TestGraphDiff:
 
     def test_empty_diff(self):
         """Test diff with no changes."""
-        diff = GraphDiff(from_snapshot_version="s1", to_snapshot_version="s2")
+        diff = GraphDiff(from_project_version="s1", to_project_version="s2")
         assert not diff.has_changes
 
     def test_diff_with_changes(self):
         """Test diff with various changes."""
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
+            from_project_version="s1",
+            to_project_version="s2",
             added_nodes=[AddedNode(feature_key=FeatureKey(["new"]), version="v1")],
             removed_nodes=[RemovedNode(feature_key=FeatureKey(["old"]), version="v1")],
             changed_nodes=[
@@ -132,7 +117,7 @@ class TestSnapshotResolver:
             resolver.resolve_snapshot("current", None, graph)
 
     def test_resolve_current_with_graph(self, graph):
-        """Test resolving 'current' with active graph."""
+        """Test resolving 'current' with active graph returns project-scoped version."""
         resolver = SnapshotResolver()
 
         class TestFeature(
@@ -145,7 +130,9 @@ class TestSnapshotResolver:
             pass
 
         result = resolver.resolve_snapshot("current", None, graph)
-        assert result == graph.snapshot_version
+        # Single-project graph uses project-scoped snapshot version
+        project = next(iter({d.project for d in graph.feature_definitions_by_key.values()}))
+        assert result == graph.get_project_version(project)
         assert result != "empty"
 
     def test_resolve_latest_empty_store(self, tmp_path):
@@ -172,13 +159,13 @@ class TestSnapshotResolver:
             # Record a snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
-            snapshot_version = result.snapshot_version
+            project_version = result.project_version
 
             _ = result.already_pushed
 
             # Resolve latest
             result = resolver.resolve_snapshot("latest", store, graph)
-            assert result == snapshot_version
+            assert result == project_version
 
 
 class TestGraphDiffer:
@@ -385,14 +372,12 @@ class TestGraphDiffer:
             # Record snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
-            snapshot_version = result.snapshot_version
+            project_version = result.project_version
 
             _ = result.already_pushed
 
             # Load snapshot data
-            snapshot_data = differ.load_snapshot_data(
-                store, snapshot_version, project="default"
-            )
+            snapshot_data = differ.load_snapshot_data(store, project_version, project="default")
 
             assert "test/feature" in snapshot_data
             feature_data = snapshot_data["test/feature"]
@@ -416,11 +401,9 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
-            added_nodes=[
-                AddedNode(feature_key=FeatureKey(["test", "feature"]), version="v1")
-            ],
+            from_project_version="s1",
+            to_project_version="s2",
+            added_nodes=[AddedNode(feature_key=FeatureKey(["test", "feature"]), version="v1")],
         )
         formatter = DiffFormatter()
 
@@ -432,7 +415,7 @@ class TestDiffFormatter:
         """Test format dispatcher raises error for invalid format."""
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
-        diff = GraphDiff(from_snapshot_version="s1", to_snapshot_version="s2")
+        diff = GraphDiff(from_project_version="s1", to_project_version="s2")
         formatter = DiffFormatter()
 
         with pytest.raises(ValueError, match="Unknown format: invalid"):
@@ -444,14 +427,14 @@ class TestDiffFormatter:
 
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
-        diff = GraphDiff(from_snapshot_version="snap1", to_snapshot_version="snap2")
+        diff = GraphDiff(from_project_version="snap1", to_project_version="snap2")
         formatter = DiffFormatter()
 
         result = formatter.format_json_diff_only(diff)
         data = json.loads(result)
 
-        assert data["from_snapshot_version"] == "snap1"
-        assert data["to_snapshot_version"] == "snap2"
+        assert data["from_project_version"] == "snap1"
+        assert data["to_project_version"] == "snap2"
         assert data["added_nodes"] == []
         assert data["removed_nodes"] == []
         assert data["changed_nodes"] == []
@@ -463,14 +446,10 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
-            added_nodes=[
-                AddedNode(feature_key=FeatureKey(["new", "feature"]), version="v1")
-            ],
-            removed_nodes=[
-                RemovedNode(feature_key=FeatureKey(["old", "feature"]), version="v1")
-            ],
+            from_project_version="s1",
+            to_project_version="s2",
+            added_nodes=[AddedNode(feature_key=FeatureKey(["new", "feature"]), version="v1")],
+            removed_nodes=[RemovedNode(feature_key=FeatureKey(["old", "feature"]), version="v1")],
             changed_nodes=[
                 NodeChange(
                     feature_key=FeatureKey(["changed", "feature"]),
@@ -507,14 +486,14 @@ class TestDiffFormatter:
 
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
-        diff = GraphDiff(from_snapshot_version="snap1", to_snapshot_version="snap2")
+        diff = GraphDiff(from_project_version="snap1", to_project_version="snap2")
         formatter = DiffFormatter()
 
         result = formatter.format_yaml_diff_only(diff)
         data = yaml.safe_load(result)
 
-        assert data["from_snapshot_version"] == "snap1"
-        assert data["to_snapshot_version"] == "snap2"
+        assert data["from_project_version"] == "snap1"
+        assert data["to_project_version"] == "snap2"
         assert data["added_nodes"] == []
         assert data["removed_nodes"] == []
         assert data["changed_nodes"] == []
@@ -526,14 +505,10 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
-            added_nodes=[
-                AddedNode(feature_key=FeatureKey(["new", "feature"]), version="v1")
-            ],
-            removed_nodes=[
-                RemovedNode(feature_key=FeatureKey(["old", "feature"]), version="v1")
-            ],
+            from_project_version="s1",
+            to_project_version="s2",
+            added_nodes=[AddedNode(feature_key=FeatureKey(["new", "feature"]), version="v1")],
+            removed_nodes=[RemovedNode(feature_key=FeatureKey(["old", "feature"]), version="v1")],
             changed_nodes=[
                 NodeChange(
                     feature_key=FeatureKey(["changed", "feature"]),
@@ -556,7 +531,7 @@ class TestDiffFormatter:
         """Test Mermaid format for empty diff."""
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
-        diff = GraphDiff(from_snapshot_version="s1", to_snapshot_version="s2")
+        diff = GraphDiff(from_project_version="s1", to_project_version="s2")
         formatter = DiffFormatter()
 
         result = formatter.format_mermaid_diff_only(diff)
@@ -569,11 +544,9 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
-            added_nodes=[
-                AddedNode(feature_key=FeatureKey(["new", "feature"]), version="v1")
-            ],
+            from_project_version="s1",
+            to_project_version="s2",
+            added_nodes=[AddedNode(feature_key=FeatureKey(["new", "feature"]), version="v1")],
         )
         formatter = DiffFormatter()
 
@@ -588,11 +561,9 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
-            removed_nodes=[
-                RemovedNode(feature_key=FeatureKey(["old", "feature"]), version="v1")
-            ],
+            from_project_version="s1",
+            to_project_version="s2",
+            removed_nodes=[RemovedNode(feature_key=FeatureKey(["old", "feature"]), version="v1")],
         )
         formatter = DiffFormatter()
 
@@ -606,8 +577,8 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
+            from_project_version="s1",
+            to_project_version="s2",
             changed_nodes=[
                 NodeChange(
                     feature_key=FeatureKey(["changed", "feature"]),
@@ -628,8 +599,8 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
+            from_project_version="s1",
+            to_project_version="s2",
             changed_nodes=[
                 NodeChange(
                     feature_key=FeatureKey(["test", "feature"]),
@@ -665,13 +636,9 @@ class TestDiffFormatter:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
-            added_nodes=[
-                AddedNode(
-                    feature_key=FeatureKey(["feature-with", "dashes"]), version="v1"
-                )
-            ],
+            from_project_version="s1",
+            to_project_version="s2",
+            added_nodes=[AddedNode(feature_key=FeatureKey(["feature-with", "dashes"]), version="v1")],
         )
         formatter = DiffFormatter()
 
@@ -1199,8 +1166,8 @@ class TestDiffFormatterDispatcher:
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
-            from_snapshot_version="s1",
-            to_snapshot_version="s2",
+            from_project_version="s1",
+            to_project_version="s2",
             added_nodes=[AddedNode(feature_key=FeatureKey(["test"]), version="v1")],
         )
         formatter = DiffFormatter()
@@ -1227,9 +1194,7 @@ class TestDiffFormatterDispatcher:
         }
         formatter = DiffFormatter()
 
-        result = formatter.format(
-            merged_data=merged_data, format="terminal", diff_only=False
-        )
+        result = formatter.format(merged_data=merged_data, format="terminal", diff_only=False)
         assert "feature/test" in result
         assert "merged view" in result.lower()
 
@@ -1384,9 +1349,7 @@ class TestGraphSlicing:
         }
 
         # up=1 means only direct dependencies
-        result = differ.filter_merged_graph(
-            merged_data, focus_feature="feature/focus", up=1, down=0
-        )
+        result = differ.filter_merged_graph(merged_data, focus_feature="feature/focus", up=1, down=0)
         assert len(result["nodes"]) == 2  # focus + parent only
         assert "feature/focus" in result["nodes"]
         assert "feature/parent" in result["nodes"]
@@ -1429,9 +1392,7 @@ class TestGraphSlicing:
         }
 
         # down=1 means only direct dependents
-        result = differ.filter_merged_graph(
-            merged_data, focus_feature="feature/focus", up=0, down=1
-        )
+        result = differ.filter_merged_graph(merged_data, focus_feature="feature/focus", up=0, down=1)
         assert len(result["nodes"]) == 2  # focus + child only
         assert "feature/focus" in result["nodes"]
         assert "feature/child" in result["nodes"]
@@ -1473,9 +1434,7 @@ class TestGraphSlicing:
             ],
         }
 
-        result = differ.filter_merged_graph(
-            merged_data, focus_feature="feature/focus", up=0, down=0
-        )
+        result = differ.filter_merged_graph(merged_data, focus_feature="feature/focus", up=0, down=0)
         assert len(result["nodes"]) == 1  # only focus feature
         assert "feature/focus" in result["nodes"]
         assert "feature/parent" not in result["nodes"]
@@ -1510,15 +1469,11 @@ class TestGraphSlicing:
         }
 
         # Test with / format
-        result1 = differ.filter_merged_graph(
-            merged_data, focus_feature="feature/test", up=0, down=0
-        )
+        result1 = differ.filter_merged_graph(merged_data, focus_feature="feature/test", up=0, down=0)
         assert "feature/test" in result1["nodes"]
 
         # Test with __ format
-        result2 = differ.filter_merged_graph(
-            merged_data, focus_feature="feature__test", up=0, down=0
-        )
+        result2 = differ.filter_merged_graph(merged_data, focus_feature="feature__test", up=0, down=0)
         assert "feature/test" in result2["nodes"]
 
     def test_filter_preserves_edges(self):
@@ -1557,9 +1512,7 @@ class TestGraphSlicing:
             ],
         }
 
-        result = differ.filter_merged_graph(
-            merged_data, focus_feature="feature/b", up=1, down=0
-        )
+        result = differ.filter_merged_graph(merged_data, focus_feature="feature/b", up=1, down=0)
         # Should include feature/a and feature/b
         assert len(result["nodes"]) == 2
         # Should include edge from a to b, but not a to c

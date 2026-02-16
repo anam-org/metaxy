@@ -1,9 +1,3 @@
-"""Pipeline orchestrator for recompute example.
-
-This script runs both compute_parent and compute_child in sequence,
-demonstrating the full recomputation workflow.
-"""
-
 import subprocess
 import sys
 from pathlib import Path

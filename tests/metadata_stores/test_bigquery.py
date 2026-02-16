@@ -11,11 +11,12 @@ pytest.importorskip("ibis")
 # We don't need the full ibis.backends.bigquery to run tests since we mock everything
 # Just need to be able to import our BigQueryMetadataStore class
 try:
-    from metaxy.metadata_store.bigquery import BigQueryMetadataStore
+    from metaxy.ext.metadata_stores.bigquery import BigQueryMetadataStore
 except ImportError:
     pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
 
-from metaxy._testing.models import SampleFeature
+from metaxy_testing.models import SampleFeature
+
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -43,9 +44,7 @@ def test_bigquery_initialization_with_project_dataset():
 
 def test_bigquery_initialization_with_credentials_path():
     """Test BigQuery store initialization with credentials path."""
-    with patch(
-        "google.oauth2.service_account.Credentials.from_service_account_file"
-    ) as mock_creds:
+    with patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_creds:
         mock_creds_instance = Mock()
         mock_creds.return_value = mock_creds_instance
 
@@ -64,15 +63,11 @@ def test_bigquery_initialization_with_credentials_path():
 
 def test_bigquery_initialization_with_invalid_credentials_path():
     """Test BigQuery store initialization with invalid credentials path."""
-    with patch(
-        "google.oauth2.service_account.Credentials.from_service_account_file"
-    ) as mock_creds:
+    with patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_creds:
         # Simulate file not found
         mock_creds.side_effect = FileNotFoundError("File not found")
 
-        with pytest.raises(
-            FileNotFoundError, match="Service account credentials file not found"
-        ):
+        with pytest.raises(FileNotFoundError, match="Service account credentials file not found"):
             BigQueryMetadataStore(
                 project_id="test-project",
                 dataset_id="test_dataset",
@@ -82,9 +77,7 @@ def test_bigquery_initialization_with_invalid_credentials_path():
         # Simulate invalid JSON format
         mock_creds.side_effect = ValueError("Invalid JSON")
 
-        with pytest.raises(
-            ValueError, match="Invalid service account credentials file"
-        ):
+        with pytest.raises(ValueError, match="Invalid service account credentials file"):
             BigQueryMetadataStore(
                 project_id="test-project",
                 dataset_id="test_dataset",
@@ -155,7 +148,7 @@ def test_bigquery_config_instantiation():
     config = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -179,7 +172,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_default = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -195,7 +188,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_farmhash = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -213,7 +206,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_md5 = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -235,7 +228,7 @@ def test_bigquery_config_with_fallback_stores():
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "dev-project",
                     "dataset_id": "dev_dataset",
@@ -243,7 +236,7 @@ def test_bigquery_config_with_fallback_stores():
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "prod-project",
                     "dataset_id": "prod_dataset",
@@ -259,9 +252,7 @@ def test_bigquery_config_with_fallback_stores():
 
 
 @pytest.mark.integration
-def test_bigquery_table_operations(
-    mock_bigquery_connection, test_graph, test_features: dict[str, type[SampleFeature]]
-):
+def test_bigquery_table_operations(mock_bigquery_connection, test_graph, test_features: dict[str, type[SampleFeature]]):
     """Test BigQuery table operations with mocked connection.
 
     This test would require actual BigQuery connection in integration tests.
@@ -272,7 +263,7 @@ def test_bigquery_table_operations(
             dataset_id="test_dataset",
         ) as store:
             # Mock the write operation
-            store.write_metadata_to_store = MagicMock()  # ty: ignore[invalid-assignment]
+            store._write_feature = MagicMock()  # ty: ignore[invalid-assignment]
 
             metadata = pl.DataFrame(
                 {
@@ -284,9 +275,9 @@ def test_bigquery_table_operations(
                     ],
                 }
             )
-            store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+            store.write(test_features["UpstreamFeatureA"], metadata)
 
             # Verify write was called with correct table name
-            assert store.write_metadata_to_store.called  # ty: ignore[unresolved-attribute]
-            call_args = store.write_metadata_to_store.call_args[0]  # ty: ignore[unresolved-attribute]
+            assert store._write_feature.called  # ty: ignore[unresolved-attribute]
+            call_args = store._write_feature.call_args[0]  # ty: ignore[unresolved-attribute]
             assert call_args[0].table_name == "test_stores__upstream_a"

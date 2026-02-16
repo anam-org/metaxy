@@ -6,10 +6,10 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.pytest_helpers import add_metaxy_system_columns
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
-from metaxy._testing.pytest_helpers import add_metaxy_system_columns
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
@@ -52,9 +52,7 @@ class TestJoiner:
             # Add required system columns
             empty_df = empty_df.with_columns(
                 [
-                    pl.lit(None)
-                    .alias(METAXY_PROVENANCE_BY_FIELD)
-                    .cast(pl.Struct({"default": pl.String})),
+                    pl.lit(None).alias(METAXY_PROVENANCE_BY_FIELD).cast(pl.Struct({"default": pl.String})),
                 ]
             )
             return nw.from_native(empty_df.lazy(), eager_only=False), {}
@@ -79,9 +77,7 @@ class TestJoiner:
         for upstream_key_str in upstream_refs.keys():
             upstream_key = FeatureKey(upstream_key_str)
             # The provenance_by_field column is renamed using to_column_suffix()
-            provenance_col_name = (
-                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
-            )
+            provenance_col_name = f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
             mapping[upstream_key_str] = provenance_col_name
 
         return joined, mapping  # ty: ignore[invalid-return-type]
@@ -399,9 +395,7 @@ def test_feature_spec_version_includes_id_columns():
     assert spec2.feature_spec_version == spec3.feature_spec_version
 
 
-def test_metadata_store_integration_with_custom_id_columns(
-    graph: FeatureGraph, tmp_path: Path
-):
+def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph, tmp_path: Path):
     """Test full metadata store integration with custom ID columns."""
 
     # Create features with custom ID columns
@@ -450,10 +444,10 @@ def test_metadata_store_integration_with_custom_id_columns(
                 }
             )
         )
-        store.write_metadata(UserFeature, user_df)
+        store.write(UserFeature, user_df)
 
         # Read it back and verify
-        read_user = store.read_metadata(UserFeature).collect()
+        read_user = store.read(UserFeature).collect()
         assert "user_id" in read_user.columns
         assert "sample_uid" not in read_user.columns
         assert len(read_user) == 3
@@ -478,10 +472,10 @@ def test_metadata_store_integration_with_custom_id_columns(
                 }
             )
         )
-        store.write_metadata(SessionFeature, session_df)
+        store.write(SessionFeature, session_df)
 
         # Read session metadata
-        read_session = store.read_metadata(SessionFeature).collect()
+        read_session = store.read(SessionFeature).collect()
         assert "user_id" in read_session.columns
         assert "session_id" in read_session.columns
         assert "sample_uid" not in read_session.columns
@@ -592,9 +586,7 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
     assert len(result) == 0
 
 
-def test_backwards_compatibility_default_id_columns(
-    graph: FeatureGraph, tmp_path: Path
-):
+def test_backwards_compatibility_default_id_columns(graph: FeatureGraph, tmp_path: Path):
     """Test that features without explicit id_columns still use sample_uid."""
 
     # Create feature WITHOUT specifying id_columns (backwards compatibility)
@@ -631,8 +623,8 @@ def test_backwards_compatibility_default_id_columns(
                 }
             )
         )
-        store.write_metadata(LegacyFeature, df)
+        store.write(LegacyFeature, df)
 
-        result = store.read_metadata(LegacyFeature).collect()
+        result = store.read(LegacyFeature).collect()
         assert "sample_uid" in result.columns
         assert len(result) == 3

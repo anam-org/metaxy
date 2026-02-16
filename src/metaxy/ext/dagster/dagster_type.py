@@ -11,6 +11,7 @@ import dagster as dg
 import narwhals as nw
 
 import metaxy as mx
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
@@ -58,6 +59,7 @@ def _create_type_check_fn(
     return type_check_fn
 
 
+@public
 def feature_to_dagster_type(
     feature: mx.CoercibleToFeatureKey,
     *,
@@ -101,6 +103,7 @@ def feature_to_dagster_type(
         import metaxy.ext.dagster as mxd
         from myproject.features import MyFeature  # Your Metaxy feature class
 
+
         @mxd.metaxify(feature=MyFeature)
         @dg.asset(dagster_type=mxd.feature_to_dagster_type(MyFeature))
         def my_asset():
@@ -116,32 +119,39 @@ def feature_to_dagster_type(
     from metaxy.ext.dagster.io_manager import MetaxyOutput
 
     feature_key = mx.coerce_to_feature_key(feature)
-    feature_cls = mx.get_feature_by_key(feature_key)
+    feature_def = mx.get_feature_by_key(feature_key)
+
+    # For build_column_schema, prefer the original class if provided
+    # (handles cases where class is defined inside a function and can't be imported)
+    feature_for_schema: mx.FeatureDefinition | type[mx.BaseFeature]
+    if isinstance(feature, type) and issubclass(feature, mx.BaseFeature):
+        feature_for_schema = feature
+    else:
+        feature_for_schema = feature_def
 
     # Determine name
     type_name = name or feature_key.table_name
 
-    # Determine description
+    # Determine description - use schema description if available, else default
     if description is None:
-        if feature_cls.__doc__:
-            import inspect
-
-            description = inspect.cleandoc(feature_cls.__doc__)
+        schema_desc = feature_def.feature_schema.get("description")
+        if schema_desc:
+            description = schema_desc
         else:
             description = f"Metaxy feature '{feature_key.to_string()}'."
 
     # Build metadata - start with custom metadata if provided
     final_metadata: dict[str, Any] = dict(metadata) if metadata else {}
-    final_metadata[DAGSTER_METAXY_INFO_METADATA_KEY] = build_feature_info_metadata(
-        feature_key
-    )
-    if inject_column_schema:
-        column_schema = build_column_schema(feature_cls)
+    final_metadata[DAGSTER_METAXY_INFO_METADATA_KEY] = build_feature_info_metadata(feature_key)
+    # Skip column schema for external features (no Python class to extract schema from)
+    if inject_column_schema and not feature_def.is_external:
+        column_schema = build_column_schema(feature_for_schema)
         if column_schema is not None:
             final_metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema
 
-    if inject_column_lineage:
-        column_lineage = build_column_lineage(feature_cls)
+    # Skip column lineage for external features (no Python class to extract columns from)
+    if inject_column_lineage and not feature_def.is_external:
+        column_lineage = build_column_lineage(feature_for_schema)
         if column_lineage is not None:
             final_metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY] = column_lineage
 

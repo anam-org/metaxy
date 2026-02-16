@@ -1,7 +1,7 @@
 [project]
 name = "metaxy"
-version = "0.0.1.dev24"
-description = "Pluggable versioned metadata management for incremental multi-modal pipelines."
+version = "0.1.0"
+description = "Pluggable versioned metadata management for incremental multimodal pipelines."
 readme = "README.md"
 authors = [
   { name = "Daniel Gafni", email = "danielgafni16@gmail.com" },
@@ -20,17 +20,21 @@ classifiers = [
 dependencies = [
   "cyclopts>=4.4.0",
   "narwhals>=2.14.0",
-  "platformdirs>=4.5.0",
+  "typing-extensions>=4.0.0",
+  "pydantic-core>=2.0.0",
   "polars>=1.35.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
   "python-dotenv>=1.0.0",
   "pyyaml>=6.0.0",
+  "pytest-cases>=3.9.1",
   "sqlglot>=28.1.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
   "packaging>=25.0",
+  "tomli-w>=1.2.0",
+  "tomlkit>=0.13.2",
 ]
 
 [project.optional-dependencies]
@@ -41,17 +45,20 @@ ibis = [
 mermaid = [
   "mermaid-py>=0.8.0",
 ]
-graphviz = [
-  "pygraphviz>=1.14",
+sqlalchemy = [
+  "sqlalchemy>=2.0",
 ]
 sqlmodel = [
   "sqlmodel>=0.0.27",
+  "sqlalchemy>=2.0",
 ]
 bigquery = [
   "ibis-framework[bigquery]>=11.0.0",
+  "google-auth>=2.0.0",
 ]
 clickhouse = [
   "ibis-framework[clickhouse]>=11.0.0",
+  "sqlalchemy>=2.0",
 ]
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",
@@ -63,6 +70,7 @@ delta = [
 ]
 dagster = [
   "dagster>=1.12.3",
+  "dagster-shared>=1.12.0",
 ]
 
 lancedb = [
@@ -72,13 +80,16 @@ lancedb = [
 mcp = [
   "fastmcp>=2.0.0",
 ]
+ray = [
+  "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
 
 [project.urls]
-Documentation = "https://metaxy.dev"
+Documentation = "https://docs.metaxy.io"
 Repository = "https://github.com/anam-org/metaxy"
 Issues = "https://github.com/anam-org/metaxy/issues"
 
@@ -89,13 +100,14 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
   "examples",
+  "metaxy-testing",
   "ipython>=8.37.0",
   "boto3>=1.35.0",
   "duckdb>=1.4.1",
   "pytest>=8.4.2",
   "pytest-cases>=3.9.1",
   "hypothesis>=6.142.4",
-  "ruff>=0.13.1",
+  "ruff>=0.14.4",
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
   "lancedb>=0.15.0",
@@ -107,12 +119,19 @@ dev = [
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
   "moto[s3,server]>=5.1.16",
-  "deltalake>=1.2.1",
+  "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
   "dagster>=1.12.3",
-  "ty==0.0.10",
+  "ty==0.0.16",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
+  "pandas>=2.3.3",
+  "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
+  "numpy>=2.2.6",
+  "sybil>=9.3.0",
+  "deptry>=0.24.0",
+  "nox>=2025.2.9",
+  "nox-uv>=0.7.1",
 ]
 
 examples = [
@@ -138,40 +157,60 @@ docs = [
   "mkdocs-metaxy",
   "examples",
   "mkdocs-macros-plugin>=1.5.0",
+  "mkdocs-exclude>=1.0.2",
 ]
 
 [tool.ruff]
 target-version = "py310"
+line-length = 120
 
-# temporary
-exclude = ["examples/example-dagster"]
+[tool.ruff.format]
+docstring-code-format = true
 
 [tool.ruff.lint]
 extend-select = [
   "I",
   "TID252",
   "UP",
+  "ICN001", # enforces common aliases
+  "ICN003", # bans certain from imports
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 # Ban certain modules from being imported at module level, instead requiring
 # that they're imported lazily (e.g., within a function definition).
 banned-module-level-imports = ["ibis", "duckdb"]
 
+[tool.ruff.lint.flake8-import-conventions]
+# Declare the banned `from` imports.
+banned-from = ["dagster", "narwhals", "polars"]
+
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"metaxy" = "mx"
+"dagster" = "dg"
+"polars" = "pl"
+"narwhals" = "nw"
+
 [tool.uv.workspace]
 members = [
   "examples",
   "examples/example-*",
   "docs/.mkdocs-metaxy",
+  "tests/metaxy_testing",
 ]
 
 [tool.uv.sources]
 examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
+metaxy-testing = { workspace = true }
+griffe-pydantic = { git = "https://github.com/mkdocstrings/griffe-pydantic.git" }
 
 [tool.vulture]
 exclude = [
-  "src/metaxy/_testing.py",
+  "tests/metaxy_testing/",
   "src/metaxy/cli/",
   "examples/**/feature*.py",
 ]
@@ -179,8 +218,26 @@ min_confidence = 60
 
 [tool.coverage.run]
 source = ["src/metaxy"]
+branch = true
+parallel = true
+concurrency = ["multiprocessing", "thread"]
+sigterm = true
 omit = [
-  "src/metaxy/_testing.py",
+  "tests/metaxy_testing/*",
+  # getting coverage for Ray actors is... complicated
+  # https://github.com/ray-project/ray/issues/9059
+  # probably should be done later
+  "src/metaxy/ext/ray/**",
+
+  # very experimental
+  "src/metaxy/migrations/**",
+  "src/metaxy/cli/migrations.py",
+  "src/metaxy/cli/graph.py",
+  "src/metaxy/cli/graph_diff.py",
+
+  # mostly used in experimental CLI
+  "src/metaxy/graph/**",
+
   "tests/*",
   "examples/*",
 ]
@@ -210,34 +267,21 @@ include = [
 ]
 exclude = [
   ".venv",
-  "examples/example-dagster/src/example_dagster/definitions.py",
   "tests/models/test_extra_args_forbidden.py", # intentionally passes invalid args for runtime validation
-]
-
-[tool.pyright]
-reportAny = "none"
-reportExplicitAny = "none"
-reportUnnecessaryCast = "error"
-reportImportCycles = "none"
-include = [
-  "src/metaxy",
-  "tests",
-  "examples",
-]
-exclude = [
-  # temporary
-  "examples/example-dagster/src/example_dagster/definitions.py",
-  "**/node_modules",
-  "**/__pycache__",
-  "**/*venv/**/*",
+  "tests/models/types/test_types_hypothesis.py", # ParamSpec limitation with Hypothesis strategies
+  "tests/metaxy_testing/src/metaxy_testing/parametric/metadata.py", # ParamSpec limitation with Hypothesis
+  "tests/metadata_stores/test_resolve_update.py", # ParamSpec limitation with Hypothesis
+  "tests/ext/dagster/test_utils.py", # Complex Dagster generic types
+  "tests/ext/dagster/test_io_manager.py", # Complex Dagster generic types
 ]
 
 [tool.pytest.ini_options]
-addopts = "--snapshot-details"
+addopts = "--snapshot-details --snapshot-warn-unused -p no:doctest --ignore=tests/fixtures --ignore=examples"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 env = [
   "METAXY_AUTO_CREATE_TABLES=1",
+  "RAY_ENABLE_UV_RUN_RUNTIME_ENV=0",
 ]
 filterwarnings = [
   "error::polars.exceptions.PerformanceWarning",
@@ -248,7 +292,6 @@ filterwarnings = [
   "ignore::metaxy.metadata_store.warnings.PolarsMaterializationWarning",
 ]
 markers = [
-  "inmemory: InMemory store tests",
   "duckdb: DuckDB store tests",
   "clickhouse: ClickHouse store tests",
   "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
@@ -256,3 +299,18 @@ markers = [
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
 ]
+
+[tool.deptry.package_module_name_map]
+mermaid-py = ["mermaid"]
+metaxy-testing = ["metaxy_testing"]
+dagster-shared = ["dagster_shared"]
+google-auth = ["google"]
+
+[tool.deptry.per_rule_ignores]
+DEP004 = ["metaxy_testing", "sybil"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

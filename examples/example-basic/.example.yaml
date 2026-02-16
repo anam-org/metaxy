@@ -8,7 +8,7 @@ scenarios:
     steps:
       - name: "setup_data"
         type: "run_command"
-        command: "python -m example_basic.setup_data"
+        command: "python src/example_basic/setup_data.py"
         description: "Generate raw data samples"
         capture_output: false
         timeout: 10.0
@@ -18,7 +18,7 @@ scenarios:
     steps:
       - name: "initial_run"
         type: "run_command"
-        command: "python -m example_basic.pipeline"
+        command: "python src/example_basic/pipeline.py"
         description: "Run pipeline with initial feature definitions"
         capture_output: true
         timeout: 30.0
@@ -35,7 +35,7 @@ scenarios:
     steps:
       - name: "idempotent_run"
         type: "run_command"
-        command: "python -m example_basic.pipeline"
+        command: "python src/example_basic/pipeline.py"
         description: "Rerun pipeline without any code changes"
         capture_output: true
         timeout: 30.0
@@ -56,7 +56,7 @@ scenarios:
 
       - name: "recompute_after_change"
         type: "run_command"
-        command: "python -m example_basic.pipeline"
+        command: "python src/example_basic/pipeline.py"
         description: "Run pipeline with updated parent feature"
         capture_output: true
         timeout: 30.0

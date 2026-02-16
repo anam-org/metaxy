@@ -23,9 +23,7 @@ class GraphWalker:
         """
         self.graph_data = graph_data
 
-    def topological_sort(
-        self, nodes_to_include: set[str] | None = None
-    ) -> list[GraphNode]:
+    def topological_sort(self, nodes_to_include: set[str] | None = None) -> list[GraphNode]:
         """Get nodes in topological order (dependencies first).
 
         Uses stable alphabetical ordering when multiple nodes are at the same level.
@@ -68,9 +66,7 @@ class GraphWalker:
 
         return result
 
-    def bfs_from(
-        self, start_key: FeatureKey, max_depth: int | None = None
-    ) -> list[GraphNode]:
+    def bfs_from(self, start_key: FeatureKey, max_depth: int | None = None) -> list[GraphNode]:
         """BFS traversal starting from a node.
 
         Args:
@@ -150,27 +146,22 @@ class GraphWalker:
             nodes_to_include.update(downstream)
 
         # Filter nodes and edges
-        filtered_nodes = {
-            k: v for k, v in self.graph_data.nodes.items() if k in nodes_to_include
-        }
+        filtered_nodes = {k: v for k, v in self.graph_data.nodes.items() if k in nodes_to_include}
 
         filtered_edges = [
             edge
             for edge in self.graph_data.edges
-            if edge.from_key.to_string() in nodes_to_include
-            and edge.to_key.to_string() in nodes_to_include
+            if edge.from_key.to_string() in nodes_to_include and edge.to_key.to_string() in nodes_to_include
         ]
 
         return GraphData(
             nodes=filtered_nodes,
             edges=filtered_edges,
-            snapshot_version=self.graph_data.snapshot_version,
-            old_snapshot_version=self.graph_data.old_snapshot_version,
+            project_version=self.graph_data.project_version,
+            old_project_version=self.graph_data.old_project_version,
         )
 
-    def _get_upstream(
-        self, start_key_str: str, max_levels: int | None = None
-    ) -> set[str]:
+    def _get_upstream(self, start_key_str: str, max_levels: int | None = None) -> set[str]:
         """Get upstream features (dependencies) recursively.
 
         Args:
@@ -199,9 +190,7 @@ class GraphWalker:
         visit(start_key_str, 0)
         return upstream
 
-    def _get_downstream(
-        self, start_key_str: str, max_levels: int | None = None
-    ) -> set[str]:
+    def _get_downstream(self, start_key_str: str, max_levels: int | None = None) -> set[str]:
         """Get downstream features (dependents) recursively.
 
         Args:
@@ -242,6 +231,4 @@ class GraphWalker:
         Returns:
             List of root nodes
         """
-        return [
-            node for node in self.graph_data.nodes.values() if not node.dependencies
-        ]
+        return [node for node in self.graph_data.nodes.values() if not node.dependencies]

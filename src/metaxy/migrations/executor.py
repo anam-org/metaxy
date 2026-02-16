@@ -63,9 +63,7 @@ class MigrationExecutor:
             else:
                 # This is an actual error, not a skip
                 root_causes.append(dep)
-        return list(
-            dict.fromkeys(root_causes)
-        )  # Remove duplicates while preserving order
+        return list(dict.fromkeys(root_causes))  # Remove duplicates while preserving order
 
     def execute(
         self,
@@ -107,13 +105,9 @@ class MigrationExecutor:
 
         # Delegate to migration's execute method (which uses this executor internally)
         if isinstance(migration, DiffMigration):
-            return self._execute_diff_migration(
-                migration, store, project, dry_run=dry_run, rerun=rerun
-            )
+            return self._execute_diff_migration(migration, store, project, dry_run=dry_run, rerun=rerun)
         elif isinstance(migration, FullGraphMigration):
-            return self._execute_full_graph_migration(
-                migration, store, project, dry_run=dry_run, rerun=rerun
-            )
+            return self._execute_full_graph_migration(migration, store, project, dry_run=dry_run, rerun=rerun)
         else:
             # Custom migration subclass - call its execute method directly
             return migration.execute(store, project, dry_run=dry_run)
@@ -151,11 +145,7 @@ class MigrationExecutor:
 
         # Log migration started
         if not dry_run:
-            self.storage.write_event(
-                Event.migration_started(
-                    project=project, migration_id=migration.migration_id
-                )
-            )
+            self.storage.write_event(Event.migration_started(project=project, migration_id=migration.migration_id))
 
         affected_features_list = []
         errors = {}
@@ -166,9 +156,7 @@ class MigrationExecutor:
         graph = FeatureGraph.get_active()
 
         # Execute operations (currently only DataVersionReconciliation is supported)
-        if len(migration.operations) == 1 and isinstance(
-            migration.operations[0], DataVersionReconciliation
-        ):
+        if len(migration.operations) == 1 and isinstance(migration.operations[0], DataVersionReconciliation):
             # Get features from operation config
             op = migration.operations[0]
             op_config = OperationConfig.model_validate(migration.ops[0])
@@ -180,23 +168,17 @@ class MigrationExecutor:
                 # Sort features topologically
                 feature_keys = [FeatureKey(fk.split("/")) for fk in op_config.features]
                 sorted_features = graph.topological_sort_features(feature_keys)
-                affected_features_to_process = [
-                    fk.to_string() for fk in sorted_features
-                ]
+                affected_features_to_process = [fk.to_string() for fk in sorted_features]
             else:
                 # Fall back to graph diff (all affected features)
-                affected_features_to_process = migration.get_affected_features(
-                    store, project
-                )
+                affected_features_to_process = migration.get_affected_features(store, project)
 
             for feature_key_str in affected_features_to_process:
                 # Check if already completed (resume support, unless rerun=True)
                 if (
                     not dry_run
                     and not rerun
-                    and self.storage.is_feature_completed(
-                        migration.migration_id, feature_key_str, project
-                    )
+                    and self.storage.is_feature_completed(migration.migration_id, feature_key_str, project)
                 ):
                     affected_features_list.append(feature_key_str)
                     continue
@@ -209,15 +191,12 @@ class MigrationExecutor:
                     failed_deps = [
                         dep.key.to_string()
                         for dep in plan.deps
-                        if dep.key.to_string() in errors
-                        or dep.key.to_string() in skipped
+                        if dep.key.to_string() in errors or dep.key.to_string() in skipped
                     ]
 
                     if failed_deps:
                         # Find root causes (features with actual errors, not just skipped)
-                        root_causes = self._find_root_causes(
-                            failed_deps, {**errors, **skipped}
-                        )
+                        root_causes = self._find_root_causes(failed_deps, {**errors, **skipped})
                         error_msg = f"Skipped due to failed dependencies: {', '.join(root_causes)}"
                         skipped[feature_key_str] = error_msg
 
@@ -248,8 +227,8 @@ class MigrationExecutor:
                     rows_affected = op.execute_for_feature(
                         store,
                         feature_key_str,
-                        snapshot_version=migration.to_snapshot_version,
-                        from_snapshot_version=migration.from_snapshot_version,
+                        project_version=migration.to_project_version,
+                        from_project_version=migration.from_project_version,
                         dry_run=dry_run,
                     )
 
@@ -289,9 +268,7 @@ class MigrationExecutor:
                     continue
         else:
             # Future: Support other operation types here
-            raise NotImplementedError(
-                "Only DataVersionReconciliation is currently supported"
-            )
+            raise NotImplementedError("Only DataVersionReconciliation is currently supported")
 
         # Determine status
         if dry_run:
@@ -300,9 +277,7 @@ class MigrationExecutor:
             status = "completed"
             if not dry_run:
                 self.storage.write_event(
-                    Event.migration_completed(
-                        project=project, migration_id=migration.migration_id
-                    )
+                    Event.migration_completed(project=project, migration_id=migration.migration_id)
                 )
         else:
             status = "failed"
@@ -364,11 +339,7 @@ class MigrationExecutor:
 
         # Log migration started
         if not dry_run:
-            self.storage.write_event(
-                Event.migration_started(
-                    project=project, migration_id=migration.migration_id
-                )
-            )
+            self.storage.write_event(Event.migration_started(project=project, migration_id=migration.migration_id))
 
         affected_features_list = []
         errors = {}
@@ -395,9 +366,7 @@ class MigrationExecutor:
                 if (
                     not dry_run
                     and not rerun
-                    and self.storage.is_feature_completed(
-                        migration.migration_id, feature_key_str, project
-                    )
+                    and self.storage.is_feature_completed(migration.migration_id, feature_key_str, project)
                 ):
                     affected_features_list.append(feature_key_str)
                     continue
@@ -409,15 +378,12 @@ class MigrationExecutor:
                     failed_deps = [
                         dep.key.to_string()
                         for dep in plan.deps
-                        if dep.key.to_string() in errors
-                        or dep.key.to_string() in skipped
+                        if dep.key.to_string() in errors or dep.key.to_string() in skipped
                     ]
 
                     if failed_deps:
                         # Find root causes (features with actual errors, not just skipped)
-                        root_causes = self._find_root_causes(
-                            failed_deps, {**errors, **skipped}
-                        )
+                        root_causes = self._find_root_causes(failed_deps, {**errors, **skipped})
                         error_msg = f"Skipped due to failed dependencies: {', '.join(root_causes)}"
                         skipped[feature_key_str] = error_msg
 
@@ -448,8 +414,8 @@ class MigrationExecutor:
                     rows_affected = operation.execute_for_feature(
                         store,
                         feature_key_str,
-                        snapshot_version=migration.snapshot_version,
-                        from_snapshot_version=migration.from_snapshot_version,
+                        project_version=migration.project_version,
+                        from_project_version=migration.from_project_version,
                         dry_run=dry_run,
                     )
 
@@ -495,9 +461,7 @@ class MigrationExecutor:
             status = "completed"
             if not dry_run:
                 self.storage.write_event(
-                    Event.migration_completed(
-                        project=project, migration_id=migration.migration_id
-                    )
+                    Event.migration_completed(project=project, migration_id=migration.migration_id)
                 )
         else:
             status = "failed"

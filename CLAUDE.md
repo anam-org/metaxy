@@ -4,6 +4,10 @@
 
 Start each task with the planner agent. Use python-dev to write code, python-test-engineer to write tests. Iterate until qa is satisfied.
 
+## Python Code Standards
+
+**Always invoke the `/dignified-python` skill before writing or reviewing Python code.** This skill enforces LBYL exception handling, modern type syntax, pathlib usage, and other project standards.
+
 ## Project Status
 
 **Early Development - No Stable API**
@@ -37,6 +41,12 @@ uv run pytest    # Run tests (add -k "pattern" to filter)
 **Snapshot tests**: If tests fail due to snapshot mismatches after intentional changes, update with `uv run pytest --snapshot-update path/to/test.py`.
 
 **Error handling**: Fail fast with clean errors. Do not catch exceptions to handle them gracefully. Let errors propagate with clear messages. Avoid try/except blocks unless re-raising with additional context.
+
+**Docstrings**: Avoid documenting implementation details. Focus on high-level concepts, properties and invariants. Avoid documenting default values as they are already documented in the code.
+
+**Comments**: Write comments that describe the current state of the code, not how it got there. Do not reference refactoring history, deleted code, or previous implementations (e.g., avoid "using X because Y was removed" or "previously this used Z").
+
+**Variable usage**: Avoid introducing variables that are only used once. Prefer method chaining and inline expressions. Exception: use a named variable when it clarifies non-obvious meaning or intent.
 
 ## When to Consult Docs
 

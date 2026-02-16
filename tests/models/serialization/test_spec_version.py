@@ -4,11 +4,11 @@ import hashlib
 import json
 from pathlib import Path
 
+from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import FeatureDep, FeatureKey, FieldKey, FieldSpec
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -27,8 +27,8 @@ def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None
     # Should be deterministic
     assert version1 == version2
 
-    # Should be 64 characters (SHA256 hex digest)
-    assert len(version1) == 64
+    # Should be 8 characters (SHA256 hex digest)
+    assert len(version1) == 8
 
     # Should be hex string
     assert all(c in "0123456789abcdef" for c in version1)
@@ -47,12 +47,12 @@ def test_feature_spec_version_includes_all_properties(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("col1", "col2"),
                 rename={"col1": "renamed_col1"},
+                select=("renamed_col1", "col2"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=None,  # All columns
+                select=None,  # All columns
                 rename=None,
             ),
         ],
@@ -65,7 +65,7 @@ def test_feature_spec_version_includes_all_properties(
     version = spec.feature_spec_version
 
     # Verify it's a valid SHA256 hash
-    assert len(version) == 64
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot for stability
@@ -170,7 +170,7 @@ def test_feature_spec_version_manual_verification() -> None:
     # Manually compute what it should be
     spec_dict = spec.model_dump(mode="json")
     spec_json = json.dumps(spec_dict, sort_keys=True)
-    expected_hash = hashlib.sha256(spec_json.encode("utf-8")).hexdigest()
+    expected_hash = hashlib.sha256(spec_json.encode("utf-8")).hexdigest()[:8]
 
     # They should match
     assert feature_spec_version == expected_hash
@@ -185,8 +185,8 @@ def test_feature_spec_version_with_column_selection_and_rename(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream"]),
-                columns=("col1", "col2"),
                 rename={"col1": "new_col1", "col2": "new_col2"},
+                select=("new_col1", "new_col2"),
             )
         ],
         fields=[
@@ -197,7 +197,7 @@ def test_feature_spec_version_with_column_selection_and_rename(
     version = spec.feature_spec_version
 
     # Should be valid SHA256
-    assert len(version) == 64
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot for stability
@@ -209,8 +209,8 @@ def test_feature_spec_version_with_column_selection_and_rename(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream"]),
-                columns=("col1", "col3"),  # Different columns!
                 rename={"col1": "new_col1", "col3": "new_col3"},
+                select=("new_col1", "new_col3"),  # Different columns!
             )
         ],
         fields=[
@@ -225,8 +225,8 @@ def test_feature_spec_version_with_column_selection_and_rename(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream"]),
-                columns=("col1", "col2"),
                 rename={"col1": "different_name"},  # Different rename!
+                select=("different_name", "col2"),
             )
         ],
         fields=[
@@ -265,12 +265,12 @@ def test_feature_feature_spec_version_classmethod() -> None:
         assert classmethod_version == direct_version
 
         # Should be valid SHA256
-        assert len(classmethod_version) == 64
+        assert len(classmethod_version) == 8
         assert all(c in "0123456789abcdef" for c in classmethod_version)
 
 
 def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) -> None:
-    """Test that feature_spec_version is included in graph snapshots."""
+    """Test that feature snapshot contains feature_version and definition_version."""
     from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
@@ -295,30 +295,17 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
         feature_key_str = "snapshot/test"
         assert feature_key_str in snapshot_dict
 
-        # Should contain feature_spec_version
+        # Should contain version fields
         feature_data = snapshot_dict[feature_key_str]
-        assert "metaxy_feature_spec_version" in feature_data
-
-        # feature_spec_version should match the Feature's feature_spec_version
-        assert (
-            feature_data["metaxy_feature_spec_version"]
-            == SnapshotFeature.spec().feature_spec_version
-        )
-
-        # feature_spec_version should be different from feature_version
-        assert (
-            feature_data["metaxy_feature_spec_version"]
-            != feature_data["metaxy_feature_version"]
-        )
+        assert "metaxy_feature_version" in feature_data
+        assert "metaxy_definition_version" in feature_data
 
         # Snapshot the entire feature data for stability
         assert feature_data == snapshot
 
 
-def test_feature_spec_version_recorded_in_metadata_store(
-    snapshot: SnapshotAssertion, tmp_path: Path
-) -> None:
-    """Test that feature_spec_version is recorded when pushing to metadata store."""
+def test_feature_definition_version_recorded_in_metadata_store(snapshot: SnapshotAssertion, tmp_path: Path) -> None:
+    """Test that feature_definition_version is recorded when pushing to metadata store."""
 
     from metaxy import BaseFeature, FeatureGraph
 
@@ -349,45 +336,31 @@ def test_feature_spec_version_recorded_in_metadata_store(
             # Should be a new snapshot
             assert not is_existing
 
-            # Read the feature_versions system table
-            features_df = storage.read_features(current=True)
+            # Read the feature_versions system table using the snapshot version from push
+            features_df = storage.read_features(current=False, project_version=result.project_version)
 
             # Should have one feature
             assert len(features_df) == 1
 
-            # Check that feature_spec_version column exists and has value
-            assert "metaxy_feature_spec_version" in features_df.columns
+            # Check that definition_version column exists and has value
+            assert "metaxy_definition_version" in features_df.columns
 
             # Get row as dict
             feature_row = features_df.to_dicts()[0]
-            assert feature_row["metaxy_feature_spec_version"] is not None
-            assert len(feature_row["metaxy_feature_spec_version"]) == 64
-
-            # feature_spec_version should match the Feature's feature_spec_version
-            assert (
-                feature_row["metaxy_feature_spec_version"]
-                == RecordedFeature.spec().feature_spec_version
-            )
-
-            # feature_spec_version should be different from feature_version
-            assert (
-                feature_row["metaxy_feature_spec_version"]
-                != feature_row["metaxy_feature_version"]
-            )
+            assert feature_row["metaxy_definition_version"] is not None
+            assert len(feature_row["metaxy_definition_version"]) == 8
 
             # Snapshot for stability
             assert {
                 "feature_key": feature_row["feature_key"],
                 "metaxy_feature_version": feature_row["metaxy_feature_version"],
-                "metaxy_feature_spec_version": feature_row[
-                    "metaxy_feature_spec_version"
-                ],
-                "metaxy_snapshot_version": feature_row["metaxy_snapshot_version"],
+                "metaxy_definition_version": feature_row["metaxy_definition_version"],
+                "metaxy_project_version": feature_row["metaxy_project_version"],
             } == snapshot
 
 
-def test_feature_spec_version_idempotent_snapshot_recording(tmp_path: Path) -> None:
-    """Test that recording the same snapshot twice preserves feature_spec_version."""
+def test_feature_definition_version_idempotent_snapshot_recording(tmp_path: Path) -> None:
+    """Test that recording the same snapshot twice preserves definition_version."""
     from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
@@ -412,32 +385,28 @@ def test_feature_spec_version_idempotent_snapshot_recording(tmp_path: Path) -> N
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
 
-            snapshot_v1 = result.snapshot_version
+            snapshot_v1 = result.project_version
 
             is_existing_1 = result.already_pushed
             assert not is_existing_1
 
-            features_df_1 = storage.read_features(current=True)
-            feature_spec_version_1 = features_df_1.to_dicts()[0][
-                "metaxy_feature_spec_version"
-            ]
+            features_df_1 = storage.read_features(current=False, project_version=snapshot_v1)
+            definition_version_1 = features_df_1.to_dicts()[0]["metaxy_definition_version"]
 
             # Second push (identical graph)
             result = storage.push_graph_snapshot()
 
-            snapshot_v2 = result.snapshot_version
+            snapshot_v2 = result.project_version
 
             is_existing_2 = result.already_pushed
             assert is_existing_2  # Should detect existing snapshot
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
-            features_df_2 = storage.read_features(current=True)
-            feature_spec_version_2 = features_df_2.to_dicts()[0][
-                "metaxy_feature_spec_version"
-            ]
+            features_df_2 = storage.read_features(current=False, project_version=snapshot_v2)
+            definition_version_2 = features_df_2.to_dicts()[0]["metaxy_definition_version"]
 
-            # feature_spec_version should be identical
-            assert feature_spec_version_1 == feature_spec_version_2
+            # definition_version should be identical
+            assert definition_version_1 == definition_version_2
 
 
 def test_feature_spec_version_different_from_feature_version_always() -> None:
@@ -479,18 +448,15 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
 
         # Both should have different feature_spec_version vs feature_version
         assert RootFeature.feature_spec_version() != RootFeature.feature_version()
-        assert (
-            DownstreamFeature.feature_spec_version()
-            != DownstreamFeature.feature_version()
-        )
+        assert DownstreamFeature.feature_spec_version() != DownstreamFeature.feature_version()
 
         # Both versions should be valid SHA256 hashes
         for feature_cls in [RootFeature, DownstreamFeature]:
             spec_v = feature_cls.feature_spec_version()
             feature_v = feature_cls.feature_version()
 
-            assert len(spec_v) == 64
-            assert len(feature_v) == 64
+            assert len(spec_v) == 8
+            assert len(feature_v) == 8
             assert all(c in "0123456789abcdef" for c in spec_v)
             assert all(c in "0123456789abcdef" for c in feature_v)
 
@@ -504,17 +470,17 @@ def test_feature_spec_version_with_multiple_complex_deps(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("a", "b", "c"),
                 rename={"a": "upstream1_a", "b": "upstream1_b"},
+                select=("upstream1_a", "upstream1_b", "c"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=(),  # Empty tuple = only system columns
+                select=(),  # Empty tuple = only system columns
                 rename=None,
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "three"]),
-                columns=None,  # None = all columns
+                select=None,  # None = all columns
                 rename={"col": "renamed_col"},
             ),
         ],
@@ -528,7 +494,7 @@ def test_feature_spec_version_with_multiple_complex_deps(
     version = spec.feature_spec_version
 
     # Should be valid SHA256
-    assert len(version) == 64
+    assert len(version) == 8
     assert all(c in "0123456789abcdef" for c in version)
 
     # Snapshot the hash
@@ -540,17 +506,17 @@ def test_feature_spec_version_with_multiple_complex_deps(
         deps=[
             FeatureDep(
                 feature=FeatureKey(["upstream", "one"]),
-                columns=("a", "b", "c"),
                 rename={"a": "upstream1_a", "b": "upstream1_b"},
+                select=("upstream1_a", "upstream1_b", "c"),
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "two"]),
-                columns=(),
+                select=(),
                 rename=None,
             ),
             FeatureDep(
                 feature=FeatureKey(["upstream", "three"]),
-                columns=None,
+                select=None,
                 rename={"col": "renamed_col"},
             ),
         ],

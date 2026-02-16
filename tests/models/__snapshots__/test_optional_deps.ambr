@@ -1,13 +1,12 @@
 # serializer version: 1
 # name: TestFeatureDepOptional.test_feature_spec_version_changes_when_optional_changes
   dict({
-    'optional': 'bed457f455c1ed9ccec4bb670a296cf0c0818990ef562fd4f517db7c7b165727',
-    'required': '17ccc0af1d149804290c6137a27f78df54087c92ed40f1a9c05efd941afa0ceb',
+    'optional': 'ba903fd5',
+    'required': 'b8c272b4',
   })
 # ---
 # name: TestFeatureDepOptional.test_optional_false_serializes_correctly
   dict({
-    'columns': None,
     'feature': 'test/feature',
     'fields_mapping': dict({
       'mapping': dict({
@@ -24,12 +23,12 @@
     }),
     'optional': False,
     'rename': None,
+    'select': None,
     'sql_filters': None,
   })
 # ---
 # name: TestFeatureDepOptional.test_optional_true_serializes_correctly
   dict({
-    'columns': None,
     'feature': 'test/feature',
     'fields_mapping': dict({
       'mapping': dict({
@@ -46,6 +45,7 @@
     }),
     'optional': True,
     'rename': None,
+    'select': None,
     'sql_filters': None,
   })
 # ---

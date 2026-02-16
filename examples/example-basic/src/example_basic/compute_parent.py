@@ -9,36 +9,30 @@ The VERSION environment variable determines which feature versions are loaded.
 Run with VERSION=1 initially, then VERSION=2 to see recomputation.
 """
 
+import metaxy as mx
 import polars as pl
-
-from metaxy import (
-    FeatureKey,
-    get_feature_by_key,
-    init_metaxy,
-)
 from metaxy.metadata_store.system import SystemTableStorage
 
 # Initialize metaxy (loads config and discovers features)
-config = init_metaxy()
+config = mx.init()
 
-# feature showcase: get feature classes by key
-parent_key = FeatureKey(["examples", "parent"])
-ParentFeature = get_feature_by_key(parent_key)
+# feature showcase: get feature definitions by key
+parent_key = mx.FeatureKey(["examples", "parent"])
 
 with config.get_store() as store:
-    # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = SystemTableStorage(store).push_graph_snapshot()
 
-    snapshot_version = result.snapshot_version
+    project_version = result.project_version
 
-    print(f"Graph snapshot_version: {snapshot_version}")
+    print(f"Graph project_version: {project_version}")
 
     # Check if metadata already exists for current feature_version (avoid duplicates)
     try:
-        existing = store.read_metadata(ParentFeature, current_only=True)
+        existing = store.read(parent_key, with_feature_history=False)
+        feature_version = mx.current_graph().get_feature_version(parent_key)
         if existing.collect().shape[0] > 0:
             print(
-                f"Metadata already exists for feature {parent_key} (feature_version: {ParentFeature.feature_version()[:16]}...)"
+                f"Metadata already exists for feature {parent_key} (feature_version: {feature_version[:16]}...)"
             )
             print("Skipping write to avoid duplicates")
             exit(0)
@@ -62,6 +56,6 @@ with config.get_store() as store:
             "metaxy_provenance_by_field": pl.Struct({"embeddings": pl.Utf8}),
         },
     )
-    store.write_metadata(ParentFeature, parent_metadata)
+    store.write(parent_key, parent_metadata)
 
     print(f"Written {len(parent_metadata)} rows for feature {parent_key}")

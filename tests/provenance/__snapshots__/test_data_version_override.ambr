@@ -3,19 +3,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'computed': '11963107521638063870',
+        'computed': '11963107',
       }),
       'field_provenance': dict({
-        'computed': '11963107521638063870',
+        'computed': '11963107',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'computed': '8435892136126567302',
+        'computed': '84358921',
       }),
       'field_provenance': dict({
-        'computed': '8435892136126567302',
+        'computed': '84358921',
       }),
       'sample_uid': 2,
     }),
@@ -25,19 +25,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'computed': '10525834463981181260',
+        'computed': '10525834',
       }),
       'field_provenance': dict({
-        'computed': '10525834463981181260',
+        'computed': '10525834',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'computed': '12548250042433492782',
+        'computed': '12548250',
       }),
       'field_provenance': dict({
-        'computed': '12548250042433492782',
+        'computed': '12548250',
       }),
       'sample_uid': 2,
     }),
@@ -47,19 +47,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'computed': '13446334202977689275',
+        'computed': '13446334',
       }),
       'field_provenance': dict({
-        'computed': '13446334202977689275',
+        'computed': '13446334',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'computed': '9255965263495477969',
+        'computed': '92559652',
       }),
       'field_provenance': dict({
-        'computed': '9255965263495477969',
+        'computed': '92559652',
       }),
       'sample_uid': 2,
     }),
@@ -69,19 +69,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'computed': '10882851507332405014',
+        'computed': '10882851',
       }),
       'field_provenance': dict({
-        'computed': '10882851507332405014',
+        'computed': '10882851',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'computed': '4395250408419160062',
+        'computed': '43952504',
       }),
       'field_provenance': dict({
-        'computed': '4395250408419160062',
+        'computed': '43952504',
       }),
       'sample_uid': 2,
     }),
@@ -91,19 +91,19 @@
   list([
     dict({
       'field_data_version': dict({
-        'fusion': '1012548481833254359',
+        'fusion': '10125484',
       }),
       'field_provenance': dict({
-        'fusion': '1012548481833254359',
+        'fusion': '10125484',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'fusion': '12914839798255203693',
+        'fusion': '12914839',
       }),
       'field_provenance': dict({
-        'fusion': '12914839798255203693',
+        'fusion': '12914839',
       }),
       'sample_uid': 2,
     }),
@@ -114,19 +114,19 @@
     'feature_b': list([
       dict({
         'field_data_version': dict({
-          'field_b': '6136712301424039078',
+          'field_b': '61367123',
         }),
         'field_provenance': dict({
-          'field_b': '6136712301424039078',
+          'field_b': '61367123',
         }),
         'sample_uid': 1,
       }),
       dict({
         'field_data_version': dict({
-          'field_b': '6136712301424039078',
+          'field_b': '61367123',
         }),
         'field_provenance': dict({
-          'field_b': '6136712301424039078',
+          'field_b': '61367123',
         }),
         'sample_uid': 2,
       }),
@@ -134,19 +134,19 @@
     'feature_c': list([
       dict({
         'field_data_version': dict({
-          'field_c': '4125475252096392654',
+          'field_c': '58014407',
         }),
         'field_provenance': dict({
-          'field_c': '4125475252096392654',
+          'field_c': '58014407',
         }),
         'sample_uid': 1,
       }),
       dict({
         'field_data_version': dict({
-          'field_c': '4125475252096392654',
+          'field_c': '58014407',
         }),
         'field_provenance': dict({
-          'field_c': '4125475252096392654',
+          'field_c': '58014407',
         }),
         'sample_uid': 2,
       }),
@@ -157,23 +157,23 @@
   list([
     dict({
       'field_data_version': dict({
-        'uses_field1': '5210969844798757423',
-        'uses_field2': '2295718472220160859',
+        'uses_field1': '52109698',
+        'uses_field2': '22957184',
       }),
       'field_provenance': dict({
-        'uses_field1': '5210969844798757423',
-        'uses_field2': '2295718472220160859',
+        'uses_field1': '52109698',
+        'uses_field2': '22957184',
       }),
       'sample_uid': 1,
     }),
     dict({
       'field_data_version': dict({
-        'uses_field1': '5210969844798757423',
-        'uses_field2': '6273624679320291402',
+        'uses_field1': '52109698',
+        'uses_field2': '62736246',
       }),
       'field_provenance': dict({
-        'uses_field1': '5210969844798757423',
-        'uses_field2': '6273624679320291402',
+        'uses_field1': '52109698',
+        'uses_field2': '62736246',
       }),
       'sample_uid': 2,
     }),

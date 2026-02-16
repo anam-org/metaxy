@@ -32,9 +32,7 @@ def feature_a(metaxy_config: mx.MetaxyConfig) -> type[mx.BaseFeature]:
 
 
 @pytest.fixture
-def feature_b(
-    metaxy_config: mx.MetaxyConfig, feature_a: type[mx.BaseFeature]
-) -> type[mx.BaseFeature]:
+def feature_b(metaxy_config: mx.MetaxyConfig, feature_a: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
     """Create feature B (depends on A)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "b"],
@@ -50,9 +48,7 @@ def feature_b(
 
 
 @pytest.fixture
-def feature_c(
-    metaxy_config: mx.MetaxyConfig, feature_b: type[mx.BaseFeature]
-) -> type[mx.BaseFeature]:
+def feature_c(metaxy_config: mx.MetaxyConfig, feature_b: type[mx.BaseFeature]) -> type[mx.BaseFeature]:
     """Create feature C (depends on B, so transitively on A)."""
     spec = mx.FeatureSpec(
         key=["test", "utils", "c"],
@@ -84,9 +80,7 @@ def _write_feature_data(
         return pl.DataFrame(
             {
                 "id": rows,
-                "metaxy_provenance_by_field": [
-                    {"value": f"v{i}"} for i in range(len(rows))
-                ],
+                "metaxy_provenance_by_field": [{"value": f"v{i}"} for i in range(len(rows))],
             }
         )
 
@@ -193,9 +187,16 @@ class TestGenerateMaterializationEvents:
         store_meta = metadata["metaxy/store"]
         assert isinstance(store_meta, dict)
         store_cls = metadata_store.__class__
+        assert store_meta["name"] == metadata_store.name
         assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["display"] == metadata_store.display()
         assert store_meta["versioning_engine"] == metadata_store._versioning_engine
+        # Check resolved_from contains where feature was found
+        assert "resolved_from" in store_meta
+        resolved_from = store_meta["resolved_from"]
+        assert resolved_from["name"] == metadata_store.name
+        assert resolved_from["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert resolved_from["display"] == metadata_store.display()
 
     def test_uses_asset_spec_key(
         self,
@@ -386,9 +387,16 @@ class TestGenerateObservationEvents:
         store_meta = metadata["metaxy/store"]
         assert isinstance(store_meta, dict)
         store_cls = metadata_store.__class__
+        assert store_meta["name"] == metadata_store.name
         assert store_meta["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
         assert store_meta["display"] == metadata_store.display()
         assert store_meta["versioning_engine"] == metadata_store._versioning_engine
+        # Check resolved_from contains where feature was found
+        assert "resolved_from" in store_meta
+        resolved_from = store_meta["resolved_from"]
+        assert resolved_from["name"] == metadata_store.name
+        assert resolved_from["type"] == f"{store_cls.__module__}.{store_cls.__qualname__}"
+        assert resolved_from["display"] == metadata_store.display()
 
     def test_uses_asset_spec_key(
         self,
@@ -488,9 +496,7 @@ class TestPartitionedAssets:
         return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
 
     @pytest.fixture
-    def partitioned_feature(
-        self, metaxy_config: mx.MetaxyConfig
-    ) -> type[mx.BaseFeature]:
+    def partitioned_feature(self, metaxy_config: mx.MetaxyConfig) -> type[mx.BaseFeature]:
         """Create a feature with a partition column."""
         spec = mx.FeatureSpec(
             key=["test", "utils", "partitioned"],
@@ -529,8 +535,7 @@ class TestPartitionedAssets:
                     "id": rows,
                     "partition_date": [context.partition_key] * len(rows),
                     "metaxy_provenance_by_field": [
-                        {"value": f"v{i}", "partition_date": context.partition_key}
-                        for i in range(len(rows))
+                        {"value": f"v{i}", "partition_date": context.partition_key} for i in range(len(rows))
                     ],
                 }
             )
@@ -589,9 +594,7 @@ class TestPartitionedAssets:
 
         assert len(events) == 1
         assert events[0].metadata is not None
-        assert (
-            events[0].metadata["dagster/row_count"] == 5
-        )  # total across all partitions
+        assert events[0].metadata["dagster/row_count"] == 5  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 3
 
         # Test with partition "2024-01-02" (2 rows in partition, 5 total)
@@ -600,9 +603,7 @@ class TestPartitionedAssets:
 
         assert len(events) == 1
         assert events[0].metadata is not None
-        assert (
-            events[0].metadata["dagster/row_count"] == 5
-        )  # total across all partitions
+        assert events[0].metadata["dagster/row_count"] == 5  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 2
 
     def test_observation_filters_by_partition(
@@ -652,9 +653,7 @@ class TestPartitionedAssets:
 
         assert len(events) == 1
         assert events[0].metadata is not None
-        assert (
-            events[0].metadata["dagster/row_count"] == 6
-        )  # total across all partitions
+        assert events[0].metadata["dagster/row_count"] == 6  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 2
 
         # Test with partition "2024-01-02" (4 rows in partition, 6 total)
@@ -663,9 +662,7 @@ class TestPartitionedAssets:
 
         assert len(events) == 1
         assert events[0].metadata is not None
-        assert (
-            events[0].metadata["dagster/row_count"] == 6
-        )  # total across all partitions
+        assert events[0].metadata["dagster/row_count"] == 6  # total across all partitions
         assert events[0].metadata["dagster/partition_row_count"] == 4
 
     @pytest.mark.flaky(reruns=5)
@@ -740,9 +737,7 @@ class TestMultiAssetIntegration:
         ):
             yield from mxd.generate_materialize_results(context, store, specs)
 
-        result = dg.materialize(
-            [my_multi_asset], resources=resources, instance=instance
-        )
+        result = dg.materialize([my_multi_asset], resources=resources, instance=instance)
         assert result.success
 
         # Check materialization events via instance.fetch_materializations
@@ -773,9 +768,7 @@ class TestMultiAssetIntegration:
         _write_feature_data(feature_a, ["r1", "r2", "r3"], resources, instance)
 
         # Get run_id from the first materialization (run 1)
-        mat_run1 = instance.fetch_materializations(
-            dg.AssetKey(["test", "utils", "a"]), limit=1
-        )
+        mat_run1 = instance.fetch_materializations(dg.AssetKey(["test", "utils", "a"]), limit=1)
         run1_id = mat_run1.records[0].run_id
 
         specs = [
@@ -790,9 +783,7 @@ class TestMultiAssetIntegration:
             yield from mxd.generate_materialize_results(context, store, specs)
 
         # Run 2: call generate_materialize_results (no new data written in this run)
-        result = dg.materialize(
-            [my_multi_asset], resources=resources, instance=instance
-        )
+        result = dg.materialize([my_multi_asset], resources=resources, instance=instance)
         assert result.success
 
         mat = instance.fetch_materializations(dg.AssetKey("mat_run_a"), limit=1)
@@ -874,9 +865,7 @@ class TestPartitionedMultiAssetIntegration:
         return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
 
     @pytest.fixture
-    def partitioned_feature_x(
-        self, metaxy_config: mx.MetaxyConfig
-    ) -> type[mx.BaseFeature]:
+    def partitioned_feature_x(self, metaxy_config: mx.MetaxyConfig) -> type[mx.BaseFeature]:
         """Create partitioned feature X."""
         spec = mx.FeatureSpec(
             key=["test", "utils", "partitioned_x"],
@@ -934,8 +923,7 @@ class TestPartitionedMultiAssetIntegration:
                     "id": rows,
                     "partition_date": [context.partition_key] * len(rows),
                     "metaxy_provenance_by_field": [
-                        {"value": f"v{i}", "partition_date": context.partition_key}
-                        for i in range(len(rows))
+                        {"value": f"v{i}", "partition_date": context.partition_key} for i in range(len(rows))
                     ],
                 }
             )

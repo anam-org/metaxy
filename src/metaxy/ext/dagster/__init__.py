@@ -1,4 +1,5 @@
-from metaxy.ext.dagster.cleanup import delete_metadata
+from metaxy._version import __version__
+from metaxy.ext.dagster.cleanup import delete
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_INFO_METADATA_KEY,
@@ -32,6 +33,14 @@ from metaxy.ext.dagster.utils import (
     get_partition_filter,
 )
 
+try:
+    from dagster_shared.libraries import DagsterLibraryRegistry
+
+    DagsterLibraryRegistry.register("metaxy.ext.dagster", __version__, is_dagster_package=False)
+except (ImportError, ModuleNotFoundError):
+    pass
+
+
 __all__ = [
     "metaxify",
     "feature_to_dagster_type",
@@ -58,5 +67,5 @@ __all__ = [
     "DAGSTER_METAXY_KIND",
     "DAGSTER_METAXY_PARTITION_KEY",
     "DAGSTER_METAXY_PROJECT_TAG_KEY",
-    "delete_metadata",
+    "delete",
 ]

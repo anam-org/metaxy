@@ -42,7 +42,7 @@ This is the Metaxy project - a feature metadata management system. Key testing p
 - **Use metadata store context managers**:
   ```python
   with DeltaMetadataStore() as store:
-      store.write_metadata(MyFeature, df)
+      store.write(MyFeature, df)
   ```
 
 ### Testing Utilities (src/metaxy/_testing.py)
@@ -123,6 +123,8 @@ This is the Metaxy project - a feature metadata management system. Key testing p
 
 ## Workflow
 
+**Before writing or reviewing any test code, invoke the `/dignified-python` skill** to load project-specific Python coding standards (LBYL patterns, modern type syntax, pathlib usage, etc.).
+
 When creating or fixing tests:
 
 1. **Understand the requirement**: Clarify what behavior needs testing
@@ -150,8 +152,11 @@ def test_write_and_read(store: MetadataStore, snapshot: SnapshotAssertion):
         pass
 
     df = nw.from_native(pl.DataFrame({...}))
-    store.write_metadata(TestFeature, df)
-    result = store.read_metadata(TestFeature)
+    with store.open("w"):
+        store.write(TestFeature, df)
+
+    with store:
+        result = store.read(TestFeature)
 
     assert result.to_native().to_dicts() == snapshot
 ```

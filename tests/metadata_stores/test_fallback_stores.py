@@ -5,11 +5,19 @@ based on whether upstream features are in fallback stores, and that appropriate
 warnings are issued.
 """
 
+from pathlib import Path
 from typing import Any, Literal
 
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing import (
+    HashAlgorithmCases,
+    add_metaxy_provenance_column,
+    assert_all_results_equal,
+)
+from metaxy_testing.models import SampleFeatureSpec
+from metaxy_testing.pytest_helpers import skip_exception
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -20,19 +28,12 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import (
-    HashAlgorithmCases,
-    add_metaxy_provenance_column,
-    assert_all_results_equal,
-)
-from metaxy._testing.models import SampleFeatureSpec
-from metaxy._testing.pytest_helpers import skip_exception
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
-from metaxy.metadata_store.delta import DeltaMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
@@ -55,7 +56,7 @@ def create_store_for_fallback(
     store_type: str,
     versioning_engine: Literal["auto", "native", "polars"],
     hash_algorithm: HashAlgorithm,
-    params: dict[str, Any],
+    tmp_path: Path,
     suffix: str = "",
     fallback_stores: list[MetadataStore] | None = None,
 ) -> MetadataStore:
@@ -65,19 +66,14 @@ def create_store_for_fallback(
         store_type: "duckdb"
         versioning_engine: Versioning engine mode ("auto", "native", or "polars")
         hash_algorithm: Hash algorithm to use
-        params: Store-specific parameters
+        tmp_path: Temporary directory for database files
         suffix: Suffix to add to database filename (for creating distinct stores)
         fallback_stores: Optional list of fallback stores to configure
     """
-    tmp_path = params.get("tmp_path")
-    assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
-
     if store_type == "duckdb":
         db_path = tmp_path / f"fallback_test_{suffix}_{hash_algorithm.value}.duckdb"
         extensions: list[str] = (
-            ["hashfuncs"]
-            if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]
-            else []
+            ["hashfuncs"] if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64] else []
         )
         return DuckDBMetadataStore(
             db_path,
@@ -147,14 +143,16 @@ def DownstreamFeature(features):
     return features["DownstreamFeature"]
 
 
+@pytest.fixture
+def fallback_store_type():
+    return "deltalake"
+
+
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("primary_store_type", get_available_store_types_for_fallback())
-@pytest.mark.parametrize(
-    "fallback_store_type", ["inmemory"]
-)  # Parametrized for future expansion
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_fallback_store_warning_issued(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
@@ -165,14 +163,13 @@ def test_fallback_store_warning_issued(
     """Test that warning IS issued when upstream feature is in fallback store.
 
     This tests the core fallback scenario:
-    - Root feature is in fallback_store (InMemory - no native components)
+    - Root feature is in fallback_store
     - Downstream feature will be written to primary_store (DuckDB - has native)
     - resolve_update() should switch to Polars components and issue warning
     - Results should match snapshot across different configurations
     """
-    # Create fallback store (InMemory - simple, no native components)
     fallback_store = DeltaMetadataStore(
-        root_path=store_params["tmp_path"] / "delta_fallback",
+        root_path=tmp_path / "delta_fallback",
         hash_algorithm=hash_algorithm,
     )
 
@@ -193,7 +190,7 @@ def test_fallback_store_warning_issued(
     # Setup: Write root feature to fallback store
     with fallback_store:
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        fallback_store.write_metadata(RootFeature, root_data)
+        fallback_store.write(RootFeature, root_data)
 
     # Test with versioning_engine="native" and versioning_engine="polars"
     for versioning_engine in ["native", "polars"]:
@@ -202,7 +199,7 @@ def test_fallback_store_warning_issued(
             primary_store_type,
             versioning_engine=versioning_engine,  # ty: ignore[invalid-argument-type]
             hash_algorithm=hash_algorithm,
-            params=store_params,
+            tmp_path=tmp_path,
             suffix=f"primary_{versioning_engine}",
             fallback_stores=[fallback_store],
         )
@@ -226,17 +223,15 @@ def test_fallback_store_warning_issued(
                     result = primary_store.resolve_update(DownstreamFeature)
 
             # Collect field provenances for comparison
-            added_sorted = (
-                result.added.to_polars()
-                if isinstance(result.added, nw.DataFrame)
-                else result.added
-            ).sort("sample_uid")
+            added_sorted = (result.new.to_polars() if isinstance(result.new, nw.DataFrame) else result.added).sort(
+                "sample_uid"
+            )
             versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
             results[(primary_store_type, fallback_store_type, versioning_engine)] = {
-                "added": len(result.added),
-                "changed": len(result.changed),
-                "removed": len(result.removed),
+                "added": len(result.new),
+                "changed": len(result.stale),
+                "removed": len(result.orphaned),
                 "versions": versions,
             }
 
@@ -257,7 +252,7 @@ def test_fallback_store_warning_issued(
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_no_fallback_warning_when_all_local(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -274,7 +269,7 @@ def test_no_fallback_warning_when_all_local(
         store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="single",
     )
 
@@ -291,7 +286,7 @@ def test_no_fallback_warning_when_all_local(
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        store.write_metadata(RootFeature, root_data)
+        store.write(RootFeature, root_data)
 
         # Resolve downstream feature - all upstream is local
         # No warning should be issued
@@ -302,17 +297,16 @@ def test_no_fallback_warning_when_all_local(
             result = store.resolve_update(DownstreamFeature)
 
         # Verify results are still correct
-        assert len(result.added) == 3
-        assert len(result.changed) == 0
-        assert len(result.removed) == 0
+        assert len(result.new) == 3
+        assert len(result.stale) == 0
+        assert len(result.orphaned) == 0
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("primary_store_type", get_available_store_types_for_fallback())
-@pytest.mark.parametrize("fallback_store_type", ["inmemory"])
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_fallback_store_switches_to_polars_components(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
@@ -347,13 +341,13 @@ def test_fallback_store_switches_to_polars_components(
         primary_store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="all_local",
     )
 
     with store_all_local:
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
-        store_all_local.write_metadata(RootFeature, root_data_with_prov)
+        store_all_local.write(RootFeature, root_data_with_prov)
 
         # Should be no warnings
         import warnings
@@ -363,40 +357,33 @@ def test_fallback_store_switches_to_polars_components(
             result_local = store_all_local.resolve_update(DownstreamFeature)
 
         # Collect field provenances from result
-        added_local = (
-            result_local.added.to_polars()
-            if isinstance(result_local.added, nw.DataFrame)
-            else result_local.added
-        )
-        versions_local = added_local.sort("sample_uid")[
-            "metaxy_provenance_by_field"
-        ].to_list()
+        added_local = result_local.new.to_polars() if isinstance(result_local.new, nw.DataFrame) else result_local.added
+        versions_local = added_local.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
 
         results[(primary_store_type, fallback_store_type, "all_local")] = {
-            "added": len(result_local.added),
-            "changed": len(result_local.changed),
-            "removed": len(result_local.removed),
+            "added": len(result_local.new),
+            "changed": len(result_local.stale),
+            "removed": len(result_local.orphaned),
             "versions": versions_local,
         }
 
     # Scenario 2: Upstream in fallback (Polars components)
-    # Use InMemory for fallback (realistic - simple store from previous deployment)
     fallback_store = DeltaMetadataStore(
-        root_path=store_params["tmp_path"] / "delta_fallback",
+        root_path=tmp_path / "delta_fallback",
         hash_algorithm=hash_algorithm,
     )
 
     # Write root to fallback store
     with fallback_store:
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
-        fallback_store.write_metadata(RootFeature, root_data_with_prov)
+        fallback_store.write(RootFeature, root_data_with_prov)
 
     # Create primary store with fallback configured
     primary_store = create_store_for_fallback(
         primary_store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="with_fallback",
         fallback_stores=[fallback_store],
     )
@@ -411,18 +398,14 @@ def test_fallback_store_switches_to_polars_components(
 
         # Collect field provenances from result
         added_fallback = (
-            result_fallback.added.to_polars()
-            if isinstance(result_fallback.added, nw.DataFrame)
-            else result_fallback.added
+            result_fallback.new.to_polars() if isinstance(result_fallback.new, nw.DataFrame) else result_fallback.added
         )
-        versions_fallback = added_fallback.sort("sample_uid")[
-            "metaxy_provenance_by_field"
-        ].to_list()
+        versions_fallback = added_fallback.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
-            "added": len(result_fallback.added),
-            "changed": len(result_fallback.changed),
-            "removed": len(result_fallback.removed),
+            "added": len(result_fallback.new),
+            "changed": len(result_fallback.stale),
+            "removed": len(result_fallback.orphaned),
             "versions": versions_fallback,
         }
 
@@ -444,7 +427,7 @@ def test_fallback_store_switches_to_polars_components(
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_versioning_engine_polars_no_warning_even_without_fallback(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -461,7 +444,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
         store_type,
         versioning_engine="polars",  # Explicitly use Polars
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="polars_engine",
     )
 
@@ -477,7 +460,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        store.write_metadata(RootFeature, root_data)
+        store.write(RootFeature, root_data)
 
         # Should be no warnings - versioning_engine="polars" is intentional, not a fallback
         import warnings
@@ -487,14 +470,14 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
             result = store.resolve_update(DownstreamFeature)
 
         # Verify results are correct
-        assert len(result.added) == 3
+        assert len(result.new) == 3
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_configured(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -506,9 +489,8 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
     versioning_engine="native" should work without errors or warnings because the
     data is actually local (native format).
     """
-    # Create fallback store (InMemory - Polars)
     fallback_store = DeltaMetadataStore(
-        root_path=store_params["tmp_path"] / "delta_fallback",
+        root_path=tmp_path / "delta_fallback",
         hash_algorithm=hash_algorithm,
     )
 
@@ -517,7 +499,7 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
         store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="local_data_test",
         fallback_stores=[fallback_store],
     )
@@ -535,7 +517,7 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        primary_store.write_metadata(RootFeature, root_data)
+        primary_store.write(RootFeature, root_data)
 
         # Data is local, so versioning_engine="native" should work without errors or warnings
         import warnings
@@ -545,14 +527,14 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
             result = primary_store.resolve_update(DownstreamFeature)
 
         # Verify results are correct
-        assert len(result.added) == 3
+        assert len(result.new) == 3
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_versioning_engine_native_warns_when_fallback_actually_used(
-    store_params: dict[str, Any],
+    tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
@@ -564,9 +546,8 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
     versioning_engine="native" should issue a warning but not raise an error, because
     the implementation mismatch is due to legitimate fallback access.
     """
-    # Create fallback store (InMemory - Polars)
     fallback_store = DeltaMetadataStore(
-        root_path=store_params["tmp_path"] / "delta_fallback",
+        root_path=tmp_path / "delta_fallback",
         hash_algorithm=hash_algorithm,
     )
 
@@ -583,14 +564,14 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
             }
         )
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
-        fallback_store.write_metadata(RootFeature, root_data)
+        fallback_store.write(RootFeature, root_data)
 
     # Create primary store with fallback configured and versioning_engine="native"
     primary_store = create_store_for_fallback(
         store_type,
         versioning_engine="native",
         hash_algorithm=hash_algorithm,
-        params=store_params,
+        tmp_path=tmp_path,
         suffix="fallback_access_test",
         fallback_stores=[fallback_store],
     )
@@ -605,7 +586,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
             result = primary_store.resolve_update(DownstreamFeature)
 
         # Should NOT raise VersioningEngineMismatchError
-        assert len(result.added) == 3
+        assert len(result.new) == 3
 
 
 # NOTE: There is no test for samples with wrong implementation because:
@@ -616,18 +597,17 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
 #    implementation check, and creating native (Ibis) samples in tests is non-trivial
 
 
-def test_fallback_stores_opened_on_demand_when_reading(
-    tmp_path, graph: FeatureGraph
-) -> None:
+def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureGraph) -> None:
     """Test that fallback stores are opened on demand when reading metadata.
 
     This tests the fix for a bug where fallback stores were not opened when
     the primary store tried to read from them, resulting in StoreNotOpenError
     being raised (or worse, being masked as FeatureNotFoundError).
     """
+    from metaxy_testing.models import SampleFeatureSpec
+
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy._testing.models import SampleFeatureSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -646,7 +626,7 @@ def test_fallback_stores_opened_on_demand_when_reading(
     dev_store = DeltaMetadataStore(root_path=dev_path, fallback_stores=[branch_store])
 
     # Write data to the fallback (branch) store
-    with branch_store.open(mode="write"):
+    with branch_store.open(mode="w"):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -657,29 +637,28 @@ def test_fallback_stores_opened_on_demand_when_reading(
                 ],
             }
         )
-        branch_store.write_metadata(TestFeature, metadata)
+        branch_store.write(TestFeature, metadata)
 
     # Now open only the dev store and try to read - it should find data in fallback
     # The fallback store should be opened on demand
     with dev_store:
-        result = dev_store.read_metadata(TestFeature)
+        result = dev_store.read(TestFeature)
         assert result is not None
         collected = result.collect()
         assert len(collected) == 3
 
 
-def test_get_store_metadata_respects_fallback_stores(
-    tmp_path, graph: FeatureGraph
-) -> None:
+def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGraph) -> None:
     """Test that get_store_metadata returns metadata from fallback store when feature is only there.
 
     This tests the fix for issue #549: MetadataStore.get_store_metadata should respect
     fallback stores, returning metadata from the fallback store where the feature is
     actually found when it doesn't exist in the current store.
     """
+    from metaxy_testing.models import SampleFeatureSpec
+
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy._testing.models import SampleFeatureSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -695,12 +674,10 @@ def test_get_store_metadata_respects_fallback_stores(
 
     # Create stores with fallback chain
     fallback_store = DeltaMetadataStore(root_path=fallback_path)
-    primary_store = DeltaMetadataStore(
-        root_path=primary_path, fallback_stores=[fallback_store]
-    )
+    primary_store = DeltaMetadataStore(root_path=primary_path, fallback_stores=[fallback_store])
 
     # Write data to the fallback store only
-    with fallback_store.open(mode="write"):
+    with fallback_store.open(mode="w"):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -711,40 +688,50 @@ def test_get_store_metadata_respects_fallback_stores(
                 ],
             }
         )
-        fallback_store.write_metadata(TestFeature, metadata)
+        fallback_store.write(TestFeature, metadata)
 
     # Now open only the primary store and call get_store_metadata
-    # It should return metadata from the fallback store
+    # It should return metadata showing both primary and resolved_from (fallback) stores
     with primary_store:
         store_metadata = primary_store.get_store_metadata(TestFeature)
 
-        # Should return the fallback store's metadata (uri pointing to fallback location)
-        assert store_metadata is not None
-        assert "uri" in store_metadata
-        assert "fallback" in store_metadata["uri"]
-        # Should include display from fallback store
+        # Should include info about the queried store (primary)
+        assert "name" in store_metadata
         assert "display" in store_metadata
-        assert "fallback" in store_metadata["display"]
+        assert "primary" in store_metadata["display"]
 
-    # Test check_fallback=False - should return empty dict when feature not in primary
+        # Should include resolved_from with info about where the feature was found
+        assert "resolved_from" in store_metadata
+        resolved_from = store_metadata["resolved_from"]
+        assert "name" in resolved_from
+        assert "type" in resolved_from
+        assert "display" in resolved_from
+        assert "fallback" in resolved_from["display"]
+
+        # Store-specific metadata (uri) should be inside resolved_from
+        assert "uri" in resolved_from
+        assert "fallback" in resolved_from["uri"]
+
+    # Test check_fallback=False - should return only queried store info when feature not found
     with primary_store:
-        store_metadata_no_fallback = primary_store.get_store_metadata(
-            TestFeature, check_fallback=False
-        )
-        assert store_metadata_no_fallback == {}
+        store_metadata_no_fallback = primary_store.get_store_metadata(TestFeature, check_fallback=False)
+        # Should still return the queried store's info
+        assert "name" in store_metadata_no_fallback
+        assert "display" in store_metadata_no_fallback
+        # But no resolved_from since feature wasn't found
+        assert "resolved_from" not in store_metadata_no_fallback
 
 
-def test_get_store_metadata_prefers_current_store(
-    tmp_path, graph: FeatureGraph
-) -> None:
+def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph) -> None:
     """Test that get_store_metadata returns metadata from current store when feature exists there.
 
     Even when a fallback store has the same feature, get_store_metadata should return
     metadata from the current store (not the fallback).
     """
+    from metaxy_testing.models import SampleFeatureSpec
+
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy._testing.models import SampleFeatureSpec
-    from metaxy.metadata_store.delta import DeltaMetadataStore
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -760,9 +747,7 @@ def test_get_store_metadata_prefers_current_store(
 
     # Create stores with fallback chain
     fallback_store = DeltaMetadataStore(root_path=fallback_path)
-    primary_store = DeltaMetadataStore(
-        root_path=primary_path, fallback_stores=[fallback_store]
-    )
+    primary_store = DeltaMetadataStore(root_path=primary_path, fallback_stores=[fallback_store])
 
     metadata = pl.DataFrame(
         {
@@ -776,18 +761,93 @@ def test_get_store_metadata_prefers_current_store(
     )
 
     # Write data to both stores
-    with fallback_store.open(mode="write"):
-        fallback_store.write_metadata(TestFeature, metadata)
+    with fallback_store.open(mode="w"):
+        fallback_store.write(TestFeature, metadata)
 
-    with primary_store.open(mode="write"):
-        primary_store.write_metadata(TestFeature, metadata)
+    with primary_store.open(mode="w"):
+        primary_store.write(TestFeature, metadata)
 
     # get_store_metadata should return metadata from primary (current) store
     with primary_store:
         store_metadata = primary_store.get_store_metadata(TestFeature)
 
         assert store_metadata is not None
-        assert "uri" in store_metadata
+        # resolved_from should point to primary store since feature exists there
+        assert "resolved_from" in store_metadata
+        resolved_from = store_metadata["resolved_from"]
+        assert "uri" in resolved_from
         # Should be the primary store's path, not the fallback
-        assert "primary" in store_metadata["uri"]
-        assert "fallback" not in store_metadata["uri"]
+        assert "primary" in resolved_from["uri"]
+        assert "fallback" not in resolved_from["uri"]
+
+
+def test_read_with_store_info(tmp_path, graph: FeatureGraph) -> None:
+    """Test read with_store_info returns the resolved store.
+
+    When with_store_info=True, read should return a tuple of
+    (LazyFrame, MetadataStore) where the MetadataStore is the store that
+    actually contained the feature (which may be a fallback store).
+    """
+    from metaxy_testing.models import SampleFeatureSpec
+
+    from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+
+    class TestFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["read_with_store_info_test", "feature"]),
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    primary_path = tmp_path / "primary"
+    fallback_path = tmp_path / "fallback"
+
+    # Create stores with fallback chain
+    fallback_store = DeltaMetadataStore(root_path=fallback_path, name="fallback")
+    primary_store = DeltaMetadataStore(root_path=primary_path, name="primary", fallback_stores=[fallback_store])
+
+    # Write data to the fallback store only
+    with fallback_store.open(mode="w"):
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        fallback_store.write(TestFeature, metadata)
+
+    # Read from primary with with_store_info=True - should resolve to fallback
+    with primary_store:
+        df, resolved_store = primary_store.read(TestFeature, with_store_info=True)
+        assert resolved_store.name == "fallback"
+        assert resolved_store is not primary_store
+        # Verify the data is correct
+        collected = df.collect()
+        assert len(collected) == 3
+
+    # Now write to primary store too
+    with primary_store.open(mode="w"):
+        primary_store.write(TestFeature, metadata)
+
+    # Read from primary with with_store_info=True - should resolve to primary
+    with primary_store:
+        df, resolved_store = primary_store.read(TestFeature, with_store_info=True)
+        assert resolved_store.name == "primary"
+        assert resolved_store is primary_store
+        collected = df.collect()
+        assert len(collected) == 3
+
+    # Verify default behavior (with_store_info=False) still works
+    with primary_store:
+        df = primary_store.read(TestFeature)
+        # Should return just LazyFrame, not tuple
+        assert hasattr(df, "collect")
+        collected = df.collect()
+        assert len(collected) == 3

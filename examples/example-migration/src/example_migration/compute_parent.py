@@ -1,23 +1,24 @@
 """Compute parent feature (embeddings) - unchanged between versions."""
 
+import tempfile
 from pathlib import Path
 
+import metaxy as mx
 import polars as pl
 
-from metaxy import FeatureKey, get_feature_by_key, init_metaxy
-
 # Initialize metaxy (loads config and discovers features)
-config = init_metaxy()
+config = mx.init()
 
-# Get feature class
-ParentFeature = get_feature_by_key(FeatureKey(["examples", "parent"]))
+# Get feature key
+parent_key = mx.FeatureKey(["examples", "parent"])
 
-# Load upstream data
-data_dir = Path("/tmp/migration_example_data")
+# Load upstream data (use system temp dir for cross-platform compatibility)
+data_dir = Path(tempfile.gettempdir()) / "migration_example_data"
 upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
 with config.get_store() as store:
-    print(f"📊 Computing {ParentFeature.spec().key.to_string()}...")
-    print(f"  feature_version: {ParentFeature.feature_version()[:16]}...")
+    feature_version = mx.current_graph().get_feature_version(parent_key)
+    print(f"Computing {parent_key.to_string()}...")
+    print(f"  feature_version: {feature_version[:16]}...")
 
     # Simulate computing embeddings - same computation in both versions
     parent_data = pl.DataFrame(
@@ -29,5 +30,5 @@ with config.get_store() as store:
         }
     )
 
-    store.write_metadata(ParentFeature, parent_data)
-    print(f"✓ Materialized {len(parent_data)} samples")
+    store.write(parent_key, parent_data)
+    print(f"[OK] Materialized {len(parent_data)} samples")

@@ -8,24 +8,21 @@ from typing import Any
 
 import boto3
 import pytest
+from metaxy_testing import HashAlgorithmCases
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
-from metaxy._testing import HashAlgorithmCases
 from metaxy.config import MetaxyConfig
+from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.lancedb import LanceDBMetadataStore
-from metaxy.models.feature import FeatureGraph
-
-# Note: clickhouse_server and clickhouse_db fixtures are defined in tests/conftest.py
-# to be available across all test directories.
+from tests.conftest import require_fixture
 
 
 def find_free_port() -> int:
@@ -35,61 +32,6 @@ def find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
-
-
-@pytest.fixture
-def store_params(tmp_path: Path, clickhouse_db: str) -> dict[str, Any]:
-    """Provide all store-specific parameters in a single dict.
-
-    Combines all store-specific fixtures (tmp_path, clickhouse_db, etc.) into
-    one dictionary that can be passed to create_store().
-
-    Args:
-        tmp_path: Temporary directory for file-based stores
-        clickhouse_db: ClickHouse connection string
-
-    Returns:
-        Dictionary with all available store parameters
-    """
-    return {
-        "tmp_path": tmp_path,
-        "clickhouse_db": clickhouse_db,
-    }
-
-
-class StoreCases:
-    """Store configuration cases for parametrization."""
-
-    def case_duckdb(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        db_path = tmp_path / "test.duckdb"
-        return (DuckDBMetadataStore, {"database": db_path})
-
-    def case_duckdb_ducklake(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        db_path = tmp_path / "test_ducklake.duckdb"
-        metadata_path = tmp_path / "ducklake_catalog.duckdb"
-        storage_dir = tmp_path / "ducklake_storage"
-
-        ducklake_config = {
-            "alias": "integration_lake",
-            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-            "storage_backend": {"type": "local", "path": str(storage_dir)},
-        }
-
-        config = {
-            "database": db_path,
-            "ducklake": ducklake_config,
-            "extensions": ["json"],
-        }
-        return (DuckDBMetadataStore, config)
-
-    def case_clickhouse(
-        self, clickhouse_db: str, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
 
 
 class BasicStoreCases:
@@ -105,7 +47,7 @@ class BasicStoreCases:
 def persistent_store(
     store_config: tuple[type[MetadataStore], dict[str, Any]],
 ) -> MetadataStore:
-    """Parametrized persistent store (InMemory + DuckDB)."""
+    """Parametrized persistent store."""
     store_type, config = store_config
     return store_type(**config)
 
@@ -135,29 +77,6 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
     )
 
 
-class AnyStoreCases:
-    """Minimal store cases (Delta + DuckDB)."""
-
-    @pytest.mark.delta
-    @pytest.mark.polars
-    def case_delta(self, tmp_path: Path) -> MetadataStore:
-        delta_path = tmp_path / "delta_store"
-        return DeltaMetadataStore(
-            root_path=delta_path,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.ibis
-    @pytest.mark.native
-    @pytest.mark.duckdb
-    def case_duckdb(self, tmp_path: Path) -> MetadataStore:
-        return DuckDBMetadataStore(
-            database=tmp_path / "test.duckdb",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            extensions=["hashfuncs"],
-        )
-
-
 class AllStoresCases:
     """All store types (Delta, DuckDB, ClickHouse, LanceDB)."""
 
@@ -183,9 +102,9 @@ class AllStoresCases:
     @pytest.mark.ibis
     @pytest.mark.native
     @pytest.mark.clickhouse
-    def case_clickhouse(self, clickhouse_db: str) -> MetadataStore:
+    def case_clickhouse(self, request) -> MetadataStore:
         return ClickHouseMetadataStore(
-            connection_string=clickhouse_db,
+            connection_string=require_fixture(request, "clickhouse_db"),
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
@@ -227,9 +146,7 @@ def hash_algorithm(algo):
 
 
 @fixture
-def store_with_hash_algo_native(
-    any_store: MetadataStore, hash_algorithm: HashAlgorithm
-) -> MetadataStore:
+def store_with_hash_algo_native(any_store: MetadataStore, hash_algorithm: HashAlgorithm) -> MetadataStore:
     """Parametrized store with parametrized hash algorithm.
 
     Use with @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -240,9 +157,7 @@ def store_with_hash_algo_native(
     try:
         any_store.validate_hash_algorithm()
     except HashAlgorithmNotSupportedError:
-        pytest.skip(
-            f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}"
-        )
+        pytest.skip(f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}")
     return any_store
 
 
@@ -258,9 +173,7 @@ def config_with_truncation(truncation_length):
             # Config is already set with the truncation length from the parameter
             pass
     """
-    config = MetaxyConfig.get().model_copy(
-        update={"hash_truncation_length": truncation_length}
-    )
+    config = MetaxyConfig.get().model_copy(update={"hash_truncation_length": truncation_length})
 
     with config.use():
         yield config

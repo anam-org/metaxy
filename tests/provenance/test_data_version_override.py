@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import narwhals as nw
 import polars as pl
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
@@ -92,8 +92,7 @@ def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
     # Extract the computed field provenance for the child's "computed" field
     # This should be based on parent's data_version, NOT provenance
     computed_field_provenance = [
-        row["metaxy_provenance_by_field"]["computed"]
-        for row in result_df.iter_rows(named=True)
+        row["metaxy_provenance_by_field"]["computed"] for row in result_df.iter_rows(named=True)
     ]
 
     # The provenance should be computed from custom_version_1/2, not provenance_hash_1/2
@@ -212,12 +211,8 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
     )
 
     # Extract field provenances
-    b_field_provs = (
-        b_result.collect().to_polars()["metaxy_provenance_by_field"].to_list()
-    )
-    c_field_provs = (
-        c_result.collect().to_polars()["metaxy_provenance_by_field"].to_list()
-    )
+    b_field_provs = b_result.collect().to_polars()["metaxy_provenance_by_field"].to_list()
+    c_field_provs = c_result.collect().to_polars()["metaxy_provenance_by_field"].to_list()
 
     # B should have same field provenance for both samples
     # (because A's data_version is the same for both)
@@ -425,10 +420,7 @@ def test_default_behavior_no_override(graph: FeatureGraph, snapshot) -> None:
     result_df = result.collect().to_polars()
 
     # Extract computed field provenance
-    computed_provs = [
-        row["metaxy_provenance_by_field"]["computed"]
-        for row in result_df.iter_rows(named=True)
-    ]
+    computed_provs = [row["metaxy_provenance_by_field"]["computed"] for row in result_df.iter_rows(named=True)]
 
     # Should have different provenances (since parent's data_versions differ)
     assert computed_provs[0] != computed_provs[1]
@@ -547,10 +539,7 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
     result_df = result.collect().to_polars()
 
     # Extract fusion field provenance
-    fusion_provs = [
-        row["metaxy_provenance_by_field"]["fusion"]
-        for row in result_df.iter_rows(named=True)
-    ]
+    fusion_provs = [row["metaxy_provenance_by_field"]["fusion"] for row in result_df.iter_rows(named=True)]
 
     # Since parent1 has same data_version but parent2 differs,
     # the fusion field should have different provenances for the two samples
@@ -656,10 +645,7 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
     result_df = result.collect().to_polars()
 
     # Verify child provenance is computed correctly from parent's data_version
-    computed_provs = [
-        row["metaxy_provenance_by_field"]["computed"]
-        for row in result_df.iter_rows(named=True)
-    ]
+    computed_provs = [row["metaxy_provenance_by_field"]["computed"] for row in result_df.iter_rows(named=True)]
 
     # Should have different provenances (from custom_v1 and custom_v2)
     assert computed_provs[0] != computed_provs[1]
@@ -764,9 +750,7 @@ def test_data_version_cleanup_in_result(graph: FeatureGraph, snapshot) -> None:
             {
                 "sample_uid": result_df_polars["sample_uid"][i],
                 "field_provenance": result_df_polars["metaxy_provenance_by_field"][i],
-                "field_data_version": result_df_polars["metaxy_data_version_by_field"][
-                    i
-                ],
+                "field_data_version": result_df_polars["metaxy_data_version_by_field"][i],
             }
         )
     assert provenance_data == snapshot

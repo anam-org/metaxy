@@ -1,0 +1,4 @@
+# Nix inputs (flake sources)
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixos-25.11

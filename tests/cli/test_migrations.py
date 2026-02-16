@@ -1,14 +1,16 @@
 """Tests for migrations CLI commands."""
 
-from metaxy._testing import TempMetaxyProject
+import pytest
+from metaxy_testing import TempMetaxyProject
 
 
-def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
+def test_migrations_list_empty(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with no migrations."""
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -21,21 +23,22 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # No migrations created yet
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         assert "No migrations found" in result.stderr
 
 
-def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
+def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with a single migration."""
     from datetime import datetime, timezone
 
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -55,12 +58,10 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
         migration_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "test_migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,
-            "to_snapshot_version": "b" * 64,
+            "from_project_version": "a" * 64,
+            "to_project_version": "b" * 64,
             "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
         }
 
@@ -69,7 +70,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         # Check for table contents
@@ -82,15 +83,16 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
         assert "Operations" in result.stderr
 
 
-def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
+def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with multiple migrations in chain order."""
     from datetime import datetime, timezone
 
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -110,12 +112,10 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         migration1_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,
-            "to_snapshot_version": "b" * 64,
+            "from_project_version": "a" * 64,
+            "to_project_version": "b" * 64,
             "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
         }
 
@@ -127,12 +127,10 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         migration2_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_002",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "migration_001",
-            "from_snapshot_version": "b" * 64,
-            "to_snapshot_version": "c" * 64,
+            "from_project_version": "b" * 64,
+            "to_project_version": "c" * 64,
             "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
         }
 
@@ -141,7 +139,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
             yaml.dump(migration2_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         # Check both migrations are listed
@@ -155,15 +153,16 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
         assert pos_001 < pos_002
 
 
-def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
+def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with migration having multiple operations."""
     from datetime import datetime, timezone
 
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -183,12 +182,10 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
         migration_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "multi_op_migration",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,
-            "to_snapshot_version": "b" * 64,
+            "from_project_version": "a" * 64,
+            "to_project_version": "b" * 64,
             "ops": [
                 {"type": "metaxy.migrations.ops.DataVersionReconciliation"},
                 {"type": "myproject.ops.CustomBackfill"},
@@ -200,7 +197,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"])
+        result = metaxy_project.run_cli(["migrations", "list"], capsys=capsys)
 
         assert result.returncode == 0
         assert "multi_op_migration" in result.stderr
@@ -210,15 +207,16 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
         assert "CustomBackfill" in result.stderr
 
 
-def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
+def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test migrations list with invalid migration chain."""
     from datetime import datetime, timezone
 
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -238,12 +236,10 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         migration1_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_001",
-            "created_at": datetime(
-                2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,
-            "to_snapshot_version": "b" * 64,
+            "from_project_version": "a" * 64,
+            "to_project_version": "b" * 64,
             "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
         }
 
@@ -255,12 +251,10 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         migration2_yaml = {
             "migration_type": "metaxy.migrations.models.DiffMigration",
             "migration_id": "migration_002",
-            "created_at": datetime(
-                2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
-            ).isoformat(),
+            "created_at": datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "b" * 64,
-            "to_snapshot_version": "c" * 64,
+            "from_project_version": "b" * 64,
+            "to_project_version": "c" * 64,
             "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
         }
 
@@ -269,22 +263,23 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
             yaml.dump(migration2_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli(["migrations", "list"], check=False)
+        result = metaxy_project.run_cli(["migrations", "list"], check=False, capsys=capsys)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
         assert "Invalid migration:" in result.stderr
         assert "Multiple migration heads" in result.stderr
 
 
-def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
+def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that migration errors are logged with full tracebacks."""
     from datetime import datetime, timezone
 
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -306,8 +301,8 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
             "migration_id": "test_error_migration",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,  # Nonexistent snapshot
-            "to_snapshot_version": "b" * 64,  # Nonexistent snapshot
+            "from_project_version": "a" * 64,  # Nonexistent snapshot
+            "to_project_version": "b" * 64,  # Nonexistent snapshot
             "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
         }
 
@@ -316,9 +311,8 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Apply migration (will fail because snapshots don't exist)
-        result = metaxy_project.run_cli(
-            ["migrations", "apply", "--dry-run"], check=False
-        )
+        # Use subprocess=True because traceback output differs in direct mode
+        result = metaxy_project.run_cli(["migrations", "apply", "--dry-run"], check=False, subprocess=True)
 
         # This particular error causes fatal exit before feature processing
         assert result.returncode == 1
@@ -329,22 +323,21 @@ def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
         # Verify actual error details are shown (snapshot-related errors)
         # Error message is "No features recorded for snapshot <hash>"
         assert "snapshot" in output.lower()
-        assert (
-            "no features recorded" in output.lower() or "cannot load" in output.lower()
-        )
+        assert "no features recorded" in output.lower() or "cannot load" in output.lower()
         # Should show file paths and line numbers from traceback
         assert ".py" in output and "line " in output
 
 
-def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
+def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that generated migrations can be loaded and used with status command.
 
     Regression test for bug where generated YAML used 'id' but model expected 'migration_id'.
     """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -365,18 +358,20 @@ def test_generated_migration_is_valid(metaxy_project: TempMetaxyProject):
                 "metaxy.migrations.ops.DataVersionReconciliation",
                 "--type",
                 "full",
-            ]
+            ],
+            capsys=capsys,
         )
         assert result.returncode == 0
 
         # Status command should work without validation errors
-        result = metaxy_project.run_cli(["migrations", "status"])
+        result = metaxy_project.run_cli(["migrations", "status"], capsys=capsys)
         assert result.returncode == 0
         assert "validation error" not in result.stderr.lower()
 
 
 def test_migrations_apply_rerun_displays_reprocessing_message(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that --rerun flag shows 'Reprocessing all N feature(s)' message.
 
@@ -385,8 +380,9 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
     """
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -407,14 +403,13 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
                 "metaxy.migrations.ops.DataVersionReconciliation",
                 "--type",
                 "full",
-            ]
+            ],
+            capsys=capsys,
         )
         assert result.returncode == 0
 
         # Apply with --rerun and --dry-run to see the message without executing
-        result = metaxy_project.run_cli(
-            ["migrations", "apply", "--rerun", "--dry-run"], check=False
-        )
+        result = metaxy_project.run_cli(["migrations", "apply", "--rerun", "--dry-run"], check=False, capsys=capsys)
 
         # Should show RERUN MODE banner
         assert "RERUN MODE" in result.stderr
@@ -427,6 +422,7 @@ def test_migrations_apply_rerun_displays_reprocessing_message(
 
 def test_migrations_status_uses_yaml_as_source_of_truth(
     metaxy_project: TempMetaxyProject,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test that migration status uses YAML features as source of truth.
 
@@ -441,8 +437,9 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
     import yaml
 
     def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
 
         class FeatureA(
             BaseFeature,
@@ -473,7 +470,7 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
             "migration_id": "test_yaml_source_of_truth",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "parent": "initial",
-            "snapshot_version": "a" * 64,
+            "project_version": "a" * 64,
             "ops": [
                 {
                     "type": "metaxy.migrations.ops.DataVersionReconciliation",
@@ -487,7 +484,7 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
             yaml.dump(migration_yaml, f)
 
         # Check initial status - should show 0/2 completed
-        result = metaxy_project.run_cli(["migrations", "status"])
+        result = metaxy_project.run_cli(["migrations", "status"], capsys=capsys)
         assert result.returncode == 0
         assert "0/2 completed" in result.stderr
 
@@ -502,7 +499,7 @@ def test_migrations_status_uses_yaml_as_source_of_truth(
             yaml.dump(migration_yaml, f)
 
         # Check status again - should show 0/1 completed (YAML is source of truth)
-        result = metaxy_project.run_cli(["migrations", "status"])
+        result = metaxy_project.run_cli(["migrations", "status"], capsys=capsys)
         assert result.returncode == 0
         assert "0/1 completed" in result.stderr
         # Should NOT show 0/2 (the old value)

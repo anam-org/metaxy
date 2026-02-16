@@ -28,15 +28,15 @@ def test_store_level_materialization_id(store: MetadataStore):
     ):
         id: str
 
-    with store.open(mode="write"):
-        store.write_metadata(
+    with store.open(mode="w"):
+        store.write(
             key,
             pl.DataFrame([{"id": "1", METAXY_PROVENANCE_BY_FIELD: {"default": "abc"}}]),
         )
 
     # Read back and verify materialization_id
-    with store.open(mode="read"):
-        df = store.read_metadata(key)
+    with store:
+        df = store.read(key)
         assert df is not None
         df_collected = df.collect()
         assert METAXY_MATERIALIZATION_ID in df_collected.columns
@@ -57,16 +57,16 @@ def test_write_level_materialization_id_override(store: MetadataStore):
     ):
         id: str
 
-    with store.open(mode="write"):
-        store.write_metadata(
+    with store.open(mode="w"):
+        store.write(
             key,
             pl.DataFrame([{"id": "1", METAXY_PROVENANCE_BY_FIELD: {"default": "abc"}}]),
             materialization_id="override-run-456",
         )
 
     # Verify override was applied
-    with store.open(mode="read"):
-        df = store.read_metadata(key)
+    with store:
+        df = store.read(key)
         assert df is not None
         df_collected = df.collect()
         assert df_collected[METAXY_MATERIALIZATION_ID][0] == "override-run-456"
@@ -83,15 +83,15 @@ def test_nullable_materialization_id(store: MetadataStore):
     ):
         id: str
 
-    with store.open(mode="write"):
-        store.write_metadata(
+    with store.open(mode="w"):
+        store.write(
             key,
             pl.DataFrame([{"id": "1", METAXY_PROVENANCE_BY_FIELD: {"default": "abc"}}]),
         )
 
     # Verify column exists but is null
-    with store.open(mode="read"):
-        df = store.read_metadata(key)
+    with store:
+        df = store.read(key)
         assert df is not None
         df_collected = df.collect()
         assert METAXY_MATERIALIZATION_ID in df_collected.columns
@@ -110,38 +110,34 @@ def test_filter_by_materialization_id(store: MetadataStore):
         id: str
 
     # Write multiple batches with different IDs
-    with store.open(mode="write"):
-        store.write_metadata(
+    with store.open(mode="w"):
+        store.write(
             key,
             pl.DataFrame([{"id": "1", METAXY_PROVENANCE_BY_FIELD: {"default": "abc"}}]),
             materialization_id="run-1",
         )
-        store.write_metadata(
+        store.write(
             key,
             pl.DataFrame([{"id": "2", METAXY_PROVENANCE_BY_FIELD: {"default": "def"}}]),
             materialization_id="run-2",
         )
-        store.write_metadata(
+        store.write(
             key,
             pl.DataFrame([{"id": "3", METAXY_PROVENANCE_BY_FIELD: {"default": "ghi"}}]),
             materialization_id="run-1",
         )
 
     # Filter by run-1
-    with store.open(mode="read"):
-        df = store.read_metadata(
-            key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-1"]
-        )
+    with store:
+        df = store.read(key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-1"])
         assert df is not None
         df_collected = df.collect()
         assert len(df_collected) == 2
         assert set(df_collected["id"].to_list()) == {"1", "3"}
 
     # Filter by run-2
-    with store.open(mode="read"):
-        df = store.read_metadata(
-            key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-2"]
-        )
+    with store:
+        df = store.read(key, filters=[nw.col(METAXY_MATERIALIZATION_ID) == "run-2"])
         assert df is not None
         df_collected = df.collect()
         assert len(df_collected) == 1
@@ -160,9 +156,9 @@ def test_materialization_id_multiple_writes(store: MetadataStore):
         id: str
 
     # Write with different materialization_ids
-    with store.open(mode="write"):
+    with store.open(mode="w"):
         for i in range(3):
-            store.write_metadata(
+            store.write(
                 key,
                 pl.DataFrame(
                     [
@@ -176,8 +172,8 @@ def test_materialization_id_multiple_writes(store: MetadataStore):
             )
 
     # Read all and verify each has its materialization_id
-    with store.open(mode="read"):
-        df = store.read_metadata(key, latest_only=False)
+    with store:
+        df = store.read(key, with_sample_history=True)
         assert df is not None
         df_collected = df.collect()
         assert len(df_collected) == 3

@@ -8,6 +8,8 @@ from typing import Any
 
 import ibis
 import pytest
+from metaxy_testing import HashAlgorithmCases, TempFeatureModule
+from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     FeatureDep,
@@ -17,12 +19,36 @@ from metaxy import (
     FieldSpec,
     MetadataStore,
 )
-from metaxy._testing import HashAlgorithmCases, TempFeatureModule
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.models.feature import FeatureGraph
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
+
+
+def require_fixture(request: pytest.FixtureRequest, name: str) -> Any:
+    """Resolve a pytest fixture by name at runtime, bypassing static dependency analysis.
+
+    Use this in pytest-cases case functions to avoid fixture dependency merging.
+    When @fixture + @parametrize_with_cases collects case functions, it merges ALL
+    fixture parameters from ALL cases into every parametrized variant. This means
+    a case that depends on `clickhouse_db` would force non-clickhouse variants to
+    also resolve `clickhouse_db`, causing unwanted skips.
+
+    By resolving fixtures through `request.getfixturevalue` instead of declaring
+    them as function parameters, we break the static dependency chain so each case
+    only resolves its own dependencies.
+
+    Example::
+
+        class MyStoreCases:
+            def case_duckdb(self, tmp_path: Path) -> MetadataStore:
+                return DuckDBMetadataStore(database=tmp_path / "test.duckdb")
+
+            def case_clickhouse(self, request) -> MetadataStore:
+                conn = require_fixture(request, "clickhouse_db")
+                return ClickHouseMetadataStore(connection_string=conn)
+    """
+    return request.getfixturevalue(name)
 
 
 def pytest_configure(config):
@@ -52,11 +78,7 @@ def pytest_runtest_setup(item):
 
     # Also clear any dynamically loaded feature modules from sys.modules
     # This prevents feature classes from previous tests persisting
-    modules_to_remove = [
-        name
-        for name in sys.modules.keys()
-        if name.startswith("features.") or name == "features"
-    ]
+    modules_to_remove = [name for name in sys.modules.keys() if name.startswith("features.") or name == "features"]
     for name in modules_to_remove:
         del sys.modules[name]
 
@@ -68,7 +90,7 @@ def config(tmp_path_factory):
         project="test",
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={"database": data_dir / "test.duckdb"},
             )
         },
@@ -109,7 +131,7 @@ def metaxy_project(tmp_path):
         def test_example(metaxy_project):
             def features():
                 from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
-                from metaxy._testing.models import SampleFeatureSpec
+                from metaxy_testing.models import SampleFeatureSpec
 
                 class MyFeature(BaseFeature, spec=SampleFeatureSpec(
                     key=FeatureKey(["my_feature"]),
@@ -119,10 +141,10 @@ def metaxy_project(tmp_path):
                     pass
 
             with metaxy_project.with_features(features):
-                result = metaxy_project.run_cli(["graph", "push"])
+                result = metaxy_project.run_cli(["push"])
                 assert result.returncode == 0
     """
-    from metaxy._testing import TempMetaxyProject
+    from metaxy_testing import TempMetaxyProject
 
     return TempMetaxyProject(tmp_path)
 
@@ -136,7 +158,7 @@ def test_graph_and_features():
 
     Uses TempFeatureModule to make features importable for historical graph reconstruction.
     """
-    temp_module = TempFeatureModule("test_stores_features")
+    temp_module = TempFeatureModule("test_stores_features", project="test")
 
     # Define specs
     upstream_a_spec = SampleFeatureSpec(
@@ -190,15 +212,9 @@ def test_graph_and_features():
 
     # Create features dict for easy access
     features = {
-        "UpstreamFeatureA": graph.features_by_key[
-            FeatureKey(["test_stores", "upstream_a"])
-        ],
-        "UpstreamFeatureB": graph.features_by_key[
-            FeatureKey(["test_stores", "upstream_b"])
-        ],
-        "DownstreamFeature": graph.features_by_key[
-            FeatureKey(["test_stores", "downstream"])
-        ],
+        "UpstreamFeatureA": graph.feature_definitions_by_key[FeatureKey(["test_stores", "upstream_a"])],
+        "UpstreamFeatureB": graph.feature_definitions_by_key[FeatureKey(["test_stores", "upstream_b"])],
+        "DownstreamFeature": graph.feature_definitions_by_key[FeatureKey(["test_stores", "downstream"])],
     }
 
     yield graph, features
@@ -230,7 +246,7 @@ def test_features(test_graph_and_features):
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--random-selection",
+        "--sample",
         metavar="N",
         action="store",
         default=-1,
@@ -240,7 +256,7 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    random_sample_size = config.getoption("--random-selection")
+    random_sample_size = config.getoption("--sample")
 
     if random_sample_size >= 0:
         items[:] = random.sample(items, k=random_sample_size)
@@ -265,16 +281,9 @@ def clickhouse_server(tmp_path_factory):
     Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
     """
 
-    # Check if clickhouse binary is available
     clickhouse_bin = shutil.which("clickhouse") or shutil.which("clickhouse-server")
     if not clickhouse_bin:
         pytest.skip("ClickHouse binary not found in PATH")
-
-    # Check if ibis-clickhouse is installed
-    try:
-        import ibis.backends.clickhouse  # noqa: F401
-    except ImportError:
-        pytest.skip("ibis-clickhouse not installed")
 
     port = find_free_port()
     http_port = find_free_port()
@@ -326,9 +335,7 @@ def clickhouse_server(tmp_path_factory):
         if process.poll() is not None:
             # Process died - get stderr output
             _, stderr = process.communicate()
-            pytest.skip(
-                f"ClickHouse server process terminated unexpectedly: {stderr.decode()[:500]}"
-            )
+            pytest.skip(f"ClickHouse server process terminated unexpectedly: {stderr.decode()[:500]}")
 
         # Try to connect to the port
         try:
@@ -348,9 +355,7 @@ def clickhouse_server(tmp_path_factory):
             error_msg = stderr.decode()[:500]
         except Exception:
             error_msg = "Could not get error output"
-        pytest.skip(
-            f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
-        )
+        pytest.skip(f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}")
 
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:

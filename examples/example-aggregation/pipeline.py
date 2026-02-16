@@ -1,18 +1,7 @@
-"""Pipeline demonstrating N:1 aggregation lineage.
-
-This example shows how Metaxy handles aggregation lineage where multiple
-upstream records (audio recordings) are aggregated into a single downstream
-record (speaker embedding).
-
-Key concepts:
-- Multiple audio recordings per speaker are aggregated into one embedding
-- When any audio for a speaker changes, the speaker embedding needs recomputation
-"""
-
-import polars as pl
-from example_aggregation.features import Audio, SpeakerEmbedding
-
 import metaxy as mx
+import polars as pl
+
+from example_aggregation.features import Audio, SpeakerEmbedding
 
 # Audio samples: 2 speakers with 2 recordings each
 AUDIO_SAMPLES = pl.DataFrame(
@@ -50,32 +39,33 @@ AUDIO_SAMPLES = pl.DataFrame(
 
 
 def main():
-    cfg = mx.init_metaxy()
+    cfg = mx.init()
     store = cfg.get_store("dev")
 
     # Step 1: Write audio metadata
     with store:
-        diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)
-        if len(diff.added) > 0:
-            print(f"Found {len(diff.added)} new audio recordings")
-            store.write_metadata(Audio, diff.added)
-        elif len(diff.changed) > 0:
-            print(f"Found {len(diff.changed)} changed audio recordings")
-            store.write_metadata(Audio, diff.changed)
+        increment = store.resolve_update(Audio, samples=AUDIO_SAMPLES)
+        if len(increment.new) > 0:
+            print(f"Found {len(increment.new)} new audio recordings")
+            store.write(Audio, increment.new)
+        elif len(increment.stale) > 0:
+            print(f"Found {len(increment.stale)} changed audio recordings")
+            store.write(Audio, increment.stale)
         else:
             print("No new or changed audio recordings")
 
     # Step 2: Compute speaker embeddings
     with store:
-        diff = store.resolve_update(SpeakerEmbedding)
+        increment = store.resolve_update(SpeakerEmbedding)
 
-        added_df = diff.added.to_polars()
-        changed_df = diff.changed.to_polars()
+        added_df = increment.new.to_polars()
+        changed_df = increment.stale.to_polars()
 
         speakers_to_process = (
             pl.concat([added_df, changed_df])
             .select("speaker_id")
             .unique()
+            .sort("speaker_id")
             .to_series()
             .to_list()
         )
@@ -112,7 +102,7 @@ def main():
 
             embedding_df = pl.DataFrame(embedding_data)
             print(f"Writing embeddings for {len(embedding_data)} speakers")
-            store.write_metadata(SpeakerEmbedding, embedding_df)
+            store.write(SpeakerEmbedding, embedding_df)
 
 
 if __name__ == "__main__":

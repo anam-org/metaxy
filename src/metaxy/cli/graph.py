@@ -10,80 +10,11 @@ from metaxy.graph import RenderConfig
 
 # Graph subcommand app
 app = cyclopts.App(
-    name="graph",  # pyrefly: ignore[unexpected-keyword]
-    help="Manage feature graphs",  # pyrefly: ignore[unexpected-keyword]
-    console=console,  # pyrefly: ignore[unexpected-keyword]
-    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
+    name="graph",
+    help="Manage feature graphs",
+    console=console,
+    error_console=error_console,
 )
-
-
-@app.command()
-def push(
-    store: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--store"],
-            help="Metadata store to use (defaults to configured default store)",
-        ),
-    ] = None,
-    *,
-    tags: Annotated[
-        dict[str, str] | None,
-        cyclopts.Parameter(
-            name=["--tags", "-t"],
-            help="Arbitrary key-value pairs to attach to the pushed snapshot. Example: `--tags.git_commit abc123def`.",
-        ),
-    ] = None,
-):
-    """Serialize all Metaxy features to the metadata store.
-
-    This is intended to be invoked in a CD pipeline **before** running Metaxy code in production.
-    """
-    from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system.models import METAXY_TAG
-    from metaxy.metadata_store.system.storage import SystemTableStorage
-
-    context = AppContext.get()
-    context.raise_command_cannot_override_project()
-
-    metadata_store = context.get_store(store)
-
-    tags = tags or {}
-
-    assert METAXY_TAG not in tags, "`metaxy` tag is reserved for internal use"
-
-    with metadata_store.open("write"):
-        result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
-
-        # Log store metadata for the system table
-        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
-
-        store_metadata = metadata_store.get_store_metadata(FEATURE_VERSIONS_KEY)
-        if store_metadata:
-            console.print(f"[dim]Recorded at: {store_metadata}[/dim]")
-
-        # Scenario 1: New snapshot (computational changes)
-        if not result.already_pushed:
-            console.print("[green]✓[/green] Recorded feature graph")
-
-        # Scenario 2: Feature info updates to existing snapshot
-        elif result.updated_features:
-            console.print(
-                "[blue]ℹ[/blue] [cyan]Updated feature information[/cyan] (no topological changes)"
-            )
-            console.print("  [dim]Updated features:[/dim]")
-            for feature_key in result.updated_features:
-                console.print(f"    [yellow]- {feature_key}[/yellow]")
-
-        # Scenario 3: No changes
-        else:
-            console.print(
-                "[green]✓[/green] [green]Snapshot already recorded[/green] [dim](no changes)[/dim]"
-            )
-
-        # Always output the snapshot version to stdout (for scripting)
-        # Note: snapshot_version is "empty" when graph has no features
-        data_console.print(result.snapshot_version)
 
 
 @app.command()
@@ -106,14 +37,14 @@ def history(
     """Show history of recorded graph snapshots.
 
     Displays all recorded graph snapshots from the metadata store,
-    showing snapshot versions, when they were recorded, and feature counts.
+    showing project versions, when they were recorded, and feature counts.
 
     Example:
         $ metaxy graph history
 
         Graph Snapshot History
         ┌──────────────┬─────────────────────┬───────────────┐
-        │ Snapshot version  │ Recorded At         │ Feature Count │
+        │ Project version   │ Recorded At         │ Feature Count │
         ├──────────────┼─────────────────────┼───────────────┤
         │ abc123...    │ 2025-01-15 10:30:00 │ 42            │
         │ def456...    │ 2025-01-14 09:15:00 │ 40            │
@@ -141,182 +72,25 @@ def history(
 
         # Create table
         table = Table(title="Graph Snapshot History")
-        table.add_column(
-            "Snapshot version", style="cyan", no_wrap=False, overflow="fold"
-        )
+        table.add_column("Project version", style="cyan", no_wrap=False, overflow="fold")
         table.add_column("Recorded At", style="green", no_wrap=False)
-        table.add_column(
-            "Feature Count", style="yellow", justify="right", no_wrap=False
-        )
+        table.add_column("Feature Count", style="yellow", justify="right", no_wrap=False)
 
         # Add rows
         for row in snapshots_df.iter_rows(named=True):
-            snapshot_version = row["metaxy_snapshot_version"]
+            project_version = row["metaxy_project_version"]
             recorded_at = row["recorded_at"].strftime("%Y-%m-%d %H:%M:%S")
             feature_count = str(row["feature_count"])
 
-            table.add_row(snapshot_version, recorded_at, feature_count)
+            table.add_row(project_version, recorded_at, feature_count)
 
         console.print(table)
         console.print(f"\nTotal snapshots: {snapshots_df.height}")
 
 
 @app.command()
-def describe(
-    snapshot: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--snapshot"],
-            help="Snapshot version to describe (defaults to current graph from code)",
-        ),
-    ] = None,
-    store: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--store"],
-            help="Metadata store to use (defaults to configured default store)",
-        ),
-    ] = None,
-):
-    """Describe a graph snapshot.
-
-    Shows detailed information about a graph snapshot including:
-    - Feature count (optionally filtered by project)
-    - Graph depth (longest dependency chain)
-    - Root features (features with no dependencies)
-    - Leaf features (features with no dependents)
-    - Project breakdown (if multi-project)
-
-    Example:
-        $ metaxy graph describe
-
-        Graph Snapshot: abc123def456...
-        ┌─────────────────────┬────────┐
-        │ Metric              │ Value  │
-        ├─────────────────────┼────────┤
-        │ Feature Count       │ 42     │
-        │ Graph Depth         │ 5      │
-        │ Root Features       │ 8      │
-        │ Leaf Features       │ 12     │
-        └─────────────────────┴────────┘
-
-        Root Features:
-        • user__profile
-        • transaction__history
-        ...
-
-        $ metaxy graph describe --project my_project
-        Shows metrics filtered to my_project features
-    """
-    from metaxy.cli.context import AppContext
-    from metaxy.graph.describe import describe_graph
-    from metaxy.models.feature import FeatureGraph
-
-    context = AppContext.get()
-    metadata_store = context.get_store(store)
-
-    with metadata_store:
-        # Determine which snapshot to describe
-        if snapshot is None:
-            # Use current graph from code
-            graph = FeatureGraph.get_active()
-            snapshot_version = graph.snapshot_version
-            console.print("[cyan]Describing current graph from code[/cyan]")
-        else:
-            # Use specified snapshot
-            snapshot_version = snapshot
-            console.print(f"[cyan]Describing snapshot: {snapshot_version}[/cyan]")
-
-            # Load graph from snapshot
-            from metaxy.metadata_store.system.storage import SystemTableStorage
-
-            storage = SystemTableStorage(metadata_store)
-            features_df = storage.read_features(
-                current=False,
-                snapshot_version=snapshot_version,
-                project=context.project,
-            )
-
-            if features_df.height == 0:
-                console.print(
-                    f"[red]✗[/red] No features found for snapshot {snapshot_version}"
-                )
-                if context.project:
-                    console.print(f"  (filtered by project: {context.project})")
-                return
-
-            # For historical snapshots, we'll use the current graph structure
-            # but report on the features that were in that snapshot
-            graph = FeatureGraph.get_active()
-
-        # Get graph description with optional project filter
-        info = describe_graph(graph, project=context.project)
-
-        # Display summary table
-        console.print()
-        table_title = f"Graph Snapshot: {info['metaxy_snapshot_version']}"
-        if context.project:
-            table_title += f" (Project: {context.project})"
-
-        summary_table = Table(title=table_title)
-        summary_table.add_column("Metric", style="cyan", no_wrap=False)
-        summary_table.add_column(
-            "Value", style="yellow", justify="right", no_wrap=False
-        )
-
-        # Only show filtered view if filtering actually reduces the feature count
-        if (
-            "filtered_features" in info
-            and info["filtered_features"] < info["total_features"]
-        ):
-            # Show both total and filtered counts when there's actual filtering
-            summary_table.add_row("Total Features", str(info["total_features"]))
-            summary_table.add_row(
-                f"Features in {info['filter_project']}", str(info["filtered_features"])
-            )
-        else:
-            # Show simple count when no filtering or all features are in the project
-            if "filtered_features" in info:
-                # Use filtered count if available (all features are in the project)
-                summary_table.add_row("Total Features", str(info["filtered_features"]))
-            else:
-                # Use total count
-                summary_table.add_row("Total Features", str(info["total_features"]))
-
-        summary_table.add_row("Graph Depth", str(info["graph_depth"]))
-        summary_table.add_row("Root Features", str(len(info["root_features"])))
-        summary_table.add_row("Leaf Features", str(len(info["leaf_features"])))
-
-        console.print(summary_table)
-
-        # Display project breakdown if multi-project
-        if len(info["projects"]) > 1:
-            console.print("\n[bold]Features by Project:[/bold]")
-            for proj, count in sorted(info["projects"].items()):
-                console.print(f"  • {proj}: {count} features")
-
-        # Display root features
-        if info["root_features"]:
-            console.print("\n[bold]Root Features:[/bold]")
-            for feature_key_str in info["root_features"][:10]:  # Limit to 10
-                console.print(f"  • {feature_key_str}")
-            if len(info["root_features"]) > 10:
-                console.print(f"  ... and {len(info['root_features']) - 10} more")
-
-        # Display leaf features
-        if info["leaf_features"]:
-            console.print("\n[bold]Leaf Features:[/bold]")
-            for feature_key_str in info["leaf_features"][:10]:  # Limit to 10
-                console.print(f"  • {feature_key_str}")
-            if len(info["leaf_features"]) > 10:
-                console.print(f"  ... and {len(info['leaf_features']) - 10} more")
-
-
-@app.command()
 def render(
-    render_config: Annotated[
-        RenderConfig | None, cyclopts.Parameter(name="*", help="Render configuration")
-    ] = None,
+    render_config: Annotated[RenderConfig | None, cyclopts.Parameter(name="*", help="Render configuration")] = None,
     format: Annotated[
         str,
         cyclopts.Parameter(
@@ -342,7 +116,7 @@ def render(
         str | None,
         cyclopts.Parameter(
             name=["--snapshot"],
-            help="Snapshot version to render (default: current graph from code)",
+            help="Project version to render (default: current graph from code)",
         ),
     ] = None,
     store: Annotated[
@@ -419,24 +193,18 @@ def render(
     # Validate format
     valid_formats = ["terminal", "mermaid", "graphviz"]
     if format not in valid_formats:
-        console.print(
-            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
-        )
+        console.print(f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}")
         raise SystemExit(1)
 
     # Validate type (only applies to terminal format)
     valid_types = ["graph", "cards"]
     if type not in valid_types:
-        console.print(
-            f"[red]Error:[/red] Invalid type '{type}'. Must be one of: {', '.join(valid_types)}"
-        )
+        console.print(f"[red]Error:[/red] Invalid type '{type}'. Must be one of: {', '.join(valid_types)}")
         raise SystemExit(1)
 
     # Validate type is only used with terminal format
     if type != "graph" and format != "terminal":
-        console.print(
-            "[red]Error:[/red] --type can only be used with --format terminal"
-        )
+        console.print("[red]Error:[/red] --type can only be used with --format terminal")
         raise SystemExit(1)
 
     # Resolve configuration from presets
@@ -466,18 +234,12 @@ def render(
 
     # Validate direction
     if render_config.direction not in ["TB", "LR"]:
-        console.print(
-            f"[red]Error:[/red] Invalid direction '{render_config.direction}'. Must be TB or LR."
-        )
+        console.print(f"[red]Error:[/red] Invalid direction '{render_config.direction}'. Must be TB or LR.")
         raise SystemExit(1)
 
     # Validate filtering options
-    if (
-        render_config.up is not None or render_config.down is not None
-    ) and render_config.feature is None:
-        console.print(
-            "[red]Error:[/red] --up and --down require --feature to be specified"
-        )
+    if (render_config.up is not None or render_config.down is not None) and render_config.feature is None:
+        console.print("[red]Error:[/red] --up and --down require --feature to be specified")
         raise SystemExit(1)
 
     # Auto-disable field versions if fields are disabled
@@ -503,21 +265,15 @@ def render(
         # Validate feature exists if specified
         if render_config.feature is not None:
             focus_key = render_config.get_feature_key()
-            if focus_key not in graph.features_by_key:
-                console.print(
-                    f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph"
-                )
+            if focus_key not in graph.feature_definitions_by_key:
+                console.print(f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph")
                 console.print("\nAvailable features:")
-                for key in sorted(
-                    graph.features_by_key.keys(), key=lambda k: k.to_string()
-                ):
+                for key in sorted(graph.feature_definitions_by_key.keys(), key=lambda k: k.to_string()):
                     console.print(f"  • {key.to_string()}")
                 raise SystemExit(1)
 
-        if len(graph.features_by_key) == 0:
-            console.print(
-                "[yellow]Warning:[/yellow] Graph is empty (no features found)"
-            )
+        if len(graph.feature_definitions_by_key) == 0:
+            console.print("[yellow]Warning:[/yellow] Graph is empty (no features found)")
             if output:
                 # Write empty output to file
                 with open(output, "w") as f:
@@ -532,7 +288,7 @@ def render(
         with metadata_store:
             storage = SystemTableStorage(metadata_store)
             try:
-                graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
+                graph = storage.load_graph_from_snapshot(project_version=snapshot)
             except ValueError as e:
                 from metaxy.cli.utils import print_error
 
@@ -542,9 +298,7 @@ def render(
                 from metaxy.cli.utils import print_error
 
                 print_error(console, "Failed to load snapshot", e)
-                console.print(
-                    "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
-                )
+                console.print("[yellow]Hint:[/yellow] Feature classes may have been moved or deleted.")
                 raise SystemExit(1) from e
             except Exception as e:
                 from metaxy.cli.utils import print_error
@@ -553,7 +307,7 @@ def render(
                 raise SystemExit(1) from e
 
             console.print(
-                f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}"
+                f"[green]✓[/green] Loaded {len(graph.feature_definitions_by_key)} features from snapshot {snapshot}"
             )
 
     # Instantiate renderer based on format and type

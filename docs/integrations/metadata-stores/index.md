@@ -17,7 +17,7 @@ Metaxy delegates all versioning computations and operations to external compute 
 1. :fire: Typically (1) the entire [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] can be executed externally!
    {.annotate}
 
-   1. Except the cases enumerated in [../../guide/learn/metadata-stores.md]
+   1. Except the cases enumerated in [../../guide/concepts/metadata-stores.md]
 
 These metadata stores can be found [here](./databases/index.md).
 
@@ -27,11 +27,11 @@ These metadata stores can be found [here](./databases/index.md).
 
 !!! example
 
-    [ClickHouse](./databases/clickhouse/index.md) is an excellent choice for a production metadata store.
+    [ClickHouse](./databases/clickhouse.md) is an excellent choice for a production metadata store.
 
 !!! tip
 
-    Some of them such as [LanceDB](./databases/lancedb/index.md) or [DuckDB](./databases/duckdb/index.md) can also act as local compute engines.
+    Some of them such as [LanceDB](./databases/lancedb.md) or [DuckDB](./databases/duckdb.md) can also act as local compute engines.
 
 ## Storage Only
 
@@ -41,7 +41,7 @@ The available storage-only stores can be found [here](./storage/index.md).
 
 !!! example
 
-    [DeltaLake](./storage/delta/index.md) is an excellent choice for a storage-only metadata store.
+    [DeltaLake](./storage/delta.md) is an excellent choice for a storage-only metadata store.
 
 ## Choosing the Right Metadata Store
 
@@ -54,8 +54,8 @@ For development, testing, branch deployments, and other scenarios where you want
 !!! warning
 
     Not all metadata stores support parallel writes.
-    For example, DuckDB requires [application level work-arounds](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
+    For example, using DuckDB with files requires [application level work-arounds](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
 
 ## Reference
 
-- Learn more about [using metadata stores](../../guide/learn/metadata-stores.md)
+- Learn more about [using metadata stores](../../guide/concepts/metadata-stores.md)

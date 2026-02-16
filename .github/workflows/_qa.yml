@@ -1,0 +1,352 @@
+name: _QA (reusable)
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      python-versions:
+        description: "JSON array of Python versions to test"
+        type: string
+        default: '["3.10"]'
+      run-windows:
+        description: "Run Windows tests"
+        type: boolean
+        default: false
+      run-macos:
+        description: "Run macOS tests"
+        type: boolean
+        default: false
+      run-all-checks:
+        description: "Run all checks regardless of path filters"
+        type: boolean
+        default: false
+      dependency-matrix:
+        description: "Run dependency version compatibility tests"
+        type: boolean
+        default: false
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+jobs:
+  filter:
+    runs-on: depot-ubuntu-latest
+    outputs:
+      test: ${{ steps.filter.outputs.test }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            test:
+              - '.github/workflows/**'
+              - .envrc
+              - devenv.nix
+              - devenv.lock
+              - devenv.yaml
+              - 'src/metaxy/**'
+              - 'tests/**'
+              - 'examples/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            docs:
+              - '.github/workflows/**'
+              - mkdocs.yml
+              - 'docs/**'
+
+  lint:
+    runs-on: depot-ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Run Ruff
+        run: uv run --no-sync --with ruff ruff check
+
+  format:
+    runs-on: depot-ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: dprint/check@v2.3
+        with:
+          dprint-version: 0.50.2
+      - name: Ruff Format
+        run: uv run --no-sync --with ruff ruff format --check --output-format=github
+
+  typecheck:
+    runs-on: depot-ubuntu-latest
+    needs: filter
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
+    env:
+      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+      - name: Run ty
+        run: uv run ty check
+
+  test-linux:
+    needs: filter
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: write
+    runs-on: depot-ubuntu-latest
+    env:
+      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+
+      - name: Run Tests with Coverage
+        id: pytest
+        env:
+          # Enable subprocess coverage collection
+          COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
+          COVERAGE_FILE: ${{ github.workspace }}/.coverage
+        run: |
+          # Install coverage subprocess support
+          SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
+          echo "Installing coverage support to: $SITE_PACKAGES"
+          cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
+
+          # Run tests
+          uv run pytest --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
+
+      - name: Combine Coverage Data
+        if: always()
+        run: |
+          uv run coverage combine --keep || true
+          uv run coverage xml -o coverage.xml
+          # uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
+
+      # - name: Test Execution Summary
+      #   # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
+      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+      #   uses: EnricoMi/publish-unit-test-result-action@v2
+      #   with:
+      #     files: ./junit.xml
+      #     check_name: Test Results (Python ${{ matrix.python-version }})
+      #     comment_title: Test Results (Python ${{ matrix.python-version }})
+      #     fail_on: nothing
+
+      - name: Upload Coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          slug: anam-org/metaxy
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: Python${{ matrix.python-version }}
+
+      # - name: Generate Test Timing Report
+      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+      #   id: timing
+      #   run: |
+      #     echo "report<<EOF" >> $GITHUB_OUTPUT
+      #     uv run mxtest-analyze-timings ./junit.xml -f markdown >> $GITHUB_OUTPUT
+      #     echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload Test Results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v5
+        with:
+          report_type: test_results
+          slug: anam-org/metaxy
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: Python${{ matrix.python-version }}
+
+      # - name: Post Test Timing Comment
+      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   with:
+      #     header: test-timing-report
+      #     message: ${{ steps.timing.outputs.report }}
+
+  generate-nox-matrix:
+    needs: filter
+    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    runs-on: depot-ubuntu-latest
+    outputs:
+      sessions: ${{ steps.sessions.outputs.sessions }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Generate nox session matrix
+        id: sessions
+        run: echo "sessions=$(uvx --with nox_uv nox -l --json | jq -c '[.[].session]')" >> "$GITHUB_OUTPUT"
+
+  text-nox:
+    needs: [filter, generate-nox-matrix]
+    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    runs-on: depot-ubuntu-latest
+    env:
+      DEVENV_PYTHON_VERSION: "3.10"
+    strategy:
+      fail-fast: false
+      matrix:
+        session: ${{ fromJSON(needs.generate-nox-matrix.outputs.sessions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+      - name: Run ${{ matrix.session }}
+        run: uv run nox -s "${{ matrix.session }}"
+
+  test-windows:
+    needs: filter
+    if: ${{ inputs.run-windows && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    permissions:
+      contents: read
+    runs-on: windows-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
+      PYTHONUTF8: "1"
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install Dependencies
+        run: |
+          uv python pin ${{ matrix.python-version }}
+          uv sync --group dev --all-extras --no-extra clickhouse
+
+      - name: Run Tests
+        run: >
+          uv run pytest
+          -k "not clickhouse and not graphviz"
+          --ignore=tests/docs
+          --ignore=tests/cli
+          --ignore=tests/examples
+          --ignore=tests/ext/ray
+          --ignore=tests/project
+          --durations=15
+          --snapshot-warn-unused
+
+  test-macos:
+    needs: filter
+    if: ${{ inputs.run-macos && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    permissions:
+      contents: read
+    runs-on: macos-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install Dependencies
+        run: |
+          uv python pin ${{ matrix.python-version }}
+          uv sync --group dev --all-extras --no-extra clickhouse
+
+      - name: Run Tests
+        run: >
+          uv run pytest
+          -k "not clickhouse and not graphviz"
+          --ignore=tests/docs
+          --ignore=tests/ext/ray
+          --durations=15
+          --snapshot-warn-unused
+
+  docs:
+    permissions:
+      contents: read
+    runs-on: depot-ubuntu-latest
+    needs:
+      - filter
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
+    env:
+      DEVENV_PYTHON_VERSION: "3.10"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+      - name: Build Docs
+        id: docs
+        run: uv run mkdocs build --strict
+      - name: Test Docs Snippets
+        run: uv run pytest ./docs
+
+  check:
+    permissions: {}
+    if: always()
+    runs-on: depot-ubuntu-latest
+    needs:
+      - test-linux
+      - generate-nox-matrix
+      - text-nox
+      - test-windows
+      - test-macos
+      - lint
+      - format
+      - typecheck
+      - docs
+
+    steps:
+      - name: All Green
+        if: always()
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs

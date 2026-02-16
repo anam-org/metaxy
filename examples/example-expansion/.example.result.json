@@ -1,0 +1,596 @@
+{
+  "runbook_name": "One-to-Many Expansion Example",
+  "package_name": "example_expansion",
+  "description": "Demonstrates 1:N expansion relationships and field-level provenance tracking",
+  "execution_state": {
+    "events": [
+      {
+        "type": "graph_pushed",
+        "project_version": "e4f2187a",
+        "graph": {
+          "video/raw": {
+            "metaxy_feature_version": "d842b740",
+            "fields": {
+              "audio": "7132721c",
+              "frames": "3f6f401c"
+            },
+            "feature_spec": {
+              "key": "video/raw",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "1",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/chunk": {
+            "metaxy_feature_version": "7dc3712a",
+            "fields": {
+              "audio": "1549b1fa",
+              "frames": "df8943d3"
+            },
+            "feature_spec": {
+              "key": "video/chunk",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/raw",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:N",
+                      "on": [
+                        "video_id"
+                      ],
+                      "id_generation_pattern": null
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "52f055e3",
+            "fields": {
+              "faces": "0561bd8c"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/chunk",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "__metaxy_initial__",
+                  "deps": [
+                    {
+                      "feature": "video/chunk",
+                      "fields": [
+                        "frames"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          }
+        },
+        "timestamp": "2026-02-13T16:09:20.050496",
+        "scenario_name": "Initial pipeline run",
+        "step_name": null
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 3 new videos\nFound 3 new videos and 0 stale videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '23124187', 'frames': '24116928'}, 'metaxy_provenance': '40433844', 'metaxy_data_version': '40433844', 'metaxy_data_version_by_field': {'audio': '23124187', 'frames': '24116928'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '18611808', 'frames': '18345318'}, 'metaxy_provenance': '12032307', 'metaxy_data_version': '12032307', 'metaxy_data_version_by_field': {'audio': '18611808', 'frames': '18345318'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '24638180', 'frames': '16645902'}, 'metaxy_provenance': '21310928', 'metaxy_data_version': '21310928', 'metaxy_data_version_by_field': {'audio': '24638180', 'frames': '16645902'}}\nWriting 3 chunks for video 3\nFound 11 new video chunks and 0 stale video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
+        "stderr": "",
+        "timestamp": "2026-02-13T16:09:20.702087",
+        "scenario_name": "Initial pipeline run",
+        "step_name": "initial_run"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 0 new videos and 0 stale videos that need chunking\nFound 0 new video chunks and 0 stale video chunks that need face recognition\n",
+        "stderr": "",
+        "timestamp": "2026-02-13T16:09:21.304836",
+        "scenario_name": "Idempotent rerun",
+        "step_name": "idempotent_run"
+      },
+      {
+        "type": "graph_pushed",
+        "project_version": "9de76627",
+        "graph": {
+          "video/raw": {
+            "metaxy_feature_version": "6e5a4ab8",
+            "fields": {
+              "audio": "f8e35296",
+              "frames": "3f6f401c"
+            },
+            "feature_spec": {
+              "key": "video/raw",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "2",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/chunk": {
+            "metaxy_feature_version": "504507a9",
+            "fields": {
+              "audio": "7948d163",
+              "frames": "df8943d3"
+            },
+            "feature_spec": {
+              "key": "video/chunk",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/raw",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:N",
+                      "on": [
+                        "video_id"
+                      ],
+                      "id_generation_pattern": null
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "52f055e3",
+            "fields": {
+              "faces": "0561bd8c"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/chunk",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "__metaxy_initial__",
+                  "deps": [
+                    {
+                      "feature": "video/chunk",
+                      "fields": [
+                        "frames"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          }
+        },
+        "timestamp": "2026-02-13T16:09:22.003041",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "update_audio_version"
+      },
+      {
+        "type": "patch_applied",
+        "patch_path": "patches/01_update_video_code_version.patch",
+        "before_snapshot": "e4f2187a",
+        "after_snapshot": "9de76627",
+        "before_graph": {
+          "video/raw": {
+            "metaxy_feature_version": "d842b740",
+            "fields": {
+              "audio": "7132721c",
+              "frames": "3f6f401c"
+            },
+            "feature_spec": {
+              "key": "video/raw",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "1",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/chunk": {
+            "metaxy_feature_version": "7dc3712a",
+            "fields": {
+              "audio": "1549b1fa",
+              "frames": "df8943d3"
+            },
+            "feature_spec": {
+              "key": "video/chunk",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/raw",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:N",
+                      "on": [
+                        "video_id"
+                      ],
+                      "id_generation_pattern": null
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "52f055e3",
+            "fields": {
+              "faces": "0561bd8c"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/chunk",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "__metaxy_initial__",
+                  "deps": [
+                    {
+                      "feature": "video/chunk",
+                      "fields": [
+                        "frames"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          }
+        },
+        "after_graph": {
+          "video/raw": {
+            "metaxy_feature_version": "6e5a4ab8",
+            "fields": {
+              "audio": "f8e35296",
+              "frames": "3f6f401c"
+            },
+            "feature_spec": {
+              "key": "video/raw",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "2",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/chunk": {
+            "metaxy_feature_version": "504507a9",
+            "fields": {
+              "audio": "7948d163",
+              "frames": "df8943d3"
+            },
+            "feature_spec": {
+              "key": "video/chunk",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/raw",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:N",
+                      "on": [
+                        "video_id"
+                      ],
+                      "id_generation_pattern": null
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "52f055e3",
+            "fields": {
+              "faces": "0561bd8c"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_chunk_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/chunk",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "__metaxy_initial__",
+                  "deps": [
+                    {
+                      "feature": "video/chunk",
+                      "fields": [
+                        "frames"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          }
+        },
+        "timestamp": "2026-02-13T16:09:22.018266",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "update_audio_version"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 3 new videos\nFound 3 new videos and 0 stale videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '23124187', 'frames': '24116928'}, 'metaxy_provenance': '40433844', 'metaxy_data_version': '40433844', 'metaxy_data_version_by_field': {'audio': '23124187', 'frames': '24116928'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '18611808', 'frames': '18345318'}, 'metaxy_provenance': '12032307', 'metaxy_data_version': '12032307', 'metaxy_data_version_by_field': {'audio': '18611808', 'frames': '18345318'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_deleted_at': None, 'metaxy_provenance_by_field': {'audio': '24638180', 'frames': '16645902'}, 'metaxy_provenance': '21310928', 'metaxy_data_version': '21310928', 'metaxy_data_version_by_field': {'audio': '24638180', 'frames': '16645902'}}\nWriting 3 chunks for video 3\nFound 0 new video chunks and 0 stale video chunks that need face recognition\n",
+        "stderr": "",
+        "timestamp": "2026-02-13T16:09:22.703425",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "recompute_after_audio_change"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 0 new videos and 0 stale videos that need chunking\nFound 0 new video chunks and 0 stale video chunks that need face recognition\n",
+        "stderr": "",
+        "timestamp": "2026-02-13T16:09:23.300087",
+        "scenario_name": "Final idempotent check",
+        "step_name": "final_idempotent_check"
+      }
+    ]
+  }
+}

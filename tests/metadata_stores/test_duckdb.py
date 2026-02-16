@@ -11,14 +11,12 @@ import pytest
 pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 
-def test_duckdb_table_naming(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
@@ -36,33 +34,29 @@ def test_duckdb_table_naming(
                 METAXY_PROVENANCE_BY_FIELD: [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store.write(test_features["UpstreamFeatureA"], metadata)
 
         # Check table was created with correct name using Ibis
         table_names = store.conn.list_tables()
         assert "test_stores__upstream_a" in table_names
 
 
-def test_duckdb_table_prefix_applied(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Prefix should apply to feature and system tables."""
     db_path = tmp_path / "prefixed.duckdb"
     table_prefix = "prod_v2_"
     feature = test_features["UpstreamFeatureA"]
 
-    with DuckDBMetadataStore(
-        db_path, auto_create_tables=True, table_prefix=table_prefix
-    ) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True, table_prefix=table_prefix) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
                 METAXY_PROVENANCE_BY_FIELD: [{"frames": "h1", "audio": "h1"}],
             }
         )
-        store.write_metadata(feature, metadata)
+        store.write(feature, metadata)
 
-        expected_feature_table = table_prefix + feature.spec().key.table_name
+        expected_feature_table = table_prefix + feature.spec.key.table_name
         expected_system_table = table_prefix + FEATURE_VERSIONS_KEY.table_name
 
         # Record snapshot to ensure system table is materialized
@@ -70,13 +64,11 @@ def test_duckdb_table_prefix_applied(
 
         table_names = set(store.conn.list_tables())
         assert expected_feature_table in table_names
-        assert store.get_table_name(feature.spec().key) == expected_feature_table
+        assert store.get_table_name(feature.spec.key) == expected_feature_table
         assert store.get_table_name(FEATURE_VERSIONS_KEY) == expected_system_table
 
 
-def test_duckdb_with_custom_config(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_with_custom_config(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test creating DuckDB store with custom configuration.
 
     Args:
@@ -96,9 +88,7 @@ def test_duckdb_with_custom_config(
         assert store.backend == "duckdb"
 
 
-def test_duckdb_uses_ibis_backend(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_uses_ibis_backend(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that DuckDB store uses Ibis backend.
 
     Args:
@@ -114,9 +104,7 @@ def test_duckdb_uses_ibis_backend(
         assert store.backend == "duckdb"
 
 
-def test_duckdb_conn_property_enforcement(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_conn_property_enforcement(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that conn property enforces store is open.
 
     Args:
@@ -133,14 +121,12 @@ def test_duckdb_conn_property_enforcement(
         _ = store.conn
 
     # Should work when open
-    with store.open("write"):
+    with store.open("w"):
         conn = store.conn
         assert conn is not None
 
 
-def test_duckdb_persistence_across_instances(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Test that data persists across different store instances.
 
     Args:
@@ -162,21 +148,17 @@ def test_duckdb_persistence_across_instances(
                 ],
             }
         )
-        store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
+        store1.write(test_features["UpstreamFeatureA"], metadata)
 
     # Read data in second instance
     with DuckDBMetadataStore(db_path, auto_create_tables=True) as store2:
-        result = collect_to_polars(
-            store2.read_metadata(test_features["UpstreamFeatureA"])
-        )
+        result = collect_to_polars(store2.read(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
-def test_duckdb_ducklake_integration(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
 
     db_path = tmp_path / "ducklake.duckdb"
@@ -195,9 +177,7 @@ def test_duckdb_ducklake_integration(
         },
     }
 
-    with DuckDBMetadataStore(
-        db_path, extensions=["json"], ducklake=ducklake_config, auto_create_tables=True
-    ) as store:
+    with DuckDBMetadataStore(db_path, extensions=["json"], ducklake=ducklake_config, auto_create_tables=True) as store:
         attachment_config = store.ducklake_attachment_config
         assert attachment_config.alias == "lake"
 
@@ -214,7 +194,7 @@ def test_duckdb_config_instantiation() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "config": {
@@ -231,7 +211,7 @@ def test_duckdb_config_instantiation() -> None:
     assert store.database == ":memory:"
 
     # Verify store can be opened
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -242,7 +222,7 @@ def test_duckdb_config_with_extensions() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "extensions": ["hashfuncs", "json"],
@@ -255,7 +235,7 @@ def test_duckdb_config_with_extensions() -> None:
     assert isinstance(store, DuckDBMetadataStore)
 
     # hashfuncs is auto-added, so we should have at least hashfuncs
-    from metaxy.metadata_store.duckdb import ExtensionSpec
+    from metaxy.ext.metadata_stores.duckdb import ExtensionSpec
 
     extension_names = []
     for ext in store.extensions:
@@ -265,7 +245,7 @@ def test_duckdb_config_with_extensions() -> None:
             extension_names.append(ext.name)
     assert "hashfuncs" in extension_names
 
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -277,7 +257,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "hash_algorithm": "md5",
@@ -290,7 +270,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     assert isinstance(store, DuckDBMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store.open("write"):
+    with store.open("w"):
         assert store._is_open
 
 
@@ -301,14 +281,14 @@ def test_duckdb_config_with_fallback_stores() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                 },
@@ -321,5 +301,5 @@ def test_duckdb_config_with_fallback_stores() -> None:
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], DuckDBMetadataStore)
 
-    with dev_store.open("write"):
+    with dev_store.open("w"):
         assert dev_store._is_open

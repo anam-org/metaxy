@@ -8,7 +8,7 @@ from pathlib import Path
 def test_ducklake_demo_preview():
     """Test that the DuckLake demo runs and previews attachment SQL."""
     example_dir = Path("examples/example-ducklake")
-    from metaxy._testing import ExternalMetaxyProject
+    from metaxy_testing import ExternalMetaxyProject
 
     project = ExternalMetaxyProject(example_dir)
 
@@ -20,9 +20,7 @@ def test_ducklake_demo_preview():
         cwd=example_dir,
     )
 
-    assert result.returncode == 0, (
-        f"Demo failed: {result.stderr}\nstdout: {result.stdout}"
-    )
+    assert result.returncode == 0, f"Demo failed: {result.stderr}\nstdout: {result.stdout}"
     print(result.stdout)
 
     assert "DuckLake store initialised" in result.stdout

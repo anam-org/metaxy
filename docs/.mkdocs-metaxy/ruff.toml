@@ -1,0 +1,11 @@
+extend = "../../pyproject.toml"
+
+[lint.flake8-import-conventions]
+# Declare the banned `from` imports.
+banned-from = ["dagster", "narwhals", "polars", "metaxy"]
+
+[lint.flake8-import-conventions.extend-aliases]
+"metaxy" = "mx"
+"dagster" = "dg"
+"polars" = "pl"
+"narwhals" = "nw"

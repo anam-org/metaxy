@@ -1,0 +1,102 @@
+{
+  "runbook_name": "Quickstart Example",
+  "package_name": "example_quickstart",
+  "description": "Demonstrates root and downstream feature resolution with resolve_update",
+  "execution_state": {
+    "events": [
+      {
+        "type": "graph_pushed",
+        "project_version": "e5cdf3ba",
+        "graph": {
+          "video": {
+            "metaxy_feature_version": "4c78e5e2",
+            "fields": {
+              "default": "c675833f"
+            },
+            "feature_spec": {
+              "key": "video",
+              "id_columns": [
+                "id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          },
+          "audio": {
+            "metaxy_feature_version": "9680125a",
+            "fields": {
+              "default": "91af2f82"
+            },
+            "feature_spec": {
+              "key": "audio",
+              "id_columns": [
+                "id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": null
+            }
+          }
+        },
+        "timestamp": "2026-02-13T16:09:27.718876",
+        "scenario_name": "Initial pipeline run",
+        "step_name": null
+      },
+      {
+        "type": "command_executed",
+        "command": "python src/example_quickstart/pipeline.py",
+        "returncode": 0,
+        "stdout": "Quickstart Pipeline\n============================================================\n\n[Video] 3 new, 0 stale\n[Video] Wrote 3 samples\n\n[Audio] 3 new, 0 stale\n[Audio] Wrote 3 samples\n\n✅ Pipeline complete!\n",
+        "stderr": "",
+        "timestamp": "2026-02-13T16:09:28.330566",
+        "scenario_name": "Initial pipeline run",
+        "step_name": "initial_run"
+      },
+      {
+        "type": "command_executed",
+        "command": "python src/example_quickstart/pipeline.py",
+        "returncode": 0,
+        "stdout": "Quickstart Pipeline\n============================================================\n\n[Video] 0 new, 0 stale\n\n[Audio] 0 new, 0 stale\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
+        "stderr": "",
+        "timestamp": "2026-02-13T16:09:29.015931",
+        "scenario_name": "Idempotent rerun",
+        "step_name": "idempotent_run"
+      }
+    ]
+  }
+}

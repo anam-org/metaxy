@@ -1,0 +1,19 @@
+[project]
+name = "example-quickstart"
+version = "0.1.0"
+description = "Metaxy quickstart example"
+readme = "README.md"
+authors = [
+  { name = "danielgafni", email = "danielgafni16@gmail.com" },
+]
+requires-python = ">=3.10"
+dependencies = [
+  "metaxy[delta]",
+]
+
+[tool.uv.sources]
+metaxy = { path = "../..", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"

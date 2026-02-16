@@ -11,6 +11,8 @@ import pydantic
 from pydantic import BeforeValidator
 from typing_extensions import Self
 
+from metaxy._decorators import public
+from metaxy._hashing import truncate_hash
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
@@ -23,25 +25,24 @@ from metaxy.models.types import (
     FieldKey,
     ValidatedFeatureKey,
 )
-from metaxy.utils.hashing import truncate_hash
 
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
     from metaxy.models.feature import BaseFeature
 
 
+@public
 class FeatureDep(pydantic.BaseModel):
     """Feature dependency specification with optional column selection, renaming, and lineage.
 
     Attributes:
         feature: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
             FeatureKey instance, or BaseFeature class.
-        columns: Optional tuple of column names to select from upstream feature.
-            - None (default): Keep all columns from upstream
-            - Empty tuple (): Keep only system columns (sample_uid, provenance_by_field, etc.)
-            - Tuple of names: Keep only specified columns (plus system columns)
+        select: Optional sequence of column names to select from the upstream feature.
+            By default, all columns are selected. System columns are always selected.
+            Uses post-rename names when `rename` is also specified.
         rename: Optional mapping of old column names to new names.
-            Applied after column selection.
+            Applied before column selection.
         fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
             When provided, fields without explicit deps will automatically map to matching upstream fields.
             Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
@@ -61,52 +62,43 @@ class FeatureDep(pydantic.BaseModel):
     Example: Basic Usage
         ```py
         # Keep all columns with default field mapping (1:1 lineage)
-        FeatureDep(feature="upstream")
+        mx.FeatureDep(feature="upstream")
 
         # Keep only specific columns
-        FeatureDep(
-            feature="upstream/feature",
-            columns=("col1", "col2")
-        )
+        mx.FeatureDep(feature="upstream/feature", select=("col1", "col2"))
 
         # Rename columns to avoid conflicts
-        FeatureDep(
+        mx.FeatureDep(feature="upstream/feature", rename={"old_name": "new_name"})
+
+        # Combined rename + select: select uses post-rename names
+        mx.FeatureDep(
             feature="upstream/feature",
-            rename={"old_name": "new_name"}
+            rename={"old_name": "new_name"},
+            select=("new_name", "other_col"),
         )
 
         # SQL filters
-        FeatureDep(
-            feature="upstream",
-            filters=["age >= 25", "status = 'active'"]
-        )
+        mx.FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
 
         # Optional dependency (left join - samples preserved even if no match)
-        FeatureDep(
-            feature="enrichment/data",
-            optional=True
-        )
+        mx.FeatureDep(feature="enrichment/data", optional=True)
         ```
 
     Example: Lineage Relationships
         ```py
+        from metaxy.models.lineage import LineageRelationship
+
         # Aggregation: many sensor readings aggregate to one hourly stat
-        FeatureDep(
-            feature="sensor_readings",
-            lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"])
-        )
+        mx.FeatureDep(feature="sensor_readings", lineage=LineageRelationship.aggregation(on=["sensor_id", "hour"]))
 
         # Expansion: one video expands to many frames
-        FeatureDep(
-            feature="video",
-            lineage=LineageRelationship.expansion(on=["video_id"])
-        )
+        mx.FeatureDep(feature="video", lineage=LineageRelationship.expansion(on=["video_id"]))
 
         # Mixed lineage: aggregate from one parent, identity from another
         # In FeatureSpec:
-        deps=[
-            FeatureDep(feature="readings", lineage=LineageRelationship.aggregation(on=["sensor_id"])),
-            FeatureDep(feature="sensor_info", lineage=LineageRelationship.identity()),
+        deps = [
+            mx.FeatureDep(feature="readings", lineage=LineageRelationship.aggregation(on=["sensor_id"])),
+            mx.FeatureDep(feature="sensor_info", lineage=LineageRelationship.identity()),
         ]
         ```
     """
@@ -114,13 +106,9 @@ class FeatureDep(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
 
     feature: ValidatedFeatureKey
-    columns: tuple[str, ...] | None = (
-        None  # None = all columns, () = only system columns
-    )
+    select: tuple[str, ...] | None = None  # None = all columns, () = only system columns
     rename: dict[str, str] | None = None  # Column renaming mapping
-    fields_mapping: FieldsMapping = pydantic.Field(
-        default_factory=FieldsMapping.default
-    )
+    fields_mapping: FieldsMapping = pydantic.Field(default_factory=FieldsMapping.default)
     sql_filters: tuple[str, ...] | None = pydantic.Field(
         default=None,
         description="SQL-like filter strings applied to this dependency.",
@@ -138,13 +126,25 @@ class FeatureDep(pydantic.BaseModel):
         "they are going to be represented as NULL values in the joined upstream metadata.",
     )
 
+    @pydantic.model_validator(mode="after")
+    def validate_select_uses_post_rename_names(self) -> Self:
+        if self.select and self.rename:
+            renamed_away = set(self.rename.keys()) - set(self.rename.values())
+            bad = renamed_away & set(self.select)
+            if bad:
+                raise ValueError(
+                    f"select contains pre-rename column name(s) {sorted(bad)}. "
+                    f"Use post-rename names in select (rename is applied first)."
+                )
+        return self
+
     if TYPE_CHECKING:
 
         def __init__(
             self,
             *,
             feature: str | Sequence[str] | FeatureKey | type[BaseFeature],
-            columns: tuple[str, ...] | None = None,
+            select: tuple[str, ...] | None = None,
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
             filters: Sequence[str] | None = None,
@@ -164,13 +164,9 @@ class FeatureDep(pydantic.BaseModel):
         return self.feature.table_name
 
 
-IDColumns: TypeAlias = Sequence[
-    str
-]  # non-bound, should be used for feature specs with arbitrary id columns
+IDColumns: TypeAlias = Sequence[str]  # non-bound, should be used for feature specs with arbitrary id columns
 
-CoercibleToFeatureDep: TypeAlias = (
-    FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
-)
+CoercibleToFeatureDep: TypeAlias = FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
 
 
 def _validate_id_columns(value: Any) -> tuple[str, ...]:
@@ -206,17 +202,14 @@ def _validate_deps(value: Any) -> list[FeatureDep]:
     return result
 
 
+@public
 class FeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
-    id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = (
-        pydantic.Field(
-            ...,
-            description="Columns that uniquely identify a sample in this feature.",
-        )
+    id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = pydantic.Field(
+        ...,
+        description="Columns that uniquely identify a sample in this feature.",
     )
-    deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(
-        default_factory=list
-    )
+    deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(default_factory=list)
     fields: Annotated[
         list[FieldSpec],
         BeforeValidator(CoersibleToFieldSpecsTypeAdapter.validate_python),
@@ -231,6 +224,10 @@ class FeatureSpec(FrozenBaseModel):
         default_factory=dict,
         description="Metadata attached to this feature.",
     )
+    description: str | None = pydantic.Field(
+        default=None,
+        description="Human-readable description of this feature.",
+    )
 
     if TYPE_CHECKING:
         # Overload for common case: list of FeatureDep instances
@@ -243,6 +240,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
+            description: str | None = None,
         ) -> None: ...
 
         # Overload for flexible case: list of coercible types
@@ -255,6 +253,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
+            description: str | None = None,
         ) -> None: ...
 
         # Implementation signature
@@ -266,6 +265,7 @@ class FeatureSpec(FrozenBaseModel):
             deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
+            description: str | None = None,
         ) -> None: ...
 
     @cached_property
@@ -303,10 +303,7 @@ class FeatureSpec(FrozenBaseModel):
             # Convert to tuple for hashability in case it's a plain list
             key_tuple = tuple(field.key)
             if key_tuple in seen_keys:
-                raise ValueError(
-                    f"Duplicate field key found: {field.key}. "
-                    f"All fields must have unique keys."
-                )
+                raise ValueError(f"Duplicate field key found: {field.key}. All fields must have unique keys.")
             seen_keys.add(key_tuple)
         return self
 
@@ -314,9 +311,7 @@ class FeatureSpec(FrozenBaseModel):
     def validate_id_columns(self) -> Self:
         """Validate that id_columns is non-empty if specified."""
         if self.id_columns is not None and len(self.id_columns) == 0:
-            raise ValueError(
-                "id_columns must be non-empty if specified. Use None for default."
-            )
+            raise ValueError("id_columns must be non-empty if specified. Use None for default.")
         return self
 
     @property
@@ -336,9 +331,9 @@ class FeatureSpec(FrozenBaseModel):
 
         Example:
             ```py
-            spec = FeatureSpec(
-                key=FeatureKey(["my", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]))],
+            spec = mx.FeatureSpec(
+                key=mx.FeatureKey(["my", "feature"]),
+                id_columns=["id"],
             )
             spec.feature_spec_version
             # 'abc123...'  # 64-character hex string

@@ -19,7 +19,11 @@ class SnapshotResolver:
     """Resolves snapshot version literals to actual snapshot hashes."""
 
     def resolve_snapshot(
-        self, literal: str, store: MetadataStore | None, graph: FeatureGraph | None
+        self,
+        literal: str,
+        store: MetadataStore | None,
+        graph: FeatureGraph | None,
+        project: str | None = None,
     ) -> str:
         """Resolve a snapshot literal to its actual version hash.
 
@@ -27,6 +31,7 @@ class SnapshotResolver:
             literal: Snapshot identifier ("latest", "current", or version hash)
             store: Metadata store to query for snapshots (required for "latest")
             graph: Optional active graph for "current" resolution
+            project: Optional project name for project-scoped version resolution
 
         Returns:
             Resolved snapshot version hash
@@ -37,49 +42,53 @@ class SnapshotResolver:
         if literal == "latest":
             if store is None:
                 raise ValueError(
-                    "Cannot resolve 'latest': no metadata store provided. "
-                    "Provide a store to query for snapshots."
+                    "Cannot resolve 'latest': no metadata store provided. Provide a store to query for snapshots."
                 )
-            return self._resolve_latest(store)
+            return self._resolve_latest(store, project)
         elif literal == "current":
-            return self._resolve_current(graph)
+            return self._resolve_current(graph, project)
         else:
             # Treat as explicit snapshot version
             return literal
 
-    def _resolve_latest(self, store: MetadataStore) -> str:
+    def _resolve_latest(self, store: MetadataStore, project: str | None = None) -> str:
         """Resolve 'latest' to most recent snapshot in store."""
         from metaxy.metadata_store.system.storage import SystemTableStorage
 
         with store:
-            storage = SystemTableStorage(store)
-            snapshots_df = storage.read_graph_snapshots()
+            snapshots_df = SystemTableStorage(store).read_graph_snapshots(project=project)
 
         if snapshots_df.height == 0:
             raise ValueError(
-                "No snapshots found in store. Cannot resolve 'latest'. "
-                "Run 'metaxy graph push' to record a snapshot."
+                "No snapshots found in store. Cannot resolve 'latest'. Run 'metaxy push' to record a snapshot."
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending
-        latest_snapshot = snapshots_df["metaxy_snapshot_version"][0]
-        return latest_snapshot
+        return snapshots_df["metaxy_project_version"][0]
 
-    def _resolve_current(self, graph: FeatureGraph | None) -> str:
+    def _resolve_current(self, graph: FeatureGraph | None, project: str | None = None) -> str:
         """Resolve 'current' to active graph's snapshot version."""
         if graph is None:
             raise ValueError(
-                "Cannot resolve 'current': no active graph provided. "
-                "Ensure features are loaded before using 'current'."
+                "Cannot resolve 'current': no active graph provided. Ensure features are loaded before using 'current'."
             )
 
-        if len(graph.features_by_key) == 0:
+        if len(graph.feature_definitions_by_key) == 0:
             raise ValueError(
-                "Cannot resolve 'current': active graph is empty. "
-                "Ensure features are loaded before using 'current'."
+                "Cannot resolve 'current': active graph is empty. Ensure features are loaded before using 'current'."
             )
 
-        return graph.snapshot_version
+        # Use project-scoped version if project is specified
+        if project is not None:
+            return graph.get_project_version(project)
+
+        # Otherwise infer from graph if single project
+        snapshot_dict = graph.to_snapshot()
+        projects_in_graph = {v["project"] for v in snapshot_dict.values()} if snapshot_dict else set()
+        if len(projects_in_graph) == 1:
+            return graph.get_project_version(projects_in_graph.pop())
+
+        return graph.project_version
 
 
 class GraphDiffer:
@@ -89,16 +98,16 @@ class GraphDiffer:
         self,
         snapshot1_data: Mapping[str, Mapping[str, Any]],
         snapshot2_data: Mapping[str, Mapping[str, Any]],
-        from_snapshot_version: str = "unknown",
-        to_snapshot_version: str = "unknown",
+        from_project_version: str = "unknown",
+        to_project_version: str = "unknown",
     ) -> GraphDiff:
         """Compute diff between two snapshots.
 
         Args:
             snapshot1_data: First snapshot (feature_key -> {feature_version, feature_spec, fields})
             snapshot2_data: Second snapshot (feature_key -> {feature_version, feature_spec, fields})
-            from_snapshot_version: Source snapshot version
-            to_snapshot_version: Target snapshot version
+            from_project_version: Source snapshot version
+            to_project_version: Target snapshot version
 
         Returns:
             GraphDiff with added, removed, and changed features
@@ -122,17 +131,11 @@ class GraphDiffer:
             fields_list = []
             for field_dict in feature_spec.get("fields", []):
                 field_key_list = field_dict.get("key", [])
-                field_key_str = (
-                    "/".join(field_key_list)
-                    if isinstance(field_key_list, list)
-                    else field_key_list
-                )
+                field_key_str = "/".join(field_key_list) if isinstance(field_key_list, list) else field_key_list
                 fields_list.append(
                     {
                         "key": field_key_str,
-                        "version": feature_data.get("fields", {}).get(
-                            field_key_str, ""
-                        ),
+                        "version": feature_data.get("fields", {}).get(field_key_str, ""),
                         "code_version": field_dict.get("code_version"),
                     }
                 )
@@ -141,7 +144,6 @@ class GraphDiffer:
             deps = []
             if feature_spec.get("deps"):
                 for dep in feature_spec["deps"]:
-                    # Check for 'feature' field (new format) or 'key' field (old format)
                     dep_key = dep.get("feature") or dep.get("key", [])
                     if isinstance(dep_key, list):
                         deps.append(FeatureKey(dep_key))
@@ -168,17 +170,11 @@ class GraphDiffer:
             fields_list = []
             for field_dict in feature_spec.get("fields", []):
                 field_key_list = field_dict.get("key", [])
-                field_key_str = (
-                    "/".join(field_key_list)
-                    if isinstance(field_key_list, list)
-                    else field_key_list
-                )
+                field_key_str = "/".join(field_key_list) if isinstance(field_key_list, list) else field_key_list
                 fields_list.append(
                     {
                         "key": field_key_str,
-                        "version": feature_data.get("fields", {}).get(
-                            field_key_str, ""
-                        ),
+                        "version": feature_data.get("fields", {}).get(field_key_str, ""),
                         "code_version": field_dict.get("code_version"),
                     }
                 )
@@ -187,7 +183,6 @@ class GraphDiffer:
             deps = []
             if feature_spec.get("deps"):
                 for dep in feature_spec["deps"]:
-                    # Check for 'feature' field (new format) or 'key' field (old format)
                     dep_key = dep.get("feature") or dep.get("key", [])
                     if isinstance(dep_key, list):
                         deps.append(FeatureKey(dep_key))
@@ -221,8 +216,8 @@ class GraphDiffer:
 
             # Get tracking versions for migration detection
             # Use tracking version if available (new system), otherwise fall back to feature_version
-            tracking_version1 = feature1.get("metaxy_full_definition_version", version1)
-            tracking_version2 = feature2.get("metaxy_full_definition_version", version2)
+            tracking_version1 = feature1.get("metaxy_definition_version", version1)
+            tracking_version2 = feature2.get("metaxy_definition_version", version2)
 
             # Check if feature tracking version changed (indicates migration needed)
             if tracking_version1 != tracking_version2:
@@ -243,16 +238,14 @@ class GraphDiffer:
                 )
 
         return GraphDiff(
-            from_snapshot_version=from_snapshot_version,
-            to_snapshot_version=to_snapshot_version,
+            from_project_version=from_project_version,
+            to_project_version=to_project_version,
             added_nodes=added_nodes,
             removed_nodes=removed_nodes,
             changed_nodes=changed_nodes,
         )
 
-    def _compute_field_changes(
-        self, fields1: dict[str, str], fields2: dict[str, str]
-    ) -> list[FieldChange]:
+    def _compute_field_changes(self, fields1: dict[str, str], fields2: dict[str, str]) -> list[FieldChange]:
         """Compute changes between two field version mappings.
 
         Args:
@@ -279,7 +272,7 @@ class GraphDiffer:
                     old_version=None,
                     new_version=fields2[field_key_str],
                     old_code_version=None,
-                    new_code_version=None,  # TODO: Extract from spec if available
+                    new_code_version=None,
                 )
             )
 
@@ -290,7 +283,7 @@ class GraphDiffer:
                     field_key=FieldKey(field_key_str.split("/")),
                     old_version=fields1[field_key_str],
                     new_version=None,
-                    old_code_version=None,  # TODO: Extract from spec if available
+                    old_code_version=None,
                     new_code_version=None,
                 )
             )
@@ -306,8 +299,8 @@ class GraphDiffer:
                         field_key=FieldKey(field_key_str.split("/")),
                         old_version=version1,
                         new_version=version2,
-                        old_code_version=None,  # TODO: Extract from spec if available
-                        new_code_version=None,  # TODO: Extract from spec if available
+                        old_code_version=None,
+                        new_code_version=None,
                     )
                 )
 
@@ -350,12 +343,13 @@ class GraphDiffer:
         # Create status mapping for efficient lookup
         added_keys = {node.feature_key.to_string() for node in diff.added_nodes}
         removed_keys = {node.feature_key.to_string() for node in diff.removed_nodes}
-        changed_keys = {
-            node.feature_key.to_string(): node for node in diff.changed_nodes
-        }
+        changed_keys = {node.feature_key.to_string(): node for node in diff.changed_nodes}
 
-        # Get all feature keys from both snapshots
-        all_keys = set(snapshot1_data.keys()) | set(snapshot2_data.keys())
+        # Get all feature keys from both snapshots (sorted for deterministic output)
+        all_keys = sorted(
+            set(snapshot1_data.keys()) | set(snapshot2_data.keys()),
+            key=str.lower,
+        )
 
         nodes = {}
         edges = []
@@ -369,9 +363,7 @@ class GraphDiffer:
                 fields = snapshot2_data[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot2
-                deps = self._extract_dependencies(
-                    snapshot2_data[feature_key_str].get("feature_spec", {})
-                )
+                deps = self._extract_dependencies(snapshot2_data[feature_key_str].get("feature_spec", {}))
             elif feature_key_str in removed_keys:
                 status = "removed"
                 old_version = snapshot1_data[feature_key_str]["metaxy_feature_version"]
@@ -379,9 +371,7 @@ class GraphDiffer:
                 fields = snapshot1_data[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot1
-                deps = self._extract_dependencies(
-                    snapshot1_data[feature_key_str].get("feature_spec", {})
-                )
+                deps = self._extract_dependencies(snapshot1_data[feature_key_str].get("feature_spec", {}))
             elif feature_key_str in changed_keys:
                 status = "changed"
                 node_change = changed_keys[feature_key_str]
@@ -389,15 +379,9 @@ class GraphDiffer:
                 new_version = node_change.new_version
                 fields = snapshot2_data[feature_key_str].get("fields", {})
                 # Combine all field changes from the NodeChange
-                field_changes = (
-                    node_change.added_fields
-                    + node_change.removed_fields
-                    + node_change.changed_fields
-                )
+                field_changes = node_change.added_fields + node_change.removed_fields + node_change.changed_fields
                 # Dependencies from snapshot2 (current version)
-                deps = self._extract_dependencies(
-                    snapshot2_data[feature_key_str].get("feature_spec", {})
-                )
+                deps = self._extract_dependencies(snapshot2_data[feature_key_str].get("feature_spec", {}))
             else:
                 # Unchanged
                 status = "unchanged"
@@ -406,9 +390,7 @@ class GraphDiffer:
                 fields = snapshot2_data[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot2
-                deps = self._extract_dependencies(
-                    snapshot2_data[feature_key_str].get("feature_spec", {})
-                )
+                deps = self._extract_dependencies(snapshot2_data[feature_key_str].get("feature_spec", {}))
 
             nodes[feature_key_str] = {
                 "status": status,
@@ -443,7 +425,6 @@ class GraphDiffer:
 
         dep_keys = []
         for dep in deps:
-            # Check for 'feature' field (new format) or 'key' field (old format)
             dep_key = dep.get("feature") or dep.get("key", [])
             if isinstance(dep_key, list):
                 dep_keys.append("/".join(dep_key))
@@ -511,15 +492,11 @@ class GraphDiffer:
         # Default behavior: if focus_feature is set but up is not specified, include all upstream
         if up is None:
             # Include all upstream
-            upstream = self._get_upstream_features(
-                focus_key, backward_edges, max_levels=None
-            )
+            upstream = self._get_upstream_features(focus_key, backward_edges, max_levels=None)
             features_to_include.update(upstream)
         elif up > 0:
             # Include specified number of levels
-            upstream = self._get_upstream_features(
-                focus_key, backward_edges, max_levels=up
-            )
+            upstream = self._get_upstream_features(focus_key, backward_edges, max_levels=up)
             features_to_include.update(upstream)
         # else: up == 0, don't include upstream
 
@@ -527,26 +504,18 @@ class GraphDiffer:
         # Default behavior: if focus_feature is set but down is not specified, include all downstream
         if down is None:
             # Include all downstream
-            downstream = self._get_downstream_features(
-                focus_key, forward_edges, max_levels=None
-            )
+            downstream = self._get_downstream_features(focus_key, forward_edges, max_levels=None)
             features_to_include.update(downstream)
         elif down > 0:
             # Include specified number of levels
-            downstream = self._get_downstream_features(
-                focus_key, forward_edges, max_levels=down
-            )
+            downstream = self._get_downstream_features(focus_key, forward_edges, max_levels=down)
             features_to_include.update(downstream)
         # else: down == 0, don't include downstream
 
         # Filter nodes and edges
-        filtered_nodes = {
-            k: v for k, v in merged_data["nodes"].items() if k in features_to_include
-        }
+        filtered_nodes = {k: v for k, v in merged_data["nodes"].items() if k in features_to_include}
         filtered_edges = [
-            e
-            for e in merged_data["edges"]
-            if e["from"] in features_to_include and e["to"] in features_to_include
+            e for e in merged_data["edges"] if e["from"] in features_to_include and e["to"] in features_to_include
         ]
 
         return {
@@ -580,11 +549,7 @@ class GraphDiffer:
             if dep not in visited:
                 upstream.add(dep)
                 # Recurse
-                upstream.update(
-                    self._get_upstream_features(
-                        dep, backward_edges, max_levels, visited, level + 1
-                    )
-                )
+                upstream.update(self._get_upstream_features(dep, backward_edges, max_levels, visited, level + 1))
 
         return upstream
 
@@ -615,9 +580,7 @@ class GraphDiffer:
                 downstream.add(dependent)
                 # Recurse
                 downstream.update(
-                    self._get_downstream_features(
-                        dependent, forward_edges, max_levels, visited, level + 1
-                    )
+                    self._get_downstream_features(dependent, forward_edges, max_levels, visited, level + 1)
                 )
 
         return downstream
@@ -625,22 +588,15 @@ class GraphDiffer:
     def load_snapshot_data(
         self,
         store: MetadataStore,
-        snapshot_version: str,
+        project_version: str,
         project: str | None = None,
-        class_path_overrides: dict[str, str] | None = None,
-        force_reload: bool = False,
     ) -> Mapping[str, Mapping[str, Any]]:
         """Load snapshot data from store.
 
         Args:
             store: Metadata store to query
-            snapshot_version: Snapshot version to load
+            project_version: Project version to load
             project: Optional project name to filter by (None means all projects)
-            class_path_overrides: Optional dict mapping feature_key to new class path
-                                  for features that have been moved/renamed
-            force_reload: If True, force reimport of feature modules from disk.
-                         Use this when loading multiple snapshots that share
-                         the same class paths.
 
         Returns:
             Dict mapping feature_key (string) -> {feature_version, feature_spec, fields}
@@ -653,43 +609,30 @@ class GraphDiffer:
 
         # Auto-open store if not already open
         if not store._is_open:
-            with store.open("read"):
-                return self.load_snapshot_data(
-                    store, snapshot_version, project, class_path_overrides, force_reload
-                )
+            with store:
+                return self.load_snapshot_data(store, project_version, project)
 
         storage = SystemTableStorage(store)
 
-        # Reconstruct the graph from the snapshot - this imports the Feature classes
-        # and gives us access to proper field version computation
+        # Reconstruct the graph from the snapshot using FeatureDefinition objects
         graph = storage.load_graph_from_snapshot(
-            snapshot_version=snapshot_version,
+            project_version=project_version,
             project=project,
-            class_path_overrides=class_path_overrides,
-            force_reload=force_reload,
         )
 
         # Build snapshot data using the reconstructed graph
         snapshot_data: dict[str, dict] = {}
 
-        for feature_key, spec in graph.all_specs_by_key.items():
+        for feature_key, definition in graph.feature_definitions_by_key.items():
             feature_key_str = feature_key.to_string()
             feature_version = graph.get_feature_version(feature_key)
             field_versions = graph.get_feature_version_by_field(feature_key)
 
-            # Get full definition version from the feature class
-            feature_cls = graph.features_by_key.get(feature_key)
-            full_definition_version = (
-                feature_cls.full_definition_version()
-                if feature_cls
-                else feature_version
-            )
-
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
                 "fields": field_versions,
-                "feature_spec": spec.model_dump(mode="json"),
-                "metaxy_full_definition_version": full_definition_version,
+                "feature_spec": definition.spec.model_dump(mode="json"),
+                "metaxy_definition_version": definition.feature_definition_version,
             }
 
         return snapshot_data

@@ -1,14 +1,18 @@
 """Asset selection helpers for Metaxy assets."""
 
+from __future__ import annotations
+
 import dagster as dg
 
 import metaxy as mx
+from metaxy._decorators import public
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_PROJECT_TAG_KEY,
 )
 
 
+@public
 def select_metaxy_assets(
     *,
     project: str | None = None,
@@ -61,13 +65,13 @@ def select_metaxy_assets(
         ```
     """
     resolved_project = project if project is not None else mx.MetaxyConfig.get().project
+    if resolved_project is None:
+        raise ValueError("project must be specified or configured in MetaxyConfig")
 
     selection = dg.AssetSelection.tag(DAGSTER_METAXY_PROJECT_TAG_KEY, resolved_project)
 
     if feature is not None:
         feature_key = mx.coerce_to_feature_key(feature)
-        selection = selection & dg.AssetSelection.tag(
-            DAGSTER_METAXY_FEATURE_METADATA_KEY, str(feature_key)
-        )
+        selection = selection & dg.AssetSelection.tag(DAGSTER_METAXY_FEATURE_METADATA_KEY, str(feature_key))
 
     return selection

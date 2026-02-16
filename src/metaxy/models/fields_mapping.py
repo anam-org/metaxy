@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter, field_serializer
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
+from metaxy._decorators import public
 from metaxy.models.types import (
     CoercibleToFieldKey,
     FeatureKey,
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
 
 
+@public
 class FieldsMappingType(str, Enum):
     """Type of fields mapping between a field key and the upstream field keys."""
 
@@ -87,6 +89,7 @@ class BaseFieldsMapping(BaseModel, ABC):
         raise NotImplementedError
 
 
+@public
 class SpecificFieldsMapping(BaseFieldsMapping):
     """Field mapping that explicitly depends on specific upstream fields."""
 
@@ -94,16 +97,15 @@ class SpecificFieldsMapping(BaseFieldsMapping):
     mapping: dict[FieldKey, set[FieldKey]]
 
     @field_serializer("mapping", when_used="json")
-    def _serialize_mapping(
-        self, value: dict[FieldKey, set[FieldKey]]
-    ) -> dict[str, list[list[str]]]:
+    def _serialize_mapping(self, value: dict[FieldKey, set[FieldKey]]) -> dict[str, list[list[str]]]:
         """Serialize mapping with FieldKey dict keys converted to strings for JSON.
 
         JSON dict keys must be strings, so we convert FieldKey objects to their
         string representation (e.g., "faces" or "audio/french").
+        Field keys are sorted for deterministic serialization.
         """
         return {
-            key.to_string(): [list(field_key.parts) for field_key in field_keys]
+            key.to_string(): [list(field_key.parts) for field_key in sorted(field_keys)]
             for key, field_keys in value.items()
         }
 
@@ -115,6 +117,7 @@ class SpecificFieldsMapping(BaseFieldsMapping):
         return desired_upstream_fields & context.upstream_feature_fields
 
 
+@public
 class AllFieldsMapping(BaseFieldsMapping):
     """Field mapping that explicitly depends on all upstream fields."""
 
@@ -127,6 +130,7 @@ class AllFieldsMapping(BaseFieldsMapping):
         return context.upstream_feature_fields
 
 
+@public
 class NoneFieldsMapping(BaseFieldsMapping):
     """Field mapping that never matches any upstream fields."""
 
@@ -139,6 +143,7 @@ class NoneFieldsMapping(BaseFieldsMapping):
         return set()
 
 
+@public
 class DefaultFieldsMapping(BaseFieldsMapping):
     """Default automatic field mapping configuration.
 
@@ -168,9 +173,7 @@ class DefaultFieldsMapping(BaseFieldsMapping):
             if upstream_field_key == context.field_key:
                 res.add(upstream_field_key)
             # Check for suffix match if enabled
-            elif self.match_suffix and self._is_suffix_match(
-                context.field_key, upstream_field_key
-            ):
+            elif self.match_suffix and self._is_suffix_match(context.field_key, upstream_field_key):
                 res.add(upstream_field_key)
 
         # If no fields matched, return ALL fields from this upstream feature
@@ -182,9 +185,7 @@ class DefaultFieldsMapping(BaseFieldsMapping):
 
         return res
 
-    def _is_suffix_match(
-        self, field_key: FieldKey, upstream_field_key: FieldKey
-    ) -> bool:
+    def _is_suffix_match(self, field_key: FieldKey, upstream_field_key: FieldKey) -> bool:
         """Check if field_key is a suffix of upstream_field_key.
 
         For hierarchical keys like "audio/french", this checks if "french"
@@ -208,6 +209,7 @@ class DefaultFieldsMapping(BaseFieldsMapping):
         return False
 
 
+@public
 class FieldsMapping(BaseModel):
     """Base class for field mapping configurations.
 
@@ -218,12 +220,9 @@ class FieldsMapping(BaseModel):
 
     model_config = ConfigDict(frozen=True)
     # mapping: BaseFieldsMapping
-    mapping: (
-        AllFieldsMapping
-        | SpecificFieldsMapping
-        | NoneFieldsMapping
-        | DefaultFieldsMapping
-    ) = PydanticField(..., discriminator="type")
+    mapping: AllFieldsMapping | SpecificFieldsMapping | NoneFieldsMapping | DefaultFieldsMapping = PydanticField(
+        ..., discriminator="type"
+    )
 
     def resolve_field_deps(
         self,
@@ -265,9 +264,7 @@ class FieldsMapping(BaseModel):
         )
 
     @classmethod
-    def specific(
-        cls, mapping: dict[CoercibleToFieldKey, set[CoercibleToFieldKey]]
-    ) -> Self:
+    def specific(cls, mapping: dict[CoercibleToFieldKey, set[CoercibleToFieldKey]]) -> Self:
         """Create a field mapping that maps downstream field keys into specific upstream field keys.
 
         Args:
@@ -281,9 +278,7 @@ class FieldsMapping(BaseModel):
         validated_mapping: dict[FieldKey, set[FieldKey]] = {}
         for key, value_set in mapping.items():
             validated_key = ValidatedFieldKeyAdapter.validate_python(key)
-            validated_values = {
-                ValidatedFieldKeyAdapter.validate_python(v) for v in value_set
-            }
+            validated_values = {ValidatedFieldKeyAdapter.validate_python(v) for v in value_set}
             validated_mapping[validated_key] = validated_values
 
         return cls(mapping=SpecificFieldsMapping(mapping=validated_mapping))
@@ -294,13 +289,6 @@ class FieldsMapping(BaseModel):
 
         Returns:
             Configured FieldsMapping instance.
-
-        Examples:
-            >>> # Use in field specifications
-            >>> FieldSpec(
-            ...     key="combined",
-            ...     fields_mapping=FieldsMapping.all()
-            ... )
         """
         return cls(mapping=AllFieldsMapping())
 
@@ -316,6 +304,4 @@ class FieldsMapping(BaseModel):
         return cls(mapping=NoneFieldsMapping())
 
 
-FieldsMappingAdapter = TypeAdapter(
-    AllFieldsMapping | SpecificFieldsMapping | NoneFieldsMapping | DefaultFieldsMapping
-)
+FieldsMappingAdapter = TypeAdapter(AllFieldsMapping | SpecificFieldsMapping | NoneFieldsMapping | DefaultFieldsMapping)

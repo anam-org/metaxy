@@ -1,0 +1,74 @@
+name: _Docs (reusable)
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'GitHub environment to use'
+        type: string
+        default: 'github-pages'
+      docs-version:
+        description: 'Documentation version name (e.g., v1.0.0, main)'
+        type: string
+        required: true
+      docs-alias:
+        description: 'Documentation alias (e.g., latest)'
+        type: string
+        default: ''
+      docs-default:
+        description: 'Set this as the default version redirect (e.g., latest)'
+        type: string
+        default: ''
+
+jobs:
+  docs:
+    runs-on: depot-ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
+
+      - name: Build documentation
+        run: uv run mkdocs build --strict
+
+      - name: Configure Git for Mike
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch and pull gh-pages branch
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git checkout gh-pages
+            git pull origin gh-pages --rebase
+            git checkout -
+          fi
+
+      - name: Deploy documentation with Mike
+        env:
+          DOCS_VERSION: ${{ inputs.docs-version }}
+          DOCS_ALIAS: ${{ inputs.docs-alias }}
+        run: |
+          if [ -n "$DOCS_ALIAS" ]; then
+            uv run mike deploy --push --update-aliases --ignore-remote-status "$DOCS_VERSION" "$DOCS_ALIAS"
+          else
+            uv run mike deploy --push --ignore-remote-status "$DOCS_VERSION"
+          fi
+
+      - name: Set default version
+        if: ${{ inputs.docs-default != '' }}
+        env:
+          DOCS_DEFAULT: ${{ inputs.docs-default }}
+        run: uv run mike set-default --push "$DOCS_DEFAULT"

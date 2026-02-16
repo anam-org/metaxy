@@ -1,6 +1,6 @@
 ---
-title: "Metaxy Overview"
-description: "Introduction to Metaxy."
+title: "Introduction"
+description: "A high level introduction to Metaxy."
 ---
 
 <p align="center">
@@ -13,7 +13,8 @@ description: "Introduction to Metaxy."
   <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/v/metaxy.svg?color=4644ad" alt="PyPI version"></a>
   <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/pyversions/metaxy.svg?color=4644ad" alt="Python versions"></a>
   <a href="https://pypi.org/project/metaxy/"><img src="https://img.shields.io/pypi/dm/metaxy.svg?color=4644ad" alt="PyPI downloads"></a>
-  <a href="https://github.com/anam-org/metaxy/actions/workflows/QA.yml"><img src="https://github.com/anam-org/metaxy/actions/workflows/QA.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/anam-org/metaxy/actions/workflows/main.yml"><img src="https://github.com/anam-org/metaxy/actions/workflows/main.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/anam-org/metaxy"><img src="https://codecov.io/gh/anam-org/metaxy/graph/badge.svg" alt="codecov"></a>
   <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://docs.astral.sh/ty/"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json" alt="Ty"></a>
   <a href="https://prek.j178.dev"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/j178/prek/master/docs/assets/badge-v0.json" alt="prek"></a>
@@ -21,148 +22,106 @@ description: "Introduction to Metaxy."
 
 ---
 
-!!! warning
-    Metaxy hasn't been publicly released yet, but you can try the latest dev release:
+## Metaxy
 
-    ```shell
-    pip install --pre metaxy
-    ```
+Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks **metadata** across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.
 
----
+### The problem: sample-level versioning
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
+!!! info annotate
 
-Metaxy manages **metadata** while **data** typically (1) lives elsewhere:
+    Data, ML and AI workloads processing **large amounts** of images, videos, audios, or texts (1) can be very expensive to run.
+    In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
+    Therefore, it becomes crucially important to correctly implement **incremental processing**, **sample-level versioning** and **prunable updates**.
+
+1. or really any kind of data
+
+These workloads **evolve all the time**, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be **re-computed frequently**, but at the same time it's important to avoid unnecessary recomputations for individual data samples.
+
+!!! info
+
+    Unnecessary recomputations can waste dozens of thousands of dollars on compute, and battling sample-level orchestration complexity can cost even more in engineering efforts.
+
+--8<-- "data-vs-metadata.md"
+
+In contrast to what one might expect, spinning up a thousand compute nodes is a much easier task with established solutions, while sample-level versioning remains a challenging problem (1).
 { .annotate }
 
-1. Unless you are a [LanceDB](https://lancedb.com/) fan, in which case [we got you covered](./integrations/metadata-stores/databases/lancedb/index.md)
+1. it is hard to overestimate the amount of pain [@danielgafni](https://github.com/danielgafni) has endured before building Metaxy
 
-```
-┌─────────────────────────────────┐          ┌─────────────────────────┐
-│      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
-├──────┬──────────┬──────┬────────┤          │                         │
-│  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
-├──────┼──────────┼──────┼────────┤          │                         │
-│ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
-│ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
-└──────┴──────────┴──────┴────────┘          └─────────────────────────┘
-```
+### The solution
 
-| **Subject** | **Description** |
-|---------|-------------|
-| **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
-| **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
+Until recently, a general solution for this problem did not exist, but not anymore :tada: !
 
-The feature that makes Metaxy stand out is the ability to track **partial data dependencies** that are so common in multi-modal pipelines and skip downstream updates when they are not needed.
+Metaxy allows creating and updating *feature definitions* which can independently version different *fields* of the same data sample and express granular field-level lineage.
 
-Metaxy is [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of **big metadata**.
+!!! success annotate  "Just Use Metaxy"
+
+    Metaxy has quite a few superpowers:
+
+    - Cache every single sample in the data pipeline. Millions of cache keys can be calculated in under a second (1). Benefit from prunable partial updates.
+    - Freedom from storage lock-in. Swap [storage backends](./integrations/metadata-stores/index.md) in development and production environments without breaking a sweat (2).
+    - Metaxy is **pluggable**, **declarative**, **composable** and **extensible** (3): use it to build custom integrations and workflows, benefit from emergent capabilities that enable tooling, visualizations and optimizations you didn't even plan for.
+
+
+1. Our experience at [Anam](https://anam.ai/) with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md)
+2. For example, develop against [DeltaLake](./integrations/metadata-stores/storage/delta.md) and scale production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md) without code changes.
+3. See our official integrations [here](./integrations/index.md)
+
+And now the killer feature:
+
+!!! tip annotate "Super Granular Data Versioning"
+
+    The feature that makes Metaxy really stand out is the ability to identify **prunable partial data updates** (1) and **skip unnecessary downstream computations**. At the moment of writing, Metaxy is the only available tool that tackles these problems.
+
+1.  which are **very common** in multimodal pipelines
+
+Read [The Pitch](./metaxy/pitch.md) to be impressed even more.
 
 All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
 { .annotate }
 
 1. we really do stand on the shoulders of giants
 
-## What problem exactly does Metaxy solve?
+## Reliability
 
-Data, ML and AI workloads processing **large amounts** of images, videos, audios, or texts (1) can be very expensive to run.
-In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
-Therefore, it becomes crucially important to correctly implement incremental processing and sample-level versioning.
+Metaxy was [designed](./metaxy/design.md) to handle large amounts of **big metadata** in distributed environments, makes very few assumptions about usage patterns and is non-invasive to the rest of the data pipeline.
+
+Metaxy is fanatically tested across all supported metadata stores, Python versions and platforms [^1]. We guarantee versioning consistency across the supported metadata stores.
+
+We have been dogfooding Metaxy at [Anam](https://anam.ai/) since December 2025. We are running it in production with [ClickHouse](./integrations/metadata-stores/databases/clickhouse.md), [Dagster](./integrations/orchestration/dagster/index.md), and [Ray](./integrations/compute/ray.md) (1), and it's powering all our pipelines that prepare training data for our video generation models.
 { .annotate }
 
-1. or really any kind of data
+1. and integrations with these tools are probably the most complete at the moment
 
-These workloads typically aren't stale: they evolve all the time, with new data being shipped, bugfixes or algorithm changes introduced, and new features added to the pipeline. This means the pipeline has to be re-computed frequently, but at the same time it's important to avoid unnecessary recomputations for individual samples in the datasets.
+That being said, Metaxy is still an early project, so while the core functionality is rock solid, some rough edges with other parts of Metaxy are expected.
 
-Here are some of the cases where re-computing would be **undesirable**:
+## Installation
 
-- merging two consecutive steps into one (refactoring the graph topology)
+Install Metaxy from [PyPI](https://pypi.org/project/metaxy/):
 
-- **partial data updates**, e.g. changing only the audio track inside a video file
-
-- backfilling metadata from another source
-
-Correctly distinguishing these scenarios from cases where the feature **should** be re-computed is surprisingly challenging.
-Tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated and time-consuming.
-Until now, a general solution for this problem did not exist, but this is not the case anymore.
-
-## Metaxy's solution
-
-<div class="annotate" markdown>
-
-1. Metaxy builds a *versioned graph* from declarative [feature definitions](./guide/learn/feature-definitions.md) and tracks [version changes](./guide/learn/data-versioning.md) across individual samples.
-
-2. Metaxy introduces a unique [field-level](./guide/learn/feature-definitions.md#field-level-dependencies) dependency system to express partial data dependencies and avoiding unnecessary downstream recomputations. Each sample holds a dictionary mapping its fields to their respective versions. (1)
-
-3. Metaxy implements a general [`MetadataStore`](./guide/learn/metadata-stores.md) interface that enables it to work with any kind of storage system, be it an analytical database or a lakehouse format.
-
-</div>
-
-1. for example, a `video` sample could independently version the frames and the audio track: `{"audio": "asddsa", "frames": "joasdb"}`
+```shell
+uv add metaxy
+```
 
 ## Quickstart
 
-Head to [Quickstart](./guide/overview/quickstart.md) (WIP!).
+!!! tip
 
-## About Metaxy
-
-Metaxy is:
-
-<div class="annotate" markdown>
-
-- **🧩 composable** --- bring your own everything!
-
-    - supports [DuckDB](./integrations/metadata-stores/databases/duckdb/index.md), [ClickHouse](./integrations/metadata-stores/databases/clickhouse/index.md), and **20+ databases** via [Ibis](https://ibis-project.org/), **lakehouse storage** formats such as DeltaLake or DuckLake, and other solutions such as [LanceDB](./integrations/metadata-stores/databases/lancedb/index.md)
-
-    - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
-
-    - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
-
-    - blends right in with orchestrators: see the excellent [Dagster integration](./integrations/orchestration/dagster/index.md) :octopus:
-
-- **🪨 rock solid** when it matters:
-
-    - [versioning](./guide/learn/data-versioning.md) is guaranteed to be **consistent across DBs and local** (1) compute engines. We really have tested this very well!
-
-    - unique [field-level dependency system](./guide/learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
-
-    - metadata is **append-only** to ensure data integrity and immutability, but Metaxy provides the tooling to perform cleanup on-demand
-
-- **📈 scalable**:
-
-    - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
-
-    - is built with **performance** in mind: all operations default to **run in the DB** and we only fetch the resolved increment to Python
-
-- **🧑‍💻 dev friendly**:
-
-    - clean, intuitive Python API [with syntactic sugar](./guide/learn/syntactic-sugar.md) that simplifies common feature definitions
-
-    - [feature discovery](./guide/learn/feature-discovery.md) system for effortless dependency management
-
-    - comprehensive **type hints** with all the typing shenanigans like `@overload`. Metaxy utilizes Pydantic for feature definitions.
-
-    - first-class support for **local development**, **testing**, **preview environments**, and **CI/CD** workflows
-
-    - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
-
-    - [integrations](integrations/index.md) with popular tools such as Dagster, DuckDB, SQLModel and others
-
-</div>
-
-1. the local versioning engine is implemented in [Polars](https://docs.pola.rs/) and [`polars-hash`](https://github.com/ion-elgreco/polars-hash)
+    Itching to get your hands dirty?
+    Head to [Quickstart](./guide/quickstart/quickstart.md).
 
 ## What's Next?
 
-- Itching to write some Metaxy code? Continue to [Quickstart](./guide/overview/quickstart.md) (WIP!).
+Here are a few more useful links:
 
-- Learn more about [feature definitions](./guide/learn/feature-definitions.md) or [versioning](./guide/learn/data-versioning.md)
+- Read the [Metaxy Pitch](./metaxy/pitch.md)
+- Learn about Metaxy [design choices](./metaxy/design.md)
+--8<-- "whats-next.md"
 
-- View complete, end-to-end [examples](./examples/index.md)
+## Blog Posts
 
-- Explore [Metaxy integrations](integrations/index.md)
+- [Announcement post](https://anam.ai/blog/metaxy) by Anam
+- [Dagster + Metaxy](https://dagster.io/blog/building-real-time-interactive-avatars-with-metaxy) by Dagster labs
 
-- Use Metaxy [from the command line](./reference/cli.md)
-
-- Learn how to [configure Metaxy](./reference/configuration.md)
-
-- Get lost in our [API Reference](./reference/api/index.md)
+[^1]: The CLI is not tested on Windows yet.

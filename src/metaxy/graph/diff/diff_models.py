@@ -35,11 +35,7 @@ class FieldChange(FrozenBaseModel):
     @property
     def is_changed(self) -> bool:
         """Check if field version changed."""
-        return (
-            self.old_version is not None
-            and self.new_version is not None
-            and self.old_version != self.new_version
-        )
+        return self.old_version is not None and self.new_version is not None and self.old_version != self.new_version
 
 
 class NodeChange(FrozenBaseModel):
@@ -67,11 +63,7 @@ class NodeChange(FrozenBaseModel):
     @property
     def is_changed(self) -> bool:
         """Check if node version changed."""
-        return (
-            self.old_version is not None
-            and self.new_version is not None
-            and self.old_version != self.new_version
-        )
+        return self.old_version is not None and self.new_version is not None and self.old_version != self.new_version
 
     @property
     def field_changes(self) -> list[FieldChange]:
@@ -96,9 +88,7 @@ class AddedNode(FrozenBaseModel):
     feature_key: FeatureKey
     version: str
     code_version: str | None = None
-    fields: list[dict[str, Any]] = Field(
-        default_factory=list
-    )  # {key, version, code_version}
+    fields: list[dict[str, Any]] = Field(default_factory=list)  # {key, version, code_version}
     dependencies: list[FeatureKey] = Field(default_factory=list)
 
 
@@ -108,9 +98,7 @@ class RemovedNode(FrozenBaseModel):
     feature_key: FeatureKey
     version: str
     code_version: str | None = None
-    fields: list[dict[str, Any]] = Field(
-        default_factory=list
-    )  # {key, version, code_version}
+    fields: list[dict[str, Any]] = Field(default_factory=list)  # {key, version, code_version}
     dependencies: list[FeatureKey] = Field(default_factory=list)
 
 
@@ -120,8 +108,8 @@ class GraphDiff(FrozenBaseModel):
     Stores changes between two graph states for migration generation.
     """
 
-    from_snapshot_version: str
-    to_snapshot_version: str
+    from_project_version: str
+    to_project_version: str
     added_nodes: list[AddedNode] = Field(default_factory=list)
     removed_nodes: list[RemovedNode] = Field(default_factory=list)
     changed_nodes: list[NodeChange] = Field(default_factory=list)
@@ -143,17 +131,13 @@ class GraphDiff(FrozenBaseModel):
             for field in node.fields:
                 fields_list.append(
                     {
-                        "key": field["key"]
-                        if isinstance(field["key"], str)
-                        else field["key"].to_string(),
+                        "key": field["key"] if isinstance(field["key"], str) else field["key"].to_string(),
                         "version": field.get("version", ""),
                         "code_version": field["code_version"],
                     }
                 )
             if not node.code_version:
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node.feature_key.to_string()} has empty code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Node {node.feature_key.to_string()} has empty code_version.")
             added_nodes_list.append(
                 {
                     "key": node.feature_key.to_string(),
@@ -170,18 +154,14 @@ class GraphDiff(FrozenBaseModel):
             for field in node.fields:
                 fields_list.append(
                     {
-                        "key": field["key"]
-                        if isinstance(field["key"], str)
-                        else field["key"].to_string(),
+                        "key": field["key"] if isinstance(field["key"], str) else field["key"].to_string(),
                         "version": field.get("version", ""),
                         "code_version": field["code_version"],
                     }
                 )
 
             if not node.code_version:
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node.feature_key.to_string()} has empty code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Node {node.feature_key.to_string()} has empty code_version.")
             removed_nodes_list.append(
                 {
                     "key": node.feature_key.to_string(),
@@ -211,9 +191,7 @@ class GraphDiff(FrozenBaseModel):
             removed_fields_list = []
             for field in node.removed_fields:
                 if not field.old_code_version:
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Node {node.feature_key.to_string()} has empty code_version."
-                    )
+                    raise MetaxyEmptyCodeVersionError(f"Node {node.feature_key.to_string()} has empty code_version.")
                 removed_fields_list.append(
                     {
                         "key": field.field_key.to_string(),
@@ -225,9 +203,7 @@ class GraphDiff(FrozenBaseModel):
             changed_fields_list = []
             for field in node.changed_fields:
                 if not (field.old_code_version and field.new_code_version):
-                    raise MetaxyEmptyCodeVersionError(
-                        f"Node {node.feature_key.to_string()} has empty code_version."
-                    )
+                    raise MetaxyEmptyCodeVersionError(f"Node {node.feature_key.to_string()} has empty code_version.")
                 changed_fields_list.append(
                     {
                         "key": field.field_key.to_string(),
@@ -265,15 +241,15 @@ class GraphDiff(FrozenBaseModel):
     def from_struct(
         cls,
         struct_data: dict[str, Any],
-        from_snapshot_version: str,
-        to_snapshot_version: str,
+        from_project_version: str,
+        to_project_version: str,
     ) -> "GraphDiff":
         """Deserialize from struct.
 
         Args:
             struct_data: Dict with structure from to_struct()
-            from_snapshot_version: Source snapshot version
-            to_snapshot_version: Target snapshot version
+            from_project_version: Source snapshot version
+            to_project_version: Target snapshot version
 
         Returns:
             GraphDiff instance
@@ -285,30 +261,20 @@ class GraphDiff(FrozenBaseModel):
                 fields.append(
                     {
                         "key": field_data["key"],
-                        "version": field_data["version"]
-                        if field_data["version"]
-                        else None,
+                        "version": field_data["version"] if field_data["version"] else None,
                         "code_version": field_data["code_version"],
                     }
                 )
 
-            if (
-                not node_data["code_version"]
-                or node_data["code_version"] == DEFAULT_CODE_VERSION
-            ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node_data['key']} has empty code_version."
-                )
+            if not node_data["code_version"] or node_data["code_version"] == DEFAULT_CODE_VERSION:
+                raise MetaxyEmptyCodeVersionError(f"Node {node_data['key']} has empty code_version.")
             added_nodes.append(
                 AddedNode(
                     feature_key=FeatureKey(node_data["key"].split("/")),
                     version=node_data["version"],
                     code_version=node_data["code_version"],
                     fields=fields,
-                    dependencies=[
-                        FeatureKey(dep.split("/"))
-                        for dep in node_data.get("dependencies", [])
-                    ],
+                    dependencies=[FeatureKey(dep.split("/")) for dep in node_data.get("dependencies", [])],
                 )
             )
 
@@ -319,30 +285,20 @@ class GraphDiff(FrozenBaseModel):
                 fields.append(
                     {
                         "key": field_data["key"],
-                        "version": field_data["version"]
-                        if field_data["version"]
-                        else None,
+                        "version": field_data["version"] if field_data["version"] else None,
                         "code_version": field_data["code_version"],
                     }
                 )
 
-            if (
-                not node_data["code_version"]
-                or node_data["code_version"] == DEFAULT_CODE_VERSION
-            ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node_data['key']} has empty code_version."
-                )
+            if not node_data["code_version"] or node_data["code_version"] == DEFAULT_CODE_VERSION:
+                raise MetaxyEmptyCodeVersionError(f"Node {node_data['key']} has empty code_version.")
             removed_nodes.append(
                 RemovedNode(
                     feature_key=FeatureKey(node_data["key"].split("/")),
                     version=node_data["version"],
                     code_version=node_data["code_version"],
                     fields=fields,
-                    dependencies=[
-                        FeatureKey(dep.split("/"))
-                        for dep in node_data.get("dependencies", [])
-                    ],
+                    dependencies=[FeatureKey(dep.split("/")) for dep in node_data.get("dependencies", [])],
                 )
             )
 
@@ -350,10 +306,7 @@ class GraphDiff(FrozenBaseModel):
         for node_data in struct_data.get("changed_nodes", []):
             added_fields = []
             for field_data in node_data.get("added_fields", []):
-                if (
-                    not field_data["code_version"]
-                    or field_data["code_version"] == DEFAULT_CODE_VERSION
-                ):
+                if not field_data["code_version"] or field_data["code_version"] == DEFAULT_CODE_VERSION:
                     raise MetaxyEmptyCodeVersionError(
                         f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
                     )
@@ -361,9 +314,7 @@ class GraphDiff(FrozenBaseModel):
                     FieldChange(
                         field_key=FieldKey(field_data["key"].split("/")),
                         old_version=None,
-                        new_version=field_data["version"]
-                        if field_data["version"]
-                        else None,
+                        new_version=field_data["version"] if field_data["version"] else None,
                         old_code_version=None,
                         new_code_version=field_data["code_version"],
                     )
@@ -371,19 +322,14 @@ class GraphDiff(FrozenBaseModel):
 
             removed_fields = []
             for field_data in node_data.get("removed_fields", []):
-                if (
-                    not field_data["code_version"]
-                    or field_data["code_version"] == DEFAULT_CODE_VERSION
-                ):
+                if not field_data["code_version"] or field_data["code_version"] == DEFAULT_CODE_VERSION:
                     raise MetaxyEmptyCodeVersionError(
                         f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
                     )
                 removed_fields.append(
                     FieldChange(
                         field_key=FieldKey(field_data["key"].split("/")),
-                        old_version=field_data["version"]
-                        if field_data["version"]
-                        else None,
+                        old_version=field_data["version"] if field_data["version"] else None,
                         new_version=None,
                         old_code_version=field_data["code_version"],
                         new_code_version=None,
@@ -402,33 +348,22 @@ class GraphDiff(FrozenBaseModel):
                 changed_fields.append(
                     FieldChange(
                         field_key=FieldKey(field_data["key"].split("/")),
-                        old_version=field_data["old_version"]
-                        if field_data["old_version"]
-                        else None,
-                        new_version=field_data["new_version"]
-                        if field_data["new_version"]
-                        else None,
+                        old_version=field_data["old_version"] if field_data["old_version"] else None,
+                        new_version=field_data["new_version"] if field_data["new_version"] else None,
                         old_code_version=field_data["old_code_version"],
                         new_code_version=field_data["new_code_version"],
                     )
                 )
 
             if any(
-                node_data.get(k) in (None, "", DEFAULT_CODE_VERSION)
-                for k in ("old_code_version", "new_code_version")
+                node_data.get(k) in (None, "", DEFAULT_CODE_VERSION) for k in ("old_code_version", "new_code_version")
             ):
-                raise MetaxyEmptyCodeVersionError(
-                    f"Node {node_data['key']} has empty old/new code_version."
-                )
+                raise MetaxyEmptyCodeVersionError(f"Node {node_data['key']} has empty old/new code_version.")
             changed_nodes.append(
                 NodeChange(
                     feature_key=FeatureKey(node_data["key"].split("/")),
-                    old_version=node_data["old_version"]
-                    if node_data["old_version"]
-                    else None,
-                    new_version=node_data["new_version"]
-                    if node_data["new_version"]
-                    else None,
+                    old_version=node_data["old_version"] if node_data["old_version"] else None,
+                    new_version=node_data["new_version"] if node_data["new_version"] else None,
                     old_code_version=node_data["old_code_version"],
                     new_code_version=node_data["new_code_version"],
                     added_fields=added_fields,
@@ -438,8 +373,8 @@ class GraphDiff(FrozenBaseModel):
             )
 
         return cls(
-            from_snapshot_version=from_snapshot_version,
-            to_snapshot_version=to_snapshot_version,
+            from_project_version=from_project_version,
+            to_project_version=to_project_version,
             added_nodes=added_nodes,
             removed_nodes=removed_nodes,
             changed_nodes=changed_nodes,

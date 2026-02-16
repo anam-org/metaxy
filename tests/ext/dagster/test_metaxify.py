@@ -136,9 +136,7 @@ class TestMetaxifyBasic:
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND in asset_spec.kinds
 
-    def test_metaxify_skips_kind_injection_when_disabled(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_skips_kind_injection_when_disabled(self, upstream_feature: type[mx.BaseFeature]):
         """Test that kind injection can be disabled."""
 
         @metaxify(inject_metaxy_kind=False)
@@ -149,9 +147,7 @@ class TestMetaxifyBasic:
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND not in asset_spec.kinds
 
-    def test_metaxify_adds_kind_with_existing_kinds(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_adds_kind_with_existing_kinds(self, upstream_feature: type[mx.BaseFeature]):
         """Test that kind injection works when asset already has some kinds."""
 
         @metaxify()
@@ -169,9 +165,7 @@ class TestMetaxifyBasic:
         assert "python" in asset_spec.kinds
         assert "sql" in asset_spec.kinds
 
-    def test_metaxify_injects_feature_info(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_injects_feature_info(self, upstream_feature: type[mx.BaseFeature]):
         """Test that metaxify injects feature info under DAGSTER_METAXY_INFO_METADATA_KEY."""
 
         @metaxify()
@@ -187,9 +181,7 @@ class TestMetaxifyBasic:
         assert "metaxy" in info
         assert info["feature"]["spec"]["key"] == "test/upstream"
 
-    def test_metaxify_injects_feature_info_with_metadata(
-        self, feature_with_group_name: type[mx.BaseFeature]
-    ):
+    def test_metaxify_injects_feature_info_with_metadata(self, feature_with_group_name: type[mx.BaseFeature]):
         """Test that metaxify injects feature info including feature spec metadata."""
 
         @metaxify()
@@ -233,14 +225,9 @@ class TestMetaxifyTags:
 
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_PROJECT_TAG_KEY in asset_spec.tags
-        assert (
-            asset_spec.tags[DAGSTER_METAXY_PROJECT_TAG_KEY]
-            == mx.MetaxyConfig.get().project
-        )
+        assert asset_spec.tags[DAGSTER_METAXY_PROJECT_TAG_KEY] == mx.MetaxyConfig.get().project
 
-    def test_metaxify_preserves_existing_tags(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_preserves_existing_tags(self, upstream_feature: type[mx.BaseFeature]):
         """Test that metaxify preserves existing asset tags."""
 
         @metaxify()
@@ -258,9 +245,7 @@ class TestMetaxifyTags:
         assert DAGSTER_METAXY_FEATURE_METADATA_KEY in asset_spec.tags
         assert DAGSTER_METAXY_PROJECT_TAG_KEY in asset_spec.tags
 
-    def test_metaxify_asset_spec_injects_tags(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_asset_spec_injects_tags(self, upstream_feature: type[mx.BaseFeature]):
         """Test that metaxify injects tags into AssetSpec."""
         spec = dg.AssetSpec(
             key="my_spec",
@@ -278,9 +263,7 @@ class TestMetaxifyTags:
 class TestMetaxifyAssetKeys:
     """Test asset key handling in @metaxify."""
 
-    def test_metaxify_uses_feature_key_by_default(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_uses_feature_key_by_default(self, upstream_feature: type[mx.BaseFeature]):
         """Test that feature key is used as asset key by default."""
 
         @metaxify()
@@ -291,9 +274,7 @@ class TestMetaxifyAssetKeys:
         # Asset key should be the feature key (default behavior)
         assert dg.AssetKey(["test", "upstream"]) in my_asset.keys
 
-    def test_metaxify_uses_custom_key_from_feature_spec(
-        self, feature_with_dagster_metadata: type[mx.BaseFeature]
-    ):
+    def test_metaxify_uses_custom_key_from_feature_spec(self, feature_with_dagster_metadata: type[mx.BaseFeature]):
         """Test that metaxy/metadata in feature spec overrides the asset key."""
 
         @metaxify()
@@ -308,9 +289,7 @@ class TestMetaxifyAssetKeys:
 class TestMetaxifyKeyOverride:
     """Test explicit key and key_prefix parameters in @metaxify."""
 
-    def test_metaxify_key_overrides_everything(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_key_overrides_everything(self, upstream_feature: type[mx.BaseFeature]):
         """Test that explicit key parameter overrides all other key resolution."""
 
         @metaxify(key=["custom", "explicit", "key"])
@@ -321,9 +300,7 @@ class TestMetaxifyKeyOverride:
         # Explicit key should override feature key
         assert dg.AssetKey(["custom", "explicit", "key"]) in my_asset.keys
 
-    def test_metaxify_key_overrides_feature_spec_custom_key(
-        self, feature_with_dagster_metadata: type[mx.BaseFeature]
-    ):
+    def test_metaxify_key_overrides_feature_spec_custom_key(self, feature_with_dagster_metadata: type[mx.BaseFeature]):
         """Test that explicit key overrides even dagster/attributes.asset_key from feature spec."""
 
         @metaxify(key=["override", "key"])
@@ -334,9 +311,7 @@ class TestMetaxifyKeyOverride:
         # Explicit key should override feature spec's custom key
         assert dg.AssetKey(["override", "key"]) in my_asset.keys
 
-    def test_metaxify_key_prefix_prepends_to_feature_key(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_key_prefix_prepends_to_feature_key(self, upstream_feature: type[mx.BaseFeature]):
         """Test that key_prefix is prepended to the resolved feature key."""
 
         @metaxify(key_prefix=["prefix", "namespace"])
@@ -365,18 +340,14 @@ class TestMetaxifyKeyOverride:
         # Upstream dep should also have the prefix
         assert dg.AssetKey(["prefix", "test", "upstream"]) in dep_keys
 
-    def test_metaxify_key_and_key_prefix_mutually_exclusive(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_key_and_key_prefix_mutually_exclusive(self, upstream_feature: type[mx.BaseFeature]):
         """Test that key and key_prefix cannot be used together."""
         with pytest.raises(ValueError) as exc_info:
             metaxify(key=["explicit"], key_prefix=["prefix"])
 
         assert "Cannot specify both `key` and `key_prefix`" in str(exc_info.value)
 
-    def test_metaxify_key_with_multi_asset_raises_error(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_key_with_multi_asset_raises_error(self, upstream_feature: type[mx.BaseFeature]):
         """Test that explicit key cannot be used with multi-asset producing multiple outputs."""
 
         @dg.multi_asset(
@@ -447,9 +418,7 @@ class TestMetaxifyKeyOverride:
 
         assert result.key == dg.AssetKey(["explicit", "key"])
 
-    def test_metaxify_asset_spec_with_key_prefix(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_asset_spec_with_key_prefix(self, upstream_feature: type[mx.BaseFeature]):
         """Test that key_prefix works with AssetSpec."""
         spec = dg.AssetSpec(
             key="my_spec",
@@ -460,9 +429,7 @@ class TestMetaxifyKeyOverride:
 
         assert result.key == dg.AssetKey(["prefix", "test", "upstream"])
 
-    def test_metaxify_key_with_string_coercion(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_key_with_string_coercion(self, upstream_feature: type[mx.BaseFeature]):
         """Test that key accepts string and coerces to AssetKey."""
 
         @metaxify(key="single_key")
@@ -476,9 +443,7 @@ class TestMetaxifyKeyOverride:
 class TestMetaxifyDagsterAttributes:
     """Test dagster/attributes injection from feature spec metadata."""
 
-    def test_metaxify_applies_group_name(
-        self, feature_with_group_name: type[mx.BaseFeature]
-    ):
+    def test_metaxify_applies_group_name(self, feature_with_group_name: type[mx.BaseFeature]):
         """Test that group_name from dagster/attributes is applied to the asset."""
 
         @metaxify()
@@ -489,9 +454,7 @@ class TestMetaxifyDagsterAttributes:
         asset_spec = list(my_asset.specs)[0]
         assert asset_spec.group_name == "my_group"
 
-    def test_metaxify_applies_multiple_attributes(
-        self, feature_with_multiple_attrs: type[mx.BaseFeature]
-    ):
+    def test_metaxify_applies_multiple_attributes(self, feature_with_multiple_attrs: type[mx.BaseFeature]):
         """Test that multiple dagster attributes are applied."""
 
         @metaxify()
@@ -506,9 +469,7 @@ class TestMetaxifyDagsterAttributes:
         assert asset_spec.group_name == "features"
         assert asset_spec.owners == ["team:data", "user@example.com"]
 
-    def test_metaxify_attributes_override_asset_attributes(
-        self, feature_with_group_name: type[mx.BaseFeature]
-    ):
+    def test_metaxify_attributes_override_asset_attributes(self, feature_with_group_name: type[mx.BaseFeature]):
         """Test that dagster/attributes override attributes set on the asset decorator."""
 
         @metaxify()
@@ -523,9 +484,7 @@ class TestMetaxifyDagsterAttributes:
         # Feature spec's group_name should override the decorator's group_name
         assert asset_spec.group_name == "my_group"
 
-    def test_metaxify_no_attributes_preserves_original(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_no_attributes_preserves_original(self, upstream_feature: type[mx.BaseFeature]):
         """Test that assets without dagster/attributes keep their original attributes."""
 
         @metaxify()
@@ -570,9 +529,7 @@ class TestMetaxifyDeps:
 class TestMetaxifyMixedDeps:
     """Test @metaxify with assets that have both Metaxy and non-Metaxy parent assets."""
 
-    def test_metaxify_preserves_existing_dagster_deps(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_preserves_existing_dagster_deps(self, upstream_feature: type[mx.BaseFeature]):
         """Test that existing Dagster deps are preserved when metaxify adds Metaxy deps."""
 
         @dg.asset
@@ -625,9 +582,7 @@ class TestMetaxifyMixedDeps:
         # And the Metaxy upstream dep (from feature spec, using feature key)
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
-    def test_metaxify_with_mixed_metaxy_and_regular_assets_in_graph(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_with_mixed_metaxy_and_regular_assets_in_graph(self, upstream_feature: type[mx.BaseFeature]):
         """Test a graph with both metaxified and regular assets."""
 
         @dg.asset
@@ -664,9 +619,7 @@ class TestMetaxifyMixedDeps:
 class TestMetaxifyAssetSpec:
     """Test @metaxify with raw AssetSpec objects."""
 
-    def test_metaxify_transforms_asset_spec(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_transforms_asset_spec(self, upstream_feature: type[mx.BaseFeature]):
         """Test that metaxify can transform a raw AssetSpec."""
         spec = dg.AssetSpec(
             key="my_spec",
@@ -682,9 +635,7 @@ class TestMetaxifyAssetSpec:
         # Key should be feature key (always uses feature key by default)
         assert result.key == dg.AssetKey(["test", "upstream"])
 
-    def test_metaxify_asset_spec_with_custom_key(
-        self, feature_with_dagster_metadata: type[mx.BaseFeature]
-    ):
+    def test_metaxify_asset_spec_with_custom_key(self, feature_with_dagster_metadata: type[mx.BaseFeature]):
         """Test that AssetSpec uses custom key from dagster/attributes."""
         spec = dg.AssetSpec(
             key="my_spec",
@@ -712,9 +663,7 @@ class TestMetaxifyAssetSpec:
         dep_keys = {dep.asset_key for dep in result.deps}
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
-    def test_metaxify_asset_spec_applies_dagster_attrs(
-        self, feature_with_group_name: type[mx.BaseFeature]
-    ):
+    def test_metaxify_asset_spec_applies_dagster_attrs(self, feature_with_group_name: type[mx.BaseFeature]):
         """Test that AssetSpec gets dagster attributes from feature spec."""
         spec = dg.AssetSpec(
             key="my_spec",
@@ -725,9 +674,7 @@ class TestMetaxifyAssetSpec:
 
         assert result.group_name == "my_group"
 
-    def test_metaxify_asset_spec_preserves_existing_deps(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_asset_spec_preserves_existing_deps(self, upstream_feature: type[mx.BaseFeature]):
         """Test that existing deps on AssetSpec are preserved."""
         spec = dg.AssetSpec(
             key="my_spec",
@@ -844,7 +791,7 @@ class TestMetaxifyMaterialization:
         def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Read upstream data and verify it exists
             with store:
-                upstream_data = store.read_metadata(upstream_feature).collect()
+                upstream_data = store.read(upstream_feature).collect()
                 assert len(upstream_data) == 3
             return pl.DataFrame(
                 {
@@ -914,7 +861,7 @@ class TestMetaxifyMaterialization:
         def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
             # Read upstream data via the store resource
             with store:
-                upstream_data = store.read_metadata(upstream_feature).collect()
+                upstream_data = store.read(upstream_feature).collect()
                 captured_data["rows"] = len(upstream_data)
                 captured_data["ids"] = upstream_data["id"].to_list()
             return pl.DataFrame(
@@ -965,7 +912,7 @@ class TestMetaxifyMaterialization:
 
         # First, write data directly to the store (simulating external feature population)
         with mx.MetaxyConfig.get().get_store("dev") as store:
-            store.write_metadata(
+            store.write(
                 feature=upstream_feature,
                 df=pl.DataFrame(
                     {
@@ -1051,9 +998,7 @@ class TestMetaxifyMaterialization:
 
         # Verify the metaxy asset was materialized with feature key
         events = result.get_asset_materialization_events()
-        asset_keys = {
-            e.step_materialization_data.materialization.asset_key for e in events
-        }
+        asset_keys = {e.step_materialization_data.materialization.asset_key for e in events}
         # metaxy_asset key should be the feature key (default behavior)
         assert dg.AssetKey(["test", "upstream"]) in asset_keys
 
@@ -1418,11 +1363,7 @@ class TestMetaxifyMultiAsset:
         assert result.success
 
         # Check both outputs were materialized with feature keys
-        events = [
-            e
-            for e in result.all_events
-            if e.event_type_value == "ASSET_MATERIALIZATION"
-        ]
+        events = [e for e in result.all_events if e.event_type_value == "ASSET_MATERIALIZATION"]
         assert len(events) == 2
 
         materialized_keys = {e.asset_key for e in events}
@@ -1664,9 +1605,7 @@ class TestMetaxifyColumnSchema:
             id: str
             tags: list[str] = Field(description="List of tags")
             metadata: dict[str, Any] = Field(description="Arbitrary metadata")
-            optional_value: int | None = Field(
-                default=None, description="Optional integer"
-            )
+            optional_value: int | None = Field(default=None, description="Optional integer")
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/complex_types"})
@@ -2075,9 +2014,9 @@ class TestMetaxifySystemColumns:
             METAXY_DATA_VERSION_BY_FIELD,
             METAXY_FEATURE_VERSION,
             METAXY_MATERIALIZATION_ID,
+            METAXY_PROJECT_VERSION,
             METAXY_PROVENANCE,
             METAXY_PROVENANCE_BY_FIELD,
-            METAXY_SNAPSHOT_VERSION,
         )
 
         spec = mx.FeatureSpec(
@@ -2109,10 +2048,7 @@ class TestMetaxifySystemColumns:
         # metaxy_provenance_by_field is required, others are optional
         assert METAXY_PROVENANCE_BY_FIELD in columns_by_name
         assert columns_by_name[METAXY_PROVENANCE_BY_FIELD].type == "dict[str, str]"
-        assert (
-            "provenance"
-            in columns_by_name[METAXY_PROVENANCE_BY_FIELD].description.lower()
-        )
+        assert "provenance" in columns_by_name[METAXY_PROVENANCE_BY_FIELD].description.lower()
 
         assert METAXY_PROVENANCE in columns_by_name
         assert columns_by_name[METAXY_PROVENANCE].type == "str"
@@ -2120,8 +2056,8 @@ class TestMetaxifySystemColumns:
         assert METAXY_FEATURE_VERSION in columns_by_name
         assert columns_by_name[METAXY_FEATURE_VERSION].type == "str"
 
-        assert METAXY_SNAPSHOT_VERSION in columns_by_name
-        assert columns_by_name[METAXY_SNAPSHOT_VERSION].type == "str"
+        assert METAXY_PROJECT_VERSION in columns_by_name
+        assert columns_by_name[METAXY_PROJECT_VERSION].type == "str"
 
         assert METAXY_DATA_VERSION_BY_FIELD in columns_by_name
         assert columns_by_name[METAXY_DATA_VERSION_BY_FIELD].type == "dict[str, str]"
@@ -2176,17 +2112,13 @@ class TestMetaxifySystemColumns:
         prov_by_field_deps = column_lineage.deps_by_column[METAXY_PROVENANCE_BY_FIELD]
         assert len(prov_by_field_deps) == 1
         assert prov_by_field_deps[0].column_name == METAXY_PROVENANCE_BY_FIELD
-        assert prov_by_field_deps[0].asset_key == dg.AssetKey(
-            ["test", "syscol_lineage_upstream"]
-        )
+        assert prov_by_field_deps[0].asset_key == dg.AssetKey(["test", "syscol_lineage_upstream"])
 
         assert METAXY_PROVENANCE in column_lineage.deps_by_column
         prov_deps = column_lineage.deps_by_column[METAXY_PROVENANCE]
         assert len(prov_deps) == 1
         assert prov_deps[0].column_name == METAXY_PROVENANCE
-        assert prov_deps[0].asset_key == dg.AssetKey(
-            ["test", "syscol_lineage_upstream"]
-        )
+        assert prov_deps[0].asset_key == dg.AssetKey(["test", "syscol_lineage_upstream"])
 
     def test_metaxify_system_column_lineage_multiple_upstreams(self):
         """Test that system columns have lineage from all upstream dependencies."""
@@ -2273,9 +2205,7 @@ class TestMetaxifySystemColumns:
 class TestMetaxifyCheckSpecs:
     """Test that @metaxify properly transforms asset check specs when asset keys change."""
 
-    def test_metaxify_updates_check_spec_with_feature_key(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_updates_check_spec_with_feature_key(self, upstream_feature: type[mx.BaseFeature]):
         """Test that check specs are updated when asset key changes to feature key."""
 
         @metaxify()
@@ -2295,9 +2225,7 @@ class TestMetaxifyCheckSpecs:
         assert check_specs[0].asset_key == dg.AssetKey(["test", "upstream"])
         assert check_specs[0].name == "not_null"
 
-    def test_metaxify_updates_check_spec_with_key_prefix(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_updates_check_spec_with_key_prefix(self, upstream_feature: type[mx.BaseFeature]):
         """Test that check specs are updated when key_prefix is applied."""
 
         @metaxify(key_prefix=["prefix", "namespace"])
@@ -2318,9 +2246,7 @@ class TestMetaxifyCheckSpecs:
         assert check_specs[0].asset_key == expected_key
         assert check_specs[0].name == "valid_range"
 
-    def test_metaxify_updates_check_spec_with_explicit_key(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_updates_check_spec_with_explicit_key(self, upstream_feature: type[mx.BaseFeature]):
         """Test that check specs are updated when explicit key argument is used."""
 
         @metaxify(key=["custom", "explicit", "key"])
@@ -2341,9 +2267,7 @@ class TestMetaxifyCheckSpecs:
         assert check_specs[0].asset_key == expected_key
         assert check_specs[0].name == "consistency_check"
 
-    def test_metaxify_updates_multiple_check_specs(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_updates_multiple_check_specs(self, upstream_feature: type[mx.BaseFeature]):
         """Test that all check specs are updated when asset key changes."""
 
         @metaxify()
@@ -2370,9 +2294,7 @@ class TestMetaxifyCheckSpecs:
         check_names = {spec.name for spec in check_specs}
         assert check_names == {"check_one", "check_two", "check_three"}
 
-    def test_metaxify_preserves_check_spec_properties(
-        self, upstream_feature: type[mx.BaseFeature]
-    ):
+    def test_metaxify_preserves_check_spec_properties(self, upstream_feature: type[mx.BaseFeature]):
         """Test that other check spec properties are preserved when updating asset key."""
 
         @metaxify()
@@ -2441,9 +2363,7 @@ class TestMetaxifyCheckSpecs:
         @dg.multi_asset(
             specs=[
                 dg.AssetSpec("output_a", metadata={"metaxy/feature": "test/upstream"}),
-                dg.AssetSpec(
-                    "output_b", metadata={"metaxy/feature": "test/multi_check_b"}
-                ),
+                dg.AssetSpec("output_b", metadata={"metaxy/feature": "test/multi_check_b"}),
             ],
             check_specs=[
                 dg.AssetCheckSpec(name="check_a", asset="output_a"),
@@ -2462,12 +2382,8 @@ class TestMetaxifyCheckSpecs:
         assert len(check_specs) == 2
 
         check_specs_by_name = {spec.name: spec for spec in check_specs}
-        assert check_specs_by_name["check_a"].asset_key == dg.AssetKey(
-            ["test", "upstream"]
-        )
-        assert check_specs_by_name["check_b"].asset_key == dg.AssetKey(
-            ["test", "multi_check_b"]
-        )
+        assert check_specs_by_name["check_a"].asset_key == dg.AssetKey(["test", "upstream"])
+        assert check_specs_by_name["check_b"].asset_key == dg.AssetKey(["test", "multi_check_b"])
 
     def test_metaxify_check_spec_with_custom_asset_key_from_feature_spec(
         self, feature_with_dagster_metadata: type[mx.BaseFeature]
@@ -2505,9 +2421,7 @@ class TestMetaxifyCheckSpecs:
         @dg.multi_asset(
             specs=[
                 # This output is a metaxy feature - key will change
-                dg.AssetSpec(
-                    "metaxy_output", metadata={"metaxy/feature": "test/upstream"}
-                ),
+                dg.AssetSpec("metaxy_output", metadata={"metaxy/feature": "test/upstream"}),
                 # This output is NOT a metaxy feature - key stays the same
                 dg.AssetSpec("regular_output"),
             ],
@@ -2530,14 +2444,10 @@ class TestMetaxifyCheckSpecs:
         check_specs_by_name = {spec.name: spec for spec in check_specs}
 
         # Check for metaxy output should reference the new feature key
-        assert check_specs_by_name["check_metaxy"].asset_key == dg.AssetKey(
-            ["test", "upstream"]
-        )
+        assert check_specs_by_name["check_metaxy"].asset_key == dg.AssetKey(["test", "upstream"])
 
         # Check for regular output should keep the original key
-        assert check_specs_by_name["check_regular"].asset_key == dg.AssetKey(
-            ["regular_output"]
-        )
+        assert check_specs_by_name["check_regular"].asset_key == dg.AssetKey(["regular_output"])
 
     def test_metaxify_multi_asset_key_prefix_mixed_outputs(
         self,
@@ -2552,9 +2462,7 @@ class TestMetaxifyCheckSpecs:
         @dg.multi_asset(
             specs=[
                 # This output is a metaxy feature - gets prefix + feature key
-                dg.AssetSpec(
-                    "metaxy_output", metadata={"metaxy/feature": "test/upstream"}
-                ),
+                dg.AssetSpec("metaxy_output", metadata={"metaxy/feature": "test/upstream"}),
                 # This output is NOT a metaxy feature - still gets prefix
                 dg.AssetSpec("regular_output"),
             ],
@@ -2578,11 +2486,7 @@ class TestMetaxifyCheckSpecs:
         check_specs_by_name = {spec.name: spec for spec in check_specs}
 
         # Check for metaxy output should have prefix + feature key
-        assert check_specs_by_name["check_metaxy"].asset_key == dg.AssetKey(
-            ["my_prefix", "test", "upstream"]
-        )
+        assert check_specs_by_name["check_metaxy"].asset_key == dg.AssetKey(["my_prefix", "test", "upstream"])
 
         # Check for regular output should also have the prefix
-        assert check_specs_by_name["check_regular"].asset_key == dg.AssetKey(
-            ["my_prefix", "regular_output"]
-        )
+        assert check_specs_by_name["check_regular"].asset_key == dg.AssetKey(["my_prefix", "regular_output"])

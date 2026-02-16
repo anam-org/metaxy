@@ -9,12 +9,12 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
@@ -76,9 +76,7 @@ class TestComputeProvenance:
         joined_df = upstream_df.rename({METAXY_DATA_VERSION_BY_FIELD: renamed_col})
 
         with store:
-            result = store.compute_provenance(
-                DownstreamFeature, nw.from_native(joined_df)
-            )
+            result = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
         # Verify provenance columns were added
         result_pl = result.to_polars()
@@ -147,9 +145,7 @@ class TestComputeProvenance:
         )
 
         with store:
-            result = store.compute_provenance(
-                DownstreamFeature, nw.from_native(joined_df)
-            )
+            result = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
         result_pl = result.to_polars()
 
@@ -166,9 +162,7 @@ class TestComputeProvenance:
         assert result_pl["a"].to_list() == [1, 2]
         assert result_pl["b"].to_list() == [10, 20]
 
-    def test_compute_provenance_missing_column_raises_error(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_missing_column_raises_error(self, graph: FeatureGraph, tmp_path):
         """Test that missing upstream columns raise a clear error."""
 
         class UpstreamFeature(
@@ -204,9 +198,7 @@ class TestComputeProvenance:
             with pytest.raises(ValueError, match="missing required upstream columns"):
                 store.compute_provenance(DownstreamFeature, nw.from_native(df))
 
-    def test_compute_provenance_returns_eager_for_eager_input(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_returns_eager_for_eager_input(self, graph: FeatureGraph, tmp_path):
         """Test that compute_provenance returns eager DataFrame for eager input."""
 
         class UpstreamFeature(
@@ -250,9 +242,7 @@ class TestComputeProvenance:
         result_pl = result.to_polars()
         assert isinstance(result_pl, pl.DataFrame)
 
-    def test_compute_provenance_returns_lazy_for_lazy_input(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_returns_lazy_for_lazy_input(self, graph: FeatureGraph, tmp_path):
         """Test that compute_provenance returns LazyFrame for lazy input."""
 
         class UpstreamFeature(
@@ -294,9 +284,7 @@ class TestComputeProvenance:
         # Should return lazy
         assert isinstance(result, nw.LazyFrame)
 
-    def test_compute_provenance_integration_with_resolve_update(
-        self, graph: FeatureGraph, tmp_path
-    ):
+    def test_compute_provenance_integration_with_resolve_update(self, graph: FeatureGraph, tmp_path):
         """Test that compute_provenance output works with resolve_update."""
 
         class UpstreamFeature(
@@ -334,9 +322,7 @@ class TestComputeProvenance:
 
         with store:
             # Compute provenance
-            with_provenance = store.compute_provenance(
-                DownstreamFeature, nw.from_native(joined_df)
-            )
+            with_provenance = store.compute_provenance(DownstreamFeature, nw.from_native(joined_df))
 
             # Use with resolve_update
             increment = store.resolve_update(
@@ -345,9 +331,9 @@ class TestComputeProvenance:
             )
 
         # Both samples should be added (no existing data)
-        assert increment.added.to_polars().height == 2
-        assert increment.changed.to_polars().height == 0
-        assert increment.removed.to_polars().height == 0
+        assert increment.new.to_polars().height == 2
+        assert increment.stale.to_polars().height == 0
+        assert increment.orphaned.to_polars().height == 0
 
     def test_compute_provenance_root_feature(self, graph: FeatureGraph, tmp_path):
         """Test compute_provenance with a root feature (no upstream dependencies)."""

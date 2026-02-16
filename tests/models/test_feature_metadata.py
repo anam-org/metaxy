@@ -1,10 +1,10 @@
 import json
 
 import pytest
+from metaxy_testing.models import SampleFeatureSpec
 from pydantic.types import JsonValue
 
 from metaxy import BaseFeature, FeatureKey
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 

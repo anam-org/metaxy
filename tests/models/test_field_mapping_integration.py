@@ -1,6 +1,7 @@
 """Test field mapping integration with FeatureDep."""
 
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy_testing.models import SampleFeatureSpec
+
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldKey, FieldSpec
@@ -43,9 +44,7 @@ def test_field_mapping_on_feature_dep(graph: FeatureGraph):
         spec=SampleFeatureSpec(
             key="downstream_default",
             deps=[
-                FeatureDep(
-                    feature="upstream_a"
-                ),  # Uses DefaultFieldsMapping() by default
+                FeatureDep(feature="upstream_a"),  # Uses DefaultFieldsMapping() by default
                 FeatureDep(feature="upstream_b"),
             ],
             fields=[
@@ -117,12 +116,8 @@ def test_field_mapping_with_suffix_matching(graph: FeatureGraph):
                 ),
             ],
             fields=[
-                FieldSpec(
-                    key="french"
-                ),  # Should match audio/french with suffix matching
-                FieldSpec(
-                    key="english"
-                ),  # Should match audio/english with suffix matching
+                FieldSpec(key="french"),  # Should match audio/french with suffix matching
+                FieldSpec(key="english"),  # Should match audio/english with suffix matching
             ],
         ),
     ):
@@ -141,9 +136,7 @@ def test_field_mapping_with_suffix_matching(graph: FeatureGraph):
     assert FieldKey(["english"]) in field_deps
     english_deps = field_deps[FieldKey(["english"])]
     assert FeatureKey(["upstream_audio"]) in english_deps
-    assert (
-        FieldKey(["audio", "english"]) in english_deps[FeatureKey(["upstream_audio"])]
-    )
+    assert FieldKey(["audio", "english"]) in english_deps[FeatureKey(["upstream_audio"])]
 
 
 def test_field_mapping_with_explicit_all(graph: FeatureGraph):
@@ -284,9 +277,7 @@ def test_field_mapping_with_exclusions(graph: FeatureGraph):
                 FeatureDep(
                     feature="upstream_multi",
                     fields_mapping=FieldsMapping.default(
-                        exclude_fields=[
-                            FieldKey(["debug"])
-                        ],  # Don't auto-map debug field
+                        exclude_fields=[FieldKey(["debug"])],  # Don't auto-map debug field
                     ),
                 ),
                 FeatureDep(
@@ -316,9 +307,7 @@ def test_field_mapping_with_exclusions(graph: FeatureGraph):
     debug_deps = field_deps[FieldKey(["debug"])]
     # Should have all fields from upstream_multi except the excluded "debug" field
     assert FeatureKey(["upstream_multi"]) in debug_deps
-    assert (
-        len(debug_deps[FeatureKey(["upstream_multi"])]) == 2
-    )  # All fields except debug
+    assert len(debug_deps[FeatureKey(["upstream_multi"])]) == 2  # All fields except debug
     # upstream_excluded should not contribute since the entire feature is excluded
     assert FeatureKey(["upstream_excluded"]) not in debug_deps
 
@@ -343,9 +332,7 @@ def test_no_field_mapping_specified(graph: FeatureGraph):
         spec=SampleFeatureSpec(
             key="simple_downstream",
             deps=[
-                FeatureDep(
-                    feature="simple_upstream"
-                ),  # fields_mapping=None, defaults to DefaultFieldsMapping()
+                FeatureDep(feature="simple_upstream"),  # fields_mapping=None, defaults to DefaultFieldsMapping()
             ],
             fields=[
                 FieldSpec(key="value"),  # Should match simple_upstream.value

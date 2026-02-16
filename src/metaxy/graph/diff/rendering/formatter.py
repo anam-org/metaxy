@@ -65,9 +65,7 @@ class DiffFormatter:
         elif format == "mermaid":
             return self.format_mermaid_diff_only(diff, verbose)
         else:
-            raise ValueError(
-                f"Unknown format: {format}. Must be one of: terminal, json, yaml, mermaid"
-            )
+            raise ValueError(f"Unknown format: {format}. Must be one of: terminal, json, yaml, mermaid")
 
     def _format_merged(
         self,
@@ -86,9 +84,7 @@ class DiffFormatter:
         elif format == "mermaid":
             return self.format_mermaid_merged(merged_data, verbose, show_all_fields)
         else:
-            raise ValueError(
-                f"Unknown format: {format}. Must be one of: terminal, json, yaml, mermaid"
-            )
+            raise ValueError(f"Unknown format: {format}. Must be one of: terminal, json, yaml, mermaid")
 
     def format_terminal_diff_only(self, diff: GraphDiff, verbose: bool = False) -> str:
         """Format a GraphDiff as a human-readable string with colored markup.
@@ -107,7 +103,7 @@ class DiffFormatter:
 
         # Header
         lines.append(
-            f"Graph Diff: {utils.format_hash(diff.from_snapshot_version)}... → {utils.format_hash(diff.to_snapshot_version)}..."
+            f"Graph Diff: {utils.format_hash(diff.from_project_version)}... → {utils.format_hash(diff.to_project_version)}..."
         )
         lines.append("")
 
@@ -115,48 +111,30 @@ class DiffFormatter:
         if diff.added_nodes:
             lines.append(f"[bold green]Added ({len(diff.added_nodes)}):[/bold green]")
             for node in diff.added_nodes:
-                lines.append(
-                    f"  [green]+[/green] {utils.format_feature_key(node.feature_key)}"
-                )
+                lines.append(f"  [green]+[/green] {utils.format_feature_key(node.feature_key)}")
             lines.append("")
 
         # Removed nodes
         if diff.removed_nodes:
             lines.append(f"[bold red]Removed ({len(diff.removed_nodes)}):[/bold red]")
             for node in diff.removed_nodes:
-                lines.append(
-                    f"  [red]-[/red] {utils.format_feature_key(node.feature_key)}"
-                )
+                lines.append(f"  [red]-[/red] {utils.format_feature_key(node.feature_key)}")
             lines.append("")
 
         # Changed nodes
         if diff.changed_nodes:
-            lines.append(
-                f"[bold yellow]Changed ({len(diff.changed_nodes)}):[/bold yellow]"
-            )
+            lines.append(f"[bold yellow]Changed ({len(diff.changed_nodes)}):[/bold yellow]")
             for node_change in diff.changed_nodes:
                 # Show feature-level change
-                old_ver = (
-                    utils.format_hash(node_change.old_version)
-                    if node_change.old_version
-                    else "none"
-                )
-                new_ver = (
-                    utils.format_hash(node_change.new_version)
-                    if node_change.new_version
-                    else "none"
-                )
+                old_ver = utils.format_hash(node_change.old_version) if node_change.old_version else "none"
+                new_ver = utils.format_hash(node_change.new_version) if node_change.new_version else "none"
                 lines.append(
                     f"  [yellow]~[/yellow] {utils.format_feature_key(node_change.feature_key)} "
                     f"({old_ver}... → {new_ver}...)"
                 )
 
                 # Show field changes if any
-                all_field_changes = (
-                    node_change.added_fields
-                    + node_change.removed_fields
-                    + node_change.changed_fields
-                )
+                all_field_changes = node_change.added_fields + node_change.removed_fields + node_change.changed_fields
                 if all_field_changes:
                     lines.append("    fields:")
                     for field_change in all_field_changes:
@@ -164,43 +142,26 @@ class DiffFormatter:
 
                         if field_change.is_added:
                             new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
+                                utils.format_hash(field_change.new_version) if field_change.new_version else "none"
                             )
-                            lines.append(
-                                f"      [green]+[/green] {field_key_str} ({new_ver}...)"
-                            )
+                            lines.append(f"      [green]+[/green] {field_key_str} ({new_ver}...)")
                         elif field_change.is_removed:
                             old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
+                                utils.format_hash(field_change.old_version) if field_change.old_version else "none"
                             )
-                            lines.append(
-                                f"      [red]-[/red] {field_key_str} ({old_ver}...)"
-                            )
+                            lines.append(f"      [red]-[/red] {field_key_str} ({old_ver}...)")
                         elif field_change.is_changed:
                             old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
+                                utils.format_hash(field_change.old_version) if field_change.old_version else "none"
                             )
                             new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
+                                utils.format_hash(field_change.new_version) if field_change.new_version else "none"
                             )
-                            lines.append(
-                                f"      [yellow]~[/yellow] {field_key_str} "
-                                f"({old_ver}... → {new_ver}...)"
-                            )
+                            lines.append(f"      [yellow]~[/yellow] {field_key_str} ({old_ver}... → {new_ver}...)")
             lines.append("")
 
         # Summary
-        total_changes = (
-            len(diff.added_nodes) + len(diff.removed_nodes) + len(diff.changed_nodes)
-        )
+        total_changes = len(diff.added_nodes) + len(diff.removed_nodes) + len(diff.changed_nodes)
         lines.append(f"[dim]Total changes: {total_changes}[/dim]")
 
         return "\n".join(lines)
@@ -209,7 +170,7 @@ class DiffFormatter:
         """Format message when there are no changes."""
         return (
             f"[green]No changes between snapshots[/green]\n"
-            f"  {utils.format_hash(diff.from_snapshot_version)}... → {utils.format_hash(diff.to_snapshot_version)}..."
+            f"  {utils.format_hash(diff.from_project_version)}... → {utils.format_hash(diff.to_project_version)}..."
         )
 
     def print(self, diff: GraphDiff, verbose: bool = False) -> None:
@@ -232,15 +193,10 @@ class DiffFormatter:
             JSON string representation of the diff
         """
         data = {
-            "from_snapshot_version": diff.from_snapshot_version,
-            "to_snapshot_version": diff.to_snapshot_version,
-            "added_nodes": [
-                utils.format_feature_key(node.feature_key) for node in diff.added_nodes
-            ],
-            "removed_nodes": [
-                utils.format_feature_key(node.feature_key)
-                for node in diff.removed_nodes
-            ],
+            "from_project_version": diff.from_project_version,
+            "to_project_version": diff.to_project_version,
+            "added_nodes": [utils.format_feature_key(node.feature_key) for node in diff.added_nodes],
+            "removed_nodes": [utils.format_feature_key(node.feature_key) for node in diff.removed_nodes],
             "changed_nodes": [
                 {
                     "feature_key": utils.format_feature_key(nc.feature_key),
@@ -255,9 +211,7 @@ class DiffFormatter:
                             "is_removed": field.is_removed,
                             "is_changed": field.is_changed,
                         }
-                        for field in (
-                            nc.added_fields + nc.removed_fields + nc.changed_fields
-                        )
+                        for field in (nc.added_fields + nc.removed_fields + nc.changed_fields)
                     ],
                 }
                 for nc in diff.changed_nodes
@@ -277,12 +231,10 @@ class DiffFormatter:
         import yaml
 
         data = {
-            "from_snapshot_version": diff.from_snapshot_version,
-            "to_snapshot_version": diff.to_snapshot_version,
+            "from_project_version": diff.from_project_version,
+            "to_project_version": diff.to_project_version,
             "added_nodes": [node.feature_key.to_string() for node in diff.added_nodes],
-            "removed_nodes": [
-                node.feature_key.to_string() for node in diff.removed_nodes
-            ],
+            "removed_nodes": [node.feature_key.to_string() for node in diff.removed_nodes],
             "changed_nodes": [
                 {
                     "feature_key": nc.feature_key.to_string(),
@@ -297,9 +249,7 @@ class DiffFormatter:
                             "is_removed": field.is_removed,
                             "is_changed": field.is_changed,
                         }
-                        for field in (
-                            nc.added_fields + nc.removed_fields + nc.changed_fields
-                        )
+                        for field in (nc.added_fields + nc.removed_fields + nc.changed_fields)
                     ],
                 }
                 for nc in diff.changed_nodes
@@ -419,9 +369,7 @@ class DiffFormatter:
         # We'll sort features by status priority: unchanged, changed, added, removed
         status_order = {"unchanged": 0, "changed": 1, "added": 2, "removed": 3}
 
-        sorted_features = sorted(
-            nodes.items(), key=lambda x: (status_order[x[1]["status"]], x[0])
-        )
+        sorted_features = sorted(nodes.items(), key=lambda x: (status_order[x[1]["status"]], x[0]))
 
         for feature_key_str, node_data in sorted_features:
             status = node_data["status"]
@@ -470,11 +418,7 @@ class DiffFormatter:
                 lines.append("  fields:")
 
                 # Build a map of field changes for quick lookup
-                field_change_map = {
-                    fc.field_key.to_string(): fc
-                    for fc in field_changes
-                    if isinstance(fc, FieldChange)
-                }
+                field_change_map = {fc.field_key.to_string(): fc for fc in field_changes if isinstance(fc, FieldChange)}
 
                 # Collect field keys based on show_all_fields setting
                 if show_all_fields:
@@ -493,32 +437,20 @@ class DiffFormatter:
 
                         if field_change.is_added:
                             new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
+                                utils.format_hash(field_change.new_version) if field_change.new_version else "none"
                             )
-                            lines.append(
-                                f"    [green]+[/green] {field_key_str_inner} ({new_ver}...)"
-                            )
+                            lines.append(f"    [green]+[/green] {field_key_str_inner} ({new_ver}...)")
                         elif field_change.is_removed:
                             old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
+                                utils.format_hash(field_change.old_version) if field_change.old_version else "none"
                             )
-                            lines.append(
-                                f"    [red]-[/red] {field_key_str_inner} ({old_ver}...)"
-                            )
+                            lines.append(f"    [red]-[/red] {field_key_str_inner} ({old_ver}...)")
                         elif field_change.is_changed:
                             old_ver = (
-                                utils.format_hash(field_change.old_version)
-                                if field_change.old_version
-                                else "none"
+                                utils.format_hash(field_change.old_version) if field_change.old_version else "none"
                             )
                             new_ver = (
-                                utils.format_hash(field_change.new_version)
-                                if field_change.new_version
-                                else "none"
+                                utils.format_hash(field_change.new_version) if field_change.new_version else "none"
                             )
                             lines.append(
                                 f"    [yellow]~[/yellow] {field_key_str_inner} "
@@ -527,11 +459,7 @@ class DiffFormatter:
                     else:
                         # Unchanged field - no color, but show with proper spacing
                         field_version = fields[field_key_str_inner]
-                        ver = (
-                            utils.format_hash(field_version)
-                            if field_version
-                            else "none"
-                        )
+                        ver = utils.format_hash(field_version) if field_version else "none"
                         lines.append(f"      {field_key_str_inner} ({ver}...)")
 
             lines.append("")
@@ -678,32 +606,19 @@ class DiffFormatter:
 
             # Add version info
             if status == "changed":
-                old_ver = (
-                    utils.format_hash(old_version, length=6) if old_version else "none"
-                )
-                new_ver = (
-                    utils.format_hash(new_version, length=6) if new_version else "none"
-                )
+                old_ver = utils.format_hash(old_version, length=6) if old_version else "none"
+                new_ver = utils.format_hash(new_version, length=6) if new_version else "none"
                 # Red for old version, green for new version
-                label_parts.append(
-                    f'<font color="#CC0000">{old_ver}</font> → '
-                    f'<font color="#00AA00">{new_ver}</font>'
-                )
+                label_parts.append(f'<font color="#CC0000">{old_ver}</font> → <font color="#00AA00">{new_ver}</font>')
             elif status == "added":
-                ver = (
-                    utils.format_hash(new_version, length=6) if new_version else "none"
-                )
+                ver = utils.format_hash(new_version, length=6) if new_version else "none"
                 label_parts.append(f"{ver}")
             elif status == "removed":
-                ver = (
-                    utils.format_hash(old_version, length=6) if old_version else "none"
-                )
+                ver = utils.format_hash(old_version, length=6) if old_version else "none"
                 label_parts.append(f"{ver}")
             else:
                 # Unchanged
-                ver = (
-                    utils.format_hash(new_version, length=6) if new_version else "none"
-                )
+                ver = utils.format_hash(new_version, length=6) if new_version else "none"
                 label_parts.append(f"{ver}")
 
             # Add separator line before fields
@@ -713,11 +628,7 @@ class DiffFormatter:
             # Show fields for all features (not just changed)
             if fields:
                 # Build field change map (only for changed features)
-                field_change_map = {
-                    fc.field_key.to_string(): fc
-                    for fc in field_changes
-                    if isinstance(fc, FieldChange)
-                }
+                field_change_map = {fc.field_key.to_string(): fc for fc in field_changes if isinstance(fc, FieldChange)}
 
                 # Collect field keys based on show_all_fields setting
                 if show_all_fields:
@@ -736,36 +647,16 @@ class DiffFormatter:
                         fc = field_change_map[field_key_str_inner]
                         if fc.is_added:
                             # Green for added (with version)
-                            new_ver = (
-                                utils.format_hash(fc.new_version, length=6)
-                                if fc.new_version
-                                else "none"
-                            )
-                            label_parts.append(
-                                f'<font color="#00AA00">- {field_key_str_inner} ({new_ver})</font>'
-                            )
+                            new_ver = utils.format_hash(fc.new_version, length=6) if fc.new_version else "none"
+                            label_parts.append(f'<font color="#00AA00">- {field_key_str_inner} ({new_ver})</font>')
                         elif fc.is_removed:
                             # Red for removed (with version)
-                            old_ver = (
-                                utils.format_hash(fc.old_version, length=6)
-                                if fc.old_version
-                                else "none"
-                            )
-                            label_parts.append(
-                                f'<font color="#CC0000">- {field_key_str_inner} ({old_ver})</font>'
-                            )
+                            old_ver = utils.format_hash(fc.old_version, length=6) if fc.old_version else "none"
+                            label_parts.append(f'<font color="#CC0000">- {field_key_str_inner} ({old_ver})</font>')
                         elif fc.is_changed:
                             # Yellow field name, red old version, green new version
-                            old_ver = (
-                                utils.format_hash(fc.old_version, length=6)
-                                if fc.old_version
-                                else "none"
-                            )
-                            new_ver = (
-                                utils.format_hash(fc.new_version, length=6)
-                                if fc.new_version
-                                else "none"
-                            )
+                            old_ver = utils.format_hash(fc.old_version, length=6) if fc.old_version else "none"
+                            new_ver = utils.format_hash(fc.new_version, length=6) if fc.new_version else "none"
                             label_parts.append(
                                 f'- <font color="#FFAA00">{field_key_str_inner}</font> '
                                 f'(<font color="#CC0000">{old_ver}</font> → '

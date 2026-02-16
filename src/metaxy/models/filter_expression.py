@@ -8,6 +8,7 @@ from pydantic import field_serializer, model_validator
 from sqlglot import exp
 from sqlglot.errors import ParseError
 
+from metaxy._decorators import public
 from metaxy.models.bases import FrozenBaseModel
 
 LiteralValue = bool | int | float | str | None
@@ -53,6 +54,7 @@ class NarwhalsFilter(FrozenBaseModel):
         return _expression_to_narwhals(self.expression)
 
 
+@public
 def parse_filter_string(filter_string: str) -> nw.Expr:
     """Parse a SQL WHERE-like string into a Narwhals expression.
 
@@ -81,9 +83,7 @@ def _parse_to_sqlglot_expression(filter_string: str) -> sqlglot.exp.Expression:
         raise FilterParseError(msg) from exc
 
     if parsed is None:
-        raise FilterParseError(
-            f"Failed to parse filter string into an expression for {filter_string}"
-        )
+        raise FilterParseError(f"Failed to parse filter string into an expression for {filter_string}")
 
     return parsed
 
@@ -100,14 +100,10 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
         return ~_expression_to_narwhals(operand)
 
     if isinstance(node, exp.And):
-        return _expression_to_narwhals(node.this) & _expression_to_narwhals(
-            node.expression
-        )
+        return _expression_to_narwhals(node.this) & _expression_to_narwhals(node.expression)
 
     if isinstance(node, exp.Or):
-        return _expression_to_narwhals(node.this) | _expression_to_narwhals(
-            node.expression
-        )
+        return _expression_to_narwhals(node.this) | _expression_to_narwhals(node.expression)
 
     # IS / IS NOT operators
     if isinstance(node, exp.Is):
@@ -131,9 +127,7 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
         left = node.this
         right = node.expressions
         if left is None or right is None:
-            raise FilterParseError(
-                "IN operator requires a column and a list of values."
-            )
+            raise FilterParseError("IN operator requires a column and a list of values.")
 
         column_operand = _operand_info(left)
         if not column_operand.is_column:
@@ -158,9 +152,7 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
         left = node.this
         right = node.expression
         if left is None or right is None:
-            raise FilterParseError(
-                f"Comparison operator {type(node).__name__} requires two operands."
-            )
+            raise FilterParseError(f"Comparison operator {type(node).__name__} requires two operands.")
         left_operand = _operand_info(left)
         right_operand = _operand_info(right)
 
@@ -225,31 +217,21 @@ def _operand_info(node: exp.Expression) -> OperandInfo:
         if inner is None:
             raise FilterParseError("Unary minus requires an operand.")
         operand = _operand_info(inner)
-        if not operand.is_literal or not isinstance(
-            operand.literal_value, (int, float)
-        ):
+        if not operand.is_literal or not isinstance(operand.literal_value, (int, float)):
             raise FilterParseError("Unary minus only supported for numeric literals.")
         value = -operand.literal_value
-        return OperandInfo(
-            expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
-        )
+        return OperandInfo(expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False)
 
     if isinstance(node, exp.Literal):
         value = _literal_to_python(node)
-        return OperandInfo(
-            expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
-        )
+        return OperandInfo(expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False)
 
     if isinstance(node, exp.Boolean):
         value = _literal_to_python(node)
-        return OperandInfo(
-            expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
-        )
+        return OperandInfo(expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False)
 
     if isinstance(node, exp.Null):
-        return OperandInfo(
-            expr=nw.lit(None), is_literal=True, literal_value=None, is_column=False
-        )
+        return OperandInfo(expr=nw.lit(None), is_literal=True, literal_value=None, is_column=False)
 
     raise FilterParseError(f"Unsupported operand: {node.sql()}")
 

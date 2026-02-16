@@ -4,14 +4,13 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
+from metaxy_testing import SampleFeature
+from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy._testing import SampleFeature
-from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FieldSpec
@@ -19,10 +18,10 @@ from metaxy.models.types import FeatureKey, FieldKey
 
 
 class TestProjectDetection:
-    """Test automatic project detection from various sources."""
+    """Test automatic project detection from Python package."""
 
-    def test_detect_project_from_entrypoints(self):
-        """Test project detection from installed package with entry points."""
+    def test_detect_project_from_metaxy_project_variable(self):
+        """Test project detection from __metaxy_project__ in installed package."""
         # Install the test-project fixture in a temporary venv and test it
         test_project_path = Path(__file__).parent.parent / "fixtures" / "test-project"
 
@@ -32,9 +31,9 @@ class TestProjectDetection:
             # Create venv using uv
             subprocess.run(["uv", "venv", str(venv_path)], check=True)
 
-            # Get python path
+            # Get python path (Windows needs .exe extension for uv to find it)
             if sys.platform == "win32":
-                python = venv_path / "Scripts" / "python"
+                python = venv_path / "Scripts" / "python.exe"
             else:
                 python = venv_path / "bin" / "python"
 
@@ -81,33 +80,49 @@ class TestProjectDetection:
 
             assert "SUCCESS" in result.stdout
 
-    def test_fallback_to_global_config(self):
-        """Test fallback to global config when no entry points are found."""
-        from unittest.mock import patch
-
-        # Set a specific project in config
-        config = MetaxyConfig(project="fallback_project")
-
-        # Create a test graph with the custom config
+    def test_project_from_package_name_when_no_variable(self):
+        """Test that features get project from package name when __metaxy_project__ not set."""
+        # Create a test graph
         test_graph = FeatureGraph()
         with test_graph.use():
-            # Patch MetaxyConfig.get to return our custom config
-            with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                # Create a feature with generic module name (no entry points for this module)
+            # Create a feature - will get project from its module name
+            class TestFeature(
+                SampleFeature,
+                spec=SampleFeatureSpec(key="test_feature", fields=[FieldSpec(key="field1")]),
+            ):
+                pass
+
+            # Should get project from top-level package (tests or test_multi_project)
+            expected_project = TestFeature.__module__.split(".")[0]
+            assert TestFeature.metaxy_project() == expected_project
+
+    def test_config_project_does_not_affect_feature_detection(self):
+        """Test that MetaxyConfig.project doesn't affect feature project detection."""
+        # Set a specific project in config
+        config = MetaxyConfig(project="config_project")
+        MetaxyConfig.set(config)
+
+        try:
+            # Create a test graph
+            test_graph = FeatureGraph()
+            with test_graph.use():
+                # Create a feature - should get project from package, not config
                 class TestFeature(
                     SampleFeature,
-                    spec=SampleFeatureSpec(
-                        key="test_feature", fields=[FieldSpec(key="field1")]
-                    ),
+                    spec=SampleFeatureSpec(key="config_test_feature", fields=[FieldSpec(key="field1")]),
                 ):
                     pass
 
-                # Should fall back to config.project
-                assert TestFeature.project == "fallback_project"
+                # Should get project from package name, not config
+                expected_project = TestFeature.__module__.split(".")[0]
+                assert TestFeature.metaxy_project() == expected_project
+                assert TestFeature.metaxy_project() != "config_project"
+        finally:
+            MetaxyConfig.reset()
 
     def test_load_features_from_entrypoints(self):
         """Test that load_features() actually loads features from entry points."""
-        from metaxy._testing import ExternalMetaxyProject
+        from metaxy_testing import ExternalMetaxyProject
 
         test_project_path = Path(__file__).parent.parent / "fixtures" / "test-project"
         project = ExternalMetaxyProject(test_project_path, require_config=False)
@@ -130,48 +145,16 @@ class TestProjectDetection:
                 print("STDERR:", result.stderr)
                 pytest.fail(f"Test script failed with return code {result.returncode}")
 
-    def test_multiple_entrypoints_same_package_raises_error(self):
-        """Test that multiple entry points from the same package raises an error."""
-        from unittest.mock import MagicMock, patch
-
-        from metaxy._packaging import get_all_project_entrypoints
-
-        # Clear the cache first
-        get_all_project_entrypoints.cache_clear()
-
-        # Create mock entry points - two from the same package
-        mock_ep1 = MagicMock()
-        mock_ep1.name = "project-one"
-        mock_ep1.value = "my_package.features"
-
-        mock_ep2 = MagicMock()
-        mock_ep2.name = "project-two"
-        mock_ep2.value = "my_package.other"
-
-        with patch("metaxy._packaging.entry_points") as mock_entry_points:
-            mock_entry_points.return_value = [mock_ep1, mock_ep2]
-
-            with pytest.raises(
-                ValueError,
-                match=r"Found multiple entries in `metaxy\.project` entrypoints group: 'project-one', 'project-two'\. "
-                r"The key should be the Metaxy project name, thus only one entry is allowed\.",
-            ):
-                get_all_project_entrypoints()
-
-        # Clear cache after test
-        get_all_project_entrypoints.cache_clear()
-
 
 class TestFeatureTrackingVersion:
     """Test feature tracking version that combines spec version and project."""
 
-    def test_full_definition_version_calculation(self):
-        """Test that full_definition_version correctly combines spec version and project."""
-        # Create a test graph
+    def test_definition_version_calculation(self):
+        """Test that feature_definition_version is based on spec + schema (not project)."""
         test_graph = FeatureGraph()
 
         with test_graph.use():
-            # Create a feature with a specific project
+            # Create a feature
             class TestFeature(
                 SampleFeature,
                 spec=SampleFeatureSpec(
@@ -182,24 +165,24 @@ class TestFeatureTrackingVersion:
             ):
                 pass
 
-            # Override project for testing
-            TestFeature.project = "project_a"
+            # Get the definition from the graph
+            definition = test_graph.get_feature_definition(FeatureKey(["test", "feature"]))
+            definition_version = definition.feature_definition_version
 
-            # Get the tracking version
-            tracking_version = TestFeature.full_definition_version()
+            # Verify it's different from spec version alone (includes schema)
+            spec_version = definition.spec.feature_spec_version
+            assert definition_version != spec_version
 
-            # Verify it's different from spec version alone
-            spec_version = TestFeature.feature_spec_version()
-            assert tracking_version != spec_version
+            # Verify changing project does NOT affect feature_definition_version
+            # (project is not part of the hash)
+            original_project = TestFeature.__metaxy_project__
+            TestFeature.__metaxy_project__ = "different_project"
+            # Re-get the definition - the version should be the same
+            definition_after = test_graph.get_feature_definition(FeatureKey(["test", "feature"]))
+            assert definition_after.feature_definition_version == definition_version
 
-            # Verify it changes when project changes
-            TestFeature.project = "project_b"
-            new_tracking_version = TestFeature.full_definition_version()
-            assert new_tracking_version != tracking_version
-
-            # Verify it's deterministic
-            TestFeature.project = "project_a"
-            assert TestFeature.full_definition_version() == tracking_version
+            # Restore original project
+            TestFeature.__metaxy_project__ = original_project
 
     def test_tracking_version_in_snapshot(self):
         """Test that tracking version is included in graph snapshot."""
@@ -217,35 +200,32 @@ class TestFeatureTrackingVersion:
             ):
                 pass
 
-            # Override project
-            TestFeature.project = "test_project"
-
             # Get snapshot
             snapshot = test_graph.to_snapshot()
 
             # Verify tracking version is included
             feature_data = snapshot["test/feature"]
-            assert "metaxy_full_definition_version" in feature_data
+            assert "metaxy_definition_version" in feature_data
             assert "project" in feature_data
-            assert feature_data["project"] == "test_project"
+            # Project is detected from module name at class definition time
+            assert feature_data["project"] == TestFeature.metaxy_project()
 
             # Verify tracking version is computed correctly
-            expected_tracking_version = TestFeature.full_definition_version()
-            assert (
-                feature_data["metaxy_full_definition_version"]
-                == expected_tracking_version
-            )
+            # The snapshot's definition_version should match the definition's property
+            definition = test_graph.get_feature_definition(FeatureKey(["test", "feature"]))
+            expected_tracking_version = definition.feature_definition_version
+            assert feature_data["metaxy_definition_version"] == expected_tracking_version
 
 
 class TestMultiProjectIsolation:
     """Test that features from different projects are properly isolated."""
 
     def test_features_with_different_projects(self):
-        """Test that features can have different projects in the same graph."""
+        """Test that features from same module share project, and project is stored separately."""
         test_graph = FeatureGraph()
 
         with test_graph.use():
-            # Create first feature
+            # Create two features in the same graph
             class FeatureA(
                 SampleFeature,
                 spec=SampleFeatureSpec(
@@ -255,10 +235,6 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            # Override project for FeatureA
-            FeatureA.project = "project_a"
-
-            # Create second feature
             class FeatureB(
                 SampleFeature,
                 spec=SampleFeatureSpec(
@@ -268,30 +244,28 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            # Override project for FeatureB
-            FeatureB.project = "project_b"
+            # Get definitions - both should have the same project (from module name)
+            definition_a = test_graph.get_feature_definition(FeatureKey(["feature", "a"]))
+            definition_b = test_graph.get_feature_definition(FeatureKey(["feature", "b"]))
 
-            # Verify they have different projects
-            assert FeatureA.project != FeatureB.project
+            # Both features are defined in the same module, so they share the same project
+            assert definition_a.project == definition_b.project
 
-            # Verify they have different tracking versions
-            assert (
-                FeatureA.full_definition_version() != FeatureB.full_definition_version()
-            )
-
-            # Verify snapshot includes both with correct projects
+            # Project is stored in the definition and snapshot
             snapshot = test_graph.to_snapshot()
-            assert snapshot["feature/a"]["project"] == "project_a"
-            assert snapshot["feature/b"]["project"] == "project_b"
+            assert "project" in snapshot["feature/a"]
+            assert "project" in snapshot["feature/b"]
+            assert snapshot["feature/a"]["project"] == definition_a.project
+            assert snapshot["feature/b"]["project"] == definition_b.project
 
-    def test_migration_detection_across_projects(self):
-        """Test that migrations are triggered when features move between projects."""
-        # Create first graph with feature in project_a
+    def test_identical_features_have_same_definition_version(self):
+        """Test that identical features in different graphs have the same definition version."""
+        # Create first graph
         graph1 = FeatureGraph()
 
         with graph1.use():
-
-            class FeatureV1(
+            # Use same class name "TestFeature" in both graphs to ensure schema matches
+            class TestFeature(
                 SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
@@ -300,40 +274,36 @@ class TestMultiProjectIsolation:
             ):
                 pass
 
-            FeatureV1.project = "project_a"
-
         snapshot1 = graph1.to_snapshot()
-        tracking_v1 = snapshot1["test/feature"]["metaxy_full_definition_version"]
+        definition_v1 = snapshot1["test/feature"]["metaxy_definition_version"]
+        feature_v1 = snapshot1["test/feature"]["metaxy_feature_version"]
 
-        # Create second graph with same feature in project_b
+        # Create second graph with identical feature
         graph2 = FeatureGraph()
 
         with graph2.use():
-
-            class FeatureV2(
+            # Same class name to ensure identical schema
+            class TestFeature(
                 SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),  # Same key
-                    fields=[
-                        FieldSpec(key=FieldKey(["value"]), code_version="1")
-                    ],  # Same spec
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],  # Same spec
                 ),
             ):
                 pass
 
-            FeatureV2.project = "project_b"  # Different project
-
         snapshot2 = graph2.to_snapshot()
-        tracking_v2 = snapshot2["test/feature"]["metaxy_full_definition_version"]
+        definition_v2 = snapshot2["test/feature"]["metaxy_definition_version"]
+        feature_v2 = snapshot2["test/feature"]["metaxy_feature_version"]
 
-        # Verify tracking versions are different (would trigger migration)
-        assert tracking_v1 != tracking_v2
+        # Verify definition versions are the SAME (identical specs and schemas)
+        assert definition_v1 == definition_v2
 
-        # Verify feature versions are the same (no computational change)
-        assert (
-            snapshot1["test/feature"]["metaxy_feature_version"]
-            == snapshot2["test/feature"]["metaxy_feature_version"]
-        )
+        # Verify feature versions are also the same (no computational change)
+        assert feature_v1 == feature_v2
+
+        # Both have the same project (from module name)
+        assert snapshot1["test/feature"]["project"] == snapshot2["test/feature"]["project"]
 
 
 class TestSystemTableRecording:
@@ -355,7 +325,9 @@ class TestSystemTableRecording:
             ):
                 pass
 
-            TestFeature.project = "test_project"
+            # Note: Project is captured at class definition time from the module name.
+            # Assigning __metaxy_project__ after class creation does NOT update the
+            # already-stored FeatureDefinition.
 
             # Create a store and record snapshot (while the test graph is still active)
             with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
@@ -363,83 +335,19 @@ class TestSystemTableRecording:
                 result = storage.push_graph_snapshot()
 
                 assert not result.already_pushed  # First time recording
-                snapshot_version = result.snapshot_version
+                project_version = result.project_version
 
                 # Read the recorded features
-                features_df = storage.read_features(
-                    current=False, snapshot_version=snapshot_version
-                )
+                features_df = storage.read_features(current=False, project_version=project_version)
 
                 # Verify tracking version is recorded
-                assert "metaxy_full_definition_version" in features_df.columns
+                assert "metaxy_definition_version" in features_df.columns
 
                 # Verify the recorded tracking version matches the computed one
-                rows = features_df.filter(
-                    features_df["feature_key"] == "test/feature"
-                ).to_dicts()
+                rows = features_df.filter(features_df["feature_key"] == "test/feature").to_dicts()
                 assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
                 row = rows[0]
-                assert (
-                    row["metaxy_full_definition_version"]
-                    == TestFeature.full_definition_version()
-                )
-                assert row["project"] == "test_project"
-
-
-# Note: TestBackwardCompatibility was removed because it tested schema-less writes
-# that were only possible with InMemoryMetadataStore. DeltaMetadataStore enforces
-# schemas and cannot write partial records. The backward compatibility concern
-# (reading old snapshots without full_definition_version) is now handled by the
-# schema evolution capabilities of Delta Lake itself.
-
-
-class TestProjectValidation:
-    """Test project validation in store operations."""
-
-    def test_write_metadata_validates_project(self, tmp_path: Path):
-        """Test that write_metadata validates project matches config."""
-        import polars as pl
-
-        # Set up config with specific project
-        config = MetaxyConfig(project="expected_project")
-
-        test_graph = FeatureGraph()
-
-        with test_graph.use():
-
-            class TestFeature(
-                SampleFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-                    # Root feature
-                ),
-            ):
-                pass
-
-            # Override to different project
-            TestFeature.project = "different_project"
-
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
-                # Create some test data
-                test_df = pl.DataFrame(
-                    {
-                        "sample_uid": [1, 2],
-                        "metaxy_provenance_by_field": [
-                            {"value": "hash1"},
-                            {"value": "hash2"},
-                        ],
-                    }
-                )
-
-                # Should raise error when writing to feature with different project
-                with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                    with pytest.raises(
-                        ValueError, match="Cannot write to feature .* from project"
-                    ):
-                        store.write_metadata(TestFeature, test_df)
-
-                # Should work with allow_cross_project_writes context
-                with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                    with store.allow_cross_project_writes():
-                        store.write_metadata(TestFeature, test_df)  # Should not raise
+                definition = test_graph.get_feature_definition(FeatureKey(["test", "feature"]))
+                assert row["metaxy_definition_version"] == definition.feature_definition_version
+                # Project is captured from module name at class definition time
+                assert row["project"] == definition.project

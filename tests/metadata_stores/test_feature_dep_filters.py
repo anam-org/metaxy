@@ -6,12 +6,13 @@ through the metadata store, ensuring FeatureDepTransformer is invoked properly.
 
 from __future__ import annotations
 
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
 from metaxy import (
     FeatureDep,
     FeatureGraph,
     FieldsMapping,
 )
-from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store import MetadataStore
 
 
@@ -173,24 +174,22 @@ def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
             from metaxy.metadata_store import HashAlgorithmNotSupportedError
 
             try:
-                store.write_metadata(UpstreamFeature, upstream_data)
+                store.write(UpstreamFeature, upstream_data)
 
                 # Resolve downstream feature - this should trigger FeatureDepTransformer
                 # which will read upstream data and apply filters
                 increment = store.resolve_update(
                     DownstreamFeature,
                     target_version=DownstreamFeature.feature_version(),
-                    snapshot_version=graph.snapshot_version,
+                    project_version=graph.project_version,
                 )
             except HashAlgorithmNotSupportedError:
                 import pytest
 
-                pytest.skip(
-                    f"Hash algorithm {store.hash_algorithm} not supported by {store}"
-                )
+                pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
             # Get the result
-            result_df = increment.added.lazy().collect().to_polars()
+            result_df = increment.new.lazy().collect().to_polars()
 
             # Verify only samples with age >= 25 are present
             # (s2 with age=25 and s3 with age=30)

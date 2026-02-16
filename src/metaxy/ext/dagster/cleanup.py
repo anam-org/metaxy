@@ -8,18 +8,18 @@ from metaxy.models.types import FeatureKey, ValidatedFeatureKeyList
 
 
 class DeleteMetadataConfig(dg.Config):
-    """Configuration for delete_metadata op.
+    """Configuration for delete op.
 
     Attributes:
         feature_key: Feature key validated using ValidatedFeatureKey semantics.
         filters: List of SQL WHERE clause filter expressions (e.g., ["status = 'inactive'", "age > 18"]).
-            See https://docs.metaxy.org/guide/learn/filters/ for syntax.
+            See https://docs.metaxy.org/guide/concepts/filters/ for syntax.
         soft: Whether to use soft deletes or hard deletes.
     """
 
     feature_key: ValidatedFeatureKeyList
     filters: list[str] = Field(
-        description="List of SQL WHERE clause filter expressions. See https://docs.metaxy.org/guide/learn/filters/ for syntax."
+        description="List of SQL WHERE clause filter expressions. See https://docs.metaxy.org/guide/concepts/filters/ for syntax."
     )
     soft: bool = Field(
         default=True,
@@ -28,7 +28,7 @@ class DeleteMetadataConfig(dg.Config):
 
 
 @dg.op
-def delete_metadata(
+def delete(
     context: dg.OpExecutionContext,
     config: DeleteMetadataConfig,
     metaxy_store: dg.ResourceParam[mx.MetadataStore],
@@ -43,21 +43,21 @@ def delete_metadata(
     Example:
         ```python
         import dagster as dg
-        from metaxy.ext.dagster import delete_metadata
+        from metaxy.ext.dagster import delete
         from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 
+
         # Define a job with the delete op
-        @dg.job(
-            resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="dev")}
-        )
+        @dg.job(resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="dev")})
         def cleanup_job():
-            delete_metadata()
+            delete()
+
 
         # Execute with config to delete inactive customer segments
         cleanup_job.execute_in_process(
             run_config={
                 "ops": {
-                    "delete_metadata": {
+                    "delete": {
                         "config": {
                             "feature_key": ["customer", "segment"],
                             "filters": ["status = 'inactive'"],
@@ -79,11 +79,9 @@ def delete_metadata(
     # Parse filter strings into Narwhals expressions
     filter_exprs = [parse_filter_string(f) for f in config.filters]
 
-    context.log.info(
-        f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}"
-    )
+    context.log.info(f"Executing {'soft' if config.soft else 'hard'} delete for {feature_key.to_string()}")
 
-    with store.open("write"):
-        store.delete_metadata(feature_key, filters=filter_exprs, soft=config.soft)
+    with store.open("w"):
+        store.delete(feature_key, filters=filter_exprs, soft=config.soft)
 
     context.log.info(f"Successfully completed delete for {feature_key.to_string()}")

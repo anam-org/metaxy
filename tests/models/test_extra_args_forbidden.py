@@ -105,8 +105,8 @@ class TestMigrationModelsExtraArgsForbidden:
                 migration_id="test",
                 parent="initial",
                 created_at=datetime.now(timezone.utc),
-                from_snapshot_version="abc",
-                to_snapshot_version="def",
+                from_project_version="abc",
+                to_project_version="def",
                 ops=[],
                 extra_arg="should_fail",
             )
