@@ -2,6 +2,7 @@
 
 import os
 import socket
+import tempfile
 import uuid
 from collections.abc import Generator
 from pathlib import Path
@@ -24,7 +25,109 @@ from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
+from metaxy.metadata_store.postgresql import PostgreSQLMetadataStore
 from tests.conftest import require_fixture
+
+# ============= POSTGRESQL FIXTURES =============
+
+# Force pytest-postgresql to use a short socket directory to avoid hitting the
+# 103-character Unix socket limit enforced by PostgreSQL on macOS.
+# Use system temp directory for cross-platform compatibility (Windows, Linux, macOS)
+_PG_SOCKET_DIR = Path(tempfile.gettempdir()) / "metaxy-pg"
+_PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# --- SETUP POSTGRES PATH ---
+_nix_pg_bin = os.environ.get("PG_BIN")
+_pg_available = False
+
+if _nix_pg_bin:
+    _pg_executable = str(Path(_nix_pg_bin) / "pg_ctl")
+    _pg_available = Path(_pg_executable).exists()
+else:
+    import shutil
+
+    _pg_executable = shutil.which("pg_ctl") or "pg_ctl"
+    _pg_available = shutil.which("pg_ctl") is not None
+
+
+# --- FIXTURE CONFIGURATION ---
+if _pg_available:
+    from pytest_postgresql import factories
+
+    postgresql_proc = factories.postgresql_proc(
+        executable=_pg_executable,
+        unixsocketdir=str(_PG_SOCKET_DIR),
+        postgres_options="-c fsync=off -c synchronous_commit=off -c full_page_writes=off",
+        user="postgres",
+        password=None,
+    )
+
+    # Session-scoped process, function-scoped database for test isolation
+    @pytest.fixture(scope="function")
+    def postgresql_db(postgresql_proc) -> str:  # type: ignore[no-untyped-def]
+        """PostgreSQL database connection string fixture.
+
+        Returns connection string for a test PostgreSQL instance.
+        Creates a fresh database for each test to ensure isolation.
+        """
+        import psycopg
+        from psycopg import sql
+
+        # Use unique database name for each test
+        test_db_name = f"metaxy_test_{uuid.uuid4().hex[:8]}"
+
+        # Connect to postgres database to create test database
+        admin_conn_str = f"postgresql://{postgresql_proc.user}@{postgresql_proc.host}:{postgresql_proc.port}/postgres"
+        conn = psycopg.connect(admin_conn_str, autocommit=True)
+        try:
+            # Use sql.Identifier for safe database name quoting
+            conn.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(test_db_name)))
+        finally:
+            conn.close()
+
+        conn_str = f"postgresql://{postgresql_proc.user}@{postgresql_proc.host}:{postgresql_proc.port}/{test_db_name}"
+
+        yield conn_str
+
+        # Cleanup: force disconnect all connections and drop database
+        conn = psycopg.connect(admin_conn_str, autocommit=True)
+        try:
+            # Terminate all connections to the test database
+            # Use sql.Literal for safe string literal quoting in WHERE clause
+            conn.execute(
+                sql.SQL(
+                    """
+                    SELECT pg_terminate_backend(pg_stat_activity.pid)
+                    FROM pg_stat_activity
+                    WHERE pg_stat_activity.datname = {}
+                      AND pid <> pg_backend_pid()
+                    """
+                ).format(sql.Literal(test_db_name))
+            )
+            # Now drop the database
+            # Use sql.Identifier for safe database name quoting
+            conn.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(test_db_name)))
+        finally:
+            conn.close()
+
+else:
+    _postgres_test_url = os.environ.get("POSTGRES_TEST_URL")
+
+    if _postgres_test_url:
+        _pg_url: str = _postgres_test_url
+
+        @pytest.fixture(scope="function")
+        def postgresql_db() -> str:
+            """PostgreSQL connection string from POSTGRES_TEST_URL."""
+            return _pg_url
+
+    else:
+
+        @pytest.fixture(scope="function")
+        def postgresql_db() -> str:
+            """PostgreSQL not available - skip tests."""
+            pytest.skip("PostgreSQL not available. Set PG_BIN, install PostgreSQL, or set POSTGRES_TEST_URL.")
 
 
 def find_free_port() -> int:
@@ -80,7 +183,7 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
 
 
 class AllStoresCases:
-    """All store types (Delta, DuckDB, DuckDB+DuckLake, ClickHouse, LanceDB)."""
+    """All store types (Delta, DuckDB, DuckDB+DuckLake, ClickHouse, LanceDB, PostgreSQL)."""
 
     @pytest.mark.delta
     @pytest.mark.polars
@@ -138,11 +241,20 @@ class AllStoresCases:
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
+    @pytest.mark.ibis
+    @pytest.mark.polars
+    @pytest.mark.postgresql
+    def case_postgresql(self, postgresql_db: str) -> MetadataStore:
+        return PostgreSQLMetadataStore(
+            connection_string=postgresql_db,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
 
 @fixture
 @parametrize_with_cases("store", cases=AllStoresCases)
 def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (Delta + DuckDB + ClickHouse + LanceDB)."""
+    """Parametrized store (all backends)."""
     return store
 
 

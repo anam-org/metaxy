@@ -259,6 +259,7 @@ nav:
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
         - LanceDB: integrations/metadata-stores/databases/lancedb.md
         - Ibis: integrations/metadata-stores/databases/ibis.md
+        - PostgreSQL: integrations/metadata-stores/databases/postgresql.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
         - Delta Lake: integrations/metadata-stores/storage/delta.md

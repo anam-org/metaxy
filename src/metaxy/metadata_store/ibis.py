@@ -436,6 +436,40 @@ class IbisMetadataStore(MetadataStore, ABC):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
+    def _get_filtered_ibis_lazy(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Get an Ibis-backed Narwhals LazyFrame with filters applied.
+
+        Always returns Ibis-backed frames regardless of subclass overrides.
+
+        Args:
+            feature: Feature to read
+            filters: Narwhals filter expressions (converted to SQL WHERE clauses)
+
+        Returns:
+            Ibis-backed Narwhals LazyFrame, or None if table doesn't exist
+        """
+        feature_key = self._resolve_feature_key(feature)
+        table_name = self.get_table_name(feature_key)
+
+        if table_name not in self.conn.list_tables():
+            return None
+
+        table = self.conn.table(table_name)
+        table = self.transform_after_read(table, feature_key)
+
+        nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, nw.from_native(table, eager_only=False)))
+
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        return nw_lazy
+
     def _delete_feature(
         self,
         feature_key: FeatureKey,
@@ -467,13 +501,12 @@ class IbisMetadataStore(MetadataStore, ABC):
             self.conn.truncate_table(table_name)
             return
 
-        # Read and filter using store's lazy path to build WHERE clause
-        filtered = self._read_feature(feature_key, filters=filter_list)
-        if filtered is None:
+        nw_lazy = self._get_filtered_ibis_lazy(feature_key, filters=filter_list)
+        if nw_lazy is None:
             raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
 
         # Extract WHERE clause from compiled SELECT statement
-        ibis_filtered = cast("ibis.expr.types.Table", filtered.to_native())
+        ibis_filtered = cast("ibis.expr.types.Table", nw_lazy.to_native())
         select_sql = str(ibis_filtered.compile())
 
         dialect = self._sql_dialect
@@ -481,7 +514,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         if predicate is None:
             raise ValueError(f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}")
 
-        # Generate and execute DELETE statement
         predicate = predicate.transform(_strip_table_qualifiers())
         where_clause = predicate.sql(dialect=dialect) if dialect else predicate.sql()
 
@@ -515,38 +547,17 @@ class IbisMetadataStore(MetadataStore, ABC):
         Returns:
             Narwhals LazyFrame with metadata, or None if not found
         """
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self.get_table_name(feature_key)
+        all_filters = list(filters or [])
+        if feature_version is not None:
+            all_filters.append(nw.col("metaxy_feature_version") == feature_version)
 
-        # Check if table exists
-        existing_tables = self.conn.list_tables()
-        if table_name not in existing_tables:
+        nw_lazy = self._get_filtered_ibis_lazy(feature, filters=all_filters or None)
+        if nw_lazy is None:
             return None
 
-        # Get Ibis table reference
-        table = self.conn.table(table_name)
-
-        # Apply backend-specific transformations (e.g., cast JSON columns for ClickHouse)
-        table = self.transform_after_read(table, feature_key)
-
-        # Wrap Ibis table with Narwhals (stays lazy in SQL)
-        native_frame = nw.from_native(table, eager_only=False)
-        nw_lazy: nw.LazyFrame[Any] = cast(nw.LazyFrame[Any], cast(object, native_frame))
-
-        # Apply feature_version filter (stays in SQL via Narwhals)
-        if feature_version is not None:
-            nw_lazy = nw_lazy.filter(nw.col("metaxy_feature_version") == feature_version)
-
-        # Apply generic Narwhals filters (stays in SQL)
-        if filters is not None:
-            for filter_expr in filters:
-                nw_lazy = nw_lazy.filter(filter_expr)
-
-        # Select columns (stays in SQL)
         if columns is not None:
             nw_lazy = nw_lazy.select(columns)
 
-        # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
 
     def ibis_type_to_polars(self, ibis_type: Any) -> Any:
