@@ -3016,7 +3016,7 @@ requires-dist = [
     { name = "cyclopts", specifier = ">=4.4.0" },
     { name = "dagster", marker = "extra == 'dagster'", specifier = ">=1.12.3" },
     { name = "dagster-shared", marker = "extra == 'dagster'", specifier = ">=1.12.0" },
-    { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.2.1" },
+    { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.4.2" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.1" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.0.0" },
     { name = "google-auth", marker = "extra == 'bigquery'", specifier = ">=2.0.0" },
