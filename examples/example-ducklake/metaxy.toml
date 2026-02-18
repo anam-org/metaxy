@@ -8,13 +8,61 @@ type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 [stores.dev.config]
 database = "/tmp/ducklake_demo.db"
 
+[stores.dev.config.ducklake]
+alias = "ducklake"
+
 [stores.dev.config.ducklake.attach_options]
 override_data_path = true
 
+# -- Metadata backend: SQLite (local, no extra dependencies) -----------------
 [stores.dev.config.ducklake.metadata_backend]
 type = "sqlite"
-path = "/tmp/ducklake_meta.db"
+uri = "/tmp/ducklake_meta.db"
 
+# -- Metadata backend: PostgreSQL ---------------------------------------------
+# [stores.dev.config.ducklake.metadata_backend]
+# type = "postgres"
+# host = "localhost"
+# port = 5432
+# database = "ducklake_meta"
+# user = "ducklake"
+# password = "changeme"
+# # Extra parameters forwarded to DuckDB's CREATE SECRET (optional):
+# # secret_parameters = { sslmode = "require" }
+
+# -- Metadata backend: MotherDuck (managed, no storage_backend needed) --------
+# [stores.dev.config.ducklake.metadata_backend]
+# type = "motherduck"
+# database = "my_lake"
+
+# -- Storage backend: local filesystem ----------------------------------------
 [stores.dev.config.ducklake.storage_backend]
 type = "local"
 path = "/tmp/ducklake_storage"
+
+# -- Storage backend: S3 -----------------------------------------------------
+# [stores.dev.config.ducklake.storage_backend]
+# type = "s3"
+# bucket = "my-ducklake-bucket"
+# prefix = "data"
+# region = "eu-central-1"
+# # Omit credentials to use the credential chain (IAM roles, env vars, etc.):
+# # key_id = "AKIA..."
+# # secret = "secret"
+# # Extra parameters forwarded to DuckDB's CREATE SECRET (optional):
+# # secret_parameters = { kms_key_id = "arn:aws:kms:..." }
+
+# -- Storage backend: Cloudflare R2 ------------------------------------------
+# [stores.dev.config.ducklake.storage_backend]
+# type = "r2"
+# account_id = "your-cloudflare-account-id"
+# data_path = "r2://my-bucket/ducklake/"
+# # key_id = "R2_ACCESS_KEY"
+# # secret = "R2_SECRET_KEY"
+
+# -- Storage backend: Google Cloud Storage ------------------------------------
+# [stores.dev.config.ducklake.storage_backend]
+# type = "gcs"
+# data_path = "gs://my-bucket/ducklake/"
+# # key_id = "HMAC_ACCESS_KEY"
+# # secret = "HMAC_SECRET"

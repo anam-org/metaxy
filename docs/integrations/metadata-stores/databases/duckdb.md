@@ -52,11 +52,6 @@ store = DuckDBMetadataStore(":memory:", extensions=["hashfuncs"])
       members: false
       heading_level: 3
 
-::: metaxy.ext.metadata_stores.duckdb.DuckLakeConfigInput
-    options:
-      members: false
-      heading_level: 3
-
 ::: metaxy.ext.metadata_stores._ducklake_support.DuckLakeAttachmentConfig
     options:
       members: false

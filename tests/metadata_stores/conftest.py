@@ -78,7 +78,7 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
 
 
 class AllStoresCases:
-    """All store types (Delta, DuckDB, ClickHouse, LanceDB)."""
+    """All store types (Delta, DuckDB, DuckDB+DuckLake, ClickHouse, LanceDB)."""
 
     @pytest.mark.delta
     @pytest.mark.polars
@@ -97,6 +97,25 @@ class AllStoresCases:
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
             extensions=["hashfuncs"],
+        )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.duckdb
+    @pytest.mark.ducklake
+    def case_duckdb_ducklake(self, tmp_path: Path) -> MetadataStore:
+        from metaxy.ext.metadata_stores._ducklake_support import DuckLakeAttachmentConfig
+
+        return DuckDBMetadataStore(
+            database=tmp_path / "test_ducklake.duckdb",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            ducklake=DuckLakeAttachmentConfig.model_validate(
+                {
+                    "alias": "integration_lake",
+                    "metadata_backend": {"type": "duckdb", "uri": str(tmp_path / "ducklake_catalog.duckdb")},
+                    "storage_backend": {"type": "local", "path": str(tmp_path / "ducklake_storage")},
+                }
+            ),
         )
 
     @pytest.mark.ibis
