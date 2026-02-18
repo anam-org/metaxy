@@ -149,6 +149,7 @@ def print_error_list(
 class CLIErrorCode(str, Enum):
     """Error codes for CLI errors."""
 
+    CASCADE_ERROR = "CASCADE_ERROR"
     CONFLICTING_FLAGS = "CONFLICTING_FLAGS"
     FEATURES_NOT_FOUND = "FEATURES_NOT_FOUND"
     GENERIC_ERROR = "GENERIC_ERROR"
