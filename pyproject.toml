@@ -299,6 +299,7 @@ markers = [
   "native: Stores with native compute capabilities",
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
+  "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
 ]
 
 [tool.deptry.package_module_name_map]

@@ -29,6 +29,8 @@ uri = "/tmp/ducklake_meta.db"
 # password = "changeme"
 # # Extra parameters forwarded to DuckDB's CREATE SECRET (optional):
 # # secret_parameters = { sslmode = "require" }
+# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
+# # secret_name = "my_pg_secret"
 
 # -- Metadata backend: MotherDuck (managed, no storage_backend needed) --------
 # [stores.dev.config.ducklake.metadata_backend]
@@ -51,6 +53,8 @@ path = "/tmp/ducklake_storage"
 # # secret = "secret"
 # # Extra parameters forwarded to DuckDB's CREATE SECRET (optional):
 # # secret_parameters = { kms_key_id = "arn:aws:kms:..." }
+# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
+# # secret_name = "my_s3_secret"
 
 # -- Storage backend: Cloudflare R2 ------------------------------------------
 # [stores.dev.config.ducklake.storage_backend]
@@ -59,6 +63,8 @@ path = "/tmp/ducklake_storage"
 # data_path = "r2://my-bucket/ducklake/"
 # # key_id = "R2_ACCESS_KEY"
 # # secret = "R2_SECRET_KEY"
+# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
+# # secret_name = "my_r2_secret"
 
 # -- Storage backend: Google Cloud Storage ------------------------------------
 # [stores.dev.config.ducklake.storage_backend]
@@ -66,3 +72,5 @@ path = "/tmp/ducklake_storage"
 # data_path = "gs://my-bucket/ducklake/"
 # # key_id = "HMAC_ACCESS_KEY"
 # # secret = "HMAC_SECRET"
+# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
+# # secret_name = "my_gcs_secret"

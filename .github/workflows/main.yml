@@ -38,6 +38,7 @@ jobs:
       dependency-matrix: ${{ github.event.inputs.full-matrix == 'true' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
   docs:
     needs: qa

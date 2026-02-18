@@ -43,14 +43,36 @@ class PostgresMetadataBackendConfig(BaseModel):
     """PostgreSQL metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["postgres"] = "postgres"
-    database: str
-    user: str
-    password: str
-    host: str
+    database: str | None = None
+    user: str | None = None
+    password: str | None = None
+    host: str | None = None
     port: int = 5432
+    secret_name: str | None = None
     secret_parameters: dict[str, Any] | None = None
 
+    @model_validator(mode="after")
+    def _validate_credentials(self) -> Self:
+        inline_fields = {"host": self.host, "database": self.database, "user": self.user, "password": self.password}
+        has_inline = any(v is not None for v in inline_fields.values())
+        if self.secret_name is not None:
+            if has_inline:
+                raise ValueError(
+                    "Cannot combine 'secret_name' with inline credentials (host, database, user, password)."
+                )
+            return self
+        missing = [k for k, v in inline_fields.items() if v is None]
+        if missing:
+            raise ValueError(f"Missing required credentials when 'secret_name' is not set: {', '.join(missing)}.")
+        return self
+
     def sql_parts(self, alias: str) -> tuple[str, str]:
+        if self.secret_name is not None:
+            metadata_params = (
+                f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{self.secret_name}'}}"
+            )
+            return "", metadata_params
+
         secret_params: dict[str, Any] = {
             "HOST": self.host,
             "PORT": self.port,
@@ -62,9 +84,11 @@ class PostgresMetadataBackendConfig(BaseModel):
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_name = f"secret_catalog_{alias}"
-        secret_sql = build_secret_sql(secret_name, "postgres", secret_params)
-        metadata_params = f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{secret_name}'}}"
+        generated_name = f"metaxy_generated_catalog_{alias}"
+        secret_sql = build_secret_sql(generated_name, "postgres", secret_params)
+        metadata_params = (
+            f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{generated_name}'}}"
+        )
         return secret_sql, metadata_params
 
 
@@ -73,6 +97,10 @@ class MotherDuckMetadataBackendConfig(BaseModel):
 
     type: Literal["motherduck"] = "motherduck"
     database: str
+    region: str | None = Field(
+        default=None,
+        description="AWS region of the MotherDuck-managed S3 storage (e.g. 'eu-central-1').",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -104,10 +132,37 @@ class S3StorageBackendConfig(BaseModel):
     use_ssl: bool | None = None
     scope: str | None = None
     data_path: str | None = None
+    secret_name: str | None = None
     secret_parameters: dict[str, Any] | None = None
 
+    @model_validator(mode="after")
+    def _validate_credentials(self) -> Self:
+        if self.secret_name is not None and (self.key_id is not None or self.secret is not None):
+            raise ValueError("Cannot combine 'secret_name' with inline credentials (key_id, secret).")
+        return self
+
+    def _resolve_data_path(self) -> str:
+        data_path = self.data_path
+        if not data_path:
+            if self.bucket:
+                clean_prefix = str(self.prefix or "").strip("/")
+                base_path = f"s3://{self.bucket}"
+                data_path = f"{base_path}/{clean_prefix}/" if clean_prefix else f"{base_path}/"
+            elif self.scope and self.scope.startswith("s3://"):
+                data_path = self.scope if self.scope.endswith("/") else f"{self.scope}/"
+        if not data_path:
+            raise ValueError(
+                "DuckLake S3 storage backend requires either 'data_path', a 'bucket', or 'scope' starting with 's3://'."
+            )
+        return data_path
+
     def sql_parts(self, alias: str) -> tuple[str, str]:
-        secret_name = f"secret_storage_{alias}"
+        data_path_sql = f"DATA_PATH {_stringify_scalar(self._resolve_data_path())}"
+
+        if self.secret_name is not None:
+            return "", data_path_sql
+
+        generated_name = f"metaxy_generated_storage_{alias}"
         secret_params: dict[str, Any] = {}
 
         if self.key_id is not None and self.secret is not None:
@@ -140,22 +195,8 @@ class S3StorageBackendConfig(BaseModel):
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_sql = build_secret_sql(secret_name, "S3", secret_params)
-
-        data_path = self.data_path
-        if not data_path:
-            if self.bucket:
-                clean_prefix = str(self.prefix or "").strip("/")
-                base_path = f"s3://{self.bucket}"
-                data_path = f"{base_path}/{clean_prefix}/" if clean_prefix else f"{base_path}/"
-            elif self.scope and self.scope.startswith("s3://"):
-                data_path = self.scope if self.scope.endswith("/") else f"{self.scope}/"
-        if not data_path:
-            raise ValueError(
-                "DuckLake S3 storage backend requires either 'data_path', a 'bucket', or 'scope' starting with 's3://'."
-            )
-
-        return secret_sql, f"DATA_PATH {_stringify_scalar(data_path)}"
+        secret_sql = build_secret_sql(generated_name, "S3", secret_params)
+        return secret_sql, data_path_sql
 
 
 class R2StorageBackendConfig(BaseModel):
@@ -167,12 +208,28 @@ class R2StorageBackendConfig(BaseModel):
     type: Literal["r2"] = "r2"
     key_id: str | None = None
     secret: str | None = None
-    account_id: str
+    account_id: str | None = None
     data_path: str
+    secret_name: str | None = None
     secret_parameters: dict[str, Any] | None = None
 
+    @model_validator(mode="after")
+    def _validate_credentials(self) -> Self:
+        if self.secret_name is not None:
+            if self.key_id is not None or self.secret is not None or self.account_id is not None:
+                raise ValueError("Cannot combine 'secret_name' with inline credentials (key_id, secret, account_id).")
+            return self
+        if self.account_id is None:
+            raise ValueError("'account_id' is required when 'secret_name' is not set.")
+        return self
+
     def sql_parts(self, alias: str) -> tuple[str, str]:
-        secret_name = f"secret_storage_{alias}"
+        data_path_sql = f"DATA_PATH {_stringify_scalar(self.data_path)}"
+
+        if self.secret_name is not None:
+            return "", data_path_sql
+
+        generated_name = f"metaxy_generated_storage_{alias}"
         secret_params: dict[str, Any] = {"ACCOUNT_ID": self.account_id}
 
         if self.key_id is not None and self.secret is not None:
@@ -185,8 +242,8 @@ class R2StorageBackendConfig(BaseModel):
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_sql = build_secret_sql(secret_name, "R2", secret_params)
-        return secret_sql, f"DATA_PATH {_stringify_scalar(self.data_path)}"
+        secret_sql = build_secret_sql(generated_name, "R2", secret_params)
+        return secret_sql, data_path_sql
 
 
 class GCSStorageBackendConfig(BaseModel):
@@ -199,10 +256,22 @@ class GCSStorageBackendConfig(BaseModel):
     key_id: str | None = None
     secret: str | None = None
     data_path: str
+    secret_name: str | None = None
     secret_parameters: dict[str, Any] | None = None
 
+    @model_validator(mode="after")
+    def _validate_credentials(self) -> Self:
+        if self.secret_name is not None and (self.key_id is not None or self.secret is not None):
+            raise ValueError("Cannot combine 'secret_name' with inline credentials (key_id, secret).")
+        return self
+
     def sql_parts(self, alias: str) -> tuple[str, str]:
-        secret_name = f"secret_storage_{alias}"
+        data_path_sql = f"DATA_PATH {_stringify_scalar(self.data_path)}"
+
+        if self.secret_name is not None:
+            return "", data_path_sql
+
+        generated_name = f"metaxy_generated_storage_{alias}"
         secret_params: dict[str, Any] = {}
 
         if self.key_id is not None and self.secret is not None:
@@ -215,8 +284,8 @@ class GCSStorageBackendConfig(BaseModel):
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_sql = build_secret_sql(secret_name, "GCS", secret_params)
-        return secret_sql, f"DATA_PATH {_stringify_scalar(self.data_path)}"
+        secret_sql = build_secret_sql(generated_name, "GCS", secret_params)
+        return secret_sql, data_path_sql
 
 
 # ---------------------------------------------------------------------------
@@ -331,8 +400,9 @@ class DuckLakeAttachmentConfig(BaseModel):
 class DuckLakeAttachmentManager:
     """Responsible for configuring a DuckDB connection for DuckLake usage."""
 
-    def __init__(self, config: DuckLakeAttachmentConfig):
+    def __init__(self, config: DuckLakeAttachmentConfig, *, store_name: str | None = None):
         self._config = config
+        self._secret_suffix = f"{store_name}_{config.alias}" if store_name else config.alias
         self._attached: bool = False
 
     def _build_sql_statements(self) -> list[str]:
@@ -345,13 +415,17 @@ class DuckLakeAttachmentManager:
         return self._build_standard_statements(statements)
 
     def _build_motherduck_statements(self, statements: list[str]) -> list[str]:
-        """Build SQL statements for MotherDuck-managed DuckLake."""
+        """Build SQL statements for MotherDuck-managed DuckLake.
+
+        Fully managed MotherDuck DuckLake databases are available to any
+        MotherDuck connection via ``USE``.  The ``ATTACH`` approach does not
+        propagate the S3 write credentials that MotherDuck manages internally.
+        """
         assert isinstance(self._config.metadata_backend, MotherDuckMetadataBackendConfig)
-        db = self._config.metadata_backend.database
-        alias = self._config.alias
-        options_clause = format_attach_options(self._config.attach_options)
-        statements.append(f"ATTACH IF NOT EXISTS 'ducklake:md:__ducklake_metadata_{db}' AS {alias}{options_clause};")
-        statements.append(f"USE {alias};")
+        md = self._config.metadata_backend
+        if md.region is not None:
+            statements.append(f"SET s3_region='{md.region}';")
+        statements.append(f"USE {md.database};")
         return statements
 
     def _build_standard_statements(self, statements: list[str]) -> list[str]:
@@ -361,15 +435,15 @@ class DuckLakeAttachmentManager:
             metadata_backend, DuckDBMetadataBackendConfig | SQLiteMetadataBackendConfig | PostgresMetadataBackendConfig
         )
         assert self._config.storage_backend is not None
-        metadata_secret_sql, metadata_params_sql = metadata_backend.sql_parts(self._config.alias)
-        storage_secret_sql, storage_params_sql = self._config.storage_backend.sql_parts(self._config.alias)
+        metadata_secret_sql, metadata_params_sql = metadata_backend.sql_parts(self._secret_suffix)
+        storage_secret_sql, storage_params_sql = self._config.storage_backend.sql_parts(self._secret_suffix)
 
         if metadata_secret_sql:
             statements.append(metadata_secret_sql)
         if storage_secret_sql:
             statements.append(storage_secret_sql)
 
-        ducklake_secret = f"secret_{self._config.alias}"
+        ducklake_secret = f"metaxy_generated_{self._secret_suffix}"
         statements.append(
             f"CREATE OR REPLACE SECRET {ducklake_secret} ("
             " TYPE DUCKLAKE,"

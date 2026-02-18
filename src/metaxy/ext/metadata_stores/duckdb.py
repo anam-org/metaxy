@@ -170,7 +170,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             ):
                 self.extensions.append(ExtensionSpec(name="motherduck"))
             self._ducklake_config = ducklake
-            self._ducklake_attachment = DuckLakeAttachmentManager(ducklake)
+            self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
 
         if "hashfuncs" not in {ext.name for ext in self.extensions}:
             self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))

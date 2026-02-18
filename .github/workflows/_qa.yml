@@ -29,6 +29,8 @@ on:
     secrets:
       CODECOV_TOKEN:
         required: false
+      MOTHERDUCK_TOKEN:
+        required: false
 
 jobs:
   filter:
@@ -115,6 +117,8 @@ jobs:
     runs-on: depot-ubuntu-latest
     env:
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+      MOTHERDUCK_REGION: eu-central-1
     strategy:
       fail-fast: false
       matrix:
