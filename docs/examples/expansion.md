@@ -152,3 +152,4 @@ Learn more about:
 - [Features and Fields](../guide/concepts/definitions/features.md)
 - [Relationships](/guide/concepts/definitions/relationship.md)
 - [Fields Mapping](../guide/concepts/syntactic-sugar.md#fields-mapping)
+- [Topological Deletions](../guide/concepts/deletions.md#topological-cascade-deletion) - How to delete videos and all derived chunks/faces in the correct order

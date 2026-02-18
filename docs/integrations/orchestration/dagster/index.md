@@ -139,9 +139,9 @@ The observation automatically tracks:
 - **Data version**: Uses `mean(metaxy_created_at)` to detect both additions and deletions
 - **Row count**: Logged as `dagster/row_count` metadata
 
-## Deletion workflows with Dagster ops
+## Deletion workflows
 
-The Dagster integration provides a `delete` op:
+The Dagster integration provides a `delete` op with support for both basic and cascade deletions:
 
 ```python
 import dagster as dg
@@ -155,7 +155,9 @@ def cleanup_job():
 ```
 
 `filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](/guide/concepts/filters.md) for supported syntax.
-Set `soft=False` to physically remove rows.
+Set `soft=False` to physically remove rows. Use the `cascade` parameter for topological deletions across dependent features.
+
+See the [Deletion Guide](../../../guide/concepts/deletions.md) for detailed examples and configuration options.
 
 ## Reference
 

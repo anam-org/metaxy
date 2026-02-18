@@ -1,6 +1,7 @@
 """Tests for metadata CLI commands."""
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import polars as pl
@@ -2916,3 +2917,760 @@ root_path = "{prod_path}"
         assert result.returncode == 0
         assert "Warning" in result.stdout
         assert "No valid features to copy" in result.stdout
+
+
+# --- Fixtures for cascade/drop tests ---
+
+
+@pytest.fixture
+def video_features_simple() -> Callable[[], None]:
+    """Fixture providing simple VideoRaw -> VideoChunk dependency chain."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec
+
+        class VideoRaw(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[FeatureDep(feature=VideoRaw)],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    return features
+
+
+@pytest.fixture
+def video_features_chain() -> Callable[[], None]:
+    """Fixture providing VideoRaw -> VideoProcessed -> VideoEmbeddings chain."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec
+
+        class VideoRaw(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoProcessed(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "processed"],
+                id_columns=["video_id"],
+                deps=[FeatureDep(feature=VideoRaw)],
+                fields=["features"],
+            ),
+        ):
+            video_id: str
+            features: bytes | None = None
+
+        class VideoEmbeddings(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "embeddings"],
+                id_columns=["video_id"],
+                deps=[FeatureDep(feature=VideoProcessed)],
+                fields=["embeddings"],
+            ),
+        ):
+            video_id: str
+            embeddings: bytes | None = None
+
+    return features
+
+
+# --- Drop command tests ---
+
+
+def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that drop requires either a feature or --all-features."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/files")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "--confirm", "--format", "json"],
+            capsys=capsys,
+            check=False,
+        )
+
+        assert result.returncode == 1
+        error = json.loads(result.stdout)
+        assert error["error"] == "MISSING_REQUIRED_FLAG"
+
+
+def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that drop requires --confirm flag."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/files")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "video/files", "--format", "json"],
+            capsys=capsys,
+            check=False,
+        )
+
+        assert result.returncode == 1
+        error = json.loads(result.stdout)
+        assert error["error"] == "MISSING_CONFIRMATION"
+
+
+def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test dropping metadata for a single feature."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class AudioFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "video/files", "--confirm", "--format", "json"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 1
+        assert "video/files" in data["dropped"]
+
+
+def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test dropping metadata for multiple features."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class AudioFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class TextFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["text", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
+        metaxy_project.write_sample_metadata("text/files")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "video/files", "audio/files", "--confirm", "--format", "json"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 2
+        assert "video/files" in data["dropped"]
+        assert "audio/files" in data["dropped"]
+
+
+def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test dropping metadata for all features."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class AudioFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/files")
+        metaxy_project.write_sample_metadata("audio/files")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 2
+        assert len(data["dropped"]) == 2
+
+
+def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test dropping from an empty store succeeds (idempotent operation)."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "--all-features", "--confirm", "--format", "json"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 1
+
+
+def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that cannot specify both features and --all-features."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "video/files", "--all-features", "--confirm", "--format", "json"],
+            capsys=capsys,
+            check=False,
+        )
+
+        assert result.returncode == 1
+        error = json.loads(result.stdout)
+        assert error["error"] == "CONFLICTING_FLAGS"
+
+
+def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test dropping metadata with explicit --store flag."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFiles(  # noqa: F841
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/files")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "drop", "--store", "dev", "video/files", "--confirm", "--format", "json"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert "video/files" in data["dropped"]
+
+
+# --- Cascade deletion tests ---
+
+
+def test_metadata_delete_cascade_dry_run(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test --dry-run shows deletion plan without executing."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec, LineageRelationship
+
+        class VideoRaw(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[
+                    FeatureDep(
+                        feature=VideoRaw,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    )
+                ],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/raw", "--cascade", "downstream", "--dry-run"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        assert "dry run" in result.stdout.lower() or "preview" in result.stdout.lower()
+        assert "video/chunk" in result.stdout
+        assert "video/raw" in result.stdout
+
+
+def test_metadata_delete_cascade_downstream(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test cascading deletion downstream (dependents first)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec, LineageRelationship
+
+        class VideoRaw(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[
+                    FeatureDep(
+                        feature=VideoRaw,
+                        lineage=LineageRelationship.expansion(on=["video_id"]),
+                    )
+                ],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/raw", "--cascade", "downstream"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "complete" in output.lower() or "deleted" in output.lower()
+        assert "downstream" in output.lower() or "cascade" in output.lower()
+
+        # Verify both features are soft deleted
+        status_result = metaxy_project.run_cli(
+            ["metadata", "status", "video/raw", "--format", "json"],
+            capsys=capsys,
+        )
+        status_data = json.loads(status_result.stdout)
+        assert status_data["features"]["video/raw"]["store_rows"] == 0
+
+        chunk_status_result = metaxy_project.run_cli(
+            ["metadata", "status", "video/chunk", "--format", "json"],
+            capsys=capsys,
+        )
+        chunk_status_data = json.loads(chunk_status_result.stdout)
+        assert chunk_status_data["features"]["video/chunk"]["store_rows"] == 0
+
+
+def test_metadata_delete_cascade_invalid_option(metaxy_project: TempMetaxyProject):
+    """Test that invalid --cascade option raises error (validated by cyclopts)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureSpec
+
+        class VideoRaw(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/raw", "--cascade", "invalid"],
+            subprocess=True,
+            check=False,
+        )
+
+        assert result.returncode != 0
+        error_output = result.stderr + result.stdout
+        assert "invalid" in error_output.lower() or "cascade" in error_output.lower()
+
+
+def test_metadata_delete_cascade_upstream(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test cascading deletion upstream (dependencies first)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureDep, FeatureSpec
+
+        class VideoRaw(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "raw"],
+                id_columns=["video_id"],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            frames: bytes | None = None
+
+        class VideoChunk(  # noqa: F841
+            BaseFeature,
+            spec=FeatureSpec(
+                key=["video", "chunk"],
+                id_columns=["chunk_id"],
+                deps=[FeatureDep(feature=VideoRaw)],
+                fields=["frames"],
+            ),
+        ):
+            video_id: str
+            chunk_id: str
+            frames: bytes | None = None
+
+    with metaxy_project.with_features(features):
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        # Test dry-run with upstream cascade from chunk
+        dry_run_result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/chunk", "--cascade", "upstream", "--dry-run"],
+            capsys=capsys,
+        )
+
+        assert dry_run_result.returncode == 0
+        assert "video/raw" in dry_run_result.stdout
+        assert "video/chunk" in dry_run_result.stdout
+
+        # Execute cascade deletion
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/chunk", "--cascade", "upstream"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "complete" in output.lower() or "deleted" in output.lower()
+        assert "upstream" in output.lower() or "cascade" in output.lower()
+
+        # Verify both features are soft deleted
+        chunk_status_result = metaxy_project.run_cli(
+            ["metadata", "status", "video/chunk", "--format", "json"],
+            capsys=capsys,
+        )
+        chunk_status_data = json.loads(chunk_status_result.stdout)
+        assert chunk_status_data["features"]["video/chunk"]["store_rows"] == 0
+
+        raw_status_result = metaxy_project.run_cli(
+            ["metadata", "status", "video/raw", "--format", "json"],
+            capsys=capsys,
+        )
+        raw_status_data = json.loads(raw_status_result.stdout)
+        assert raw_status_data["features"]["video/raw"]["store_rows"] == 0
+
+
+def test_metadata_delete_cascade_both(
+    metaxy_project: TempMetaxyProject,
+    video_features_chain: Callable[[], None],
+    capsys: pytest.CaptureFixture[str],
+):
+    """Test cascading deletion in both directions."""
+    with metaxy_project.with_features(video_features_chain):
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/processed")
+        metaxy_project.write_sample_metadata("video/embeddings")
+
+        # Test dry-run with both cascade from middle feature
+        dry_run_result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/processed", "--cascade", "both", "--dry-run"],
+            capsys=capsys,
+        )
+
+        assert dry_run_result.returncode == 0
+        assert "video/raw" in dry_run_result.stdout
+        assert "video/processed" in dry_run_result.stdout
+        assert "video/embeddings" in dry_run_result.stdout
+
+        # Execute cascade deletion
+        result = metaxy_project.run_cli(
+            ["metadata", "delete", "video/processed", "--cascade", "both"],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "complete" in output.lower() or "deleted" in output.lower()
+        assert "both" in output.lower() or "cascade" in output.lower()
+
+        # Verify all three features are soft deleted
+        for feature in ["video/raw", "video/processed", "video/embeddings"]:
+            status_result = metaxy_project.run_cli(
+                ["metadata", "status", feature, "--format", "json"],
+                capsys=capsys,
+            )
+            status_data = json.loads(status_result.stdout)
+            assert status_data["features"][feature]["store_rows"] == 0
+
+
+def test_metadata_delete_cascade_json_format(
+    metaxy_project: TempMetaxyProject,
+    video_features_simple: Callable[[], None],
+    capsys: pytest.CaptureFixture[str],
+):
+    """Test JSON format output for cascade deletion."""
+    with metaxy_project.with_features(video_features_simple):
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        # Test JSON output for dry run
+        dry_run_result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "video/raw",
+                "--cascade",
+                "downstream",
+                "--dry-run",
+                "--format",
+                "json",
+            ],
+            capsys=capsys,
+        )
+
+        assert dry_run_result.returncode == 0
+        dry_run_data = json.loads(dry_run_result.stdout)
+        assert dry_run_data["dry_run"] is True
+        assert dry_run_data["mode"] == "soft"
+        assert dry_run_data["cascade"] == "downstream"
+        assert "video/raw" in dry_run_data["features"]
+        assert "video/chunk" in dry_run_data["features"]
+        assert dry_run_data["filters"] is None
+
+        # Test JSON output for actual deletion
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "video/raw",
+                "--cascade",
+                "downstream",
+                "--format",
+                "json",
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        result_data = json.loads(result.stdout)
+        assert result_data["success"] is True
+        assert result_data["mode"] == "soft"
+        assert result_data["cascade"] == "downstream"
+        assert "video/raw" in result_data["features_attempted"]
+        assert "video/chunk" in result_data["features_attempted"]
+        assert result_data["filters"] is None
+        assert "errors" not in result_data
+
+
+def test_metadata_delete_cascade_with_filters(
+    metaxy_project: TempMetaxyProject,
+    video_features_simple: Callable[[], None],
+    capsys: pytest.CaptureFixture[str],
+):
+    """Test cascade deletion with filters applied to all cascaded features."""
+    with metaxy_project.with_features(video_features_simple):
+        metaxy_project.write_sample_metadata("video/raw")
+        metaxy_project.write_sample_metadata("video/chunk")
+
+        # Test dry-run with filter and cascade
+        dry_run_result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "video/raw",
+                "--filter",
+                "video_id == '1'",
+                "--cascade",
+                "downstream",
+                "--dry-run",
+                "--format",
+                "json",
+            ],
+            capsys=capsys,
+        )
+
+        assert dry_run_result.returncode == 0
+        dry_run_data = json.loads(dry_run_result.stdout)
+        assert dry_run_data["dry_run"] is True
+        assert "video/raw" in dry_run_data["features"]
+        assert "video/chunk" in dry_run_data["features"]
+        assert dry_run_data["filters"] is not None
+        assert len(dry_run_data["filters"]) > 0
+
+        # Execute deletion with filter and cascade
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "video/raw",
+                "--filter",
+                "video_id == '1'",
+                "--cascade",
+                "downstream",
+                "--format",
+                "json",
+            ],
+            capsys=capsys,
+            check=False,
+        )
+
+        result_data = json.loads(result.stdout)
+        assert result_data["cascade"] == "downstream"
+        assert "video/raw" in result_data["features_attempted"]
+        assert "video/chunk" in result_data["features_attempted"]
+        assert result_data["filters"] is not None
+
+        if result.returncode != 0:
+            assert result_data["success"] is False
+            assert "errors" in result_data
+        else:
+            assert result_data["success"] is True
