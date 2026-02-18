@@ -76,7 +76,7 @@ in
       pkgs.harfbuzz
     ]);
 
-    DYLD_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isDarwin (lib.makeLibraryPath [
+    DYLD_FALLBACK_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isDarwin (lib.makeLibraryPath [
       pkgs.cairo
       pkgs.pango
       pkgs.gdk-pixbuf

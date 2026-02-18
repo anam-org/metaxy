@@ -40,13 +40,13 @@ repos:
       pass_filenames: false
     - id: build-docs
       name: Build Docs
-      entry: devenv shell -- uv run --group docs mkdocs build --strict
+      entry: uv run --group docs mkdocs build --strict
       language: system
       pass_filenames: false
       files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)
     - id: test-docs
       name: Test Docs Codeblocks
-      entry: devenv shell -- uv run pytest ./docs
+      entry: uv run pytest ./docs
       language: system
       pass_filenames: false
       files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)
