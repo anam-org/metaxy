@@ -75,16 +75,13 @@ class MetadataStoreConfig(BaseSettings):
     Store-specific config classes should inherit from this and add their own fields.
 
     Example:
-        <!-- skip next -->
-        ```python
-        from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStoreConfig
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
-        config = DuckDBMetadataStoreConfig(
-            database="metadata.db",
-            hash_algorithm=HashAlgorithm.MD5,
-        )
-
-        store = DuckDBMetadataStore.from_config(config)
+        [stores.dev.config]
+        database = "metadata.db"
+        hash_algorithm = "md5"
         ```
     """
 

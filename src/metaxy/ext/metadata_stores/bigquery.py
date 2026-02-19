@@ -17,15 +17,14 @@ class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for BigQueryMetadataStore.
 
     Example:
-        <!-- skip next -->
-        ```python
-        config = BigQueryMetadataStoreConfig(
-            project_id="my-project",
-            dataset_id="my_dataset",
-            credentials_path="/path/to/service-account.json",
-        )
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore"
 
-        store = BigQueryMetadataStore.from_config(config)
+        [stores.dev.config]
+        project_id = "my-project"
+        dataset_id = "my_dataset"
+        credentials_path = "/path/to/service-account.json"
         ```
     """
 

@@ -38,14 +38,14 @@ class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for DuckDBMetadataStore.
 
     Example:
-        ```python
-        config = DuckDBMetadataStoreConfig(
-            database="metadata.db",
-            extensions=["hashfuncs"],
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
-        store = DuckDBMetadataStore.from_config(config)
+        [stores.dev.config]
+        database = "metadata.db"
+        extensions = ["hashfuncs"]
+        hash_algorithm = "xxhash64"
         ```
     """
 

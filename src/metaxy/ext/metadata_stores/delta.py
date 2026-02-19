@@ -32,14 +32,16 @@ class DeltaMetadataStoreConfig(MetadataStoreConfig):
     """Configuration for DeltaMetadataStore.
 
     Example:
-        ```python
-        config = DeltaMetadataStoreConfig(
-            root_path="s3://my-bucket/metaxy",
-            storage_options={"AWS_REGION": "us-west-2"},
-            layout="nested",
-        )
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
-        store = DeltaMetadataStore.from_config(config)
+        [stores.dev.config]
+        root_path = "s3://my-bucket/metaxy"
+        layout = "nested"
+
+        [stores.dev.config.storage_options]
+        AWS_REGION = "us-west-2"
         ```
     """
 
