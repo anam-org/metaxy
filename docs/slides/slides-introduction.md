@@ -1,40 +1,31 @@
 ---
-# try also 'default' to start simple
 theme: default
-# random image from a curated Unsplash collection by Anthony
-# like them? see https://unsplash.com/collections/94734566/slidev
-#background: https://cover.sli.dev
-background: /img/race.jpg
-# some information about your slides (markdown enabled)
-title: Welcome to Metaxy
+# background: /img/race.jpg
+title: Metaxy
 info: |
   ## Introducing Metaxy
   Rapid feature exploration unlocked - at a budget.
 
   Learn more at [Metaxy](https://docs.metaxy.io)
-# apply UnoCSS classes to the current slide
 class: text-center
-# https://sli.dev/features/drawing
 drawings:
   persist: false
-# slide transition: https://sli.dev/guide/animations.html#slide-transitions
 transition: slide-left
-# enable MDC Syntax: https://sli.dev/features/mdc
 mdc: true
-# duration of the presentation
 duration: 20min
 routerMode: hash
-# Metaxy brand colors from logo
 themeConfig:
   primary: '#696FCC'
 ---
 
-# Welcome to Metaxy
+<img src="/img/metaxy.svg" class="mx-auto mb-4 w-24 h-24" />
 
-Accelerating AI experimentation with smart metadata handling without massive cost.
+# Metaxy
+
+Streamlining multimodal data handling
 
 <div @click="$slidev.nav.next" class="mt-12 py-1" hover:bg="white op-10">
-  Bridging BI reliability with AI velocity <carbon:arrow-right />
+  Accelerating multimodal AI experimentation without massive cost. <carbon:arrow-right />
 </div>
 
 <div class="abs-br m-6 text-xl">
@@ -46,33 +37,29 @@ Accelerating AI experimentation with smart metadata handling without massive cos
   </a>
 </div>
 
-<!--
-The last comment block of each slide will be treated as slide notes. It will be visible and editable in Presenter Mode along with the slide. [Read more in the docs](https://sli.dev/guide/syntax.html#notes)
--->
-
 ---
 layout: image-right
 image: /img/coffee.jpg
 transition: fade-out
+disabled: true
 ---
 
-# GPU Economics
+# The $10K Mistake
 
-> GPU bills are in a different league.
+> Accidentally re-executed your Whisper voice transcription step on the whole dataset?
+>
+> **Congratulations: $10K just wasted.**
 
 <br>
 
-**The old world (CPU):**
+<v-clicks>
 
-- Compute was cheap
-- CPU reruns were affordable
+- GPUs cost **10-100x more** than CPUs per hour
+- Re-running a tabular pipeline is usually fine
+- **Multimodal pipelines are a whole different beast**
+- A single careless rerun can blow your weekly budget
 
-**The new world (GPU):**
-
-- GPUs cost **10-100× more** than CPUs per hour
-- A single experiment might be budget breaking
-
-> **Metaxy** helps you experiment fast without going broke
+</v-clicks>
 
 <style>
 h1 {
@@ -88,71 +75,144 @@ h1 {
 
 ---
 layout: two-cols
+disabled: true
 ---
 
-## BI Pipelines (The Old reality)
+## BI Pipelines <span text-sm text-muted>(The Old World)</span>
 
 - Run at 2 AM every night
 - Everything fits in SQL
 - Worst case: rerun takes a couple of hours
 - $200/month, all-in
-- Single-node Xgboost CPU AI is cheap
+- Single-node XGBoost CPU ML is cheap
 
 ::right::
 
-## ML Pipelines (The New Reality)
+## ML Pipelines <span text-sm text-muted>(The New Reality)</span>
 
 <v-clicks>
 
-- Run many times a day, + parameter sweeps
+- Run many times a day, plus parameter sweeps
 - Half the work happens on GPUs outside your warehouse
-- Worst case: rerun costs a lot and takes several days
+- Worst case: rerun costs thousands and takes days
 - You can't afford to guess what needs recomputing
 
 </v-clicks>
 
 ---
+
+# The Problem: A Real Story
+
+At Anam, a simple change to **video cropping resolution** triggered reprocessing of **millions of samples** across the entire pipeline, including audio steps that had nothing to do with frames.
+
+<div class="flex justify-center mt-6">
+  <img src="/img/pipeline.svg" class="h-56" />
+</div>
+
+<v-click>
+
+<div mt-4 text-center>
+
+**Half of the downstream steps didn't even use the cropped video frames.**
+They only operated on audio; still the costly video processing had to be rerun.
+
+</div>
+
+</v-click>
+
+---
 layout: center
 ---
 
-# What **Metaxy** Does For You
+# Why Existing Tools Fall Short
 
 <v-clicks>
 
-- **Know what changed** – See exactly which samples need reprocessing before you spin up GPUs
-- **Experiment fearlessly** – Update your feature code without worrying about breaking production
-- **Cut waste** – Skip redundant GPU work and only recompute what actually changed
-- **Stay reproducible** – Track complete lineage so you can explain any model's training data
+| Tool | What it does | The gap |
+|------|-------------|---------|
+| **Dagster / Airflow** | Orchestrate at the asset/table level | Can't see which *fields* changed; partitions don't scale to millions of samples |
+| DVC | Version files as opaque artifacts | No record-level or field-level tracking |
+| Feast | Serve precomputed features at inference | No dependency graph, no change detection |
+| Hamilton | Column-level lineage via Python functions | Table granularity, not record granularity |
+| **LanceDB** | Vector storage with versioned datasets | No cross-feature dependency tracking |
 
 </v-clicks>
 
-<br>
+<v-click>
 
-> Think of it as version control for your feature pipeline metadata.
+<div mt-6 text-center text-lg>
+
+All of these operate at **table or file granularity**. None track dependencies at the **field level per record**.
+
+</div>
+
+</v-click>
 
 ---
 
-# The Magic: Field-Level Dependencies
+# The Key Insight: Data Fields
 
-**Scenario:** You're processing videos to extract both audio transcripts and face detections.
+Instead of one version per table, Metaxy tracks **separate versions for each field of every record**.
 
-<v-clicks>
-
-1. You improve your audio denoising algorithm (code change)
-2. **Traditional approach:** Rerun everything for all videos = $$$$
-3. **Metaxy approach:**
-   - Detects that only the audio field changed
-   - Face detection depends on video frames, not audio
-   - Only reruns transcription, skips face detection
-   - Saves a large part of your GPU bill
-
-</v-clicks>
+<div class="flex justify-center mt-4">
+  <img src="/img/feature.svg" class="h-72" />
+</div>
 
 <div mt-4>
 
-**The key:** Metaxy tracks dependencies at the **field level**, not the table level.
+```
+video_001: {"audio": "a7f3c2d8", "frames": "b9e1f4a2"}
+video_002: {"audio": "c1d5e9f3", "frames": "f7a2b8c4"}
+```
 
 </div>
+
+> Each sample carries a versioning dictionary, not a single version string.
+
+---
+
+# Field-Level Dependencies
+
+Features declare which **specific upstream fields** they depend on.
+
+<div class="flex justify-center mt-2">
+  <img src="/img/anatomy.svg" class="h-80" />
+</div>
+
+<div mt-2 text-center>
+
+`SpeechToText.transcription` depends on `Video.audio` only.
+Changing frames does not trigger transcription reprocessing.
+
+</div>
+
+---
+layout: center
+---
+
+# What Changes, What Doesn't
+
+**Scenario:** You bump the `audio` code version from `"1"` to `"2"`.
+
+```mermaid {scale: 0.8}
+graph LR
+    V["Video<br/><b>audio: v2</b> ⬆️<br/>frames: v1"] --> C["Crop<br/><b>audio: v2</b> ⬆️<br/>frames: v1"]
+    C --> FD["FaceDetection<br/>faces: v1 ✅"]
+    V --> STT["SpeechToText<br/><b>text: v2</b> ⬆️"]
+
+    style V fill:#0f172a,color:#f8fafc,stroke:#696FCC,stroke-width:2px
+    style C fill:#0f172a,color:#f8fafc,stroke:#f59e0b,stroke-width:2px
+    style FD fill:#0f172a,color:#f8fafc,stroke:#22c55e,stroke-width:2px
+    style STT fill:#0f172a,color:#f8fafc,stroke:#f59e0b,stroke-width:2px
+```
+
+<v-clicks>
+
+- **FaceDetection**: depends on `Crop.frames` only. **Untouched.** No GPU cost.
+- **SpeechToText**: depends on `Video.audio`. **Marked for reprocessing.**
+- You just saved half your GPU bill.
+
+</v-clicks>
 
 ---
 
@@ -212,9 +272,9 @@ layout: two-cols
 
 **The system:**
 
-- Computes version hashes (data, code) for every record
+- Computes version hashes per record per field
 - Tracks which samples have which versions
-- Manages metadata in SQL including filters (fast!)
+- Pushes computation into the metadata store via SQL
 
 **Your orchestrator:**
 
@@ -241,29 +301,42 @@ graph TD
 
 ---
 
-# Why Teams Adopt Metaxy
+# Works With Your Stack
 
 <v-clicks>
 
-**💰 Cut GPU costs**
+**Storage: start small, scale up**
 
-- One team reduced their weekly GPU spend from $12K to $4K by eliminating redundant reruns
+- Prototype with **DuckDB** on your laptop
+- Deploy to **ClickHouse**, **BigQuery**, **Delta Lake**, **LanceDB**, **DuckLake**, or **PostgreSQL**
+- Built on **Ibis** + **Narwhals** — adding new backends is straightforward
 
-**🚀 Ship features faster**
 
-- Update algorithms without fear of breaking downstream pipelines
-- Metadata diffs tell you exactly what will change
+**Orchestration: pluggable**
 
-**🔍 Actually be reproducible**
+- **Dagster** integration with `@metaxify` decorator
+- **Ray** for distributed GPU workloads
+- Or any orchestrator that can consume a diff
 
-- Complete lineage tracking from raw inputs to final predictions
-- Audit any experiment months later
+</v-clicks>
 
-**🔌 Works with your stack**
+---
 
-- Start with DuckDB on your laptop
-- Deploy to ClickHouse, BigQuery, or 20+ other backends
-- Integrates with Dagster, Ray, and your existing orchestration
+# Running in Production
+
+<v-clicks>
+
+[Anam](https://anam.ai/blog/metaxy): **millions of samples** in production since Dec 2025, powering **Cara 3** training data.
+
+The pipeline processes raw video and audio through multiple stages:
+
+- Face detection and cropping
+- Audio extraction and transcription
+- Embedding generation
+
+**Before Metaxy:** A single code change triggered full reprocessing across all stages.
+
+**After Metaxy:** Only the records and fields that actually depend on the change are reprocessed.
 
 </v-clicks>
 
@@ -272,11 +345,15 @@ layout: center
 class: text-center
 ---
 
-# Learn More
+# Get Started
 
-[Documentation](https://docs.metaxy.io) · [GitHub](https://github.com/anam-org/metaxy/)
+[Documentation](https://docs.metaxy.io) · [GitHub](https://github.com/anam-org/metaxy/) · [Blog Post](https://anam.ai/blog/metaxy)
 
-<div class="w-60 relative">
+```bash
+uv pip install metaxy
+```
+
+<div class="w-60 relative mt-8">
   <div class="relative w-40 h-40">
     <img
       v-motion

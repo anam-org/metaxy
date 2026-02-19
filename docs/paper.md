@@ -9,13 +9,12 @@ tags:
   - GPU
 authors:
   - name: Daniel Gafni
-    # orcid: 0000-0000-0000-0000
     affiliation: "1"
   - name: Georg Heiler
     orcid: 0000-0002-8684-1163
     affiliation: "2, 3"
 affiliations:
-  - name: Anam.ai
+  - name: Anam
     index: 1
   - name: Complexity Science Hub Vienna (CSH)
     index: 2
@@ -36,7 +35,7 @@ It builds a dependency graph that connects individual data fields across process
 When a researcher modifies one step, Metaxy identifies exactly which records are affected and which can be skipped.
 This selective approach eliminates redundant GPU work while preserving complete lineage for reproducibility.
 
-The library integrates with over twenty SQL backends through Ibis (@ibis) and supports multiple dataframe engines via Narwhals (@narwhals).
+The library integrates with various backends through Ibis (@ibis) and supports multiple dataframe engines via Narwhals (@narwhals).
 Orchestration platforms such as Dagster (@dagster) and Ray (@ray) consume Metaxy's record-level diffs to schedule only the necessary GPU workloads.
 
 # Statement of Need
@@ -66,7 +65,18 @@ The target audience includes ML engineers working with multimodal data, MLOps te
 
 ![Metaxy tracks separate version hashes for each field of every record. In this example, the `audio` and `frames` fields of a video feature propagate independently through downstream features. A change to the audio processing algorithm only triggers recomputation of audio-dependent downstream fields, leaving frame-dependent fields unchanged.\label{fig:anatomy}](paper-assets/anatomy.svg)
 
-# Design
+# State of the Field
+
+Several tools address aspects of feature management, but none provide field-level dependency tracking at record granularity.
+DVC (@dvc) versions datasets at the file level, treating each file as an opaque artifact without tracking individual records or fields within it.
+Feast (@feast) serves precomputed feature values at inference time but does not model dependency graphs between features or detect which records need recomputation after upstream changes.
+Hamilton (@hamilton) traces column-level lineage through Python function composition, yet operates at table granularity and cannot identify which specific records within a column are affected by a change.
+DataChain (@datachain) bundles managed compute with metadata management, coupling storage and execution into a single system.
+
+Metaxy fills the gap by separating metadata from compute: it tracks field-level dependencies at record granularity and propagates version changes topologically through the dependency graph.
+This separation allows teams to integrate Metaxy with any compute framework, such as Ray (@ray) or Dagster (@dagster), while retaining precise control over which records require reprocessing.
+
+# Software Design
 
 Metaxy represents features as declarative Pydantic models organized into a directed acyclic graph.
 Each feature declares its identifier columns, computed fields, and dependencies on upstream feature fields.
@@ -82,23 +92,21 @@ When an upstream field changes for a subset of records, only those downstream re
 Records with unchanged dependencies are skipped.
 
 Metadata persistence uses pluggable storage backends.
-DuckDB provides embedded storage for prototyping; ClickHouse, BigQuery, and any Ibis-supported database scale to production workloads.
+DuckDB provides embedded storage for prototyping; ClickHouse, BigQuery, Delta Lake, Ducklake, LanceDB and Postgresql scale to production workloads.
 Narwhals supplies a backend-agnostic dataframe interface, allowing users to work with Pandas, Polars, or Ibis interchangeably.
 The system pushes version computation into the metadata store through SQL, avoiding expensive data transfers.
 
-# Evaluation
+# Research Impact
 
 Correctness is validated through automated tests covering three properties.
 Version stability tests ensure that hash computation is deterministic across Python interpreter versions and code refactorings.
 Incremental update tests verify that the system returns exactly those records whose upstream dependencies changed, neither missing updates nor triggering false positives.
-Cross-backend tests exercise the same feature definitions against DuckDB, ClickHouse, DeltaLake, and Lance to confirm consistent metadata semantics across storage engines.
+Cross-backend tests exercise the same feature definitions against all supported backends to confirm consistent metadata semantics across storage engines.
 
 Example pipelines demonstrate the system's impact on multimodal workflows.
 A video processing pipeline defines features for audio transcription and face detection with field-level dependencies.
 When only the audio processing algorithm changes, the system correctly schedules transcription updates for affected records while leaving face detection metadata unchanged.
 This selective recomputation is the core value proposition: only records depending on the modified field incur GPU costs.
-
-# Impact
 
 Metaxy has been running in production at Anam for processing millions of training samples across multimodal video pipelines.
 Record-level selective execution eliminates redundant computation, making expensive GPU workloads financially viable for iterative research.
@@ -110,6 +118,10 @@ This portability lowers the barrier to disciplined metadata management, making r
 
 The project welcomes contributions at [https://github.com/anam-org/metaxy](https://github.com/anam-org/metaxy).
 Documentation is available at [https://docs.metaxy.io](https://docs.metaxy.io).
+
+# AI Usage Disclosure
+
+Generative AI tools were used during development for code completion and documentation drafting. All AI-generated content was reviewed and refined by the authors. Most of the documentation was even written by hand.
 
 # Acknowledgements
 
