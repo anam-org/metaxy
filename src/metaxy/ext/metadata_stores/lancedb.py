@@ -25,6 +25,7 @@ from metaxy.versioning.types import HashAlgorithm
 logger = logging.getLogger(__name__)
 
 
+@public
 class LanceDBMetadataStoreConfig(MetadataStoreConfig):
     """Configuration for LanceDBMetadataStore.
 

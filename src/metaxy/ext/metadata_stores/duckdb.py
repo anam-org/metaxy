@@ -33,6 +33,7 @@ class ExtensionSpec(BaseModel):
     """SQL statements to execute immediately after loading the extension."""
 
 
+@public
 class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for DuckDBMetadataStore.
 

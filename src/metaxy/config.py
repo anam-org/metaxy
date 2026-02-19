@@ -182,20 +182,7 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
 
 @public
 class StoreConfig(BaseSettings):
-    """Configuration for a single metadata store.
-
-    Example:
-        ```py
-        store_config = StoreConfig(
-            type="metaxy_delta.DeltaMetadataStore",
-            config={
-                "root_path": "s3://bucket/metadata",
-                "region": "us-west-2",
-                "fallback_stores": ["prod"],
-            },
-        )
-        ```
-    """
+    """Configuration options for metadata stores."""
 
     model_config = SettingsConfigDict(
         extra="forbid",  # Only type and config fields allowed
@@ -208,12 +195,12 @@ class StoreConfig(BaseSettings):
     # Annotated as str | type to allow passing class objects directly
     type_path: str | type[Any] = PydanticField(
         alias="type",
-        description="Full import path to metadata store class (e.g., 'metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore')",
+        description='Full import path to metadata store class (e.g., `"metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"`)',
     )
 
     config: dict[str, Any] = PydanticField(
         default_factory=dict,
-        description="Store-specific configuration parameters (kwargs for __init__). Includes fallback_stores, database paths, connection parameters, etc.",
+        description="Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.",
     )
 
     @field_validator("type_path", mode="before")
@@ -323,16 +310,6 @@ class MetaxyConfig(BaseSettings):
         ```py
         store = config.get_store("prod")
         ```
-
-    Example: Templating environment variables
-        ```toml {title="metaxy.toml"}
-        [stores.branch.config]
-        root_path = "s3://my-bucket/${BRANCH_NAME}"
-        ```
-
-    The default store is `"dev"`; `METAXY_STORE` can be used to override it.
-
-    Incomplete store configurations are filtered out if the store type is not set.
     """
 
     model_config = SettingsConfigDict(
@@ -421,7 +398,7 @@ class MetaxyConfig(BaseSettings):
 
     project: str | None = PydanticField(
         default=None,
-        description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
+        description="[Project](/guide/concepts/projects.md) name. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
     locked: bool | None = PydanticField(
@@ -446,7 +423,7 @@ class MetaxyConfig(BaseSettings):
     def config_file(self) -> Path | None:
         """The config file path used to load this configuration.
 
-        Returns None if the config was created directly (not via load()).
+        Returns `None` if the config was created directly (not via [`MetaxyConfig.load`][metaxy.MetaxyConfig.load]).
         """
         return self._config_file
 
@@ -457,7 +434,7 @@ class MetaxyConfig(BaseSettings):
         Returns the absolute path if `metaxy_lock_path` is absolute, otherwise
         resolves it relative to the config file's directory.
 
-        Returns None if the path is relative and no config file is set.
+        Returns `None` if the path is relative and no config file is set.
         """
         lock_path = Path(self.metaxy_lock_path)
         if lock_path.is_absolute():

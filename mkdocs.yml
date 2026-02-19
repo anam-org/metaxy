@@ -72,6 +72,7 @@ plugins:
   - section-index
   - gh-admonitions
   # - optimize
+  - metaxy-config
   - macros:
       module_name: docs/main
   - social:
@@ -86,14 +87,14 @@ plugins:
 
   - mkdocstrings:
       enable_inventory: true
+      custom_templates: docs/templates
       handlers:
         python:
           paths: [src]
           options:
-            # preload_modules:
-              # these are required to identify e.g. dagster.Config as pydantic model in docs
-              # https://github.com/mkdocstrings/griffe-pydantic/issues/41#issuecomment-3311752656
-              # - sqlmodel
+            preload_modules:
+              - pydantic_settings
+              # - sqlmodel  # causes 'None' has no attribute 'modernize'
               # - dagster
 
             filters: ["!^_[^_]"]
@@ -132,6 +133,13 @@ plugins:
               - griffe_inherited_docstrings
               - griffe_pydantic:
                   schema: true
+                  extra_bases:
+                    - sqlmodel.SQLModel
+                    - Config
+                    - dg.Config
+                    - dagster.Config
+                    - dagster.ConfigurableResource
+
               - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_public.py:PublicAPIExtension
               - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_experimental.py:ExperimentalAPIExtension
           inventories:
@@ -189,7 +197,6 @@ markdown_extensions:
       auto_append:
         - .glossary.md
   # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
-  - metaxy_config
   - metaxy_examples
   - metaxy_mcp
   - pymdownx.superfences:
@@ -254,6 +261,7 @@ nav:
       - Storage:
         - integrations/metadata-stores/storage/index.md
         - Delta Lake: integrations/metadata-stores/storage/delta.md
+        - DuckLake: integrations/metadata-stores/storage/ducklake.md
     - Compute:
       - Ray: integrations/compute/ray.md
     - Plugins:

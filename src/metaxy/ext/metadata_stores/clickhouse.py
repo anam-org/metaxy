@@ -72,6 +72,7 @@ class ClickHouseVersioningEngine(IbisVersioningEngine):
         return cast(FrameT, nw.from_native(ibis_table))
 
 
+@public
 class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for ClickHouseMetadataStore.
 

@@ -12,7 +12,7 @@ Metaxy's versioning system is declarative, static (1) and deterministic.
 
 1. Versions can be calculated ahead of time (before the data processing job is executed).
 
-Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash [length](../../reference/configuration.md#hash_truncation_length) can be configured.
+Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash [length](../../reference/configuration.md#metaxy.config.MetaxyConfig.hash_truncation_length) can be configured.
 
 Here is how these versions are calculated, from bottom to top.
 

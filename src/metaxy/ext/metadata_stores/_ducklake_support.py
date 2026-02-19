@@ -19,6 +19,7 @@ from metaxy._decorators import public
 # ---------------------------------------------------------------------------
 
 
+@public
 class DuckDBMetadataBackendConfig(BaseModel):
     """DuckDB file-based metadata backend for [DuckLake](https://ducklake.select/)."""
 
@@ -29,6 +30,7 @@ class DuckDBMetadataBackendConfig(BaseModel):
         return "", f"METADATA_PATH {_stringify_scalar(self.uri)}"
 
 
+@public
 class SQLiteMetadataBackendConfig(BaseModel):
     """SQLite file-based metadata backend for [DuckLake](https://ducklake.select/)."""
 
@@ -39,6 +41,7 @@ class SQLiteMetadataBackendConfig(BaseModel):
         return "", f"METADATA_PATH {_stringify_scalar(self.uri)}"
 
 
+@public
 class PostgresMetadataBackendConfig(BaseModel):
     """PostgreSQL metadata backend for [DuckLake](https://ducklake.select/)."""
 
@@ -92,6 +95,7 @@ class PostgresMetadataBackendConfig(BaseModel):
         return secret_sql, metadata_params
 
 
+@public
 class MotherDuckMetadataBackendConfig(BaseModel):
     """[MotherDuck](https://motherduck.com/)-managed metadata backend for [DuckLake](https://ducklake.select/)."""
 
@@ -108,6 +112,7 @@ class MotherDuckMetadataBackendConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+@public
 class LocalStorageBackendConfig(BaseModel):
     """Local filesystem storage backend for DuckLake."""
 
@@ -118,6 +123,7 @@ class LocalStorageBackendConfig(BaseModel):
         return "", f"DATA_PATH {_stringify_scalar(self.path)}"
 
 
+@public
 class S3StorageBackendConfig(BaseModel):
     """S3 storage backend for DuckLake."""
 
@@ -199,6 +205,7 @@ class S3StorageBackendConfig(BaseModel):
         return secret_sql, data_path_sql
 
 
+@public
 class R2StorageBackendConfig(BaseModel):
     """Cloudflare R2 storage backend for [DuckLake](https://ducklake.select/).
 
@@ -246,6 +253,7 @@ class R2StorageBackendConfig(BaseModel):
         return secret_sql, data_path_sql
 
 
+@public
 class GCSStorageBackendConfig(BaseModel):
     """Google Cloud Storage backend for [DuckLake](https://ducklake.select/).
 

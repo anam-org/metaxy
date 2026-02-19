@@ -27,6 +27,7 @@ from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
+@public
 class DeltaMetadataStoreConfig(MetadataStoreConfig):
     """Configuration for DeltaMetadataStore.
 

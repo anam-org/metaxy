@@ -12,6 +12,7 @@ from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfi
 from metaxy.versioning.types import HashAlgorithm
 
 
+@public
 class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for BigQueryMetadataStore.
 
