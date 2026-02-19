@@ -42,3 +42,4 @@ jobs:
       dependency-matrix: ${{ (github.event_name == 'workflow_dispatch' && inputs.dependency-matrix) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}

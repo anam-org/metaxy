@@ -3,9 +3,11 @@
 from pydantic import Field as PydanticField
 from pydantic_settings import SettingsConfigDict
 
+from metaxy._decorators import public
 from metaxy.config import PluginConfig
 
 
+@public
 class SQLAlchemyConfig(PluginConfig):
     """Configuration for SQLAlchemy integration.
 

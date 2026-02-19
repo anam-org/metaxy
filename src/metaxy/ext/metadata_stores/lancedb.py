@@ -25,17 +25,20 @@ from metaxy.versioning.types import HashAlgorithm
 logger = logging.getLogger(__name__)
 
 
+@public
 class LanceDBMetadataStoreConfig(MetadataStoreConfig):
     """Configuration for LanceDBMetadataStore.
 
     Example:
-        ```python
-        config = LanceDBMetadataStoreConfig(
-            uri="/path/to/featuregraph",
-            connect_kwargs={"api_key": "your-api-key"},
-        )
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.ext.metadata_stores.lancedb.LanceDBMetadataStore"
 
-        store = LanceDBMetadataStore.from_config(config)
+        [stores.dev.config]
+        uri = "/path/to/featuregraph"
+
+        [stores.dev.config.connect_kwargs]
+        api_key = "your-api-key"
         ```
     """
 

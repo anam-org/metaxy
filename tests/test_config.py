@@ -68,7 +68,7 @@ def test_store_config_basic(tmp_path: Path) -> None:
         config={"root_path": str(tmp_path / "delta_store")},
     )
 
-    assert config.type == DeltaMetadataStore
+    assert config.type_cls == DeltaMetadataStore
     assert config.config["root_path"] == str(tmp_path / "delta_store")
 
 
@@ -83,7 +83,7 @@ def test_store_config_with_options(tmp_path: Path) -> None:
         },
     )
 
-    assert config.type == DeltaMetadataStore
+    assert config.type_cls == DeltaMetadataStore
     assert config.config["fallback_stores"] == ["prod"]
 
 
@@ -154,8 +154,8 @@ fallback_stores = []
 
     assert config.store == "dev"
     assert len(config.stores) == 2
-    assert config.stores["dev"].type == DeltaMetadataStore
-    assert config.stores["prod"].type == DeltaMetadataStore
+    assert config.stores["dev"].type_cls == DeltaMetadataStore
+    assert config.stores["prod"].type_cls == DeltaMetadataStore
 
 
 def test_load_from_pyproject_toml(tmp_path: Path) -> None:
@@ -222,7 +222,7 @@ root_path = "{custom_path}"
 
     assert config.project == "env_var_project"
     assert config.store == "custom"
-    assert config.stores["custom"].type == DeltaMetadataStore
+    assert config.stores["custom"].type_cls == DeltaMetadataStore
     assert config.config_file == config_file.resolve()
 
 
@@ -405,7 +405,7 @@ root_path = "{dev_path}"
 
     # Store from env var should be available
     assert "prod" in config.stores
-    assert config.stores["prod"].type == DeltaMetadataStore
+    assert config.stores["prod"].type_cls == DeltaMetadataStore
 
 
 def test_partial_env_var_store_config_filtered_out_with_warning(
@@ -443,7 +443,7 @@ root_path = "{dev_path}"
         config = MetaxyConfig.load(config_file)
 
     # dev store should work
-    assert config.stores["dev"].type_path == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+    assert config.stores["dev"].type == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
     # prod store should be filtered out (not present) since it lacks 'type'
     assert "prod" not in config.stores
@@ -1156,7 +1156,7 @@ def test_store_config_type_is_lazy() -> None:
     )
 
     # Creating the config should succeed (no import yet)
-    assert metaxy_config.stores["bad_store"].type_path == "non_existent_package.BadClass"
+    assert metaxy_config.stores["bad_store"].type == "non_existent_package.BadClass"
 
     # Accessing the store should fail with an error that includes the store name
     with pytest.raises(InvalidConfigError, match="bad_store") as exc_info:
@@ -1174,15 +1174,15 @@ def test_store_config_accepts_class_directly(tmp_path: Path) -> None:
 
     # Passing a class directly should work
     config = StoreConfig(
-        type=DeltaMetadataStore,
+        type=DeltaMetadataStore,  # ty: ignore[invalid-argument-type]
         config={"root_path": str(tmp_path / "delta_store")},
     )
 
-    # The type_path should be the import string
-    assert config.type_path == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+    # The type should be the import string
+    assert config.type == "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
     # Accessing .type should return the same class
-    assert config.type is DeltaMetadataStore
+    assert config.type_cls is DeltaMetadataStore
 
 
 def test_plugins_respect_metaxy_config_env_var_at_import_time(tmp_path: Path) -> None:

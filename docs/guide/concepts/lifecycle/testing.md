@@ -62,7 +62,7 @@ with MetaxyConfig(
 
 ### Multi-Project Testing
 
-When working with multi-project setups, it's a good idea to [provide an explicit path](/reference/configuration.md/#metaxy_lock_path) to the `metaxy.lock` file.
+When working with multi-project setups, it's a good idea to [provide an explicit path](/reference/configuration.md/#metaxy.config.MetaxyConfig.metaxy_lock_path) to the `metaxy.lock` file.
 
 ## Ephemeral Feature Graphs
 

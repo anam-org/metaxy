@@ -105,9 +105,9 @@ class TestGetConfig:
         result = await _call_tool(mcp_client, "get_config")
 
         assert "dev" in result["stores"]
-        # Full config serialization uses type_path as the field name
-        assert "type_path" in result["stores"]["dev"]
-        assert "DuckDBMetadataStore" in result["stores"]["dev"]["type_path"]
+        # Full config serialization uses type as the field name
+        assert "type" in result["stores"]["dev"]
+        assert "DuckDBMetadataStore" in result["stores"]["dev"]["type"]
 
 
 class TestListFeatures:

@@ -72,19 +72,18 @@ class ClickHouseVersioningEngine(IbisVersioningEngine):
         return cast(FrameT, nw.from_native(ibis_table))
 
 
+@public
 class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
     """Configuration for ClickHouseMetadataStore.
 
-    Inherits connection_string, connection_params, table_prefix, auto_create_tables from `IbisMetadataStoreConfig`.
-
     Example:
-        ```python
-        config = ClickHouseMetadataStoreConfig(
-            connection_string="clickhouse://localhost:8443/default",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore"
 
-        store = ClickHouseMetadataStore.from_config(config)
+        [stores.dev.config]
+        connection_string = "clickhouse://localhost:8443/default"
+        hash_algorithm = "xxhash64"
         ```
     """
 

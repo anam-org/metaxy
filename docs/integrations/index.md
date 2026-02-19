@@ -70,7 +70,7 @@ Learn more about metadata stores [here](../guide/concepts/metadata-stores.md).
 
     ---
 
-    :material-tag-outline: Storage
+    :material-tag-outline: Storage • Lakehouse
 
     Store metadata in [Delta Lake](https://delta.io/) format in local files or remote object stores (S3, GCS, and others). (1)
 
@@ -89,15 +89,24 @@ Learn more about metadata stores [here](../guide/concepts/metadata-stores.md).
     :material-tag-outline: Database • :material-tag-outline: Storage
 
     Use [DuckDB](https://duckdb.org/) - a fast analytical database with support for local and remote compute.
-    [DuckLake](https://ducklake.select/) is available as well.
 
     !!! warning
 
-        DuckDB is not recommended for production due to [parallel writes limitations](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
+        Local DuckDB is not recommended for production due to [parallel writes limitations](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes).
 
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb.md)
 
     [:octicons-arrow-right-24: API docs](metadata-stores/databases/duckdb.md)
+
+  - :custom-duckdb:{ .lg .middle } [**DuckLake**](metadata-stores/storage/ducklake.md)
+
+    ---
+
+    :material-tag-outline: Storage • Lakehouse
+
+    Use the very performant [DuckLake](https://ducklake.select/) lakehouse format for storing Metaxy metadata.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/ducklake.md)
 
   - :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb.md)
 

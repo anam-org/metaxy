@@ -25,5 +25,4 @@ def test_ducklake_demo_preview():
 
     assert "DuckLake store initialised" in result.stdout
     assert "Preview of DuckLake ATTACH SQL:" in result.stdout
-    assert "INSTALL" in result.stdout or "LOAD" in result.stdout
     assert "ATTACH" in result.stdout or "ducklake" in result.stdout.lower()

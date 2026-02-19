@@ -53,8 +53,8 @@ def test_config_print_json(metaxy_project: TempMetaxyProject, capsys: pytest.Cap
 
         # Check that configured stores are present
         assert "dev" in config["stores"]
-        assert "type_path" in config["stores"]["dev"]
-        assert "DuckDBMetadataStore" in config["stores"]["dev"]["type_path"]
+        assert "type" in config["stores"]["dev"]
+        assert "DuckDBMetadataStore" in config["stores"]["dev"]["type"]
 
         # JSON output should include None values (unlike TOML)
         # Just verify it's valid JSON with the expected structure

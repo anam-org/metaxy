@@ -1884,8 +1884,8 @@ wheels = [
 
 [[package]]
 name = "griffe-pydantic"
-version = "1.2.1.dev6+g9491921"
-source = { git = "https://github.com/mkdocstrings/griffe-pydantic.git#9491921fb1c57c85ffd0b1c1e2e24784d4730c3f" }
+version = "1.3.1.dev61+g9158543"
+source = { git = "https://github.com/danielgafni/griffe-pydantic.git?branch=feat%2Fconfigurable-bases#91585438222235cc8f872b38c90b8aed83a0a8b4" }
 dependencies = [
     { name = "griffe" },
 ]
@@ -3093,7 +3093,7 @@ docs = [
     { name = "examples", editable = "examples" },
     { name = "griffe", specifier = ">=1.14.0" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.1.2" },
-    { name = "griffe-pydantic", git = "https://github.com/mkdocstrings/griffe-pydantic.git" },
+    { name = "griffe-pydantic", git = "https://github.com/danielgafni/griffe-pydantic.git?branch=feat%2Fconfigurable-bases" },
     { name = "mike", specifier = ">=2.1.3" },
     { name = "mkdocs", specifier = ">=1.6.1" },
     { name = "mkdocs-api-autonav", specifier = ">=0.4.0" },

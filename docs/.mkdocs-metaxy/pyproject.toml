@@ -20,10 +20,10 @@ metaxy = { workspace = true }
 
 [project.entry-points."mkdocs.plugins"]
 metaxy-examples = "mkdocs_metaxy.examples:MetaxyExamplesPlugin"
+metaxy-config = "mkdocs_metaxy.config.plugin:MetaxyConfigPlugin"
 
 [project.entry-points."markdown.extensions"]
 metaxy_examples = "mkdocs_metaxy.examples.markdown_ext:makeExtension"
-metaxy_config = "mkdocs_metaxy.config.markdown_ext:makeExtension"
 metaxy_mcp = "mkdocs_metaxy.mcp.markdown_ext:makeExtension"
 
 [tool.ruff]

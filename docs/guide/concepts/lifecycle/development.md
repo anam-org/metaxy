@@ -9,7 +9,7 @@ description: "Local development patterns and best practices with Metaxy."
 
 Metaxy supports local-first development workflows.
 
-It all starts from the [metadata store](../metadata-stores.md). The default metadata store name in Metaxy [configuration](/reference/configuration.md/#store) is `"dev"` (1). Configure it in the config file:
+It all starts from the [metadata store](../metadata-stores.md). The default metadata store name in Metaxy [configuration](/reference/configuration.md/#metaxy.config.MetaxyConfig.store) is `"dev"` (1). Configure it in the config file:
 { .annotate }
 
 1. of course, it can be tweaked to something like `"local"`

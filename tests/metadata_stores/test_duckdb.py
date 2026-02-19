@@ -160,22 +160,25 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
 
 def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
+    from metaxy.ext.metadata_stores._ducklake_support import DuckLakeAttachmentConfig
 
     db_path = tmp_path / "ducklake.duckdb"
     metadata_path = tmp_path / "ducklake_catalog.duckdb"
     storage_dir = tmp_path / "ducklake_storage"
 
-    ducklake_config = {
-        "alias": "lake",
-        "metadata_backend": {
-            "type": "duckdb",
-            "path": str(metadata_path),
-        },
-        "storage_backend": {
-            "type": "local",
-            "path": str(storage_dir),
-        },
-    }
+    ducklake_config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "alias": "lake",
+            "metadata_backend": {
+                "type": "duckdb",
+                "uri": str(metadata_path),
+            },
+            "storage_backend": {
+                "type": "local",
+                "path": str(storage_dir),
+            },
+        }
+    )
 
     with DuckDBMetadataStore(db_path, extensions=["json"], ducklake=ducklake_config, auto_create_tables=True) as store:
         attachment_config = store.ducklake_attachment_config
@@ -235,15 +238,7 @@ def test_duckdb_config_with_extensions() -> None:
     assert isinstance(store, DuckDBMetadataStore)
 
     # hashfuncs is auto-added, so we should have at least hashfuncs
-    from metaxy.ext.metadata_stores.duckdb import ExtensionSpec
-
-    extension_names = []
-    for ext in store.extensions:
-        if isinstance(ext, str):
-            extension_names.append(ext)
-        elif isinstance(ext, ExtensionSpec):
-            extension_names.append(ext.name)
-    assert "hashfuncs" in extension_names
+    assert "hashfuncs" in [ext.name for ext in store.extensions]
 
     with store.open("w"):
         assert store._is_open

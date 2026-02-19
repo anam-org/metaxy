@@ -44,13 +44,10 @@ class IbisMetadataStoreConfig(MetadataStoreConfig):
     """Configuration for IbisMetadataStore.
 
     Example:
-        ```python
-        config = IbisMetadataStoreConfig(
-            connection_string="postgresql://user:pass@host:5432/db",
-            table_prefix="prod_",
-        )
-
-        # Note: IbisMetadataStore is abstract, use a concrete implementation
+        ```toml title="metaxy.toml"
+        [stores.dev.config]
+        connection_string = "postgresql://user:pass@host:5432/db"
+        table_prefix = "prod_"
         ```
     """
 

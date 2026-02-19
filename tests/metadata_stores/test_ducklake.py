@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 import polars as pl
+import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from polars.testing import assert_frame_equal
@@ -13,8 +14,11 @@ from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores._ducklake_support import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
-    _PreviewConnection,
-    _PreviewCursor,
+    GCSStorageBackendConfig,
+    MotherDuckMetadataBackendConfig,
+    PostgresMetadataBackendConfig,
+    R2StorageBackendConfig,
+    S3StorageBackendConfig,
     format_attach_options,
 )
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
@@ -55,59 +59,64 @@ def metadata_dataframe_strategy(draw, fields=None, size=None):
     return df
 
 
-class _StubCursor(_PreviewCursor):
-    def __init__(self) -> None:
-        super().__init__()
-        self.closed = False
-
-    def close(self) -> None:
-        self.closed = True
-        super().close()
-
-
-class _StubConnection(_PreviewConnection):
-    def __init__(self) -> None:
-        super().__init__()
-        self._cursor = _StubCursor()
-
-    def cursor(self) -> _StubCursor:
-        return self._cursor  # ty: ignore[invalid-return-type]
-
-
 def test_ducklake_attachment_sequence() -> None:
     """DuckLakeAttachmentManager should issue expected setup statements."""
-    attachment = DuckLakeAttachmentConfig(
-        metadata_backend={
-            "type": "postgres",
-            "database": "ducklake_meta",
-            "user": "ducklake",
-            "password": "secret",
-        },
-        storage_backend={
-            "type": "s3",
-            "endpoint_url": "https://object-store",
-            "bucket": "ducklake",
-            "aws_access_key_id": "key",
-            "aws_secret_access_key": "secret",
-        },
-        alias="lake",
-        plugins=("ducklake",),
-        attach_options={"api_version": "0.2", "override_data_path": True},
+    attachment = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {
+                "type": "postgres",
+                "database": "ducklake_meta",
+                "user": "ducklake",
+                "password": "secret",
+                "host": "localhost",
+            },
+            "storage_backend": {
+                "type": "s3",
+                "key_id": "key",
+                "secret": "secret",
+                "endpoint": "https://object-store",
+                "bucket": "ducklake",
+            },
+            "alias": "lake",
+            "attach_options": {"api_version": "0.2", "override_data_path": True},
+        }
     )
 
     manager = DuckLakeAttachmentManager(attachment)
-    conn = _StubConnection()
+    commands = manager.preview_sql()
 
-    manager.configure(conn)
-
-    commands = conn.cursor().commands
-    assert commands[0] == "INSTALL ducklake;"
-    assert commands[1] == "LOAD ducklake;"
-    assert commands[-2].startswith("ATTACH 'ducklake:secret_lake'")
+    assert commands[-2].startswith("ATTACH IF NOT EXISTS 'ducklake:metaxy_generated_lake'")
     assert commands[-1] == "USE lake;"
 
     options_clause = format_attach_options(attachment.attach_options)
     assert options_clause == " (API_VERSION '0.2', OVERRIDE_DATA_PATH true)"
+
+
+def test_ducklake_data_inlining_option() -> None:
+    """ATTACH SQL should include DATA_INLINING_ROW_LIMIT when set."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
+            "storage_backend": {"type": "local", "path": "/tmp/data"},
+            "data_inlining_row_limit": 100,
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+    attach_stmt = [s for s in commands if s.startswith("ATTACH")][0]
+    assert "DATA_INLINING_ROW_LIMIT 100" in attach_stmt
+
+
+def test_ducklake_data_inlining_absent_when_not_set() -> None:
+    """ATTACH SQL should not include DATA_INLINING_ROW_LIMIT when not set."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
+            "storage_backend": {"type": "local", "path": "/tmp/data"},
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+    attach_stmt = [s for s in commands if s.startswith("ATTACH")][0]
+    assert "DATA_INLINING_ROW_LIMIT" not in attach_stmt
 
 
 def test_format_attach_options_handles_types() -> None:
@@ -123,6 +132,77 @@ def test_format_attach_options_handles_types() -> None:
     assert clause == " (API_VERSION '0.2', MAX_RETRIES 3, OVERRIDE_DATA_PATH true)"
 
 
+# ---------------------------------------------------------------------------
+# MotherDuck DuckLake tests
+# ---------------------------------------------------------------------------
+
+
+def test_motherduck_attachment_sequence() -> None:
+    """Fully managed MotherDuck DuckLake should USE the database directly."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "motherduck", "database": "my_lake"},
+            "alias": "lake",
+        }
+    )
+
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+
+    assert commands == ["USE my_lake;"]
+
+
+def test_motherduck_attachment_with_region() -> None:
+    """MotherDuck DuckLake with explicit region should SET s3_region before USE."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "motherduck", "database": "my_lake", "region": "eu-central-1"},
+            "alias": "lake",
+        }
+    )
+
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+
+    assert commands == ["SET s3_region='eu-central-1';", "USE my_lake;"]
+
+
+def test_motherduck_does_not_require_storage_backend() -> None:
+    """MotherDuck metadata backend should validate without a storage_backend."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "motherduck", "database": "my_lake"},
+        }
+    )
+
+    assert isinstance(config.metadata_backend, MotherDuckMetadataBackendConfig)
+    assert config.storage_backend is None
+
+
+def test_non_motherduck_requires_storage_backend() -> None:
+    """Non-MotherDuck metadata backends should raise ValueError when storage_backend is missing."""
+    for backend in [
+        {"type": "duckdb", "uri": "/tmp/meta.duckdb"},
+        {"type": "sqlite", "uri": "/tmp/meta.sqlite"},
+        {"type": "postgres", "database": "db", "user": "u", "password": "p", "host": "localhost"},
+    ]:
+        with pytest.raises(ValueError, match="storage_backend is required"):
+            DuckLakeAttachmentConfig.model_validate({"metadata_backend": backend})
+
+
+def test_duckdb_store_accepts_motherduck_ducklake_config() -> None:
+    """DuckDBMetadataStore should accept MotherDuck DuckLake config and include ducklake extension."""
+    store = DuckDBMetadataStore(
+        database=":memory:",
+        ducklake=DuckLakeAttachmentConfig.model_validate(
+            {"metadata_backend": {"type": "motherduck", "database": "my_lake"}, "alias": "lake"}
+        ),
+    )
+
+    assert "ducklake" in [ext.name for ext in store.extensions]
+    assert "motherduck" in [ext.name for ext in store.extensions]
+    commands = store.preview_ducklake_sql()
+    assert commands == ["USE my_lake;"]
+
+
 def _ducklake_config_payload() -> dict[str, object]:
     return {
         "metadata_backend": {
@@ -130,13 +210,14 @@ def _ducklake_config_payload() -> dict[str, object]:
             "database": "ducklake_meta",
             "user": "ducklake",
             "password": "secret",
+            "host": "localhost",
         },
         "storage_backend": {
             "type": "s3",
-            "endpoint_url": "https://object-store",
+            "key_id": "key",
+            "secret": "secret",
+            "endpoint": "https://object-store",
             "bucket": "ducklake",
-            "aws_access_key_id": "key",
-            "aws_secret_access_key": "secret",
         },
         "attach_options": {"override_data_path": True},
     }
@@ -147,13 +228,11 @@ def test_duckdb_store_accepts_ducklake_config() -> None:
     store = DuckDBMetadataStore(
         database=":memory:",
         extensions=["json"],
-        ducklake=_ducklake_config_payload(),
+        ducklake=DuckLakeAttachmentConfig.model_validate(_ducklake_config_payload()),
     )
 
-    assert "ducklake" in store.extensions
+    assert "ducklake" in [ext.name for ext in store.extensions]
     commands = store.preview_ducklake_sql()
-    assert commands[0] == "INSTALL ducklake;"
-    assert commands[1] == "LOAD ducklake;"
     assert commands[-1] == "USE ducklake;"
 
 
@@ -161,12 +240,11 @@ def test_duckdb_store_preview_via_config_manager() -> None:
     """DuckDBMetadataStore exposes attachment manager helpers when configured."""
     store = DuckDBMetadataStore(
         database=":memory:",
-        ducklake=_ducklake_config_payload(),
+        ducklake=DuckLakeAttachmentConfig.model_validate(_ducklake_config_payload()),
     )
 
     manager = store.ducklake_attachment
     preview = manager.preview_sql()
-    assert preview[0] == "INSTALL ducklake;"
     assert preview[-1] == "USE ducklake;"
 
 
@@ -191,12 +269,10 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
 
     # Set up monkeypatch once per test function
     if not _test_recorded_commands:
-        original_configure = DuckLakeAttachmentManager.configure
+        original_preview = DuckLakeAttachmentManager.preview_sql
 
         def fake_configure(self, conn):
-            preview_conn = _PreviewConnection()
-            original_configure(self, preview_conn)
-            _test_recorded_commands.extend(preview_conn.cursor().commands)
+            _test_recorded_commands.extend(original_preview(self))
 
         monkeypatch.setattr(DuckLakeAttachmentManager, "configure", fake_configure)
 
@@ -210,11 +286,13 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         metadata_path = tmp_path / "ducklake_catalog.duckdb"
         storage_dir = tmp_path / "ducklake_storage"
 
-        ducklake_config = {
-            "alias": "lake",
-            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-            "storage_backend": {"type": "local", "path": str(storage_dir)},
-        }
+        ducklake_config = DuckLakeAttachmentConfig.model_validate(
+            {
+                "alias": "lake",
+                "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
+                "storage_backend": {"type": "local", "path": str(storage_dir)},
+            }
+        )
 
         feature = test_features["UpstreamFeatureA"]
 
@@ -235,15 +313,15 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
             ducklake=ducklake_config,
         )
 
-        with store:
+        # Explicit write mode for clarity (bare `with store:` defaults to auto_create_tables env var)
+        with store.open("w"):
             store.write(feature, payload)
             result = collect_to_polars(store.read(feature))
             actual = result.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"])
             expected = payload.sort("sample_uid")
             assert_frame_equal(actual, expected)
 
-        assert _test_recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
-        assert any(cmd.startswith("ATTACH 'ducklake:") for cmd in _test_recorded_commands)
+        assert any(cmd.startswith("ATTACH IF NOT EXISTS 'ducklake:") for cmd in _test_recorded_commands)
         assert _test_recorded_commands[-1] == "USE lake;"
 
 
@@ -282,12 +360,14 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
             metadata_path = tmp_path / "ducklake_catalog.duckdb"
             storage_dir = tmp_path / "ducklake_storage"
 
-            ducklake_config = {
-                "alias": "e2e_lake",
-                "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-                "storage_backend": {"type": "local", "path": str(storage_dir)},
-                "attach_options": {"override_data_path": True},
-            }
+            ducklake_config = DuckLakeAttachmentConfig.model_validate(
+                {
+                    "alias": "e2e_lake",
+                    "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
+                    "storage_backend": {"type": "local", "path": str(storage_dir)},
+                    "attach_options": {"override_data_path": True},
+                }
+            )
 
             # Create store - this will actually attach DuckLake (no mocking)
             store = DuckDBMetadataStore(
@@ -320,7 +400,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 }
             )
 
-            with store:
+            with store.open("w"):
                 # Write upstream features
                 store.write(upstream_a, upstream_a_data)
                 store.write(upstream_b, upstream_b_data)
@@ -354,6 +434,13 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                     result_d.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     downstream_data.sort("sample_uid"),
                 )
+
+                # Verify DuckLake tracks data files (not plain DuckDB)
+                raw_conn = store._duckdb_raw_connection()
+                for feat in (upstream_a, upstream_b, downstream):
+                    tbl = store.get_table_name(feat.spec.key)
+                    files = raw_conn.execute(f"FROM ducklake_list_files('e2e_lake', '{tbl}')").fetchall()
+                    assert files, f"ducklake_list_files should return data files for {tbl}"
 
                 # Test 3: List features from active graph
                 features_list = graph.list_features()
@@ -393,7 +480,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 ducklake=ducklake_config,
             )
 
-            with store2:
+            with store2.open("w"):
                 # Verify we can still read all features after reopening
                 result_a2 = collect_to_polars(store2.read(upstream_a))
                 assert len(result_a2) == num_samples + 1  # Original samples + 1 appended
@@ -409,5 +496,287 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
                 features_list2 = graph.list_features()
                 assert len(features_list2) == 3
 
-            # Verify DuckLake catalog database exists (storage dir may not exist if no tables were created)
-            assert metadata_path.exists(), "DuckLake catalog database should exist"
+            # Verify physical artifacts on disk
+            assert metadata_path.exists(), "DuckLake metadata catalog should exist"
+            parquet_files = list(storage_dir.rglob("*.parquet"))
+            assert parquet_files, f"DuckLake should write parquet files to {storage_dir}"
+
+
+# ---------------------------------------------------------------------------
+# S3 secret_parameters tests
+# ---------------------------------------------------------------------------
+
+
+def test_s3_storage_with_secret_parameters() -> None:
+    """S3 secret_parameters should be merged into the secret SQL."""
+    config = S3StorageBackendConfig(
+        type="s3",
+        key_id="key",
+        secret="secret",
+        bucket="my-bucket",
+        secret_parameters={"chain": "credential_chain", "kms_key_id": "my-kms-key"},
+    )
+    secret_sql, _ = config.sql_parts("test")
+    assert "CHAIN 'credential_chain'" in secret_sql
+    assert "KMS_KEY_ID 'my-kms-key'" in secret_sql
+    assert "TYPE S3" in secret_sql
+
+
+def test_s3_storage_credential_chain() -> None:
+    """S3 without auth should use credential_chain provider and omit KEY_ID."""
+    config = S3StorageBackendConfig(type="s3", bucket="my-bucket")
+    secret_sql, _ = config.sql_parts("test")
+    assert "PROVIDER 'credential_chain'" in secret_sql
+    assert "KEY_ID" not in secret_sql
+
+
+# ---------------------------------------------------------------------------
+# S3 integration test (moto)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.ducklake
+@pytest.mark.duckdb
+def test_ducklake_s3_storage_roundtrip(
+    test_features,
+    s3_bucket_and_storage_options: tuple[str, dict],
+) -> None:
+    """DuckLake with S3 storage backend should accept S3 secret config and support read/write roundtrip."""
+    bucket_name, storage_options = s3_bucket_and_storage_options
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        db_path = tmp_path / "ducklake_s3.duckdb"
+        metadata_path = tmp_path / "ducklake_catalog.duckdb"
+
+        ducklake_config = DuckLakeAttachmentConfig.model_validate(
+            {
+                "alias": "s3_lake",
+                "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
+                "storage_backend": {
+                    "type": "s3",
+                    "key_id": storage_options["AWS_ACCESS_KEY_ID"],
+                    "secret": storage_options["AWS_SECRET_ACCESS_KEY"],
+                    "endpoint": storage_options["AWS_ENDPOINT_URL"],
+                    "region": storage_options["AWS_REGION"],
+                    "bucket": bucket_name,
+                    "url_style": "path",
+                    "use_ssl": False,
+                },
+                "attach_options": {"override_data_path": True},
+            }
+        )
+
+        feature = test_features["UpstreamFeatureA"]
+        payload = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash_a", "audio": "hash_b"},
+                    {"frames": "hash_c", "audio": "hash_d"},
+                    {"frames": "hash_e", "audio": "hash_f"},
+                ],
+            }
+        )
+
+        store = DuckDBMetadataStore(
+            database=db_path,
+            extensions=["json"],
+            ducklake=ducklake_config,
+        )
+
+        with store.open("w"):
+            store.write(feature, payload)
+            result = collect_to_polars(store.read(feature))
+            actual = result.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"])
+            assert_frame_equal(actual, payload.sort("sample_uid"))
+
+            # Verify DuckLake tracks data files for the written table
+            table_name = store.get_table_name(feature.spec.key)
+            raw_conn = store._duckdb_raw_connection()
+            files = raw_conn.execute(f"FROM ducklake_list_files('s3_lake', '{table_name}')").fetchall()
+            assert files, f"ducklake_list_files should return data files for {table_name}"
+            assert all(f[0].endswith(".parquet") for f in files), "DuckLake data files should be parquet"
+
+        assert metadata_path.exists(), f"DuckLake metadata catalog should exist at {metadata_path}"
+
+
+# ---------------------------------------------------------------------------
+# R2 storage backend tests
+# ---------------------------------------------------------------------------
+
+
+def test_r2_storage_with_explicit_auth() -> None:
+    """R2 with explicit auth should include TYPE R2, ACCOUNT_ID, KEY_ID, and SECRET."""
+    config = R2StorageBackendConfig(
+        type="r2",
+        key_id="r2key",
+        secret="r2secret",
+        account_id="my-account-id",
+        data_path="r2://my-bucket/data/",
+    )
+    secret_sql, data_part = config.sql_parts("test")
+    assert "TYPE R2" in secret_sql
+    assert "ACCOUNT_ID 'my-account-id'" in secret_sql
+    assert "KEY_ID 'r2key'" in secret_sql
+    assert "SECRET 'r2secret'" in secret_sql
+    assert data_part == "DATA_PATH 'r2://my-bucket/data/'"
+
+
+def test_r2_storage_credential_chain() -> None:
+    """R2 without auth should use credential_chain and still include ACCOUNT_ID."""
+    config = R2StorageBackendConfig(
+        type="r2",
+        account_id="my-account-id",
+        data_path="r2://my-bucket/data/",
+    )
+    secret_sql, _ = config.sql_parts("test")
+    assert "TYPE R2" in secret_sql
+    assert "PROVIDER 'credential_chain'" in secret_sql
+    assert "ACCOUNT_ID 'my-account-id'" in secret_sql
+    assert "KEY_ID" not in secret_sql
+
+
+# ---------------------------------------------------------------------------
+# GCS storage backend tests
+# ---------------------------------------------------------------------------
+
+
+def test_gcs_storage_with_explicit_auth() -> None:
+    """GCS with explicit auth should include TYPE GCS, KEY_ID, and SECRET."""
+    config = GCSStorageBackendConfig(
+        type="gcs",
+        key_id="gcskey",
+        secret="gcssecret",
+        data_path="gs://my-bucket/data/",
+    )
+    secret_sql, data_part = config.sql_parts("test")
+    assert "TYPE GCS" in secret_sql
+    assert "KEY_ID 'gcskey'" in secret_sql
+    assert "SECRET 'gcssecret'" in secret_sql
+    assert data_part == "DATA_PATH 'gs://my-bucket/data/'"
+
+
+def test_gcs_storage_credential_chain() -> None:
+    """GCS without auth should use credential_chain and omit KEY_ID."""
+    config = GCSStorageBackendConfig(
+        type="gcs",
+        data_path="gs://my-bucket/data/",
+    )
+    secret_sql, _ = config.sql_parts("test")
+    assert "TYPE GCS" in secret_sql
+    assert "PROVIDER 'credential_chain'" in secret_sql
+    assert "KEY_ID" not in secret_sql
+
+
+def test_non_motherduck_accepts_r2_and_gcs_storage() -> None:
+    """R2 and GCS storage backends should produce valid DUCKLAKE secret SQL."""
+    for storage_config in [
+        {
+            "type": "r2",
+            "key_id": "key",
+            "secret": "secret",
+            "account_id": "acct-123",
+            "data_path": "r2://bucket/prefix/",
+        },
+        {
+            "type": "gcs",
+            "key_id": "key",
+            "secret": "secret",
+            "data_path": "gs://bucket/prefix/",
+        },
+    ]:
+        config = DuckLakeAttachmentConfig.model_validate(
+            {
+                "metadata_backend": {"type": "duckdb", "uri": "/tmp/meta.duckdb"},
+                "storage_backend": storage_config,
+                "alias": "lake",
+            }
+        )
+        commands = DuckLakeAttachmentManager(config).preview_sql()
+        ducklake_secret_sql = [c for c in commands if "TYPE DUCKLAKE" in c]
+        assert len(ducklake_secret_sql) == 1
+        assert "DATA_PATH" in ducklake_secret_sql[0]
+
+
+# ---------------------------------------------------------------------------
+# secret_name tests
+# ---------------------------------------------------------------------------
+
+
+def test_postgres_with_secret_name_skips_create_secret() -> None:
+    """PostgreSQL with secret_name should return empty secret SQL and reference the user-provided name."""
+    config = PostgresMetadataBackendConfig(type="postgres", secret_name="my_pg_secret")
+    secret_sql, metadata_params = config.sql_parts("lake")
+    assert secret_sql == ""
+    assert "'my_pg_secret'" in metadata_params
+    assert "TYPE" in metadata_params and "postgres" in metadata_params
+
+
+def test_postgres_secret_name_rejects_inline_credentials() -> None:
+    """PostgreSQL should reject both secret_name and inline credentials."""
+    with pytest.raises(ValueError, match="Cannot combine"):
+        PostgresMetadataBackendConfig(type="postgres", secret_name="my_secret", host="localhost")
+
+
+def test_postgres_inline_requires_all_credentials() -> None:
+    """PostgreSQL without secret_name should require all inline credentials."""
+    with pytest.raises(ValueError, match="Missing required credentials"):
+        PostgresMetadataBackendConfig(type="postgres", host="localhost", database="db")
+
+
+def test_s3_with_secret_name_skips_create_secret() -> None:
+    """S3 with secret_name should return empty secret SQL but still include DATA_PATH."""
+    config = S3StorageBackendConfig(type="s3", secret_name="my_s3_secret", bucket="my-bucket")
+    secret_sql, data_part = config.sql_parts("lake")
+    assert secret_sql == ""
+    assert "DATA_PATH" in data_part
+    assert "my-bucket" in data_part
+
+
+def test_s3_secret_name_rejects_inline_credentials() -> None:
+    """S3 should reject both secret_name and inline credentials."""
+    with pytest.raises(ValueError, match="Cannot combine"):
+        S3StorageBackendConfig(type="s3", secret_name="my_secret", key_id="key", secret="secret", bucket="b")
+
+
+def test_r2_with_secret_name_skips_create_secret() -> None:
+    """R2 with secret_name should return empty secret SQL."""
+    config = R2StorageBackendConfig(type="r2", secret_name="my_r2_secret", data_path="r2://bucket/data/")
+    secret_sql, data_part = config.sql_parts("lake")
+    assert secret_sql == ""
+    assert "DATA_PATH" in data_part
+
+
+def test_r2_without_secret_name_requires_account_id() -> None:
+    """R2 without secret_name should require account_id."""
+    with pytest.raises(ValueError, match="account_id"):
+        R2StorageBackendConfig(type="r2", data_path="r2://bucket/data/")
+
+
+def test_gcs_with_secret_name_skips_create_secret() -> None:
+    """GCS with secret_name should return empty secret SQL."""
+    config = GCSStorageBackendConfig(type="gcs", secret_name="my_gcs_secret", data_path="gs://bucket/data/")
+    secret_sql, data_part = config.sql_parts("lake")
+    assert secret_sql == ""
+    assert "DATA_PATH" in data_part
+
+
+def test_full_attachment_with_secret_names() -> None:
+    """End-to-end: preview_sql() should have no CREATE SECRET for catalog/storage when using secret_name."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "postgres", "secret_name": "pg_catalog"},
+            "storage_backend": {"type": "s3", "secret_name": "s3_storage", "bucket": "data-bucket"},
+            "alias": "lake",
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+
+    create_secret_cmds = [c for c in commands if c.startswith("CREATE OR REPLACE SECRET")]
+    assert len(create_secret_cmds) == 1
+    assert "TYPE DUCKLAKE" in create_secret_cmds[0]
+
+    assert any("pg_catalog" in c for c in commands)
+    assert any("ATTACH IF NOT EXISTS" in c for c in commands)
+    assert commands[-1] == "USE lake;"
