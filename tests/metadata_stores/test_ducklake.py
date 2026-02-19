@@ -92,6 +92,33 @@ def test_ducklake_attachment_sequence() -> None:
     assert options_clause == " (API_VERSION '0.2', OVERRIDE_DATA_PATH true)"
 
 
+def test_ducklake_data_inlining_option() -> None:
+    """ATTACH SQL should include DATA_INLINING_ROW_LIMIT when set."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
+            "storage_backend": {"type": "local", "path": "/tmp/data"},
+            "data_inlining_row_limit": 100,
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+    attach_stmt = [s for s in commands if s.startswith("ATTACH")][0]
+    assert "DATA_INLINING_ROW_LIMIT 100" in attach_stmt
+
+
+def test_ducklake_data_inlining_absent_when_not_set() -> None:
+    """ATTACH SQL should not include DATA_INLINING_ROW_LIMIT when not set."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
+            "storage_backend": {"type": "local", "path": "/tmp/data"},
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+    attach_stmt = [s for s in commands if s.startswith("ATTACH")][0]
+    assert "DATA_INLINING_ROW_LIMIT" not in attach_stmt
+
+
 def test_format_attach_options_handles_types() -> None:
     """_format_attach_options should stringify values similarly to DuckLake resource."""
     options = {
