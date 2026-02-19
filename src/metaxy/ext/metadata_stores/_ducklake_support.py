@@ -375,6 +375,11 @@ class DuckLakeAttachmentConfig(BaseModel):
         default_factory=dict,
         description="Extra [DuckLake](https://ducklake.select/) ATTACH options (e.g., api_version, override_data_path).",
     )
+    data_inlining_row_limit: int | None = Field(
+        default=None,
+        description="Store inserts smaller than this row count directly in the metadata catalog "
+        "instead of creating Parquet files.",
+    )
 
     @model_validator(mode="after")
     def _validate_storage_backend(self) -> Self:
@@ -460,7 +465,10 @@ class DuckLakeAttachmentManager:
             " );"
         )
 
-        options_clause = format_attach_options(self._config.attach_options)
+        options = dict(self._config.attach_options)
+        if self._config.data_inlining_row_limit is not None:
+            options["data_inlining_row_limit"] = self._config.data_inlining_row_limit
+        options_clause = format_attach_options(options)
         statements.append(f"ATTACH IF NOT EXISTS 'ducklake:{ducklake_secret}' AS {self._config.alias}{options_clause};")
         statements.append(f"USE {self._config.alias};")
         return statements
