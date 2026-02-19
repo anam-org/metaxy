@@ -1893,6 +1893,8 @@
       
         
       
+        
+      
     
     
     
@@ -1960,6 +1962,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -4334,33 +4364,6 @@ dependencies which are defined directly.</p>
           <li><code>frozen</code>: <code class="highlight language-python"><span class="kc">True</span></code></li>
       </ul>
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.FieldsMapping.mapping">mapping</span></code>
-                (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.models.fields_mapping.AllFieldsMapping&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.fields_mapping.AllFieldsMapping">AllFieldsMapping</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.models.fields_mapping.SpecificFieldsMapping&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.fields_mapping.SpecificFieldsMapping">SpecificFieldsMapping</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.models.fields_mapping.NoneFieldsMapping&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.fields_mapping.NoneFieldsMapping">NoneFieldsMapping</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.models.fields_mapping.DefaultFieldsMapping&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.fields_mapping.DefaultFieldsMapping">DefaultFieldsMapping</a></code>)
-            </li>
-        </ul>
 
 
 
@@ -4876,21 +4879,6 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.DefaultFieldsMapping.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.fields_mapping.FieldsMappingType.DEFAULT">DEFAULT</span>]</code>)
-            </li>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.DefaultFieldsMapping.match_suffix">match_suffix</span></code>
-                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-            </li>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.DefaultFieldsMapping.exclude_fields">exclude_fields</span></code>
-                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FieldKey&lt;/code&gt;)" href="../../types/#metaxy.FieldKey">FieldKey</a>]</code>)
-            </li>
-        </ul>
 
 
 
@@ -5058,17 +5046,6 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.SpecificFieldsMapping.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.fields_mapping.FieldsMappingType.SPECIFIC">SPECIFIC</span>]</code>)
-            </li>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.SpecificFieldsMapping.mapping">mapping</span></code>
-                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FieldKey&lt;/code&gt;)" href="../../types/#metaxy.FieldKey">FieldKey</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#set">set</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FieldKey&lt;/code&gt;)" href="../../types/#metaxy.FieldKey">FieldKey</a>]]</code>)
-            </li>
-        </ul>
 
 
 
@@ -5189,13 +5166,6 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.AllFieldsMapping.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.fields_mapping.FieldsMappingType.ALL">ALL</span>]</code>)
-            </li>
-        </ul>
 
 
 
@@ -5315,13 +5285,6 @@ Keys and values can be strings, sequences, or FieldKey instances.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.fields_mapping.NoneFieldsMapping.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.fields_mapping.FieldsMappingType.NONE">NONE</span>]</code>)
-            </li>
-        </ul>
 
 
 

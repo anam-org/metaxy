@@ -1893,6 +1893,8 @@
       
         
       
+        
+      
     
     
     
@@ -1960,6 +1962,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -3359,6 +3389,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#configuring-metaxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Metaxy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring Metaxy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#configuration-priority" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3368,8 +3410,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#config-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3379,8 +3421,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#templating-environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3388,6 +3430,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3404,10 +3451,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#store-configuration" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Store Configuration
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MetaxyConfig
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MetaxyConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.config.MetaxyConfig.store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;store
       
     </span>
   </a>
@@ -3415,10 +3474,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#store" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.stores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        store
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;stores
       
     </span>
   </a>
@@ -3426,10 +3485,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stores" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.entrypoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        stores
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;entrypoints
       
     </span>
   </a>
@@ -3437,10 +3496,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#migrations_dir" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.hash_truncation_length" class="md-nav__link">
     <span class="md-ellipsis">
       
-        migrations_dir
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hash_truncation_length
       
     </span>
   </a>
@@ -3448,10 +3507,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#entrypoints" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.auto_create_tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        entrypoints
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;auto_create_tables
       
     </span>
   </a>
@@ -3459,10 +3518,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#theme" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.project" class="md-nav__link">
     <span class="md-ellipsis">
       
-        theme
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;project
       
     </span>
   </a>
@@ -3470,10 +3529,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hash_truncation_length" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.locked" class="md-nav__link">
     <span class="md-ellipsis">
       
-        hash_truncation_length
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;locked
       
     </span>
   </a>
@@ -3481,10 +3540,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#auto_create_tables" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.sync" class="md-nav__link">
     <span class="md-ellipsis">
       
-        auto_create_tables
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;sync
       
     </span>
   </a>
@@ -3492,10 +3551,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#project" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.metaxy_lock_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        project
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;metaxy_lock_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.StoreConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;StoreConfig
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" StoreConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.StoreConfig.type_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;type_path
       
     </span>
   </a>
@@ -3503,35 +3590,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#locked" class="md-nav__link">
+  <a href="#metaxy.StoreConfig.config" class="md-nav__link">
     <span class="md-ellipsis">
       
-        locked
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;config
       
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#sync" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        sync
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metaxy_lock_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy_lock_path
-      
-    </span>
-  </a>
+      </ul>
+    </nav>
   
 </li>
         
@@ -3666,6 +3736,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#configuring-metaxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Metaxy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring Metaxy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#configuration-priority" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3675,8 +3757,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#config-discovery" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3686,8 +3768,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#templating-environment-variables" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3695,6 +3777,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3711,10 +3798,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#store-configuration" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Store Configuration
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MetaxyConfig
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MetaxyConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.config.MetaxyConfig.store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;store
       
     </span>
   </a>
@@ -3722,10 +3821,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#store" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.stores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        store
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;stores
       
     </span>
   </a>
@@ -3733,10 +3832,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#stores" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.entrypoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        stores
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;entrypoints
       
     </span>
   </a>
@@ -3744,10 +3843,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#migrations_dir" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.hash_truncation_length" class="md-nav__link">
     <span class="md-ellipsis">
       
-        migrations_dir
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hash_truncation_length
       
     </span>
   </a>
@@ -3755,10 +3854,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#entrypoints" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.auto_create_tables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        entrypoints
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;auto_create_tables
       
     </span>
   </a>
@@ -3766,10 +3865,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#theme" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.project" class="md-nav__link">
     <span class="md-ellipsis">
       
-        theme
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;project
       
     </span>
   </a>
@@ -3777,10 +3876,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hash_truncation_length" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.locked" class="md-nav__link">
     <span class="md-ellipsis">
       
-        hash_truncation_length
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;locked
       
     </span>
   </a>
@@ -3788,10 +3887,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#auto_create_tables" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.sync" class="md-nav__link">
     <span class="md-ellipsis">
       
-        auto_create_tables
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;sync
       
     </span>
   </a>
@@ -3799,10 +3898,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#project" class="md-nav__link">
+  <a href="#metaxy.config.MetaxyConfig.metaxy_lock_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        project
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;metaxy_lock_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.StoreConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;StoreConfig
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" StoreConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.StoreConfig.type_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;type_path
       
     </span>
   </a>
@@ -3810,35 +3937,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#locked" class="md-nav__link">
+  <a href="#metaxy.StoreConfig.config" class="md-nav__link">
     <span class="md-ellipsis">
       
-        locked
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;config
       
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#sync" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        sync
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#metaxy_lock_path" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy_lock_path
-      
-    </span>
-  </a>
+      </ul>
+    </nav>
   
 </li>
         
@@ -3874,274 +3984,754 @@
 
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
+<h2 id="configuring-metaxy">Configuring Metaxy<a class="headerlink" href="#configuring-metaxy" title="Permanent link">&para;</a></h2>
 <p>Metaxy can be configured using TOML configuration files, environment variables, or programmatically.</p>
 <p>Either TOML-based or environment-based configuration is <strong>required</strong> to use the <a href="../cli/">Metaxy CLI</a>.</p>
-<h2 id="configuration-priority">Configuration Priority<a class="headerlink" href="#configuration-priority" title="Permanent link">&para;</a></h2>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my_package&quot;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${HOME}/.metaxy/metadata&quot;</span>
+</span></code></pre></div>
+</div>
+<h3 id="configuration-priority">Configuration Priority<a class="headerlink" href="#configuration-priority" title="Permanent link">&para;</a></h3>
 <p>When the same setting is defined in multiple places, Metaxy uses the following priority order (highest to lowest):</p>
 <ol>
 <li><strong>Explicit arguments</strong> - Values passed directly to <code>MetaxyConfig()</code></li>
 <li><strong>Environment variables</strong> - Values from <code>METAXY_*</code> environment variables</li>
 <li><strong>Configuration files</strong> - Values from <code>metaxy.toml</code> or <code>pyproject.toml</code></li>
 </ol>
-<h2 id="config-discovery">Config Discovery<a class="headerlink" href="#config-discovery" title="Permanent link">&para;</a></h2>
+<h3 id="config-discovery">Config Discovery<a class="headerlink" href="#config-discovery" title="Permanent link">&para;</a></h3>
 <p>Configuration files are discovered automatically by searching in the current or parent directories. <code>metaxy.toml</code> takes precedence over <code>pyproject.toml</code>.</p>
-<h2 id="templating-environment-variables">Templating Environment Variables<a class="headerlink" href="#templating-environment-variables" title="Permanent link">&para;</a></h2>
+<h3 id="templating-environment-variables">Templating Environment Variables<a class="headerlink" href="#templating-environment-variables" title="Permanent link">&para;</a></h3>
 <p>Metaxy supports templating environment variables in configuration files using the <code>${VARIABLE_NAME}</code> syntax.</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
-<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[stores.branch.config]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/${BRANCH_NAME}&quot;</span>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[stores.branch.config]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/${BRANCH_NAME}&quot;</span>
 </span></code></pre></div>
 </div>
 <h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
-<h3 id="store-configuration">Store Configuration<a class="headerlink" href="#store-configuration" title="Permanent link">&para;</a></h3>
-<p>The <code>stores</code> field configures metadata store backends. Each store is defined by:</p>
-<ul>
-<li><strong><code>type</code></strong>: Full import path to the store class (e.g., <code>metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore</code>)</li>
-<li><strong><code>config</code></strong>: Dictionary of store-specific configuration options</li>
-<li><strong><code>fallback_stores</code></strong> - optional list of store names to pull missing metadata from. Learn more <a href="../../guide/concepts/metadata-stores/#fallback-stores">here</a>.</li>
-</ul>
-<!-- dprint-ignore-start -->
-<h3 id="store"><code>store</code><a class="headerlink" href="#store" title="Permanent link">&para;</a></h3>
-<p>Default metadata store to use</p>
-<p><strong>Type:</strong> <code>str</code> | <strong>Default:</strong> <code>"dev"</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="store-metaxytoml" name="__tabbed_1" type="radio" /><input id="store-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="store-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="store-metaxytoml">metaxy.toml</label><label for="store-pyprojecttoml">pyproject.toml</label><label for="store-environment-variable">Environment Variable</label></div>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<a id="metaxy.config.MetaxyConfig"></a>
+    <div class="doc doc-contents first">
+
+        <p>Main <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>.</p>
+<p>Loads from (in order of precedence):</p>
+<ol>
+<li>
+<p>Init arguments</p>
+</li>
+<li>
+<p>Environment variables (METAXY_*)</p>
+</li>
+<li>
+<p>Config file (<code>metaxy.toml</code> or <code>[tool.metaxy]</code> in <code>pyproject.toml</code> )</p>
+</li>
+</ol>
+<p>Environment variables can be templated with <code>${MY_VAR:-default}</code> syntax.</p>
+
+
+<details class="example" open>
+  <summary>Accessing current configuration</summary>
+  <!-- skip next -->
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</span></code></pre></div>
+</details>
+
+<details class="example" open>
+  <summary>Getting a configured metadata store</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
+      <details><summary>Show JSON schema:</summary>
+        <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;$defs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">&quot;PluginConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration for Metaxy plugins&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="nt">&quot;enable&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">          </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">          </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Whether to enable the plugin.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">          </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Enable&quot;</span><span class="p">,</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="p">},</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PluginConfig&quot;</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">&quot;StoreConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration options for metadata stores.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">      </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">          </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Full import path to metadata store class (e.g., `\&quot;metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore\&quot;`)&quot;</span><span class="p">,</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">          </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Type&quot;</span><span class="p">,</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">        </span><span class="p">},</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">        </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">          </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">          </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">          </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Config&quot;</span><span class="p">,</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">      </span><span class="p">},</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">      </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">        </span><span class="s2">&quot;type&quot;</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="w">      </span><span class="p">],</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;StoreConfig&quot;</span><span class="p">,</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="w">  </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Main Metaxy configuration.\n\nLoads from (in order of precedence):\n\n1. Init arguments\n\n2. Environment variables (METAXY_*)\n\n3. Config file (`metaxy.toml` or `[tool.metaxy]` in `pyproject.toml` )\n\nEnvironment variables can be templated with `${MY_VAR:-default}` syntax.\n\nExample: Accessing current configuration\n    &lt;!-- skip next --&gt;\n    ```py\n    config = MetaxyConfig.load()\n    ```\n\nExample: Getting a configured metadata store\n    ```py\n    store = config.get_store(\&quot;prod\&quot;)\n    ```&quot;</span><span class="p">,</span>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="w">    </span><span class="nt">&quot;store&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span><span class="p">,</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Default metadata store to use&quot;</span><span class="p">,</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Store&quot;</span><span class="p">,</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="w">    </span><span class="nt">&quot;stores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="w">      </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="w">        </span><span class="nt">&quot;$ref&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#/$defs/StoreConfig&quot;</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="w">      </span><span class="p">},</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Named store configurations&quot;</span><span class="p">,</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Stores&quot;</span><span class="p">,</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="w">    </span><span class="nt">&quot;migrations_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span><span class="p">,</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Directory where migration files are stored&quot;</span><span class="p">,</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Migrations Dir&quot;</span><span class="p">,</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="w">    </span><span class="nt">&quot;entrypoints&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;List of Python module paths to load for feature discovery&quot;</span><span class="p">,</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="w">      </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a><span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a><span class="w">      </span><span class="p">},</span>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Entrypoints&quot;</span><span class="p">,</span>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a><span class="w">    </span><span class="nt">&quot;theme&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Graph rendering theme for CLI visualization&quot;</span><span class="p">,</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Theme&quot;</span><span class="p">,</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="w">    </span><span class="nt">&quot;ext&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a><span class="w">      </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a><span class="w">        </span><span class="nt">&quot;$ref&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#/$defs/PluginConfig&quot;</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a><span class="w">      </span><span class="p">},</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration for Metaxy integrations with third-party tools&quot;</span><span class="p">,</span>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ext&quot;</span><span class="p">,</span>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a><span class="w">    </span><span class="nt">&quot;hash_truncation_length&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Truncate hash values to this length.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a><span class="w">      </span><span class="nt">&quot;minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hash Truncation Length&quot;</span><span class="p">,</span>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integer&quot;</span>
+</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a><span class="w">    </span><span class="nt">&quot;auto_create_tables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Auto-create tables when opening stores. It is not advised to enable this setting in production.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Auto Create Tables&quot;</span><span class="p">,</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a><span class="w">    </span><span class="nt">&quot;project&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a><span class="w">      </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a><span class="w">        </span><span class="p">},</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a><span class="w">      </span><span class="p">],</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[Project](/guide/concepts/projects.md) name. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)&quot;</span><span class="p">,</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Project&quot;</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a><span class="w">    </span><span class="nt">&quot;locked&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a><span class="w">      </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a><span class="w">        </span><span class="p">},</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a><span class="w">      </span><span class="p">],</span>
+</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Whether to raise an error if an external feature doesn&#39;t have a matching feature version when [syncing external features][metaxy.sync_external_features] from the metadata store.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122" href="#__codelineno-0-122"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Locked&quot;</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123" href="#__codelineno-0-123"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124" href="#__codelineno-0-124"></a><span class="w">    </span><span class="nt">&quot;sync&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125" href="#__codelineno-0-125"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126" href="#__codelineno-0-126"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Whether to automatically [sync external feature definitions][metaxy.sync_external_features] from the metadata during some operations. It&#39;s recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127" href="#__codelineno-0-127"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sync&quot;</span><span class="p">,</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128" href="#__codelineno-0-128"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129" href="#__codelineno-0-129"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130" href="#__codelineno-0-130"></a><span class="w">    </span><span class="nt">&quot;metaxy_lock_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131" href="#__codelineno-0-131"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;metaxy.lock&quot;</span><span class="p">,</span>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132" href="#__codelineno-0-132"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Relative or absolute path to the lock file, resolved from the config file&#39;s location.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133" href="#__codelineno-0-133"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Metaxy Lock Path&quot;</span><span class="p">,</span>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134" href="#__codelineno-0-134"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135" href="#__codelineno-0-135"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136" href="#__codelineno-0-136"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137" href="#__codelineno-0-137"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MetaxyConfig&quot;</span><span class="p">,</span>
+</span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138" href="#__codelineno-0-138"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139" href="#__codelineno-0-139"></a><span class="p">}</span>
+</span></code></pre></div>
+      </details>
+    
+      <p>Config:</p>
+      <ul>
+          <li><code>env_prefix</code>: <code class="highlight language-python"><span class="n">METAXY_</span></code></li>
+          <li><code>env_nested_delimiter</code>: <code class="highlight language-python"><span class="n">__</span></code></li>
+          <li><code>frozen</code>: <code class="highlight language-python"><span class="kc">True</span></code></li>
+      </ul>
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.store" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.store</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.store" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">&#39;dev&#39;</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Default metadata store to use</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="configuration-options-metaxytoml" name="__tabbed_1" type="radio" /><input id="configuration-options-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="configuration-options-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml">metaxy.toml</label><label for="configuration-options-pyprojecttoml">pyproject.toml</label><label for="configuration-options-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORE</span><span class="o">=</span>dev
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORE</span><span class="o">=</span>dev
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.stores" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.stores</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.stores" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">stores</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-toc doc-symbol-class&quot;&gt;&lt;/code&gt;&amp;nbsp;StoreConfig (&lt;code&gt;metaxy.config.StoreConfig&lt;/code&gt;)" href="#metaxy.StoreConfig">StoreConfig</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Named store configurations</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.entrypoints" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.entrypoints</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.entrypoints" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">entrypoints</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>List of Python module paths to load for <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr></p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="configuration-options-metaxytoml_1" name="__tabbed_2" type="radio" /><input id="configuration-options-pyprojecttoml_1" name="__tabbed_2" type="radio" /><input id="configuration-options-environment-variable_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_1">metaxy.toml</label><label for="configuration-options-pyprojecttoml_1">pyproject.toml</label><label for="configuration-options-environment-variable_1">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_ENTRYPOINTS</span><span class="o">=[]</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.hash_truncation_length" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.hash_truncation_length</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.hash_truncation_length" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">hash_truncation_length</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">=</span> <span class="mi">8</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Truncate hash values to this length.</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="configuration-options-metaxytoml_2" name="__tabbed_3" type="radio" /><input id="configuration-options-pyprojecttoml_2" name="__tabbed_3" type="radio" /><input id="configuration-options-environment-variable_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_2">metaxy.toml</label><label for="configuration-options-pyprojecttoml_2">pyproject.toml</label><label for="configuration-options-environment-variable_2">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">hash_truncation_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">hash_truncation_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_TRUNCATION_LENGTH</span><span class="o">=</span><span class="m">8</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.auto_create_tables" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.auto_create_tables</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.auto_create_tables" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">auto_create_tables</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Auto-create tables when opening stores. It is not advised to enable this setting in production.</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="configuration-options-metaxytoml_3" name="__tabbed_4" type="radio" /><input id="configuration-options-pyprojecttoml_3" name="__tabbed_4" type="radio" /><input id="configuration-options-environment-variable_3" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_3">metaxy.toml</label><label for="configuration-options-pyprojecttoml_3">pyproject.toml</label><label for="configuration-options-environment-variable_3">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_AUTO_CREATE_TABLES</span><span class="o">=</span><span class="nb">false</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.project" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.project</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.project" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">project</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p><a href="../../guide/concepts/projects/">Project</a> name. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (<code>/</code>) or double underscores (<code>__</code>)</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="configuration-options-metaxytoml_4" name="__tabbed_5" type="radio" /><input id="configuration-options-pyprojecttoml_4" name="__tabbed_5" type="radio" /><input id="configuration-options-environment-variable_4" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_4">metaxy.toml</label><label for="configuration-options-pyprojecttoml_4">pyproject.toml</label><label for="configuration-options-environment-variable_4">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_PROJECT</span><span class="o">=</span>...
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.locked" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.locked</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.locked" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">locked</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Whether to raise an error if an <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> doesn't have a matching feature version when <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/initialization/#metaxy.sync_external_features">syncing <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr></a> from the metadata store.</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="configuration-options-metaxytoml_5" name="__tabbed_6" type="radio" /><input id="configuration-options-pyprojecttoml_5" name="__tabbed_6" type="radio" /><input id="configuration-options-environment-variable_5" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_5">metaxy.toml</label><label for="configuration-options-pyprojecttoml_5">pyproject.toml</label><label for="configuration-options-environment-variable_5">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">locked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">locked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_LOCKED</span><span class="o">=</span>...
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.sync" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.sync</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.sync" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">sync</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Whether to automatically <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/initialization/#metaxy.sync_external_features">sync <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> with a negligible performance impact.</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="7:3"><input checked="checked" id="configuration-options-metaxytoml_6" name="__tabbed_7" type="radio" /><input id="configuration-options-pyprojecttoml_6" name="__tabbed_7" type="radio" /><input id="configuration-options-environment-variable_6" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_6">metaxy.toml</label><label for="configuration-options-pyprojecttoml_6">pyproject.toml</label><label for="configuration-options-environment-variable_6">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">sync</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">sync</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_SYNC</span><span class="o">=</span><span class="nb">true</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.config.MetaxyConfig.metaxy_lock_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.config.MetaxyConfig.metaxy_lock_path</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.config.MetaxyConfig.metaxy_lock_path" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">metaxy_lock_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s1">&#39;metaxy.lock&#39;</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Relative or absolute path to the lock file, resolved from the config file's location.</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="configuration-options-metaxytoml_7" name="__tabbed_8" type="radio" /><input id="configuration-options-pyprojecttoml_7" name="__tabbed_8" type="radio" /><input id="configuration-options-environment-variable_7" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_7">metaxy.toml</label><label for="configuration-options-pyprojecttoml_7">pyproject.toml</label><label for="configuration-options-environment-variable_7">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="n">metaxy_lock_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.lock&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">metaxy_lock_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.lock&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_METAXY_LOCK_PATH</span><span class="o">=</span>metaxy.lock
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <hr />
-<h3 id="stores"><code>stores</code><a class="headerlink" href="#stores" title="Permanent link">&para;</a></h3>
-<p>Named store configurations</p>
-<p><strong>Type:</strong> dict[str, metaxy.config.<a href="#stores">StoreConfig</a>]</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="stores-metaxytoml" name="__tabbed_2" type="radio" /><input id="stores-pyprojecttoml" name="__tabbed_2" type="radio" /><input id="stores-environment-variable" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="stores-metaxytoml">metaxy.toml</label><label for="stores-pyprojecttoml">pyproject.toml</label><label for="stores-environment-variable">Environment Variable</label></div>
+<p>The <a href="#metaxy.config.MetaxyConfig.stores"><code>stores</code></a> field configures metadata store backends. This is a mapping of store names to their configurations. The <a href="#metaxy.config.MetaxyConfig.store">default store</a> is named <code>"dev"</code>.</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<a id="metaxy.StoreConfig"></a>
+    <div class="doc doc-contents first">
+
+        <p>Configuration options for metadata stores.</p>
+
+      <details><summary>Show JSON schema:</summary>
+        <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration options for metadata stores.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Full import path to metadata store class (e.g., `\&quot;metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore\&quot;`)&quot;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Type&quot;</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Config&quot;</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="s2">&quot;type&quot;</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="p">],</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;StoreConfig&quot;</span><span class="p">,</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="p">}</span>
+</span></code></pre></div>
+      </details>
+    
+      <p>Config:</p>
+      <ul>
+          <li><code>extra</code>: <code class="highlight language-python"><span class="n">forbid</span></code></li>
+          <li><code>frozen</code>: <code class="highlight language-python"><span class="kc">True</span></code></li>
+          <li><code>populate_by_name</code>: <code class="highlight language-python"><span class="kc">True</span></code></li>
+      </ul>
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.StoreConfig.type_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.StoreConfig.type_path</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.StoreConfig.type_path" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">type_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.StoreConfig.type&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-cached&quot;&gt;&lt;code&gt;cached&lt;/code&gt;&lt;/small&gt;
+      &lt;small class=&quot;doc doc-label doc-label-property&quot;&gt;&lt;code&gt;property&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.config.StoreConfig.type&lt;/code&gt;)" href="../api/config/#metaxy.StoreConfig.type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Full import path to metadata store class (e.g., <code>"metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"</code>)</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="9:3"><input checked="checked" id="configuration-options-metaxytoml_8" name="__tabbed_9" type="radio" /><input id="configuration-options-pyprojecttoml_8" name="__tabbed_9" type="radio" /><input id="configuration-options-environment-variable_8" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_8">metaxy.toml</label><label for="configuration-options-pyprojecttoml_8">pyproject.toml</label><label for="configuration-options-environment-variable_8">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Optional</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># stores = {}</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">type_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Optional</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># stores = {}</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">[tool.metaxy.stores.dev]</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="n">type_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__TYPE_PATH</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
 </div>
-<hr />
-<h3 id="migrations_dir"><code>migrations_dir</code><a class="headerlink" href="#migrations_dir" title="Permanent link">&para;</a></h3>
-<p>Directory where migration files are stored</p>
-<p><strong>Type:</strong> <code>str</code> | <strong>Default:</strong> <code>".metaxy/migrations"</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="migrations_dir-metaxytoml" name="__tabbed_3" type="radio" /><input id="migrations_dir-pyprojecttoml" name="__tabbed_3" type="radio" /><input id="migrations_dir-environment-variable" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="migrations_dir-metaxytoml">metaxy.toml</label><label for="migrations_dir-pyprojecttoml">pyproject.toml</label><label for="migrations_dir-environment-variable">Environment Variable</label></div>
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="metaxy.StoreConfig.config" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">metaxy.StoreConfig.config</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#metaxy.StoreConfig.config" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Store-specific configuration parameters (constructor kwargs). Includes <code>fallback_stores</code>, database connection parameters, etc.</p>
+
+    </div>
+
+</div><div class="tabbed-set tabbed-alternate" data-tabs="10:3"><input checked="checked" id="configuration-options-metaxytoml_9" name="__tabbed_10" type="radio" /><input id="configuration-options-pyprojecttoml_9" name="__tabbed_10" type="radio" /><input id="configuration-options-environment-variable_9" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="configuration-options-metaxytoml_9">metaxy.toml</label><label for="configuration-options-pyprojecttoml_9">pyproject.toml</label><label for="configuration-options-environment-variable_9">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">migrations_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">migrations_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">[tool.metaxy.stores.dev]</span>
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_MIGRATIONS_DIR</span><span class="o">=</span>.metaxy/migrations
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG</span><span class="o">={}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
-<hr />
-<h3 id="entrypoints"><code>entrypoints</code><a class="headerlink" href="#entrypoints" title="Permanent link">&para;</a></h3>
-<p>List of Python module paths to load for <abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr></p>
-<p><strong>Type:</strong> <code>list[str]</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="entrypoints-metaxytoml" name="__tabbed_4" type="radio" /><input id="entrypoints-pyprojecttoml" name="__tabbed_4" type="radio" /><input id="entrypoints-environment-variable" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="entrypoints-metaxytoml">metaxy.toml</label><label for="entrypoints-pyprojecttoml">pyproject.toml</label><label for="entrypoints-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Optional</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># entrypoints = []</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># Optional</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># entrypoints = []</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_ENTRYPOINTS</span><span class="o">=</span>...
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="theme"><code>theme</code><a class="headerlink" href="#theme" title="Permanent link">&para;</a></h3>
-<p>Graph rendering theme for CLI visualization</p>
-<p><strong>Type:</strong> <code>str</code> | <strong>Default:</strong> <code>"default"</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="theme-metaxytoml" name="__tabbed_5" type="radio" /><input id="theme-pyprojecttoml" name="__tabbed_5" type="radio" /><input id="theme-environment-variable" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="theme-metaxytoml">metaxy.toml</label><label for="theme-pyprojecttoml">pyproject.toml</label><label for="theme-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_THEME</span><span class="o">=</span>default
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="hash_truncation_length"><code>hash_truncation_length</code><a class="headerlink" href="#hash_truncation_length" title="Permanent link">&para;</a></h3>
-<p>Truncate hash values to this length.</p>
-<p><strong>Type:</strong> <code>int</code> | <strong>Default:</strong> <code>8</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="hash_truncation_length-metaxytoml" name="__tabbed_6" type="radio" /><input id="hash_truncation_length-pyprojecttoml" name="__tabbed_6" type="radio" /><input id="hash_truncation_length-environment-variable" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="hash_truncation_length-metaxytoml">metaxy.toml</label><label for="hash_truncation_length-pyprojecttoml">pyproject.toml</label><label for="hash_truncation_length-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">hash_truncation_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">hash_truncation_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_TRUNCATION_LENGTH</span><span class="o">=</span><span class="m">8</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="auto_create_tables"><code>auto_create_tables</code><a class="headerlink" href="#auto_create_tables" title="Permanent link">&para;</a></h3>
-<p>Auto-create tables when opening stores. It is not advised to enable this setting in production.</p>
-<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>False</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="7:3"><input checked="checked" id="auto_create_tables-metaxytoml" name="__tabbed_7" type="radio" /><input id="auto_create_tables-pyprojecttoml" name="__tabbed_7" type="radio" /><input id="auto_create_tables-environment-variable" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="auto_create_tables-metaxytoml">metaxy.toml</label><label for="auto_create_tables-pyprojecttoml">pyproject.toml</label><label for="auto_create_tables-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_AUTO_CREATE_TABLES</span><span class="o">=</span><span class="nb">false</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="project"><code>project</code><a class="headerlink" href="#project" title="Permanent link">&para;</a></h3>
-<p>Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (<code>/</code>) or double underscores (<code>__</code>)</p>
-<p><strong>Type:</strong> <code>str | None</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="project-metaxytoml" name="__tabbed_8" type="radio" /><input id="project-pyprojecttoml" name="__tabbed_8" type="radio" /><input id="project-environment-variable" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="project-metaxytoml">metaxy.toml</label><label for="project-pyprojecttoml">pyproject.toml</label><label for="project-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Optional</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="c1"># project = null</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="c1"># Optional</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="c1"># project = null</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_PROJECT</span><span class="o">=</span>...
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="locked"><code>locked</code><a class="headerlink" href="#locked" title="Permanent link">&para;</a></h3>
-<p>Whether to raise an error if an <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> doesn't have a matching feature version when <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/initialization/#metaxy.sync_external_features">syncing <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr></a> from the metadata store.</p>
-<p><strong>Type:</strong> <code>bool | None</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="9:3"><input checked="checked" id="locked-metaxytoml" name="__tabbed_9" type="radio" /><input id="locked-pyprojecttoml" name="__tabbed_9" type="radio" /><input id="locked-environment-variable" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="locked-metaxytoml">metaxy.toml</label><label for="locked-pyprojecttoml">pyproject.toml</label><label for="locked-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Optional</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="c1"># locked = null</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="c1"># Optional</span>
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="c1"># locked = null</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_LOCKED</span><span class="o">=</span>...
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="sync"><code>sync</code><a class="headerlink" href="#sync" title="Permanent link">&para;</a></h3>
-<p>Whether to automatically <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../api/initialization/#metaxy.sync_external_features">sync <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> with a negligible performance impact.</p>
-<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>True</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="10:3"><input checked="checked" id="sync-metaxytoml" name="__tabbed_10" type="radio" /><input id="sync-pyprojecttoml" name="__tabbed_10" type="radio" /><input id="sync-environment-variable" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="sync-metaxytoml">metaxy.toml</label><label for="sync-pyprojecttoml">pyproject.toml</label><label for="sync-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">sync</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="n">sync</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_SYNC</span><span class="o">=</span><span class="nb">true</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<h3 id="metaxy_lock_path"><code>metaxy_lock_path</code><a class="headerlink" href="#metaxy_lock_path" title="Permanent link">&para;</a></h3>
-<p>Relative or absolute path to the lock file, resolved from the config file's location.</p>
-<p><strong>Type:</strong> <code>str</code> | <strong>Default:</strong> <code>"metaxy.lock"</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="11:3"><input checked="checked" id="metaxy_lock_path-metaxytoml" name="__tabbed_11" type="radio" /><input id="metaxy_lock_path-pyprojecttoml" name="__tabbed_11" type="radio" /><input id="metaxy_lock_path-environment-variable" name="__tabbed_11" type="radio" /><div class="tabbed-labels"><label for="metaxy_lock_path-metaxytoml">metaxy.toml</label><label for="metaxy_lock_path-pyprojecttoml">pyproject.toml</label><label for="metaxy_lock_path-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">metaxy_lock_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.lock&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="n">metaxy_lock_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.lock&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_METAXY_LOCK_PATH</span><span class="o">=</span>metaxy.lock
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<!-- dprint-ignore-end -->
 
 
 

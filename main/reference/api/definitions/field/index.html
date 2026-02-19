@@ -1893,6 +1893,8 @@
       
         
       
+        
+      
     
     
     
@@ -1960,6 +1962,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -3829,26 +3859,6 @@
           <li><code>default</code>: <code class="highlight language-python"><span class="p">{</span><span class="s1">&#39;extra&#39;</span><span class="p">:</span> <span class="s1">&#39;forbid&#39;</span><span class="p">}</span></code></li>
       </ul>
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.field.FieldSpec.key">key</span></code>
-                (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FieldKey&lt;/code&gt;)" href="../../types/#metaxy.FieldKey">FieldKey</a></code>)
-            </li>
-            <li>
-              <code><span title="metaxy.models.field.FieldSpec.code_version">code_version</span></code>
-                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-            </li>
-            <li>
-              <code><span title="metaxy.models.field.FieldSpec.deps">deps</span></code>
-                (<code><span title="metaxy.models.field.SpecialFieldDep">SpecialFieldDep</span> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldDep&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.models.field.FieldDep&lt;/code&gt;)" href="#metaxy.FieldDep">FieldDep</a>]</code>)
-            </li>
-        </ul>
 
 
                   <details class="mkdocstrings-source">
@@ -3948,7 +3958,7 @@
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt; (&lt;code&gt;metaxy.models.feature_spec.FeatureSpec&lt;/code&gt;)" href="../feature-spec/#metaxy.FeatureSpec">FeatureSpec</a></span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" href="../../../../integrations/metadata-stores/databases/duckdb/#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.BaseFeature&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -4023,17 +4033,6 @@
           <li><code>default</code>: <code class="highlight language-python"><span class="p">{</span><span class="s1">&#39;extra&#39;</span><span class="p">:</span> <span class="s1">&#39;forbid&#39;</span><span class="p">}</span></code></li>
       </ul>
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.field.FieldDep.feature">feature</span></code>
-                (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../types/#metaxy.FeatureKey">FeatureKey</a></code>)
-            </li>
-            <li>
-              <code><span title="metaxy.models.field.FieldDep.fields">fields</span></code>
-                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FieldKey&lt;/span&gt; (&lt;code&gt;metaxy.models.types.FieldKey&lt;/code&gt;)" href="../../types/#metaxy.FieldKey">FieldKey</a>] | <a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.field.SpecialFieldDep.ALL">ALL</span>]</code>)
-            </li>
-        </ul>
 
 
                   <details class="mkdocstrings-source">

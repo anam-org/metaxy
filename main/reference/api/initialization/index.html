@@ -1893,6 +1893,8 @@
       
         
       
+        
+      
     
     
     
@@ -1960,6 +1962,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -3636,14 +3666,19 @@
 
 <a href="#metaxy.init" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">init</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../config/#metaxy.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-toc doc-symbol-class&quot;&gt;&lt;/code&gt;&amp;nbsp;MetaxyConfig (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../../configuration/#metaxy.config.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">search_parents</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../config/#metaxy.MetaxyConfig">MetaxyConfig</a></span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-toc doc-symbol-class&quot;&gt;&lt;/code&gt;&amp;nbsp;MetaxyConfig (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../../configuration/#metaxy.config.MetaxyConfig">MetaxyConfig</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../config/#metaxy.MetaxyConfig">configuration</a>.</p>
+        <p>Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../config/#metaxy.MetaxyConfig">configuration</a>.</p>
 <p>The feature graphs is populated with feature definitions <a href="../../../guide/concepts/projects/#feature-discovery">discovered</a> in the Metaxy project.
 <a href="../../../guide/concepts/definitions/external-features/">External features</a> are loaded from a <code>metaxy.lock</code> if it is found.</p>
 
@@ -3652,7 +3687,7 @@
     <ul>
         <li class="doc-section-item field-body">
             <b><code>config</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../config/#metaxy.MetaxyConfig">MetaxyConfig</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-toc doc-symbol-class&quot;&gt;&lt;/code&gt;&amp;nbsp;MetaxyConfig (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../../configuration/#metaxy.config.MetaxyConfig">MetaxyConfig</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -3680,7 +3715,7 @@
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../config/#metaxy.MetaxyConfig">MetaxyConfig</a></code>
+              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-toc doc-symbol-class&quot;&gt;&lt;/code&gt;&amp;nbsp;MetaxyConfig (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="../../configuration/#metaxy.config.MetaxyConfig">MetaxyConfig</a></code>
           –
           <div class="doc-md-description">
             <p>The activated <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>.</p>
@@ -3781,7 +3816,12 @@ the versions match and warns or errors on mismatches.</p>
             <p>Optional override for the <code>on_version_mismatch</code> setting on <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr>.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>Setting <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../config/#metaxy.MetaxyConfig"><code>MetaxyConfig.locked</code></a> to <code>True</code> takes precedence over this argument.</p>
+<p>Setting <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../config/#metaxy.MetaxyConfig"><code>MetaxyConfig.locked</code></a> to <code>True</code> takes precedence over this argument.</p>
 </div>
           </div>
         </li>

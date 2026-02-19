@@ -1893,6 +1893,8 @@
       
         
       
+        
+      
     
     
     
@@ -1960,6 +1962,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -4312,13 +4342,6 @@ type safety through discriminated unions.</p>
           <li><code>frozen</code>: <code class="highlight language-python"><span class="kc">True</span></code></li>
       </ul>
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.lineage.LineageRelationship.relationship">relationship</span></code>
-                (<code><span title="metaxy.models.lineage.LineageRelationshipUnion">LineageRelationshipUnion</span></code>)
-            </li>
-        </ul>
 
 
 
@@ -4741,13 +4764,6 @@ ID columns and have the same cardinality.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.lineage.IdentityRelationship.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.lineage.LineageRelationshipType.IDENTITY">IDENTITY</span>]</code>)
-            </li>
-        </ul>
 
 
 
@@ -4915,31 +4931,6 @@ the feature's load_input() method is responsible for ID generation.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.lineage.ExpansionRelationship.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.lineage.LineageRelationshipType.EXPANSION">EXPANSION</span>]</code>)
-            </li>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.lineage.ExpansionRelationship.on&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-field&quot;&gt;&lt;code&gt;pydantic-field&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.lineage.ExpansionRelationship.on">on</a></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-            </li>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.lineage.ExpansionRelationship.id_generation_pattern&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-field&quot;&gt;&lt;code&gt;pydantic-field&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.lineage.ExpansionRelationship.id_generation_pattern">id_generation_pattern</a></code>
-                (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-            </li>
-        </ul>
 
 
 
@@ -5172,22 +5163,6 @@ target feature's ID columns. If not specified, uses all target ID columns.</p>
       </details>
     
 
-        <p>Fields:</p>
-        <ul>
-            <li>
-              <code><span title="metaxy.models.lineage.AggregationRelationship.type">type</span></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Literal&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[<span title="metaxy.models.lineage.LineageRelationshipType.AGGREGATION">AGGREGATION</span>]</code>)
-            </li>
-            <li>
-              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.models.lineage.AggregationRelationship.on&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-field&quot;&gt;&lt;code&gt;pydantic-field&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="#metaxy.models.lineage.AggregationRelationship.on">on</a></code>
-                (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>)
-            </li>
-        </ul>
 
 
 

@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.metaxy.io/main/integrations/compute/ray/">
       
       
-        <link rel="prev" href="../../metadata-stores/storage/delta/">
+        <link rel="prev" href="../../metadata-stores/storage/ducklake/">
       
       
         <link rel="next" href="../../plugins/">
@@ -1904,6 +1904,8 @@
       
         
       
+        
+      
     
     
     
@@ -1971,6 +1973,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -3994,7 +4024,12 @@ to run <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-sym
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../../reference/api/types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
 </span></code></pre></div>
 
@@ -4054,7 +4089,12 @@ to run <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-sym
         </li>
         <li class="doc-section-item field-body">
             <b><code>config</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -4267,7 +4307,12 @@ The best practice is to pass <code>config</code> explicitly to avoid surprises.<
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../../reference/api/types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">incremental</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">feature_version</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4360,7 +4405,12 @@ associated with a specific feature key.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>config</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetaxyConfig&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../reference/api/config/#metaxy.MetaxyConfig">MetaxyConfig</a> | None</code>, default:
                   <code>None</code>
 )
           –

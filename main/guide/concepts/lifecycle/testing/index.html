@@ -2045,6 +2045,8 @@
       
         
       
+        
+      
     
     
     
@@ -2112,6 +2114,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -3794,7 +3824,7 @@ It is often desired to provide custom <abbr title="Settings via metaxy.toml, pyp
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">assert</span> <span class="n">sqlmodel_config</span><span class="o">.</span><span class="n">inject_primary_key</span> <span class="ow">is</span> <span class="kc">True</span>
 </span></code></pre></div>
 <h3 id="multi-project-testing">Multi-Project Testing<a class="headerlink" href="#multi-project-testing" title="Permanent link">&para;</a></h3>
-<p>When working with multi-project setups, it's a good idea to <a href="../../../../reference/configuration/#metaxy_lock_path">provide an explicit path</a> to the <code>metaxy.lock</code> file.</p>
+<p>When working with multi-project setups, it's a good idea to <a href="../../../../reference/configuration/#metaxy.config.MetaxyConfig.metaxy_lock_path">provide an explicit path</a> to the <code>metaxy.lock</code> file.</p>
 <h2 id="ephemeral-feature-graphs">Ephemeral Feature Graphs<a class="headerlink" href="#ephemeral-feature-graphs" title="Permanent link">&para;</a></h2>
 <p>By default, Metaxy uses a single global feature <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureGraph&lt;/span&gt;" href="../../../../reference/api/definitions/graph/#metaxy.FeatureGraph">graph</a> where all features are registered.
 During testing, you might want to construct your own, clean and isolated feature graphs.</p>

@@ -2385,6 +2385,8 @@
       
         
       
+        
+      
     
     
     
@@ -2452,6 +2454,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -5574,7 +5604,12 @@ The lineage is derived from feature dependencies.</p>
 <a href="#metaxy.ext.dagster.utils.generate_materialize_results" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">generate_materialize_results</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">specs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.MaterializeResult&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.MaterializeResult">MaterializeResult</a></span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
 </span></code></pre></div>
@@ -5599,7 +5634,12 @@ Each result includes the row count as <code>"dagster/row_count"</code> metadata.
         </li>
         <li class="doc-section-item field-body">
             <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></code>)
           –
           <div class="doc-md-description">
             <p>The Metaxy metadata store to read from.</p>
@@ -5778,7 +5818,12 @@ Optional for <code>AssetExecutionContext</code> (defaults to <code>context.asset
 <a href="#metaxy.ext.dagster.utils.generate_observe_results" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">generate_observe_results</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">specs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ObserveResult&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.ObserveResult">ObserveResult</a></span><span class="p">]</span>
 </span></code></pre></div>
@@ -5803,7 +5848,12 @@ Each result includes the row count as <code>"dagster/row_count"</code> metadata.
         </li>
         <li class="doc-section-item field-body">
             <b><code>store</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></code>)
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a> | <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></code>)
           –
           <div class="doc-md-description">
             <p>The Metaxy metadata store to read from.</p>
@@ -6764,6 +6814,10 @@ metadata on at least one spec.</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.ext.dagster.MetaxyStoreFromConfigResource</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
 <a href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
@@ -6771,17 +6825,33 @@ metadata on at least one spec.</p>
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ConfigurableResource&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/resources/#dagster.ConfigurableResource">ConfigurableResource</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a>]</code></p>
 
-
-
         <p>This resource creates a <a href="https://docs.metaxy.io/latest/guide/concepts/metadata-stores/"><code>metaxy.MetadataStore</code></a> based on the current <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> (<code>metaxy.toml</code>).</p>
 <p>If <code>name</code> is not provided, the default store will be used.
 The default store name can be set with <code>store = "my_name"</code> in <code>metaxy.toml</code> or with<code>$METAXY_STORE</code> environment variable.</p>
 
-
-
-
-
-
+      <details><summary>Show JSON schema:</summary>
+        <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;This resource creates a [`metaxy.MetadataStore`](https://docs.metaxy.io/latest/guide/concepts/metadata-stores/) based on the current Metaxy configuration (`metaxy.toml`).\n\nIf `name` is not provided, the default store will be used.\nThe default store name can be set with `store = \&quot;my_name\&quot;` in `metaxy.toml` or with` $METAXY_STORE` environment variable.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">        </span><span class="p">},</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">        </span><span class="p">{</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;null&quot;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="p">],</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Name&quot;</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MetaxyStoreFromConfigResource&quot;</span><span class="p">,</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">}</span>
+</span></code></pre></div>
+      </details>
+    
 
 
 

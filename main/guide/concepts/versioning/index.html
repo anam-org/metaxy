@@ -2095,6 +2095,8 @@
       
         
       
+        
+      
     
     
     
@@ -2162,6 +2164,34 @@
     
   
     Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrations/metadata-stores/storage/ducklake/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DuckLake
   
 
     
@@ -3852,7 +3882,7 @@
 <ol>
 <li>Versions can be calculated ahead of time (before the data processing job is executed).</li>
 </ol>
-<p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../../reference/configuration/#hash_truncation_length">length</a> can be configured.</p>
+<p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../../reference/configuration/#metaxy.config.MetaxyConfig.hash_truncation_length">length</a> can be configured.</p>
 <p>Here is how these versions are calculated, from bottom to top.</p>
 <h3 id="definitions">Definitions<a class="headerlink" href="#definitions" title="Permanent link">&para;</a></h3>
 <p>These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them. They exist in Python at runtime, and are also serialized to the metadata store when <code>metaxy push</code> is called.</p>
