@@ -204,9 +204,9 @@ def _register_tools(server: FastMCP) -> None:
         return [
             {
                 "name": name,
-                "type": store_config.type_path
-                if isinstance(store_config.type_path, str)
-                else f"{store_config.type_path.__module__}.{store_config.type_path.__qualname__}",
+                "type": store_config.type
+                if isinstance(store_config.type, str)
+                else f"{store_config.type.__module__}.{store_config.type.__qualname__}",
             }
             for name, store_config in config.stores.items()
         ]

@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, overload
 
 import tomli
 import tomli_w
@@ -180,6 +180,9 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
         return self.toml_data
 
 
+MetadataStoreT: TypeAlias = type["MetadataStore"]
+
+
 @public
 class StoreConfig(BaseSettings):
     """Configuration options for metadata stores."""
@@ -187,14 +190,12 @@ class StoreConfig(BaseSettings):
     model_config = SettingsConfigDict(
         extra="forbid",  # Only type and config fields allowed
         frozen=True,
-        populate_by_name=True,  # Allow both 'type' and 'type_path' in constructor
     )
 
     # Store the import path as string (internal field)
     # Uses alias="type" so TOML and constructor use "type"
     # Annotated as str | type to allow passing class objects directly
-    type_path: str | type[Any] = PydanticField(
-        alias="type",
+    type: str = PydanticField(
         description='Full import path to metadata store class (e.g., `"metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"`)',
     )
 
@@ -203,7 +204,7 @@ class StoreConfig(BaseSettings):
         description="Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.",
     )
 
-    @field_validator("type_path", mode="before")
+    @field_validator("type", mode="before")
     @classmethod
     def _coerce_type_to_string(cls, v: Any) -> str:
         """Accept both string import paths and class objects.
@@ -218,7 +219,7 @@ class StoreConfig(BaseSettings):
         raise ValueError(f"type must be a string or class, got {type(v).__name__}")
 
     @cached_property
-    def type(self) -> type[Any]:
+    def type_cls(self) -> MetadataStoreT:
         """Get the store class, importing lazily on first access.
 
         Returns:
@@ -234,17 +235,17 @@ class StoreConfig(BaseSettings):
 
         adapter: TypeAdapter[type[Any]] = TypeAdapter(ImportString[Any])
         try:
-            return adapter.validate_python(self.type_path)
+            return adapter.validate_python(self.type)
         except Exception:
             # Pydantic's ImportString swallows the underlying ImportError for other packages/modules,
             # showing a potentially misleading message.
             # Try a direct import to surface the real error (e.g., missing dependency).
-            module_path, _, _ = str(self.type_path).rpartition(".")
+            module_path, _, _ = str(self.type).rpartition(".")
             if module_path:
                 try:
                     importlib.import_module(module_path)
                 except ImportError as import_err:
-                    raise ImportError(f"Cannot import '{self.type_path}': {import_err}") from import_err
+                    raise ImportError(f"Cannot import '{self.type}': {import_err}") from import_err
             raise
 
     def to_toml(self) -> str:
@@ -349,9 +350,7 @@ class MetaxyConfig(BaseSettings):
         complete_stores = {}
 
         for name, config in stores.items():
-            is_complete = isinstance(config, StoreConfig) or (
-                isinstance(config, dict) and ("type" in config or "type_path" in config)
-            )
+            is_complete = isinstance(config, StoreConfig) or (isinstance(config, dict) and ("type" in config))
             if is_complete:
                 complete_stores[name] = config
             else:
@@ -792,11 +791,11 @@ class MetaxyConfig(BaseSettings):
 
         # Get store class (lazily imported on first access)
         try:
-            store_class = store_config.type
+            store_class = store_config.type_cls
         except Exception as e:
             raise InvalidConfigError.from_config(
                 self,
-                f"Failed to import store class '{store_config.type_path}' for store '{name}': {e}",
+                f"Failed to import store class '{store_config.type}' for store '{name}': {e}",
             ) from e
 
         if expected_type is not None and not issubclass(store_class, expected_type):
