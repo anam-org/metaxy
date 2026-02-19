@@ -39,11 +39,15 @@ Available backend combinations:
 | Metadata backend | Storage backend |
 |---|---|
 | DuckDB, SQLite, PostgreSQL | local filesystem, S3, Cloudflare R2, Google Cloud Storage |
-| MotherDuck | managed (no storage backend needed) |
+| MotherDuck | managed (no storage backend needed), or BYOB with S3/R2/GCS |
 
 !!! tip
 
-    Omit `key_id` and `secret` from S3, R2, or GCS storage backends to use the credential chain (IAM roles, environment variables, etc.) instead of static credentials.
+    To use the credential chain (IAM roles, environment variables, etc.) instead of static credentials, set `secret_parameters = { provider = "credential_chain" }` on S3, R2, or GCS storage backends.
+
+!!! note
+
+    MotherDuck supports a "Bring Your Own Bucket" (BYOB) mode where MotherDuck manages the DuckLake catalog while you provide your own S3-compatible storage. Storage secrets are created `IN MOTHERDUCK` so that MotherDuck compute can access your bucket.
 
 ## Walkthrough
 
