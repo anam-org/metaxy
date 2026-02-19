@@ -22,6 +22,7 @@ uri = "/tmp/ducklake_meta.db"
 # -- Metadata backend: PostgreSQL ---------------------------------------------
 # [stores.dev.config.ducklake.metadata_backend]
 # type = "postgres"
+# secret_name = "my_pg_secret"       # Required: name for the DuckDB secret
 # host = "localhost"
 # port = 5432
 # database = "ducklake_meta"
@@ -29,13 +30,28 @@ uri = "/tmp/ducklake_meta.db"
 # password = "changeme"
 # # Extra parameters forwarded to DuckDB's CREATE SECRET (optional):
 # # secret_parameters = { sslmode = "require" }
-# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
-# # secret_name = "my_pg_secret"
+# # Omit inline credentials (host, database, user, password) to reference
+# # a pre-existing DuckDB secret named by secret_name.
 
 # -- Metadata backend: MotherDuck (managed, no storage_backend needed) --------
 # [stores.dev.config.ducklake.metadata_backend]
 # type = "motherduck"
 # database = "my_lake"
+
+# -- Metadata backend: MotherDuck BYOB (bring your own bucket) ----------------
+# Use MotherDuck for the catalog but store data in your own S3 bucket.
+# [stores.dev.config.ducklake.metadata_backend]
+# type = "motherduck"
+# database = "my_ducklake"
+# region = "eu-central-1"
+# [stores.dev.config.ducklake.storage_backend]
+# type = "s3"
+# secret_name = "my_s3_secret"
+# key_id = "AKIA..."
+# secret = "..."
+# region = "eu-central-1"
+# scope = "s3://mybucket/"
+# bucket = "mybucket"
 
 # -- Storage backend: local filesystem ----------------------------------------
 [stores.dev.config.ducklake.storage_backend]
@@ -45,32 +61,32 @@ path = "/tmp/ducklake_storage"
 # -- Storage backend: S3 -----------------------------------------------------
 # [stores.dev.config.ducklake.storage_backend]
 # type = "s3"
+# secret_name = "my_s3_secret"       # Required: name for the DuckDB secret
 # bucket = "my-ducklake-bucket"
 # prefix = "data"
 # region = "eu-central-1"
-# # Omit credentials to use the credential chain (IAM roles, env vars, etc.):
+# # Provide inline credentials to create a secret, or omit them to reference
+# # a pre-existing DuckDB secret named by secret_name.
 # # key_id = "AKIA..."
 # # secret = "secret"
+# # For credential chain (IAM roles, env vars, etc.) instead of static credentials:
+# # secret_parameters = { provider = "credential_chain" }
 # # Extra parameters forwarded to DuckDB's CREATE SECRET (optional):
 # # secret_parameters = { kms_key_id = "arn:aws:kms:..." }
-# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
-# # secret_name = "my_s3_secret"
 
 # -- Storage backend: Cloudflare R2 ------------------------------------------
 # [stores.dev.config.ducklake.storage_backend]
 # type = "r2"
+# secret_name = "my_r2_secret"       # Required: name for the DuckDB secret
 # account_id = "your-cloudflare-account-id"
 # data_path = "r2://my-bucket/ducklake/"
 # # key_id = "R2_ACCESS_KEY"
 # # secret = "R2_SECRET_KEY"
-# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
-# # secret_name = "my_r2_secret"
 
 # -- Storage backend: Google Cloud Storage ------------------------------------
 # [stores.dev.config.ducklake.storage_backend]
 # type = "gcs"
+# secret_name = "my_gcs_secret"      # Required: name for the DuckDB secret
 # data_path = "gs://my-bucket/ducklake/"
 # # key_id = "HMAC_ACCESS_KEY"
 # # secret = "HMAC_SECRET"
-# # Or reference a pre-existing DuckDB secret by name (mutually exclusive with inline credentials):
-# # secret_name = "my_gcs_secret"

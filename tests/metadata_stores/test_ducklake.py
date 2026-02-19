@@ -65,6 +65,7 @@ def test_ducklake_attachment_sequence() -> None:
         {
             "metadata_backend": {
                 "type": "postgres",
+                "secret_name": "pg_meta",
                 "database": "ducklake_meta",
                 "user": "ducklake",
                 "password": "secret",
@@ -72,6 +73,7 @@ def test_ducklake_attachment_sequence() -> None:
             },
             "storage_backend": {
                 "type": "s3",
+                "secret_name": "s3_store",
                 "key_id": "key",
                 "secret": "secret",
                 "endpoint": "https://object-store",
@@ -182,7 +184,7 @@ def test_non_motherduck_requires_storage_backend() -> None:
     for backend in [
         {"type": "duckdb", "uri": "/tmp/meta.duckdb"},
         {"type": "sqlite", "uri": "/tmp/meta.sqlite"},
-        {"type": "postgres", "database": "db", "user": "u", "password": "p", "host": "localhost"},
+        {"type": "postgres", "secret_name": "pg", "database": "db", "user": "u", "password": "p", "host": "localhost"},
     ]:
         with pytest.raises(ValueError, match="storage_backend is required"):
             DuckLakeAttachmentConfig.model_validate({"metadata_backend": backend})
@@ -207,6 +209,7 @@ def _ducklake_config_payload() -> dict[str, object]:
     return {
         "metadata_backend": {
             "type": "postgres",
+            "secret_name": "pg_meta",
             "database": "ducklake_meta",
             "user": "ducklake",
             "password": "secret",
@@ -214,6 +217,7 @@ def _ducklake_config_payload() -> dict[str, object]:
         },
         "storage_backend": {
             "type": "s3",
+            "secret_name": "s3_store",
             "key_id": "key",
             "secret": "secret",
             "endpoint": "https://object-store",
@@ -511,6 +515,7 @@ def test_s3_storage_with_secret_parameters() -> None:
     """S3 secret_parameters should be merged into the secret SQL."""
     config = S3StorageBackendConfig(
         type="s3",
+        secret_name="my_s3",
         key_id="key",
         secret="secret",
         bucket="my-bucket",
@@ -523,8 +528,13 @@ def test_s3_storage_with_secret_parameters() -> None:
 
 
 def test_s3_storage_credential_chain() -> None:
-    """S3 without auth should use credential_chain provider and omit KEY_ID."""
-    config = S3StorageBackendConfig(type="s3", bucket="my-bucket")
+    """S3 with credential_chain via secret_parameters should include PROVIDER and omit KEY_ID."""
+    config = S3StorageBackendConfig(
+        type="s3",
+        secret_name="my_s3",
+        bucket="my-bucket",
+        secret_parameters={"provider": "credential_chain"},
+    )
     secret_sql, _ = config.sql_parts("test")
     assert "PROVIDER 'credential_chain'" in secret_sql
     assert "KEY_ID" not in secret_sql
@@ -555,6 +565,7 @@ def test_ducklake_s3_storage_roundtrip(
                 "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
                 "storage_backend": {
                     "type": "s3",
+                    "secret_name": "s3_test",
                     "key_id": storage_options["AWS_ACCESS_KEY_ID"],
                     "secret": storage_options["AWS_SECRET_ACCESS_KEY"],
                     "endpoint": storage_options["AWS_ENDPOINT_URL"],
@@ -610,6 +621,7 @@ def test_r2_storage_with_explicit_auth() -> None:
     """R2 with explicit auth should include TYPE R2, ACCOUNT_ID, KEY_ID, and SECRET."""
     config = R2StorageBackendConfig(
         type="r2",
+        secret_name="my_r2",
         key_id="r2key",
         secret="r2secret",
         account_id="my-account-id",
@@ -624,11 +636,13 @@ def test_r2_storage_with_explicit_auth() -> None:
 
 
 def test_r2_storage_credential_chain() -> None:
-    """R2 without auth should use credential_chain and still include ACCOUNT_ID."""
+    """R2 with credential_chain via secret_parameters should include PROVIDER and ACCOUNT_ID."""
     config = R2StorageBackendConfig(
         type="r2",
+        secret_name="my_r2",
         account_id="my-account-id",
         data_path="r2://my-bucket/data/",
+        secret_parameters={"provider": "credential_chain"},
     )
     secret_sql, _ = config.sql_parts("test")
     assert "TYPE R2" in secret_sql
@@ -646,6 +660,7 @@ def test_gcs_storage_with_explicit_auth() -> None:
     """GCS with explicit auth should include TYPE GCS, KEY_ID, and SECRET."""
     config = GCSStorageBackendConfig(
         type="gcs",
+        secret_name="my_gcs",
         key_id="gcskey",
         secret="gcssecret",
         data_path="gs://my-bucket/data/",
@@ -658,10 +673,12 @@ def test_gcs_storage_with_explicit_auth() -> None:
 
 
 def test_gcs_storage_credential_chain() -> None:
-    """GCS without auth should use credential_chain and omit KEY_ID."""
+    """GCS with credential_chain via secret_parameters should include PROVIDER and omit KEY_ID."""
     config = GCSStorageBackendConfig(
         type="gcs",
+        secret_name="my_gcs",
         data_path="gs://my-bucket/data/",
+        secret_parameters={"provider": "credential_chain"},
     )
     secret_sql, _ = config.sql_parts("test")
     assert "TYPE GCS" in secret_sql
@@ -674,6 +691,7 @@ def test_non_motherduck_accepts_r2_and_gcs_storage() -> None:
     for storage_config in [
         {
             "type": "r2",
+            "secret_name": "r2_store",
             "key_id": "key",
             "secret": "secret",
             "account_id": "acct-123",
@@ -681,6 +699,7 @@ def test_non_motherduck_accepts_r2_and_gcs_storage() -> None:
         },
         {
             "type": "gcs",
+            "secret_name": "gcs_store",
             "key_id": "key",
             "secret": "secret",
             "data_path": "gs://bucket/prefix/",
@@ -713,20 +732,30 @@ def test_postgres_with_secret_name_skips_create_secret() -> None:
     assert "TYPE" in metadata_params and "postgres" in metadata_params
 
 
-def test_postgres_secret_name_rejects_inline_credentials() -> None:
-    """PostgreSQL should reject both secret_name and inline credentials."""
-    with pytest.raises(ValueError, match="Cannot combine"):
-        PostgresMetadataBackendConfig(type="postgres", secret_name="my_secret", host="localhost")
+def test_postgres_secret_name_with_inline_creates_named_secret() -> None:
+    """PostgreSQL with secret_name + inline credentials should CREATE SECRET with the user-provided name."""
+    config = PostgresMetadataBackendConfig(
+        type="postgres",
+        secret_name="my_pg",
+        host="localhost",
+        database="db",
+        user="u",
+        password="p",
+    )
+    secret_sql, metadata_params = config.sql_parts("lake")
+    assert secret_sql.startswith("CREATE OR REPLACE SECRET my_pg")
+    assert "TYPE postgres" in secret_sql
+    assert "'my_pg'" in metadata_params
 
 
 def test_postgres_inline_requires_all_credentials() -> None:
-    """PostgreSQL without secret_name should require all inline credentials."""
-    with pytest.raises(ValueError, match="Missing required credentials"):
-        PostgresMetadataBackendConfig(type="postgres", host="localhost", database="db")
+    """PostgreSQL with partial inline credentials should require all of them."""
+    with pytest.raises(ValueError, match="Missing required inline credentials"):
+        PostgresMetadataBackendConfig(type="postgres", secret_name="pg", host="localhost", database="db")
 
 
 def test_s3_with_secret_name_skips_create_secret() -> None:
-    """S3 with secret_name should return empty secret SQL but still include DATA_PATH."""
+    """S3 with secret_name only should return empty secret SQL but still include DATA_PATH."""
     config = S3StorageBackendConfig(type="s3", secret_name="my_s3_secret", bucket="my-bucket")
     secret_sql, data_part = config.sql_parts("lake")
     assert secret_sql == ""
@@ -734,28 +763,33 @@ def test_s3_with_secret_name_skips_create_secret() -> None:
     assert "my-bucket" in data_part
 
 
-def test_s3_secret_name_rejects_inline_credentials() -> None:
-    """S3 should reject both secret_name and inline credentials."""
-    with pytest.raises(ValueError, match="Cannot combine"):
-        S3StorageBackendConfig(type="s3", secret_name="my_secret", key_id="key", secret="secret", bucket="b")
+def test_s3_secret_name_with_inline_creates_named_secret() -> None:
+    """S3 with secret_name + inline credentials should CREATE SECRET with the user-provided name."""
+    config = S3StorageBackendConfig(type="s3", secret_name="my_s3", key_id="key", secret="secret", bucket="b")
+    secret_sql, _ = config.sql_parts("lake")
+    assert secret_sql.startswith("CREATE OR REPLACE SECRET my_s3")
+    assert "TYPE S3" in secret_sql
+    assert "KEY_ID 'key'" in secret_sql
 
 
 def test_r2_with_secret_name_skips_create_secret() -> None:
-    """R2 with secret_name should return empty secret SQL."""
+    """R2 with secret_name only should return empty secret SQL."""
     config = R2StorageBackendConfig(type="r2", secret_name="my_r2_secret", data_path="r2://bucket/data/")
     secret_sql, data_part = config.sql_parts("lake")
     assert secret_sql == ""
     assert "DATA_PATH" in data_part
 
 
-def test_r2_without_secret_name_requires_account_id() -> None:
-    """R2 without secret_name should require account_id."""
+def test_r2_inline_requires_account_id() -> None:
+    """R2 with inline key_id/secret should require account_id."""
     with pytest.raises(ValueError, match="account_id"):
-        R2StorageBackendConfig(type="r2", data_path="r2://bucket/data/")
+        R2StorageBackendConfig(
+            type="r2", secret_name="my_r2", key_id="key", secret="secret", data_path="r2://bucket/data/"
+        )
 
 
 def test_gcs_with_secret_name_skips_create_secret() -> None:
-    """GCS with secret_name should return empty secret SQL."""
+    """GCS with secret_name only should return empty secret SQL."""
     config = GCSStorageBackendConfig(type="gcs", secret_name="my_gcs_secret", data_path="gs://bucket/data/")
     secret_sql, data_part = config.sql_parts("lake")
     assert secret_sql == ""
@@ -780,3 +814,86 @@ def test_full_attachment_with_secret_names() -> None:
     assert any("pg_catalog" in c for c in commands)
     assert any("ATTACH IF NOT EXISTS" in c for c in commands)
     assert commands[-1] == "USE lake;"
+
+
+# ---------------------------------------------------------------------------
+# secret_name required tests
+# ---------------------------------------------------------------------------
+
+
+def test_s3_without_secret_name_raises_validation_error() -> None:
+    """S3 without secret_name should raise a Pydantic validation error."""
+    with pytest.raises(ValueError, match="secret_name"):
+        S3StorageBackendConfig.model_validate({"type": "s3", "bucket": "my-bucket"})
+
+
+def test_r2_without_secret_name_raises_validation_error() -> None:
+    """R2 without secret_name should raise a Pydantic validation error."""
+    with pytest.raises(ValueError, match="secret_name"):
+        R2StorageBackendConfig.model_validate({"type": "r2", "data_path": "r2://bucket/data/"})
+
+
+def test_gcs_without_secret_name_raises_validation_error() -> None:
+    """GCS without secret_name should raise a Pydantic validation error."""
+    with pytest.raises(ValueError, match="secret_name"):
+        GCSStorageBackendConfig.model_validate({"type": "gcs", "data_path": "gs://bucket/data/"})
+
+
+def test_postgres_without_secret_name_raises_validation_error() -> None:
+    """PostgreSQL without secret_name should raise a Pydantic validation error."""
+    with pytest.raises(ValueError, match="secret_name"):
+        PostgresMetadataBackendConfig.model_validate(
+            {"type": "postgres", "host": "localhost", "database": "db", "user": "u", "password": "p"}
+        )
+
+
+# ---------------------------------------------------------------------------
+# MotherDuck BYOB tests
+# ---------------------------------------------------------------------------
+
+
+def test_motherduck_byob_with_inline_credentials() -> None:
+    """MotherDuck BYOB with inline S3 credentials should create secret IN MOTHERDUCK."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "motherduck", "database": "my_ducklake", "region": "eu-central-1"},
+            "storage_backend": {
+                "type": "s3",
+                "secret_name": "my_s3_secret",
+                "key_id": "AKIA...",
+                "secret": "secret",
+                "region": "eu-central-1",
+                "scope": "s3://mybucket/",
+                "bucket": "mybucket",
+            },
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+
+    assert commands[0] == "SET s3_region='eu-central-1';"
+    assert commands[1].startswith("CREATE DATABASE IF NOT EXISTS my_ducklake")
+    assert "TYPE DUCKLAKE" in commands[1]
+    assert "DATA_PATH 's3://mybucket/'" in commands[1]
+    assert "IN MOTHERDUCK" in commands[2]
+    assert commands[2].startswith("CREATE OR REPLACE SECRET my_s3_secret IN MOTHERDUCK")
+    assert "TYPE S3" in commands[2]
+    assert commands[-1] == "USE my_ducklake;"
+
+
+def test_motherduck_byob_use_existing_secret() -> None:
+    """MotherDuck BYOB with secret_name only should not create a secret."""
+    config = DuckLakeAttachmentConfig.model_validate(
+        {
+            "metadata_backend": {"type": "motherduck", "database": "my_ducklake"},
+            "storage_backend": {
+                "type": "s3",
+                "secret_name": "my_s3_secret",
+                "bucket": "mybucket",
+            },
+        }
+    )
+    commands = DuckLakeAttachmentManager(config).preview_sql()
+
+    assert any("CREATE DATABASE IF NOT EXISTS my_ducklake" in c for c in commands)
+    assert not any("CREATE OR REPLACE SECRET" in c for c in commands)
+    assert commands[-1] == "USE my_ducklake;"

@@ -51,29 +51,28 @@ class PostgresMetadataBackendConfig(BaseModel):
     password: str | None = None
     host: str | None = None
     port: int = 5432
-    secret_name: str | None = None
+    secret_name: str
     secret_parameters: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def _validate_credentials(self) -> Self:
         inline_fields = {"host": self.host, "database": self.database, "user": self.user, "password": self.password}
         has_inline = any(v is not None for v in inline_fields.values())
-        if self.secret_name is not None:
-            if has_inline:
-                raise ValueError(
-                    "Cannot combine 'secret_name' with inline credentials (host, database, user, password)."
-                )
+        if not has_inline:
             return self
         missing = [k for k, v in inline_fields.items() if v is None]
         if missing:
-            raise ValueError(f"Missing required credentials when 'secret_name' is not set: {', '.join(missing)}.")
+            raise ValueError(f"Missing required inline credentials: {', '.join(missing)}.")
         return self
 
-    def sql_parts(self, alias: str) -> tuple[str, str]:
-        if self.secret_name is not None:
-            metadata_params = (
-                f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{self.secret_name}'}}"
-            )
+    def _has_inline_credentials(self) -> bool:
+        return any(v is not None for v in (self.host, self.database, self.user, self.password, self.secret_parameters))
+
+    def sql_parts(self, _alias: str) -> tuple[str, str]:
+        metadata_params = (
+            f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{self.secret_name}'}}"
+        )
+        if not self._has_inline_credentials():
             return "", metadata_params
 
         secret_params: dict[str, Any] = {
@@ -87,11 +86,7 @@ class PostgresMetadataBackendConfig(BaseModel):
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        generated_name = f"metaxy_generated_catalog_{alias}"
-        secret_sql = build_secret_sql(generated_name, "postgres", secret_params)
-        metadata_params = (
-            f"METADATA_PATH '', METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{generated_name}'}}"
-        )
+        secret_sql = build_secret_sql(self.secret_name, "postgres", secret_params)
         return secret_sql, metadata_params
 
 
@@ -119,7 +114,7 @@ class LocalStorageBackendConfig(BaseModel):
     type: Literal["local"] = "local"
     path: str
 
-    def sql_parts(self, _alias: str) -> tuple[str, str]:
+    def sql_parts(self, _alias: str, *, secret_storage: str | None = None) -> tuple[str, str]:
         return "", f"DATA_PATH {_stringify_scalar(self.path)}"
 
 
@@ -138,14 +133,8 @@ class S3StorageBackendConfig(BaseModel):
     use_ssl: bool | None = None
     scope: str | None = None
     data_path: str | None = None
-    secret_name: str | None = None
+    secret_name: str
     secret_parameters: dict[str, Any] | None = None
-
-    @model_validator(mode="after")
-    def _validate_credentials(self) -> Self:
-        if self.secret_name is not None and (self.key_id is not None or self.secret is not None):
-            raise ValueError("Cannot combine 'secret_name' with inline credentials (key_id, secret).")
-        return self
 
     def _resolve_data_path(self) -> str:
         data_path = self.data_path
@@ -162,20 +151,32 @@ class S3StorageBackendConfig(BaseModel):
             )
         return data_path
 
-    def sql_parts(self, alias: str) -> tuple[str, str]:
+    def _has_secret_config_fields(self) -> bool:
+        return any(
+            v is not None
+            for v in (
+                self.key_id,
+                self.secret,
+                self.endpoint,
+                self.region,
+                self.url_style,
+                self.use_ssl,
+                self.scope,
+                self.secret_parameters,
+            )
+        )
+
+    def sql_parts(self, _alias: str, *, secret_storage: str | None = None) -> tuple[str, str]:
         data_path_sql = f"DATA_PATH {_stringify_scalar(self._resolve_data_path())}"
 
-        if self.secret_name is not None:
+        if not self._has_secret_config_fields():
             return "", data_path_sql
 
-        generated_name = f"metaxy_generated_storage_{alias}"
         secret_params: dict[str, Any] = {}
 
         if self.key_id is not None and self.secret is not None:
             secret_params["KEY_ID"] = self.key_id
             secret_params["SECRET"] = self.secret
-        else:
-            secret_params["PROVIDER"] = "credential_chain"
 
         if self.endpoint is not None:
             endpoint = self.endpoint
@@ -201,7 +202,7 @@ class S3StorageBackendConfig(BaseModel):
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_sql = build_secret_sql(generated_name, "S3", secret_params)
+        secret_sql = build_secret_sql(self.secret_name, "S3", secret_params, secret_storage=secret_storage)
         return secret_sql, data_path_sql
 
 
@@ -217,39 +218,38 @@ class R2StorageBackendConfig(BaseModel):
     secret: str | None = None
     account_id: str | None = None
     data_path: str
-    secret_name: str | None = None
+    secret_name: str
     secret_parameters: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def _validate_credentials(self) -> Self:
-        if self.secret_name is not None:
-            if self.key_id is not None or self.secret is not None or self.account_id is not None:
-                raise ValueError("Cannot combine 'secret_name' with inline credentials (key_id, secret, account_id).")
-            return self
-        if self.account_id is None:
-            raise ValueError("'account_id' is required when 'secret_name' is not set.")
+        has_inline = self.key_id is not None or self.secret is not None
+        if has_inline and self.account_id is None:
+            raise ValueError("'account_id' is required when providing inline credentials (key_id, secret).")
         return self
 
-    def sql_parts(self, alias: str) -> tuple[str, str]:
+    def _has_secret_config_fields(self) -> bool:
+        return any(v is not None for v in (self.key_id, self.secret, self.account_id, self.secret_parameters))
+
+    def sql_parts(self, _alias: str, *, secret_storage: str | None = None) -> tuple[str, str]:
         data_path_sql = f"DATA_PATH {_stringify_scalar(self.data_path)}"
 
-        if self.secret_name is not None:
+        if not self._has_secret_config_fields():
             return "", data_path_sql
 
-        generated_name = f"metaxy_generated_storage_{alias}"
-        secret_params: dict[str, Any] = {"ACCOUNT_ID": self.account_id}
+        secret_params: dict[str, Any] = {}
+        if self.account_id is not None:
+            secret_params["ACCOUNT_ID"] = self.account_id
 
         if self.key_id is not None and self.secret is not None:
             secret_params["KEY_ID"] = self.key_id
             secret_params["SECRET"] = self.secret
-        else:
-            secret_params["PROVIDER"] = "credential_chain"
 
         if self.secret_parameters:
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_sql = build_secret_sql(generated_name, "R2", secret_params)
+        secret_sql = build_secret_sql(self.secret_name, "R2", secret_params, secret_storage=secret_storage)
         return secret_sql, data_path_sql
 
 
@@ -264,35 +264,29 @@ class GCSStorageBackendConfig(BaseModel):
     key_id: str | None = None
     secret: str | None = None
     data_path: str
-    secret_name: str | None = None
+    secret_name: str
     secret_parameters: dict[str, Any] | None = None
 
-    @model_validator(mode="after")
-    def _validate_credentials(self) -> Self:
-        if self.secret_name is not None and (self.key_id is not None or self.secret is not None):
-            raise ValueError("Cannot combine 'secret_name' with inline credentials (key_id, secret).")
-        return self
+    def _has_secret_config_fields(self) -> bool:
+        return any(v is not None for v in (self.key_id, self.secret, self.secret_parameters))
 
-    def sql_parts(self, alias: str) -> tuple[str, str]:
+    def sql_parts(self, _alias: str, *, secret_storage: str | None = None) -> tuple[str, str]:
         data_path_sql = f"DATA_PATH {_stringify_scalar(self.data_path)}"
 
-        if self.secret_name is not None:
+        if not self._has_secret_config_fields():
             return "", data_path_sql
 
-        generated_name = f"metaxy_generated_storage_{alias}"
         secret_params: dict[str, Any] = {}
 
         if self.key_id is not None and self.secret is not None:
             secret_params["KEY_ID"] = self.key_id
             secret_params["SECRET"] = self.secret
-        else:
-            secret_params["PROVIDER"] = "credential_chain"
 
         if self.secret_parameters:
             for key, value in self.secret_parameters.items():
                 secret_params[str(key).upper()] = value
 
-        secret_sql = build_secret_sql(generated_name, "GCS", secret_params)
+        secret_sql = build_secret_sql(self.secret_name, "GCS", secret_params, secret_storage=secret_storage)
         return secret_sql, data_path_sql
 
 
@@ -301,11 +295,14 @@ class GCSStorageBackendConfig(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def build_secret_sql(secret_name: str, secret_type: str, parameters: Mapping[str, Any]) -> str:
+def build_secret_sql(
+    secret_name: str, secret_type: str, parameters: Mapping[str, Any], *, secret_storage: str | None = None
+) -> str:
     """Construct DuckDB secret creation SQL."""
+    storage_clause = f" IN {secret_storage}" if secret_storage else ""
     formatted_params = _format_secret_parameters(parameters)
     extra_clause = f", {', '.join(formatted_params)}" if formatted_params else ""
-    return f"CREATE OR REPLACE SECRET {secret_name} ( TYPE {secret_type}{extra_clause} );"
+    return f"CREATE OR REPLACE SECRET {secret_name}{storage_clause} ( TYPE {secret_type}{extra_clause} );"
 
 
 def _format_secret_parameters(parameters: Mapping[str, Any]) -> list[str]:
@@ -431,13 +428,21 @@ class DuckLakeAttachmentManager:
         """Build SQL statements for MotherDuck-managed DuckLake.
 
         Fully managed MotherDuck DuckLake databases are available to any
-        MotherDuck connection via ``USE``.  The ``ATTACH`` approach does not
-        propagate the S3 write credentials that MotherDuck manages internally.
+        MotherDuck connection via ``USE``.  When a ``storage_backend`` is
+        provided (BYOB mode), the DuckLake database is created with a custom
+        ``DATA_PATH`` and storage secrets are created ``IN MOTHERDUCK``.
         """
         assert isinstance(self._config.metadata_backend, MotherDuckMetadataBackendConfig)
         md = self._config.metadata_backend
         if md.region is not None:
             statements.append(f"SET s3_region='{md.region}';")
+        if self._config.storage_backend is not None:
+            storage_secret_sql, data_path_sql = self._config.storage_backend.sql_parts(
+                self._secret_suffix, secret_storage="MOTHERDUCK"
+            )
+            statements.append(f"CREATE DATABASE IF NOT EXISTS {md.database} (TYPE DUCKLAKE, {data_path_sql});")
+            if storage_secret_sql:
+                statements.append(storage_secret_sql)
         statements.append(f"USE {md.database};")
         return statements
 
