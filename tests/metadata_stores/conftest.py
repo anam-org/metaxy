@@ -106,7 +106,7 @@ class AllStoresCases:
     @pytest.mark.duckdb
     @pytest.mark.ducklake
     def case_duckdb_ducklake(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.ext.metadata_stores._ducklake_support import DuckLakeAttachmentConfig
+        from metaxy.ext.metadata_stores.ducklake import DuckLakeAttachmentConfig
 
         return DuckDBMetadataStore(
             database=tmp_path / "test_ducklake.duckdb",

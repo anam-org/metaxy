@@ -50,7 +50,7 @@ def test_extract_field_info_required_detection() -> None:
 
 def test_extract_field_info_discriminator_detection() -> None:
     """Test that single-value Literal discriminator fields are detected."""
-    from metaxy.ext.metadata_stores._ducklake_support import PostgresMetadataBackendConfig
+    from metaxy.ext.metadata_stores.ducklake import PostgresMetadataBackendConfig
 
     fields = extract_field_info(PostgresMetadataBackendConfig)
 

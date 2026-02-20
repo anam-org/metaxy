@@ -68,4 +68,4 @@ The output shows the full sequence of SQL statements: creating secrets for the m
 ## Related Materials
 
 - [DuckDB Metadata Store](../integrations/metadata-stores/databases/duckdb.md)
-- [`DuckLakeAttachmentConfig`][metaxy.ext.metadata_stores._ducklake_support.DuckLakeAttachmentConfig]
+- [`DuckLakeAttachmentConfig`][metaxy.ext.metadata_stores.ducklake.DuckLakeAttachmentConfig]

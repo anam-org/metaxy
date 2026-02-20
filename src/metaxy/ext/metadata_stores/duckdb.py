@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy._decorators import public
-from metaxy.ext.metadata_stores._ducklake_support import (
+from metaxy.ext.metadata_stores.ducklake import (
     DuckDBPyConnection,
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,

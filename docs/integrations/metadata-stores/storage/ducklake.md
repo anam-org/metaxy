@@ -77,50 +77,50 @@ MotherDuck can manage the DuckLake catalog while you provide your own S3-compati
 Without a `storage_backend`, MotherDuck uses its own fully managed storage and no additional configuration is needed.
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.DuckLakeAttachmentConfig
+    class: metaxy.ext.metadata_stores.ducklake.DuckLakeAttachmentConfig
     path_prefix: stores.dev.config.ducklake
     header_level: 3
 
 ### Metadata Backends
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.DuckDBMetadataBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.DuckDBMetadataBackendConfig
     path_prefix: stores.dev.config.ducklake.metadata_backend
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.SQLiteMetadataBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.SQLiteMetadataBackendConfig
     path_prefix: stores.dev.config.ducklake.metadata_backend
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.PostgresMetadataBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.PostgresMetadataBackendConfig
     path_prefix: stores.dev.config.ducklake.metadata_backend
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.MotherDuckMetadataBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.MotherDuckMetadataBackendConfig
     path_prefix: stores.dev.config.ducklake.metadata_backend
     header_level: 4
 
 ### Storage Backends
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.LocalStorageBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.LocalStorageBackendConfig
     path_prefix: stores.dev.config.ducklake.storage_backend
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.S3StorageBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.S3StorageBackendConfig
     path_prefix: stores.dev.config.ducklake.storage_backend
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.R2StorageBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.R2StorageBackendConfig
     path_prefix: stores.dev.config.ducklake.storage_backend
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores._ducklake_support.GCSStorageBackendConfig
+    class: metaxy.ext.metadata_stores.ducklake.GCSStorageBackendConfig
     path_prefix: stores.dev.config.ducklake.storage_backend
     header_level: 4

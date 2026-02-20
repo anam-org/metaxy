@@ -8,11 +8,11 @@ import pytest
 from polars.testing import assert_frame_equal
 
 from metaxy._utils import collect_to_polars
-from metaxy.ext.metadata_stores._ducklake_support import (
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.ducklake import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
 )
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 
 pytestmark = pytest.mark.motherduck
 
