@@ -26,7 +26,7 @@ uv sync
 
 ## Configuration
 
-DuckLake is configured in `metaxy.toml` with two parts: a **metadata backend** (where the catalog is stored) and a **storage backend** (where data files live).
+DuckLake is configured in `metaxy.toml` with two parts: a **catalog backend** (where the catalog is stored) and a **storage backend** (where data files live).
 
 The active configuration below uses SQLite for the metadata catalog and the local filesystem for data storage. Commented-out sections show alternative backends.
 
@@ -36,7 +36,7 @@ The active configuration below uses SQLite for the metadata catalog and the loca
 
 Available backend combinations:
 
-| Metadata backend | Storage backend |
+| Catalog backend | Storage backend |
 |---|---|
 | DuckDB, SQLite, PostgreSQL | local filesystem, S3, Cloudflare R2, Google Cloud Storage |
 | MotherDuck | managed (no storage backend needed), or BYOB with S3/R2/GCS |
@@ -68,4 +68,4 @@ The output shows the full sequence of SQL statements: creating secrets for the m
 ## Related Materials
 
 - [DuckDB Metadata Store](../integrations/metadata-stores/databases/duckdb.md)
-- [`DuckLakeAttachmentConfig`][metaxy.ext.metadata_stores.ducklake.DuckLakeAttachmentConfig]
+- [`DuckLakeConfig`][metaxy.ext.metadata_stores.ducklake.DuckLakeConfig]

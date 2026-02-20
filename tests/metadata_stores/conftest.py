@@ -106,16 +106,16 @@ class AllStoresCases:
     @pytest.mark.duckdb
     @pytest.mark.ducklake
     def case_duckdb_ducklake(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.ext.metadata_stores.ducklake import DuckLakeAttachmentConfig
+        from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 
         return DuckDBMetadataStore(
             database=tmp_path / "test_ducklake.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
-            ducklake=DuckLakeAttachmentConfig.model_validate(
+            ducklake=DuckLakeConfig.model_validate(
                 {
                     "alias": "integration_lake",
-                    "metadata_backend": {"type": "duckdb", "uri": str(tmp_path / "ducklake_catalog.duckdb")},
-                    "storage_backend": {"type": "local", "path": str(tmp_path / "ducklake_storage")},
+                    "catalog": {"type": "duckdb", "uri": str(tmp_path / "ducklake_catalog.duckdb")},
+                    "storage": {"type": "local", "path": str(tmp_path / "ducklake_storage")},
                 }
             ),
         )

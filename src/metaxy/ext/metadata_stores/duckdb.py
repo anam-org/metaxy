@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 from metaxy._decorators import public
 from metaxy.ext.metadata_stores.ducklake import (
     DuckDBPyConnection,
-    DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
-    MotherDuckMetadataBackendConfig,
+    DuckLakeConfig,
+    MotherDuckCatalogConfig,
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -60,9 +60,9 @@ class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
         default=None,
         description="DuckDB extensions to install and load on open.",
     )
-    ducklake: DuckLakeAttachmentConfig | None = Field(
+    ducklake: DuckLakeConfig | None = Field(
         default=None,
-        description="DuckLake attachment configuration.",
+        description="DuckLake attachment configuration. Learn more [here](/integrations/metadata-stores/storage/ducklake.md).",
     )
 
 
@@ -91,22 +91,10 @@ class DuckDBMetadataStore(IbisMetadataStore):
         store = DuckDBMetadataStore("metadata.db")
         ```
 
-    Example: In-memory database
-        ```py
-        # In-memory database
-        store = DuckDBMetadataStore(":memory:")
-        ```
-
-    Example: MotherDuck
-        ```py
-        # MotherDuck
-        store = DuckDBMetadataStore("md:my_database")
-        ```
-
     Example: With extensions
         ```py
         # With extensions
-        store = DuckDBMetadataStore("metadata.db", hash_algorithm=HashAlgorithm.XXHASH64, extensions=["hashfuncs"])
+        store = DuckDBMetadataStore("md:my_database", extensions=["spatial"])
         ```
     """
 
@@ -117,7 +105,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         config: dict[str, str] | None = None,
         extensions: Sequence[str | ExtensionSpec] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
-        ducklake: DuckLakeAttachmentConfig | None = None,
+        ducklake: DuckLakeConfig | None = None,
         **kwargs,
     ):
         """
@@ -142,13 +130,8 @@ class DuckDBMetadataStore(IbisMetadataStore):
                 Supports strings (community repo) or
                 [metaxy.ext.metadata_stores.duckdb.ExtensionSpec][] instances.
             ducklake: Optional [DuckLake](https://ducklake.select/) attachment configuration.
-                When supplied, the DuckDB connection is configured to ATTACH the
-                DuckLake catalog after open().
+                Learn more [here](/integrations/metadata-stores/storage/ducklake.md).
             fallback_stores: Ordered list of read-only fallback stores.
-
-        Warning:
-            Parent directories are NOT created automatically. Ensure paths exist
-            before initializing the store.
         """
         database_str = str(database)
 
@@ -159,16 +142,13 @@ class DuckDBMetadataStore(IbisMetadataStore):
         self.database = database_str
         self.extensions: list[ExtensionSpec] = _normalise_extensions(extensions or [])
 
-        self._ducklake_config: DuckLakeAttachmentConfig | None = None
+        self._ducklake_config: DuckLakeConfig | None = None
         self._ducklake_attachment: DuckLakeAttachmentManager | None = None
         if ducklake is not None:
             existing_names = {ext.name for ext in self.extensions}
             if "ducklake" not in existing_names:
                 self.extensions.append(ExtensionSpec(name="ducklake"))
-            if (
-                isinstance(ducklake.metadata_backend, MotherDuckMetadataBackendConfig)
-                and "motherduck" not in existing_names
-            ):
+            if isinstance(ducklake.catalog, MotherDuckCatalogConfig) and "motherduck" not in existing_names:
                 self.extensions.append(ExtensionSpec(name="motherduck"))
             self._ducklake_config = ducklake
             self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
@@ -353,7 +333,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return self._ducklake_attachment
 
     @property
-    def ducklake_attachment_config(self) -> DuckLakeAttachmentConfig:
+    def ducklake_attachment_config(self) -> DuckLakeConfig:
         """DuckLake attachment configuration (raises if not configured)."""
         if self._ducklake_config is None:
             raise RuntimeError("DuckLake attachment is not configured.")

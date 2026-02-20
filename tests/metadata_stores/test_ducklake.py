@@ -13,13 +13,13 @@ from polars.testing.parametric import column, dataframes
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.metadata_stores.ducklake import (
-    DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
-    GCSStorageBackendConfig,
-    MotherDuckMetadataBackendConfig,
-    PostgresMetadataBackendConfig,
-    R2StorageBackendConfig,
-    S3StorageBackendConfig,
+    DuckLakeConfig,
+    GCSStorageConfig,
+    MotherDuckCatalogConfig,
+    PostgresCatalogConfig,
+    R2StorageConfig,
+    S3StorageConfig,
     format_attach_options,
 )
 
@@ -61,9 +61,9 @@ def metadata_dataframe_strategy(draw, fields=None, size=None):
 
 def test_ducklake_attachment_sequence() -> None:
     """DuckLakeAttachmentManager should issue expected setup statements."""
-    attachment = DuckLakeAttachmentConfig.model_validate(
+    attachment = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {
+            "catalog": {
                 "type": "postgres",
                 "secret_name": "pg_meta",
                 "database": "ducklake_meta",
@@ -71,7 +71,7 @@ def test_ducklake_attachment_sequence() -> None:
                 "password": "secret",
                 "host": "localhost",
             },
-            "storage_backend": {
+            "storage": {
                 "type": "s3",
                 "secret_name": "s3_store",
                 "key_id": "key",
@@ -96,10 +96,10 @@ def test_ducklake_attachment_sequence() -> None:
 
 def test_ducklake_data_inlining_option() -> None:
     """ATTACH SQL should include DATA_INLINING_ROW_LIMIT when set."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
-            "storage_backend": {"type": "local", "path": "/tmp/data"},
+            "catalog": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
+            "storage": {"type": "local", "path": "/tmp/data"},
             "data_inlining_row_limit": 100,
         }
     )
@@ -110,10 +110,10 @@ def test_ducklake_data_inlining_option() -> None:
 
 def test_ducklake_data_inlining_absent_when_not_set() -> None:
     """ATTACH SQL should not include DATA_INLINING_ROW_LIMIT when not set."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
-            "storage_backend": {"type": "local", "path": "/tmp/data"},
+            "catalog": {"type": "duckdb", "uri": "/tmp/cat.duckdb"},
+            "storage": {"type": "local", "path": "/tmp/data"},
         }
     )
     commands = DuckLakeAttachmentManager(config).preview_sql()
@@ -141,9 +141,9 @@ def test_format_attach_options_handles_types() -> None:
 
 def test_motherduck_attachment_sequence() -> None:
     """Fully managed MotherDuck DuckLake should USE the database directly."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "motherduck", "database": "my_lake"},
+            "catalog": {"type": "motherduck", "database": "my_lake"},
             "alias": "lake",
         }
     )
@@ -155,9 +155,9 @@ def test_motherduck_attachment_sequence() -> None:
 
 def test_motherduck_attachment_with_region() -> None:
     """MotherDuck DuckLake with explicit region should SET s3_region before USE."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "motherduck", "database": "my_lake", "region": "eu-central-1"},
+            "catalog": {"type": "motherduck", "database": "my_lake", "region": "eu-central-1"},
             "alias": "lake",
         }
     )
@@ -167,35 +167,35 @@ def test_motherduck_attachment_with_region() -> None:
     assert commands == ["SET s3_region='eu-central-1';", "USE my_lake;"]
 
 
-def test_motherduck_does_not_require_storage_backend() -> None:
-    """MotherDuck metadata backend should validate without a storage_backend."""
-    config = DuckLakeAttachmentConfig.model_validate(
+def test_motherduck_does_not_require_storage() -> None:
+    """MotherDuck metadata backend should validate without a storage."""
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "motherduck", "database": "my_lake"},
+            "catalog": {"type": "motherduck", "database": "my_lake"},
         }
     )
 
-    assert isinstance(config.metadata_backend, MotherDuckMetadataBackendConfig)
-    assert config.storage_backend is None
+    assert isinstance(config.catalog, MotherDuckCatalogConfig)
+    assert config.storage is None
 
 
-def test_non_motherduck_requires_storage_backend() -> None:
-    """Non-MotherDuck metadata backends should raise ValueError when storage_backend is missing."""
+def test_non_motherduck_requires_storage() -> None:
+    """Non-MotherDuck metadata backends should raise ValueError when storage is missing."""
     for backend in [
         {"type": "duckdb", "uri": "/tmp/meta.duckdb"},
         {"type": "sqlite", "uri": "/tmp/meta.sqlite"},
         {"type": "postgres", "secret_name": "pg", "database": "db", "user": "u", "password": "p", "host": "localhost"},
     ]:
-        with pytest.raises(ValueError, match="storage_backend is required"):
-            DuckLakeAttachmentConfig.model_validate({"metadata_backend": backend})
+        with pytest.raises(ValueError, match="storage is required"):
+            DuckLakeConfig.model_validate({"catalog": backend})
 
 
 def test_duckdb_store_accepts_motherduck_ducklake_config() -> None:
     """DuckDBMetadataStore should accept MotherDuck DuckLake config and include ducklake extension."""
     store = DuckDBMetadataStore(
         database=":memory:",
-        ducklake=DuckLakeAttachmentConfig.model_validate(
-            {"metadata_backend": {"type": "motherduck", "database": "my_lake"}, "alias": "lake"}
+        ducklake=DuckLakeConfig.model_validate(
+            {"catalog": {"type": "motherduck", "database": "my_lake"}, "alias": "lake"}
         ),
     )
 
@@ -207,7 +207,7 @@ def test_duckdb_store_accepts_motherduck_ducklake_config() -> None:
 
 def _ducklake_config_payload() -> dict[str, object]:
     return {
-        "metadata_backend": {
+        "catalog": {
             "type": "postgres",
             "secret_name": "pg_meta",
             "database": "ducklake_meta",
@@ -215,7 +215,7 @@ def _ducklake_config_payload() -> dict[str, object]:
             "password": "secret",
             "host": "localhost",
         },
-        "storage_backend": {
+        "storage": {
             "type": "s3",
             "secret_name": "s3_store",
             "key_id": "key",
@@ -232,7 +232,7 @@ def test_duckdb_store_accepts_ducklake_config() -> None:
     store = DuckDBMetadataStore(
         database=":memory:",
         extensions=["json"],
-        ducklake=DuckLakeAttachmentConfig.model_validate(_ducklake_config_payload()),
+        ducklake=DuckLakeConfig.model_validate(_ducklake_config_payload()),
     )
 
     assert "ducklake" in [ext.name for ext in store.extensions]
@@ -244,7 +244,7 @@ def test_duckdb_store_preview_via_config_manager() -> None:
     """DuckDBMetadataStore exposes attachment manager helpers when configured."""
     store = DuckDBMetadataStore(
         database=":memory:",
-        ducklake=DuckLakeAttachmentConfig.model_validate(_ducklake_config_payload()),
+        ducklake=DuckLakeConfig.model_validate(_ducklake_config_payload()),
     )
 
     manager = store.ducklake_attachment
@@ -290,11 +290,11 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         metadata_path = tmp_path / "ducklake_catalog.duckdb"
         storage_dir = tmp_path / "ducklake_storage"
 
-        ducklake_config = DuckLakeAttachmentConfig.model_validate(
+        ducklake_config = DuckLakeConfig.model_validate(
             {
                 "alias": "lake",
-                "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
-                "storage_backend": {"type": "local", "path": str(storage_dir)},
+                "catalog": {"type": "duckdb", "uri": str(metadata_path)},
+                "storage": {"type": "local", "path": str(storage_dir)},
             }
         )
 
@@ -364,11 +364,11 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
             metadata_path = tmp_path / "ducklake_catalog.duckdb"
             storage_dir = tmp_path / "ducklake_storage"
 
-            ducklake_config = DuckLakeAttachmentConfig.model_validate(
+            ducklake_config = DuckLakeConfig.model_validate(
                 {
                     "alias": "e2e_lake",
-                    "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
-                    "storage_backend": {"type": "local", "path": str(storage_dir)},
+                    "catalog": {"type": "duckdb", "uri": str(metadata_path)},
+                    "storage": {"type": "local", "path": str(storage_dir)},
                     "attach_options": {"override_data_path": True},
                 }
             )
@@ -513,7 +513,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
 
 def test_s3_storage_with_secret_parameters() -> None:
     """S3 secret_parameters should be merged into the secret SQL."""
-    config = S3StorageBackendConfig(
+    config = S3StorageConfig(
         type="s3",
         secret_name="my_s3",
         key_id="key",
@@ -529,7 +529,7 @@ def test_s3_storage_with_secret_parameters() -> None:
 
 def test_s3_storage_credential_chain() -> None:
     """S3 with credential_chain via secret_parameters should include PROVIDER and omit KEY_ID."""
-    config = S3StorageBackendConfig(
+    config = S3StorageConfig(
         type="s3",
         secret_name="my_s3",
         bucket="my-bucket",
@@ -559,11 +559,11 @@ def test_ducklake_s3_storage_roundtrip(
         db_path = tmp_path / "ducklake_s3.duckdb"
         metadata_path = tmp_path / "ducklake_catalog.duckdb"
 
-        ducklake_config = DuckLakeAttachmentConfig.model_validate(
+        ducklake_config = DuckLakeConfig.model_validate(
             {
                 "alias": "s3_lake",
-                "metadata_backend": {"type": "duckdb", "uri": str(metadata_path)},
-                "storage_backend": {
+                "catalog": {"type": "duckdb", "uri": str(metadata_path)},
+                "storage": {
                     "type": "s3",
                     "secret_name": "s3_test",
                     "key_id": storage_options["AWS_ACCESS_KEY_ID"],
@@ -619,7 +619,7 @@ def test_ducklake_s3_storage_roundtrip(
 
 def test_r2_storage_with_explicit_auth() -> None:
     """R2 with explicit auth should include TYPE R2, ACCOUNT_ID, KEY_ID, and SECRET."""
-    config = R2StorageBackendConfig(
+    config = R2StorageConfig(
         type="r2",
         secret_name="my_r2",
         key_id="r2key",
@@ -637,7 +637,7 @@ def test_r2_storage_with_explicit_auth() -> None:
 
 def test_r2_storage_credential_chain() -> None:
     """R2 with credential_chain via secret_parameters should include PROVIDER and ACCOUNT_ID."""
-    config = R2StorageBackendConfig(
+    config = R2StorageConfig(
         type="r2",
         secret_name="my_r2",
         account_id="my-account-id",
@@ -658,7 +658,7 @@ def test_r2_storage_credential_chain() -> None:
 
 def test_gcs_storage_with_explicit_auth() -> None:
     """GCS with explicit auth should include TYPE GCS, KEY_ID, and SECRET."""
-    config = GCSStorageBackendConfig(
+    config = GCSStorageConfig(
         type="gcs",
         secret_name="my_gcs",
         key_id="gcskey",
@@ -674,7 +674,7 @@ def test_gcs_storage_with_explicit_auth() -> None:
 
 def test_gcs_storage_credential_chain() -> None:
     """GCS with credential_chain via secret_parameters should include PROVIDER and omit KEY_ID."""
-    config = GCSStorageBackendConfig(
+    config = GCSStorageConfig(
         type="gcs",
         secret_name="my_gcs",
         data_path="gs://my-bucket/data/",
@@ -705,10 +705,10 @@ def test_non_motherduck_accepts_r2_and_gcs_storage() -> None:
             "data_path": "gs://bucket/prefix/",
         },
     ]:
-        config = DuckLakeAttachmentConfig.model_validate(
+        config = DuckLakeConfig.model_validate(
             {
-                "metadata_backend": {"type": "duckdb", "uri": "/tmp/meta.duckdb"},
-                "storage_backend": storage_config,
+                "catalog": {"type": "duckdb", "uri": "/tmp/meta.duckdb"},
+                "storage": storage_config,
                 "alias": "lake",
             }
         )
@@ -725,7 +725,7 @@ def test_non_motherduck_accepts_r2_and_gcs_storage() -> None:
 
 def test_postgres_with_secret_name_skips_create_secret() -> None:
     """PostgreSQL with secret_name should return empty secret SQL and reference the user-provided name."""
-    config = PostgresMetadataBackendConfig(type="postgres", secret_name="my_pg_secret")
+    config = PostgresCatalogConfig(type="postgres", secret_name="my_pg_secret")
     secret_sql, metadata_params = config.sql_parts("lake")
     assert secret_sql == ""
     assert "'my_pg_secret'" in metadata_params
@@ -734,7 +734,7 @@ def test_postgres_with_secret_name_skips_create_secret() -> None:
 
 def test_postgres_secret_name_with_inline_creates_named_secret() -> None:
     """PostgreSQL with secret_name + inline credentials should CREATE SECRET with the user-provided name."""
-    config = PostgresMetadataBackendConfig(
+    config = PostgresCatalogConfig(
         type="postgres",
         secret_name="my_pg",
         host="localhost",
@@ -751,12 +751,12 @@ def test_postgres_secret_name_with_inline_creates_named_secret() -> None:
 def test_postgres_inline_requires_all_credentials() -> None:
     """PostgreSQL with partial inline credentials should require all of them."""
     with pytest.raises(ValueError, match="Missing required inline credentials"):
-        PostgresMetadataBackendConfig(type="postgres", secret_name="pg", host="localhost", database="db")
+        PostgresCatalogConfig(type="postgres", secret_name="pg", host="localhost", database="db")
 
 
 def test_s3_with_secret_name_skips_create_secret() -> None:
     """S3 with secret_name only should return empty secret SQL but still include DATA_PATH."""
-    config = S3StorageBackendConfig(type="s3", secret_name="my_s3_secret", bucket="my-bucket")
+    config = S3StorageConfig(type="s3", secret_name="my_s3_secret", bucket="my-bucket")
     secret_sql, data_part = config.sql_parts("lake")
     assert secret_sql == ""
     assert "DATA_PATH" in data_part
@@ -765,7 +765,7 @@ def test_s3_with_secret_name_skips_create_secret() -> None:
 
 def test_s3_secret_name_with_inline_creates_named_secret() -> None:
     """S3 with secret_name + inline credentials should CREATE SECRET with the user-provided name."""
-    config = S3StorageBackendConfig(type="s3", secret_name="my_s3", key_id="key", secret="secret", bucket="b")
+    config = S3StorageConfig(type="s3", secret_name="my_s3", key_id="key", secret="secret", bucket="b")
     secret_sql, _ = config.sql_parts("lake")
     assert secret_sql.startswith("CREATE OR REPLACE SECRET my_s3")
     assert "TYPE S3" in secret_sql
@@ -774,7 +774,7 @@ def test_s3_secret_name_with_inline_creates_named_secret() -> None:
 
 def test_r2_with_secret_name_skips_create_secret() -> None:
     """R2 with secret_name only should return empty secret SQL."""
-    config = R2StorageBackendConfig(type="r2", secret_name="my_r2_secret", data_path="r2://bucket/data/")
+    config = R2StorageConfig(type="r2", secret_name="my_r2_secret", data_path="r2://bucket/data/")
     secret_sql, data_part = config.sql_parts("lake")
     assert secret_sql == ""
     assert "DATA_PATH" in data_part
@@ -783,14 +783,12 @@ def test_r2_with_secret_name_skips_create_secret() -> None:
 def test_r2_inline_requires_account_id() -> None:
     """R2 with inline key_id/secret should require account_id."""
     with pytest.raises(ValueError, match="account_id"):
-        R2StorageBackendConfig(
-            type="r2", secret_name="my_r2", key_id="key", secret="secret", data_path="r2://bucket/data/"
-        )
+        R2StorageConfig(type="r2", secret_name="my_r2", key_id="key", secret="secret", data_path="r2://bucket/data/")
 
 
 def test_gcs_with_secret_name_skips_create_secret() -> None:
     """GCS with secret_name only should return empty secret SQL."""
-    config = GCSStorageBackendConfig(type="gcs", secret_name="my_gcs_secret", data_path="gs://bucket/data/")
+    config = GCSStorageConfig(type="gcs", secret_name="my_gcs_secret", data_path="gs://bucket/data/")
     secret_sql, data_part = config.sql_parts("lake")
     assert secret_sql == ""
     assert "DATA_PATH" in data_part
@@ -798,10 +796,10 @@ def test_gcs_with_secret_name_skips_create_secret() -> None:
 
 def test_full_attachment_with_secret_names() -> None:
     """End-to-end: preview_sql() should have no CREATE SECRET for catalog/storage when using secret_name."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "postgres", "secret_name": "pg_catalog"},
-            "storage_backend": {"type": "s3", "secret_name": "s3_storage", "bucket": "data-bucket"},
+            "catalog": {"type": "postgres", "secret_name": "pg_catalog"},
+            "storage": {"type": "s3", "secret_name": "s3_storage", "bucket": "data-bucket"},
             "alias": "lake",
         }
     )
@@ -824,25 +822,25 @@ def test_full_attachment_with_secret_names() -> None:
 def test_s3_without_secret_name_raises_validation_error() -> None:
     """S3 without secret_name should raise a Pydantic validation error."""
     with pytest.raises(ValueError, match="secret_name"):
-        S3StorageBackendConfig.model_validate({"type": "s3", "bucket": "my-bucket"})
+        S3StorageConfig.model_validate({"type": "s3", "bucket": "my-bucket"})
 
 
 def test_r2_without_secret_name_raises_validation_error() -> None:
     """R2 without secret_name should raise a Pydantic validation error."""
     with pytest.raises(ValueError, match="secret_name"):
-        R2StorageBackendConfig.model_validate({"type": "r2", "data_path": "r2://bucket/data/"})
+        R2StorageConfig.model_validate({"type": "r2", "data_path": "r2://bucket/data/"})
 
 
 def test_gcs_without_secret_name_raises_validation_error() -> None:
     """GCS without secret_name should raise a Pydantic validation error."""
     with pytest.raises(ValueError, match="secret_name"):
-        GCSStorageBackendConfig.model_validate({"type": "gcs", "data_path": "gs://bucket/data/"})
+        GCSStorageConfig.model_validate({"type": "gcs", "data_path": "gs://bucket/data/"})
 
 
 def test_postgres_without_secret_name_raises_validation_error() -> None:
     """PostgreSQL without secret_name should raise a Pydantic validation error."""
     with pytest.raises(ValueError, match="secret_name"):
-        PostgresMetadataBackendConfig.model_validate(
+        PostgresCatalogConfig.model_validate(
             {"type": "postgres", "host": "localhost", "database": "db", "user": "u", "password": "p"}
         )
 
@@ -854,10 +852,10 @@ def test_postgres_without_secret_name_raises_validation_error() -> None:
 
 def test_motherduck_byob_with_inline_credentials() -> None:
     """MotherDuck BYOB with inline S3 credentials should create secret IN MOTHERDUCK."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "motherduck", "database": "my_ducklake", "region": "eu-central-1"},
-            "storage_backend": {
+            "catalog": {"type": "motherduck", "database": "my_ducklake", "region": "eu-central-1"},
+            "storage": {
                 "type": "s3",
                 "secret_name": "my_s3_secret",
                 "key_id": "AKIA...",
@@ -882,10 +880,10 @@ def test_motherduck_byob_with_inline_credentials() -> None:
 
 def test_motherduck_byob_use_existing_secret() -> None:
     """MotherDuck BYOB with secret_name only should not create a secret."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {"type": "motherduck", "database": "my_ducklake"},
-            "storage_backend": {
+            "catalog": {"type": "motherduck", "database": "my_ducklake"},
+            "storage": {
                 "type": "s3",
                 "secret_name": "my_s3_secret",
                 "bucket": "mybucket",

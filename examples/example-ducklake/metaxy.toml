@@ -15,12 +15,12 @@ alias = "ducklake"
 override_data_path = true
 
 # -- Metadata backend: SQLite (local, no extra dependencies) -----------------
-[stores.dev.config.ducklake.metadata_backend]
+[stores.dev.config.ducklake.catalog]
 type = "sqlite"
 uri = "/tmp/ducklake_meta.db"
 
 # -- Metadata backend: PostgreSQL ---------------------------------------------
-# [stores.dev.config.ducklake.metadata_backend]
+# [stores.dev.config.ducklake.catalog]
 # type = "postgres"
 # secret_name = "my_pg_secret"       # Required: name for the DuckDB secret
 # host = "localhost"
@@ -33,18 +33,18 @@ uri = "/tmp/ducklake_meta.db"
 # # Omit inline credentials (host, database, user, password) to reference
 # # a pre-existing DuckDB secret named by secret_name.
 
-# -- Metadata backend: MotherDuck (managed, no storage_backend needed) --------
-# [stores.dev.config.ducklake.metadata_backend]
+# -- Metadata backend: MotherDuck (managed, no storage needed) --------
+# [stores.dev.config.ducklake.catalog]
 # type = "motherduck"
 # database = "my_lake"
 
 # -- Metadata backend: MotherDuck BYOB (bring your own bucket) ----------------
 # Use MotherDuck for the catalog but store data in your own S3 bucket.
-# [stores.dev.config.ducklake.metadata_backend]
+# [stores.dev.config.ducklake.catalog]
 # type = "motherduck"
 # database = "my_ducklake"
 # region = "eu-central-1"
-# [stores.dev.config.ducklake.storage_backend]
+# [stores.dev.config.ducklake.storage]
 # type = "s3"
 # secret_name = "my_s3_secret"
 # key_id = "AKIA..."
@@ -54,12 +54,12 @@ uri = "/tmp/ducklake_meta.db"
 # bucket = "mybucket"
 
 # -- Storage backend: local filesystem ----------------------------------------
-[stores.dev.config.ducklake.storage_backend]
+[stores.dev.config.ducklake.storage]
 type = "local"
 path = "/tmp/ducklake_storage"
 
 # -- Storage backend: S3 -----------------------------------------------------
-# [stores.dev.config.ducklake.storage_backend]
+# [stores.dev.config.ducklake.storage]
 # type = "s3"
 # secret_name = "my_s3_secret"       # Required: name for the DuckDB secret
 # bucket = "my-ducklake-bucket"
@@ -75,7 +75,7 @@ path = "/tmp/ducklake_storage"
 # # secret_parameters = { kms_key_id = "arn:aws:kms:..." }
 
 # -- Storage backend: Cloudflare R2 ------------------------------------------
-# [stores.dev.config.ducklake.storage_backend]
+# [stores.dev.config.ducklake.storage]
 # type = "r2"
 # secret_name = "my_r2_secret"       # Required: name for the DuckDB secret
 # account_id = "your-cloudflare-account-id"
@@ -84,7 +84,7 @@ path = "/tmp/ducklake_storage"
 # # secret = "R2_SECRET_KEY"
 
 # -- Storage backend: Google Cloud Storage ------------------------------------
-# [stores.dev.config.ducklake.storage_backend]
+# [stores.dev.config.ducklake.storage]
 # type = "gcs"
 # secret_name = "my_gcs_secret"      # Required: name for the DuckDB secret
 # data_path = "gs://my-bucket/ducklake/"

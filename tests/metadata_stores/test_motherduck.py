@@ -10,8 +10,8 @@ from polars.testing import assert_frame_equal
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.metadata_stores.ducklake import (
-    DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
+    DuckLakeConfig,
 )
 
 pytestmark = pytest.mark.motherduck
@@ -32,9 +32,9 @@ def test_motherduck_ducklake_attachment(
     motherduck_region: str | None,
 ) -> None:
     """Fully managed MotherDuck DuckLake should USE the database directly."""
-    config = DuckLakeAttachmentConfig.model_validate(
+    config = DuckLakeConfig.model_validate(
         {
-            "metadata_backend": {
+            "catalog": {
                 "type": "motherduck",
                 "database": motherduck_ducklake_database,
                 "region": motherduck_region,
@@ -60,9 +60,9 @@ def test_motherduck_ducklake_write_read_roundtrip(
     """Write metadata to MotherDuck-backed DuckLake and read it back."""
     store = DuckDBMetadataStore(
         database=f"md:?motherduck_token={motherduck_token}",
-        ducklake=DuckLakeAttachmentConfig.model_validate(
+        ducklake=DuckLakeConfig.model_validate(
             {
-                "metadata_backend": {
+                "catalog": {
                     "type": "motherduck",
                     "database": motherduck_ducklake_database,
                     "region": motherduck_region,

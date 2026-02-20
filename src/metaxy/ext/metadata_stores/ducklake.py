@@ -20,7 +20,7 @@ from metaxy._decorators import public
 
 
 @public
-class DuckDBMetadataBackendConfig(BaseModel):
+class DuckDBCatalogConfig(BaseModel):
     """DuckDB file-based metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["duckdb"] = "duckdb"
@@ -31,7 +31,7 @@ class DuckDBMetadataBackendConfig(BaseModel):
 
 
 @public
-class SQLiteMetadataBackendConfig(BaseModel):
+class SQLiteCatalogConfig(BaseModel):
     """SQLite file-based metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["sqlite"] = "sqlite"
@@ -42,7 +42,7 @@ class SQLiteMetadataBackendConfig(BaseModel):
 
 
 @public
-class PostgresMetadataBackendConfig(BaseModel):
+class PostgresCatalogConfig(BaseModel):
     """PostgreSQL metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["postgres"] = "postgres"
@@ -91,7 +91,7 @@ class PostgresMetadataBackendConfig(BaseModel):
 
 
 @public
-class MotherDuckMetadataBackendConfig(BaseModel):
+class MotherDuckCatalogConfig(BaseModel):
     """[MotherDuck](https://motherduck.com/)-managed metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["motherduck"] = "motherduck"
@@ -108,7 +108,7 @@ class MotherDuckMetadataBackendConfig(BaseModel):
 
 
 @public
-class LocalStorageBackendConfig(BaseModel):
+class LocalStorageConfig(BaseModel):
     """Local filesystem storage backend for DuckLake."""
 
     type: Literal["local"] = "local"
@@ -119,8 +119,8 @@ class LocalStorageBackendConfig(BaseModel):
 
 
 @public
-class S3StorageBackendConfig(BaseModel):
-    """S3 storage backend for DuckLake."""
+class S3StorageConfig(BaseModel):
+    """[S3 storage](https://duckdb.org/docs/stable/core_extensions/httpfs/s3api) backend for DuckLake."""
 
     type: Literal["s3"] = "s3"
     key_id: str | None = None
@@ -207,10 +207,10 @@ class S3StorageBackendConfig(BaseModel):
 
 
 @public
-class R2StorageBackendConfig(BaseModel):
+class R2StorageConfig(BaseModel):
     """Cloudflare R2 storage backend for [DuckLake](https://ducklake.select/).
 
-    Uses the DuckDB ``TYPE R2`` secret which requires an ``ACCOUNT_ID``.
+    Uses the DuckDB [`TYPE R2`](https://duckdb.org/docs/stable/core_extensions/httpfs/s3api#r2-secrets) secret.
     """
 
     type: Literal["r2"] = "r2"
@@ -254,10 +254,10 @@ class R2StorageBackendConfig(BaseModel):
 
 
 @public
-class GCSStorageBackendConfig(BaseModel):
+class GCSStorageConfig(BaseModel):
     """Google Cloud Storage backend for [DuckLake](https://ducklake.select/).
 
-    Uses the DuckDB ``TYPE GCS`` secret with HMAC authentication.
+    Uses the DuckDB [`TYPE GCS`](https://duckdb.org/docs/stable/core_extensions/httpfs/s3api#gcs-secrets) secret.
     """
 
     type: Literal["gcs"] = "gcs"
@@ -347,19 +347,16 @@ def format_attach_options(options: Mapping[str, Any] | None) -> str:
 
 
 @public
-class DuckLakeAttachmentConfig(BaseModel):
+class DuckLakeConfig(BaseModel):
     """[DuckLake](https://ducklake.select/) attachment configuration for a DuckDB connection."""
 
-    metadata_backend: Annotated[
-        DuckDBMetadataBackendConfig
-        | SQLiteMetadataBackendConfig
-        | PostgresMetadataBackendConfig
-        | MotherDuckMetadataBackendConfig,
+    catalog: Annotated[
+        DuckDBCatalogConfig | SQLiteCatalogConfig | PostgresCatalogConfig | MotherDuckCatalogConfig,
         Field(discriminator="type"),
     ] = Field(description="Metadata catalog backend (DuckDB, SQLite, PostgreSQL, or MotherDuck).")
-    storage_backend: (
+    storage: (
         Annotated[
-            LocalStorageBackendConfig | S3StorageBackendConfig | R2StorageBackendConfig | GCSStorageBackendConfig,
+            LocalStorageConfig | S3StorageConfig | R2StorageConfig | GCSStorageConfig,
             Field(discriminator="type"),
         ]
         | None
@@ -379,9 +376,9 @@ class DuckLakeAttachmentConfig(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _validate_storage_backend(self) -> Self:
-        if not isinstance(self.metadata_backend, MotherDuckMetadataBackendConfig) and self.storage_backend is None:
-            raise ValueError("storage_backend is required for non-MotherDuck metadata backends.")
+    def _validate_storage(self) -> Self:
+        if not isinstance(self.catalog, MotherDuckCatalogConfig) and self.storage is None:
+            raise ValueError("storage is required for non-MotherDuck metadata backends.")
         return self
 
     @field_validator("alias", mode="before")
@@ -410,7 +407,7 @@ class DuckLakeAttachmentConfig(BaseModel):
 class DuckLakeAttachmentManager:
     """Responsible for configuring a DuckDB connection for DuckLake usage."""
 
-    def __init__(self, config: DuckLakeAttachmentConfig, *, store_name: str | None = None):
+    def __init__(self, config: DuckLakeConfig, *, store_name: str | None = None):
         self._config = config
         self._secret_suffix = f"{store_name}_{config.alias}" if store_name else config.alias
         self._attached: bool = False
@@ -419,7 +416,7 @@ class DuckLakeAttachmentManager:
         """Build the full list of SQL statements for DuckLake attachment (secrets + ATTACH)."""
         statements: list[str] = []
 
-        if isinstance(self._config.metadata_backend, MotherDuckMetadataBackendConfig):
+        if isinstance(self._config.catalog, MotherDuckCatalogConfig):
             return self._build_motherduck_statements(statements)
 
         return self._build_standard_statements(statements)
@@ -428,16 +425,16 @@ class DuckLakeAttachmentManager:
         """Build SQL statements for MotherDuck-managed DuckLake.
 
         Fully managed MotherDuck DuckLake databases are available to any
-        MotherDuck connection via ``USE``.  When a ``storage_backend`` is
+        MotherDuck connection via ``USE``.  When a ``storage`` is
         provided (BYOB mode), the DuckLake database is created with a custom
         ``DATA_PATH`` and storage secrets are created ``IN MOTHERDUCK``.
         """
-        assert isinstance(self._config.metadata_backend, MotherDuckMetadataBackendConfig)
-        md = self._config.metadata_backend
+        assert isinstance(self._config.catalog, MotherDuckCatalogConfig)
+        md = self._config.catalog
         if md.region is not None:
             statements.append(f"SET s3_region='{md.region}';")
-        if self._config.storage_backend is not None:
-            storage_secret_sql, data_path_sql = self._config.storage_backend.sql_parts(
+        if self._config.storage is not None:
+            storage_secret_sql, data_path_sql = self._config.storage.sql_parts(
                 self._secret_suffix, secret_storage="MOTHERDUCK"
             )
             statements.append(f"CREATE DATABASE IF NOT EXISTS {md.database} (TYPE DUCKLAKE, {data_path_sql});")
@@ -448,13 +445,11 @@ class DuckLakeAttachmentManager:
 
     def _build_standard_statements(self, statements: list[str]) -> list[str]:
         """Build SQL statements for self-managed DuckLake backends."""
-        metadata_backend = self._config.metadata_backend
-        assert isinstance(
-            metadata_backend, DuckDBMetadataBackendConfig | SQLiteMetadataBackendConfig | PostgresMetadataBackendConfig
-        )
-        assert self._config.storage_backend is not None
-        metadata_secret_sql, metadata_params_sql = metadata_backend.sql_parts(self._secret_suffix)
-        storage_secret_sql, storage_params_sql = self._config.storage_backend.sql_parts(self._secret_suffix)
+        catalog = self._config.catalog
+        assert isinstance(catalog, DuckDBCatalogConfig | SQLiteCatalogConfig | PostgresCatalogConfig)
+        assert self._config.storage is not None
+        metadata_secret_sql, metadata_params_sql = catalog.sql_parts(self._secret_suffix)
+        storage_secret_sql, storage_params_sql = self._config.storage.sql_parts(self._secret_suffix)
 
         if metadata_secret_sql:
             statements.append(metadata_secret_sql)

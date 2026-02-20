@@ -50,9 +50,9 @@ def test_extract_field_info_required_detection() -> None:
 
 def test_extract_field_info_discriminator_detection() -> None:
     """Test that single-value Literal discriminator fields are detected."""
-    from metaxy.ext.metadata_stores.ducklake import PostgresMetadataBackendConfig
+    from metaxy.ext.metadata_stores.ducklake import PostgresCatalogConfig
 
-    fields = extract_field_info(PostgresMetadataBackendConfig)
+    fields = extract_field_info(PostgresCatalogConfig)
 
     type_field = next(f for f in fields if f["name"] == "type")
     assert type_field["is_discriminator"] is True

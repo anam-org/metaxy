@@ -160,20 +160,20 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
 
 def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
-    from metaxy.ext.metadata_stores.ducklake import DuckLakeAttachmentConfig
+    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 
     db_path = tmp_path / "ducklake.duckdb"
     metadata_path = tmp_path / "ducklake_catalog.duckdb"
     storage_dir = tmp_path / "ducklake_storage"
 
-    ducklake_config = DuckLakeAttachmentConfig.model_validate(
+    ducklake_config = DuckLakeConfig.model_validate(
         {
             "alias": "lake",
-            "metadata_backend": {
+            "catalog": {
                 "type": "duckdb",
                 "uri": str(metadata_path),
             },
-            "storage_backend": {
+            "storage": {
                 "type": "local",
                 "path": str(storage_dir),
             },
