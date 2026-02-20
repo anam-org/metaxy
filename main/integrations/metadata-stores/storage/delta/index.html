@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Delta Lake as a metadata store backend.">
+        <meta name="description" content="Learn how to use Delta Lake to store Metaxy metadata.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>Delta Lake Metadata Store - Metaxy</title>
+        <title>Metaxy + Delta Lake - Metaxy</title>
       
     
     
@@ -71,16 +71,16 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Delta Lake Metadata Store - Metaxy" />
-<meta property="og:description" content="Delta Lake as a metadata store backend." />
+<meta property="og:title" content="Metaxy + Delta Lake - Metaxy" />
+<meta property="og:description" content="Learn how to use Delta Lake to store Metaxy metadata." />
 <meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/storage/delta.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:url" content="https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="Delta Lake Metadata Store - Metaxy" />
-<meta property="twitter:description" content="Delta Lake as a metadata store backend." />
+<meta property="twitter:title" content="Metaxy + Delta Lake - Metaxy" />
+<meta property="twitter:description" content="Learn how to use Delta Lake to store Metaxy metadata." />
 <meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/storage/delta.png" />
 </head>
   
@@ -101,7 +101,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#delta-lake" class="md-skip">
+        <a href="#metaxy-delta-lake" class="md-skip">
           Skip to content
         </a>
       
@@ -140,7 +140,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Delta Lake Metadata Store
+              Metaxy + Delta Lake
             
           </span>
         </div>
@@ -2040,21 +2040,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-object-stores" class="md-nav__link">
+  <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Object Stores
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#storage-layout" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Layout
+        API Reference
       
     </span>
   </a>
@@ -3707,21 +3696,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#using-object-stores" class="md-nav__link">
+  <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Object Stores
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#storage-layout" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Layout
+        API Reference
       
     </span>
   </a>
@@ -3972,7 +3950,7 @@
   
 
 
-<h1 id="delta-lake">Delta Lake<a class="headerlink" href="#delta-lake" title="Permanent link">&para;</a></h1>
+<h1 id="metaxy-delta-lake">Metaxy + Delta Lake<a class="headerlink" href="#metaxy-delta-lake" title="Permanent link">&para;</a></h1>
 <p><a href="https://delta.io/">Delta Lake</a> is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&lt;/span&gt;" href="#metaxy.ext.metadata_stores.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a>. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.</p>
 <p>It supports the local filesystem and remote object stores.</p>
 <div class="admonition tip">
@@ -3983,17 +3961,7 @@
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[delta]&#39;</span>
 </span></code></pre></div>
-<h2 id="using-object-stores">Using Object Stores<a class="headerlink" href="#using-object-stores" title="Permanent link">&para;</a></h2>
-<p>Point <code>root_path</code> at any supported URI (<code>s3://</code>, <code>abfss://</code>, <code>gs://</code>, ...) and forward credentials with <code>storage_options</code>.
-The dict is passed verbatim to <a href="https://delta-io.github.io/delta-rs/integrations/object-storage/special_configuration/"><code>deltalake</code></a>.</p>
-<p>Learn more in the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&lt;/span&gt;" href="#metaxy.ext.metadata_stores.delta.DeltaMetadataStore">API docs</a>.</p>
-<h2 id="storage-layout">Storage Layout<a class="headerlink" href="#storage-layout" title="Permanent link">&para;</a></h2>
-<p>It's possible to control how feature keys map to DeltaLake table locations with the <code>layout</code> parameter:</p>
-<ul>
-<li><code>nested</code> (default) places every feature in its own directory: <code>your/feature/key.delta</code></li>
-<li><code>flat</code> stores all of them in the same directory: <code>your__feature_key.delta</code></li>
-</ul>
-<hr />
+<h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
 
 

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="DuckDB as a metadata store backend.">
+        <meta name="description" content="Learn how to use DuckDB as a Metaxy metadata store.">
       
       
       
@@ -72,7 +72,7 @@
   
 <meta property="og:type" content="website" />
 <meta property="og:title" content="DuckDB Metadata Store - Metaxy" />
-<meta property="og:description" content="DuckDB as a metadata store backend." />
+<meta property="og:description" content="Learn how to use DuckDB as a Metaxy metadata store." />
 <meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/databases/duckdb.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
@@ -80,7 +80,7 @@
 <meta property="og:url" content="https://docs.metaxy.io/main/integrations/metadata-stores/databases/duckdb/" />
 <meta property="twitter:card" content="summary_large_image" />
 <meta property="twitter:title" content="DuckDB Metadata Store - Metaxy" />
-<meta property="twitter:description" content="DuckDB as a metadata store backend." />
+<meta property="twitter:description" content="Learn how to use DuckDB as a Metaxy metadata store." />
 <meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/databases/duckdb.png" />
 </head>
   
@@ -101,7 +101,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#duckdb" class="md-skip">
+        <a href="#metaxy-duckdb" class="md-skip">
           Skip to content
         </a>
       
@@ -1883,10 +1883,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#extensions" class="md-nav__link">
+  <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extensions
+        API Reference
       
     </span>
   </a>
@@ -3751,10 +3751,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#extensions" class="md-nav__link">
+  <a href="#api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extensions
+        API Reference
       
     </span>
   </a>
@@ -4060,11 +4060,11 @@
   
 
 
-<h1 id="duckdb">DuckDB<a class="headerlink" href="#duckdb" title="Permanent link">&para;</a></h1>
+<h1 id="metaxy-duckdb">Metaxy + DuckDB<a class="headerlink" href="#metaxy-duckdb" title="Permanent link">&para;</a></h1>
 <p><a href="https://duckdb.org/">DuckDB</a> is an embedded analytical database. To use Metaxy with DuckDB, configure <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore&lt;/span&gt;" href="#metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"><code>DuckDBMetadataStore</code></a>. This runs versioning computations natively in DuckDB.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a <code>PostgreSQL</code> catalog, or refer to <a href="https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes">DuckDB's documentation</a> to learn about implementing application-side work-arounds.</p>
+<p>File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider using <a href="https://motherduck.com/">Motherduck</a>, <a href="../../storage/ducklake/">DuckLake</a> with a <code>PostgreSQL</code> catalog, or refer to <a href="https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes">DuckDB's documentation</a> to learn about implementing application-side work-arounds.</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -4073,14 +4073,7 @@
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[duckdb]&#39;</span>
 </span></code></pre></div>
-<h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
-<p>DuckDB extensions can be loaded automatically:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.metadata_stores.duckdb</span><span class="w"> </span><span class="kn">import</span> <span class="n">DuckDBMetadataStore</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">store</span> <span class="o">=</span> <span class="n">DuckDBMetadataStore</span><span class="p">(</span><span class="s2">&quot;:memory:&quot;</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;hashfuncs&quot;</span><span class="p">])</span>
-</span></code></pre></div>
-<p><code>hashfuncs</code> is typically used by the versioning engine.</p>
-<hr />
+<h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
 
 
@@ -5302,17 +5295,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="configuration-metaxytoml" name="__tabbed_1" type="radio" /><input id="configuration-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="configuration-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml">metaxy.toml</label><label for="configuration-pyprojecttoml">pyproject.toml</label><label for="configuration-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__FALLBACK_STORES</span><span class="o">=[]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__FALLBACK_STORES</span><span class="o">=[]</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -5344,17 +5337,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="configuration-metaxytoml_1" name="__tabbed_2" type="radio" /><input id="configuration-pyprojecttoml_1" name="__tabbed_2" type="radio" /><input id="configuration-environment-variable_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_1">metaxy.toml</label><label for="configuration-pyprojecttoml_1">pyproject.toml</label><label for="configuration-environment-variable_1">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">hash_algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">hash_algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">hash_algorithm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__HASH_ALGORITHM</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__HASH_ALGORITHM</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -5388,17 +5381,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="configuration-metaxytoml_2" name="__tabbed_3" type="radio" /><input id="configuration-pyprojecttoml_2" name="__tabbed_3" type="radio" /><input id="configuration-environment-variable_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_2">metaxy.toml</label><label for="configuration-pyprojecttoml_2">pyproject.toml</label><label for="configuration-environment-variable_2">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">versioning_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">versioning_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">versioning_engine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;auto&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__VERSIONING_ENGINE</span><span class="o">=</span>auto
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__VERSIONING_ENGINE</span><span class="o">=</span>auto
 </span></code></pre></div>
 </div>
 </div>
@@ -5430,17 +5423,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="configuration-metaxytoml_3" name="__tabbed_4" type="radio" /><input id="configuration-pyprojecttoml_3" name="__tabbed_4" type="radio" /><input id="configuration-environment-variable_3" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_3">metaxy.toml</label><label for="configuration-pyprojecttoml_3">pyproject.toml</label><label for="configuration-environment-variable_3">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">connection_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">connection_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">connection_string</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__CONNECTION_STRING</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__CONNECTION_STRING</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -5472,17 +5465,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="configuration-metaxytoml_4" name="__tabbed_5" type="radio" /><input id="configuration-pyprojecttoml_4" name="__tabbed_5" type="radio" /><input id="configuration-environment-variable_4" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_4">metaxy.toml</label><label for="configuration-pyprojecttoml_4">pyproject.toml</label><label for="configuration-environment-variable_4">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">connection_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">connection_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">connection_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__CONNECTION_PARAMS</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__CONNECTION_PARAMS</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -5514,17 +5507,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="configuration-metaxytoml_5" name="__tabbed_6" type="radio" /><input id="configuration-pyprojecttoml_5" name="__tabbed_6" type="radio" /><input id="configuration-environment-variable_5" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_5">metaxy.toml</label><label for="configuration-pyprojecttoml_5">pyproject.toml</label><label for="configuration-environment-variable_5">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">table_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">table_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">table_prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__TABLE_PREFIX</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__TABLE_PREFIX</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -5556,17 +5549,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="7:3"><input checked="checked" id="configuration-metaxytoml_6" name="__tabbed_7" type="radio" /><input id="configuration-pyprojecttoml_6" name="__tabbed_7" type="radio" /><input id="configuration-environment-variable_6" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_6">metaxy.toml</label><label for="configuration-pyprojecttoml_6">pyproject.toml</label><label for="configuration-environment-variable_6">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__AUTO_CREATE_TABLES</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__AUTO_CREATE_TABLES</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -5598,17 +5591,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="configuration-metaxytoml_7" name="__tabbed_8" type="radio" /><input id="configuration-pyprojecttoml_7" name="__tabbed_8" type="radio" /><input id="configuration-environment-variable_7" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_7">metaxy.toml</label><label for="configuration-pyprojecttoml_7">pyproject.toml</label><label for="configuration-environment-variable_7">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;...&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__DATABASE</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__DATABASE</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -5640,17 +5633,17 @@ Learn more <a href="../../storage/ducklake/">here</a>.</p>
 </div><div class="tabbed-set tabbed-alternate" data-tabs="9:3"><input checked="checked" id="configuration-metaxytoml_8" name="__tabbed_9" type="radio" /><input id="configuration-pyprojecttoml_8" name="__tabbed_9" type="radio" /><input id="configuration-environment-variable_8" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml_8">metaxy.toml</label><label for="configuration-pyprojecttoml_8">pyproject.toml</label><label for="configuration-environment-variable_8">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">[stores.dev.config]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__CONFIG</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES__DEV__CONFIG__CONFIG</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>

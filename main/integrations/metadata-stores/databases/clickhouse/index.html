@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="ClickHouse as a metadata store backend.">
+        <meta name="description" content="Learn how to use ClickHouse as a Metaxy metadata store.">
       
       
       
@@ -27,7 +27,7 @@
     
     
       
-        <title>ClickHouse Metadata Store - Metaxy</title>
+        <title>Metaxy + ClickHouse - Metaxy</title>
       
     
     
@@ -71,16 +71,16 @@
     
   
 <meta property="og:type" content="website" />
-<meta property="og:title" content="ClickHouse Metadata Store - Metaxy" />
-<meta property="og:description" content="ClickHouse as a metadata store backend." />
+<meta property="og:title" content="Metaxy + ClickHouse - Metaxy" />
+<meta property="og:description" content="Learn how to use ClickHouse as a Metaxy metadata store." />
 <meta property="og:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/databases/clickhouse.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:url" content="https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse/" />
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:title" content="ClickHouse Metadata Store - Metaxy" />
-<meta property="twitter:description" content="ClickHouse as a metadata store backend." />
+<meta property="twitter:title" content="Metaxy + ClickHouse - Metaxy" />
+<meta property="twitter:description" content="Learn how to use ClickHouse as a Metaxy metadata store." />
 <meta property="twitter:image" content="https://docs.metaxy.io/main/assets/images/social/integrations/metadata-stores/databases/clickhouse.png" />
 </head>
   
@@ -101,7 +101,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#clickhouse" class="md-skip">
+        <a href="#metaxy-clickhouse" class="md-skip">
           Skip to content
         </a>
       
@@ -140,7 +140,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ClickHouse Metadata Store
+              Metaxy + ClickHouse
             
           </span>
         </div>
@@ -1898,6 +1898,17 @@
     <span class="md-ellipsis">
       
         Performance Optimization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Reference
       
     </span>
   </a>
@@ -3802,6 +3813,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metaxy.ext.metadata_stores.clickhouse" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4062,7 +4084,7 @@
   
 
 
-<h1 id="clickhouse">ClickHouse<a class="headerlink" href="#clickhouse" title="Permanent link">&para;</a></h1>
+<h1 id="metaxy-clickhouse">Metaxy + ClickHouse<a class="headerlink" href="#metaxy-clickhouse" title="Permanent link">&para;</a></h1>
 <p class="annotate"><a href="https://clickhouse.com/">ClickHouse</a> is a (1) column-oriented OLAP database designed for real-time analytics. To use Metaxy with ClickHouse, configure <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore&lt;/span&gt;" href="#metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore"><code>ClickHouseMetadataStore</code></a>. Versioning computations run natively in ClickHouse, making it well-suited for high-throughput production workloads.</p>
 <ol>
 <li>extremely fast</li>
@@ -4153,7 +4175,7 @@
 <li><strong>Ordering</strong>: It's probably a good idea to use <code>(metaxy_feature_version, &lt;id_columns&gt;, metaxy_updated_at)</code></li>
 </ul>
 </div>
-<hr />
+<h2 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
 
 
