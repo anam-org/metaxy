@@ -1,9 +1,9 @@
 ---
 title: "Metaxy + DuckLake"
-description: "Store Metaxy metadata in DuckLake."
+description: "Learn how to store Metaxy metadata in DuckLake."
 ---
 
-# DuckLake
+# Metaxy + DuckLake
 
 !!! warning "Experimental"
 

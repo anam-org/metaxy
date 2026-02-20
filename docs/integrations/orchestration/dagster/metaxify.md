@@ -1,6 +1,6 @@
 ---
-title: "Dagster @metaxify Decorator"
-description: "The @metaxify decorator for Dagster assets."
+title: "Metaxy + Dagster: @metaxify Decorator"
+description: "Learn how to use the @metaxify decorator to enrich Dagster assets with information from Metaxy."
 ---
 
 # Metaxify

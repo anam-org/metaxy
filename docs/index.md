@@ -24,7 +24,7 @@ description: "A high level introduction to Metaxy."
 
 ## Metaxy
 
-Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks **metadata** across complex computational graphs, implements sample and sub-sample versioning, allowing the codebase to evolve over time without friction.
+Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks **metadata** across complex computational graphs and provides sample and sub-sample versioning, allowing the codebase to evolve over time without friction.
 
 ### The problem: sample-level versioning
 

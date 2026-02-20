@@ -1,9 +1,9 @@
 ---
-title: "Dagster API Reference"
-description: "API reference for Dagster integration."
+title: "Metaxy + Dagster: API Reference"
+description: "API reference for the Metaxy Dagster integration."
 ---
 
-# Dagster Integration API
+# Dagster Integration API Reference
 
 [Integration docs](index.md)
 

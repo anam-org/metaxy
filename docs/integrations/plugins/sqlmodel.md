@@ -122,7 +122,7 @@ See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for co
 
     When managing both system tables and feature tables with Alembic, use separate version tables to avoid conflicts. See the [Multi-Store Setup](sqlalchemy.md#multi-store-setup) section for configuration details.
 
----
+## API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.sqlmodel
