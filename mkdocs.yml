@@ -59,6 +59,7 @@ theme:
 hooks:
   - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_public.py
   - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_glossary.py
+  - docs/hooks.py
 
 plugins:
   - search
@@ -242,6 +243,7 @@ nav:
       - Testing: guide/concepts/lifecycle/testing.md
       - Deployment: guide/concepts/lifecycle/deployment.md
     - ❓ Q&A: guide/qa.md
+  - 🎬 Slides: slides/intro.md
   - 🧩 Integrations:
     - integrations/index.md
     - Orchestration:

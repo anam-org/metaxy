@@ -37,6 +37,7 @@ PLAN.md
 .claude/plans
 plans/*.md
 .cache/
+docs/slides/.node_modules/
 .pg-wrappers/initdb
 .pg-wrappers/pg_ctl
 .pg-wrappers/postgres
