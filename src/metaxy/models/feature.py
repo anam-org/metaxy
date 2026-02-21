@@ -21,6 +21,7 @@ from metaxy.models.feature_spec import (
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import (
+    CascadeMode,
     CoercibleToFeatureKey,
     FeatureKey,
     ValidatedFeatureKeyAdapter,
@@ -371,25 +372,30 @@ class FeatureGraph:
         validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
 
         source_set = set(validated_sources)
-        visited = set()
-        post_order = []
-        source_set = set(sources)
-        visited = set()
-        post_order = []  # Reverse topological order
+        visited: set[FeatureKey] = set()
+        post_order: list[FeatureKey] = []
 
-        def visit(key: FeatureKey):
+        # Build reverse dependency index for efficient lookup: feature_key -> list of dependents
+        # This avoids O(V) scans per node during traversal
+        reverse_deps: dict[FeatureKey, list[FeatureKey]] = {}
+        for feature_key, definition in self.feature_definitions_by_key.items():
+            if definition.spec.deps:
+                for dep in definition.spec.deps:
+                    dep_key = dep.feature
+                    if dep_key not in reverse_deps:
+                        reverse_deps[dep_key] = []
+                    reverse_deps[dep_key].append(feature_key)
+
+        def visit(key: FeatureKey) -> None:
             """DFS traversal."""
             if key in visited:
                 return
             visited.add(key)
 
-            # Find all features that depend on this one
-            for feature_key, definition in self.feature_definitions_by_key.items():
-                if definition.spec.deps:
-                    for dep in definition.spec.deps:
-                        if dep.feature == key:
-                            # This feature depends on 'key', so visit it
-                            visit(feature_key)
+            # Use the pre-built reverse dependency index for O(1) lookup
+            if key in reverse_deps:
+                for dependent in reverse_deps[key]:
+                    visit(dependent)
 
             post_order.append(key)
 
@@ -400,6 +406,137 @@ class FeatureGraph:
         # Remove sources from result, reverse to get topological order
         result = [k for k in reversed(post_order) if k not in source_set]
         return result
+
+    def get_upstream_features(self, sources: Sequence[CoercibleToFeatureKey]) -> list[FeatureKey]:
+        """Get all features upstream of sources (their dependencies), topologically sorted.
+
+        Performs a depth-first traversal of the dependency graph to find all
+        features that the source features transitively depend on.
+
+        Args:
+            sources: List of source feature keys. Each element can be string, sequence, FeatureKey, or BaseFeature class.
+
+        Returns:
+            List of upstream feature keys in topological order (dependencies first).
+            Does not include the source features themselves unless they are dependencies of other sources.
+
+        Example:
+            ```py
+            # DAG: a -> b -> d
+            #      a -> c -> d
+            graph.get_upstream_features([FeatureKey(["d"])])
+            # [FeatureKey(["a"]), FeatureKey(["b"]), FeatureKey(["c"])]
+
+            # Or use string notation
+            graph.get_upstream_features(["d"])
+            ```
+        """
+        validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
+
+        visited: set[FeatureKey] = set()
+        post_order: list[FeatureKey] = []
+
+        def visit(key: FeatureKey) -> None:
+            """DFS traversal following dependencies (upstream)."""
+            if key in visited:
+                return
+            visited.add(key)
+
+            definition = self.feature_definitions_by_key.get(key)
+            if definition and definition.spec.deps:
+                for dep in definition.spec.deps:
+                    visit(dep.feature)
+
+            post_order.append(key)
+
+        # Start DFS from the dependencies of each source, not from the sources themselves.
+        # This naturally excludes sources unless they're reached as dependencies of another source.
+        for source in validated_sources:
+            definition = self.feature_definitions_by_key.get(source)
+            if definition and definition.spec.deps:
+                for dep in definition.spec.deps:
+                    visit(dep.feature)
+
+        return post_order
+
+    def get_cascade_features(
+        self,
+        source: CoercibleToFeatureKey,
+        cascade: CascadeMode | str,
+    ) -> list[FeatureKey]:
+        """Get features to process for cascade operations.
+
+        Determines the ordered list of features based on cascade direction.
+
+        Args:
+            source: Source feature key. Can be string, sequence, FeatureKey, or BaseFeature class.
+            cascade: Cascade mode determining which features to include. Can be:
+                - CascadeMode.NONE or "none": Only the source feature
+                - CascadeMode.DOWNSTREAM or "downstream": Get dependents, order leaf-first (for deletion)
+                - CascadeMode.UPSTREAM or "upstream": Get dependencies, order root-first
+                - CascadeMode.BOTH or "both": Get both upstream and downstream
+
+        Returns:
+            List of feature keys in topological order appropriate for the cascade direction.
+            Includes the source feature.
+
+        Raises:
+            ValueError: If cascade is not a valid option.
+
+        Example:
+            ```py
+            from metaxy.models.types import CascadeMode
+
+            # DAG: a -> b -> c
+            graph.get_cascade_features("b", CascadeMode.DOWNSTREAM)
+            # [FeatureKey(["c"]), FeatureKey(["b"])]  # dependents first
+
+            graph.get_cascade_features("b", "upstream")
+            # [FeatureKey(["a"]), FeatureKey(["b"])]  # dependencies first
+
+            graph.get_cascade_features("b", CascadeMode.NONE)
+            # [FeatureKey(["b"])]  # only source
+            ```
+        """
+        # Convert string to CascadeMode if needed
+        if isinstance(cascade, str):
+            try:
+                cascade_mode = CascadeMode(cascade.lower())
+            except ValueError:
+                valid_options = [mode.value for mode in CascadeMode]
+                raise ValueError(
+                    f"Invalid cascade option: '{cascade}'. Valid options: {', '.join(valid_options)}"
+                ) from None
+        else:
+            if not isinstance(cascade, CascadeMode):
+                valid_options = [mode.value for mode in CascadeMode]
+                raise ValueError(
+                    f"Invalid cascade option type: {type(cascade)!r}. "
+                    f"Expected CascadeMode or str with one of: {', '.join(valid_options)}"
+                )
+            cascade_mode = cascade
+
+        # Validate and coerce the source key
+        validated_source = ValidatedFeatureKeyAdapter.validate_python(source)
+
+        if cascade_mode == CascadeMode.NONE:
+            return [validated_source]
+
+        if cascade_mode == CascadeMode.DOWNSTREAM:
+            downstream = self.get_downstream_features([validated_source])
+            features = downstream + [validated_source]
+            return self.topological_sort_features(features, descending=True)
+
+        if cascade_mode == CascadeMode.UPSTREAM:
+            upstream = self.get_upstream_features([validated_source])
+            features = upstream + [validated_source]
+            return self.topological_sort_features(features, descending=False)
+
+        # cascade_mode == CascadeMode.BOTH
+        upstream = self.get_upstream_features([validated_source])
+        downstream = self.get_downstream_features([validated_source])
+        features = upstream + [validated_source] + downstream
+        return self.topological_sort_features(features, descending=False)
 
     def topological_sort_features(
         self,
@@ -484,6 +621,63 @@ class FeatureGraph:
         if descending:
             return list(reversed(result))
         return result
+
+    def get_cascade_deletion_order(
+        self,
+        feature_key: FeatureKey,
+        cascade: CascadeMode,
+    ) -> list[FeatureKey]:
+        """Get features to delete in cascade order.
+
+        Determines which features to delete based on cascade mode and returns them
+        in the correct deletion order (dependents before dependencies for safe deletion).
+
+        Args:
+            feature_key: The primary feature to delete
+            cascade: Cascade mode determining which related features to include
+
+        Returns:
+            List of features in deletion order (dependents first, dependencies last)
+
+        Example:
+            ```py
+            graph = FeatureGraph.get_active()
+            # Get deletion order for downstream cascade
+            features = graph.get_cascade_deletion_order(FeatureKey(["video", "raw"]), CascadeMode.DOWNSTREAM)
+            ```
+        """
+        features_to_delete: list[FeatureKey] = []
+
+        if cascade == CascadeMode.DOWNSTREAM:
+            # Get all downstream features (dependents)
+            downstream = self.get_downstream_features([feature_key])
+            # Include self
+            features_to_delete = downstream + [feature_key]
+            # Sort in reverse topological order for safe deletion (dependents before dependencies)
+            features_to_delete = self.topological_sort_features(features_to_delete, descending=True)
+
+        elif cascade == CascadeMode.UPSTREAM:
+            # Get all upstream features (dependencies) recursively
+            upstream = self.get_upstream_features([feature_key])
+            # Include self
+            features_to_delete = upstream + [feature_key]
+            # Sort in reverse topological order for safe deletion (dependents before dependencies)
+            features_to_delete = self.topological_sort_features(features_to_delete, descending=True)
+
+        elif cascade == CascadeMode.BOTH:
+            # Get both upstream and downstream
+            upstream_keys = self.get_upstream_features([feature_key])
+            downstream_keys = self.get_downstream_features([feature_key])
+
+            # Combine: dependents -> self -> deps
+            features_to_delete = downstream_keys + [feature_key] + upstream_keys
+            # Sort in reverse topological order for safe deletion (dependents before dependencies)
+            features_to_delete = self.topological_sort_features(features_to_delete, descending=True)
+
+        else:  # CascadeMode.NONE
+            features_to_delete = [feature_key]
+
+        return features_to_delete
 
     def _compute_project_version(
         self,

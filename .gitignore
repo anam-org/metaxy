@@ -49,3 +49,4 @@ devenv.local.yaml
 # direnv
 .devenv/
 .devenv.flake.nix
+docs/slides/node_modules/

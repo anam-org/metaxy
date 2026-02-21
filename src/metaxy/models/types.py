@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -27,6 +28,23 @@ from metaxy._decorators import public
 
 if TYPE_CHECKING:
     from typing_extensions import Self
+
+
+class CascadeMode(str, Enum):
+    """Cascade mode for deletion operations.
+
+    Attributes:
+        NONE: No cascading - only delete the specified feature
+        DOWNSTREAM: Cascade to dependents (features that depend on the selected feature)
+        UPSTREAM: Cascade to dependencies (features that the selected feature depends on)
+        BOTH: Cascade to both dependencies and dependents
+    """
+
+    NONE = "none"
+    DOWNSTREAM = "downstream"
+    UPSTREAM = "upstream"
+    BOTH = "both"
+
 
 KEY_SEPARATOR = "/"
 
