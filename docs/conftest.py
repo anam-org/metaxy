@@ -237,6 +237,7 @@ pytest_collect_file = Sybil(
         # Integration pages that require external infrastructure
         "integrations/metadata-stores/databases/clickhouse.md",  # Requires ClickHouse server
         "integrations/metadata-stores/databases/bigquery.md",  # Requires BigQuery
+        "integrations/metadata-stores/databases/postgresql.md",  # Requires PostgreSQL server
         "integrations/compute/ray.md",  # Requires Ray cluster
         "integrations/ai/*",  # AI integrations
         # Plugin pages with complex setup requirements
