@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any, TypeVar, overload
 
 import dagster as dg
@@ -5,7 +6,6 @@ from dagster._core.definitions.events import (
     CoercibleToAssetKey,
     CoercibleToAssetKeyPrefix,
 )
-from typing_extensions import Self
 
 import metaxy as mx
 from metaxy._decorators import public
@@ -27,12 +27,83 @@ from metaxy.ext.dagster.utils import (
     get_asset_key_for_metaxy_feature_spec,
 )
 
-_T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
+_TAsset = TypeVar("_TAsset", dg.AssetsDefinition, dg.AssetSpec)
+
+
+class _MetaxifyDecorator:
+    """Internal callable decorator for `metaxify(...)` with configured options."""
+
+    key: dg.AssetKey | None
+    key_prefix: dg.AssetKey | None
+    inject_metaxy_kind: bool
+    inject_code_version: bool
+    set_description: bool
+    inject_column_schema: bool
+    inject_column_lineage: bool
+
+    def __init__(
+        self,
+        *,
+        key: dg.AssetKey | None,
+        key_prefix: dg.AssetKey | None,
+        inject_metaxy_kind: bool,
+        inject_code_version: bool,
+        set_description: bool,
+        inject_column_schema: bool,
+        inject_column_lineage: bool,
+    ) -> None:
+        self.key = key
+        self.key_prefix = key_prefix
+        self.inject_metaxy_kind = inject_metaxy_kind
+        self.inject_code_version = inject_code_version
+        self.set_description = set_description
+        self.inject_column_schema = inject_column_schema
+        self.inject_column_lineage = inject_column_lineage
+
+    def __call__(self, asset: _TAsset) -> _TAsset:
+        return _transform_asset(
+            asset,
+            key=self.key,
+            key_prefix=self.key_prefix,
+            inject_metaxy_kind=self.inject_metaxy_kind,
+            inject_code_version=self.inject_code_version,
+            set_description=self.set_description,
+            inject_column_schema=self.inject_column_schema,
+            inject_column_lineage=self.inject_column_lineage,
+        )
+
+
+@overload
+def metaxify(_asset: _TAsset) -> _TAsset: ...
+
+
+@overload
+def metaxify(
+    _asset: None = None,
+    *,
+    key: CoercibleToAssetKey | None = None,
+    key_prefix: CoercibleToAssetKeyPrefix | None = None,
+    inject_metaxy_kind: bool = True,
+    inject_code_version: bool = True,
+    set_description: bool = True,
+    inject_column_schema: bool = True,
+    inject_column_lineage: bool = True,
+) -> Callable[[_TAsset], _TAsset]: ...
 
 
 @public
-class metaxify:
-    """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition] or [`AssetSpec`][dg.AssetSpec].
+def metaxify(
+    _asset: _TAsset | None = None,
+    *,
+    key: CoercibleToAssetKey | None = None,
+    key_prefix: CoercibleToAssetKeyPrefix | None = None,
+    inject_metaxy_kind: bool = True,
+    inject_code_version: bool = True,
+    set_description: bool = True,
+    inject_column_schema: bool = True,
+    inject_column_lineage: bool = True,
+) -> "_TAsset | Callable[[_TAsset], _TAsset]":
+    """Inject Metaxy metadata into Dagster assets and asset specs.
 
     Affects assets with `metaxy/feature` metadata set.
 
@@ -124,162 +195,91 @@ class metaxify:
         def my_feature_dataset_b(): ...
         ```
     """
+    if key is not None and key_prefix is not None:
+        raise ValueError("Cannot specify both `key` and `key_prefix`")
 
-    key: dg.AssetKey | None
-    key_prefix: dg.AssetKey | None
-    inject_metaxy_kind: bool
-    inject_code_version: bool
-    set_description: bool
-    inject_column_schema: bool
-    inject_column_lineage: bool
+    coerced_key = dg.AssetKey.from_coercible(key) if key is not None else None
+    coerced_key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
 
-    def __init__(
-        self,
-        _asset: "_T | None" = None,
-        *,
-        key: CoercibleToAssetKey | None = None,
-        key_prefix: CoercibleToAssetKeyPrefix | None = None,
-        inject_metaxy_kind: bool = True,
-        inject_code_version: bool = True,
-        set_description: bool = True,
-        inject_column_schema: bool = True,
-        inject_column_lineage: bool = True,
-    ) -> None:
-        # Actual initialization happens in __new__, but we set defaults here for type checkers
-        self.key = dg.AssetKey.from_coercible(key) if key is not None else None
-        self.key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
-        self.inject_metaxy_kind = inject_metaxy_kind
-        self.inject_code_version = inject_code_version
-        self.set_description = set_description
-        self.inject_column_schema = inject_column_schema
-        self.inject_column_lineage = inject_column_lineage
+    if _asset is not None:
+        # Called as @metaxify without parentheses
+        return _transform_asset(
+            _asset,
+            key=coerced_key,
+            key_prefix=coerced_key_prefix,
+            inject_metaxy_kind=inject_metaxy_kind,
+            inject_code_version=inject_code_version,
+            set_description=set_description,
+            inject_column_schema=inject_column_schema,
+            inject_column_lineage=inject_column_lineage,
+        )
 
-    @overload
-    def __new__(cls, _asset: _T) -> _T: ...
+    # Called as @metaxify(...) with parentheses/kwargs
+    return _MetaxifyDecorator(
+        key=coerced_key,
+        key_prefix=coerced_key_prefix,
+        inject_metaxy_kind=inject_metaxy_kind,
+        inject_code_version=inject_code_version,
+        set_description=set_description,
+        inject_column_schema=inject_column_schema,
+        inject_column_lineage=inject_column_lineage,
+    )
 
-    @overload
-    def __new__(
-        cls,
-        _asset: None = None,
-        *,
-        key: CoercibleToAssetKey | None = None,
-        key_prefix: CoercibleToAssetKeyPrefix | None = None,
-        inject_metaxy_kind: bool = True,
-        inject_code_version: bool = True,
-        set_description: bool = True,
-        inject_column_schema: bool = True,
-        inject_column_lineage: bool = True,
-    ) -> Self: ...
 
-    def __new__(
-        cls,
-        _asset: _T | None = None,
-        *,
-        key: CoercibleToAssetKey | None = None,
-        key_prefix: CoercibleToAssetKeyPrefix | None = None,
-        inject_metaxy_kind: bool = True,
-        inject_code_version: bool = True,
-        set_description: bool = True,
-        inject_column_schema: bool = True,
-        inject_column_lineage: bool = True,
-    ) -> "Self | _T":
-        if key is not None and key_prefix is not None:
-            raise ValueError("Cannot specify both `key` and `key_prefix`")
-
-        coerced_key = dg.AssetKey.from_coercible(key) if key is not None else None
-        coerced_key_prefix = dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
-
-        if _asset is not None:
-            # Called as @metaxify without parentheses
-            return cls._transform(
-                _asset,
-                key=coerced_key,
-                key_prefix=coerced_key_prefix,
-                inject_metaxy_kind=inject_metaxy_kind,
-                inject_code_version=inject_code_version,
-                set_description=set_description,
-                inject_column_schema=inject_column_schema,
-                inject_column_lineage=inject_column_lineage,
-            )
-
-        # Called as @metaxify() with parentheses - return instance for __call__
-        instance = object.__new__(cls)
-        instance.key = coerced_key
-        instance.key_prefix = coerced_key_prefix
-        instance.inject_metaxy_kind = inject_metaxy_kind
-        instance.inject_code_version = inject_code_version
-        instance.set_description = set_description
-        instance.inject_column_schema = inject_column_schema
-        instance.inject_column_lineage = inject_column_lineage
-        return instance
-
-    def __call__(self, asset: _T) -> _T:
-        return self._transform(
+def _transform_asset(
+    asset: _TAsset,
+    *,
+    key: dg.AssetKey | None,
+    key_prefix: dg.AssetKey | None,
+    inject_metaxy_kind: bool,
+    inject_code_version: bool,
+    set_description: bool,
+    inject_column_schema: bool,
+    inject_column_lineage: bool,
+) -> _TAsset:
+    """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
+    if isinstance(asset, dg.AssetSpec):
+        return _metaxify_spec(  # ty: ignore[invalid-return-type]
             asset,
-            key=self.key,
-            key_prefix=self.key_prefix,
-            inject_metaxy_kind=self.inject_metaxy_kind,
-            inject_code_version=self.inject_code_version,
-            set_description=self.set_description,
-            inject_column_schema=self.inject_column_schema,
-            inject_column_lineage=self.inject_column_lineage,
+            key=key,
+            key_prefix=key_prefix,
+            inject_metaxy_kind=inject_metaxy_kind,
+            inject_code_version=inject_code_version,
+            set_description=set_description,
+            inject_column_schema=inject_column_schema,
+            inject_column_lineage=inject_column_lineage,
         )
 
-    @staticmethod
-    def _transform(
-        asset: _T,
-        *,
-        key: dg.AssetKey | None,
-        key_prefix: dg.AssetKey | None,
-        inject_metaxy_kind: bool,
-        inject_code_version: bool,
-        set_description: bool,
-        inject_column_schema: bool,
-        inject_column_lineage: bool,
-    ) -> _T:
-        """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
-        if isinstance(asset, dg.AssetSpec):
-            return _metaxify_spec(  # ty: ignore[invalid-return-type]
-                asset,
-                key=key,
-                key_prefix=key_prefix,
-                inject_metaxy_kind=inject_metaxy_kind,
-                inject_code_version=inject_code_version,
-                set_description=set_description,
-                inject_column_schema=inject_column_schema,
-                inject_column_lineage=inject_column_lineage,
-            )
-
-        # Handle AssetsDefinition
-        # Validate that key argument is not used with multi-asset
-        if key is not None and len(asset.keys) > 1:
-            raise ValueError(
-                f"Cannot use `key` argument with multi-asset `{asset.node_def.name}` "
-                f"that produces {len(asset.keys)} outputs. "
-                f"Use `key_prefix` instead to apply a common prefix to all outputs."
-            )
-
-        keys_to_replace: dict[dg.AssetKey, dg.AssetKey] = {}
-        transformed_specs: list[dg.AssetSpec] = []
-
-        for orig_key, asset_spec in asset.specs_by_key.items():
-            new_spec = _metaxify_spec(
-                asset_spec,
-                key=key,
-                key_prefix=key_prefix,
-                inject_metaxy_kind=inject_metaxy_kind,
-                inject_code_version=inject_code_version,
-                set_description=set_description,
-                inject_column_schema=inject_column_schema,
-                inject_column_lineage=inject_column_lineage,
-            )
-            if new_spec.key != orig_key:
-                keys_to_replace[orig_key] = new_spec.key
-            transformed_specs.append(new_spec)
-
-        return _replace_specs_on_assets_definition(  # ty: ignore[invalid-return-type]
-            asset, transformed_specs, keys_to_replace
+    # Handle AssetsDefinition
+    # Validate that key argument is not used with multi-asset
+    if key is not None and len(asset.keys) > 1:
+        raise ValueError(
+            f"Cannot use `key` argument with multi-asset `{asset.node_def.name}` "
+            f"that produces {len(asset.keys)} outputs. "
+            f"Use `key_prefix` instead to apply a common prefix to all outputs."
         )
+
+    keys_to_replace: dict[dg.AssetKey, dg.AssetKey] = {}
+    transformed_specs: list[dg.AssetSpec] = []
+
+    for orig_key, asset_spec in asset.specs_by_key.items():
+        new_spec = _metaxify_spec(
+            asset_spec,
+            key=key,
+            key_prefix=key_prefix,
+            inject_metaxy_kind=inject_metaxy_kind,
+            inject_code_version=inject_code_version,
+            set_description=set_description,
+            inject_column_schema=inject_column_schema,
+            inject_column_lineage=inject_column_lineage,
+        )
+        if new_spec.key != orig_key:
+            keys_to_replace[orig_key] = new_spec.key
+        transformed_specs.append(new_spec)
+
+    return _replace_specs_on_assets_definition(  # ty: ignore[invalid-return-type]
+        asset, transformed_specs, keys_to_replace
+    )
 
 
 def _replace_specs_on_assets_definition(
