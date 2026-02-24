@@ -133,8 +133,9 @@ Once processing is complete, the caller is expected to call `MetadataStore.write
 ## Deletes
 
 Metadata stores support deletions, which are not required during normal Metaxy operations (1).
+{ .annotate }
 
-1. deletions might be necessary when working with [expansion linear relationships](./definitions/relationship.md).
+1. deletions might be necessary when working with [expansion linear relationships](./definitions/relationship.md) and re-computing samples without changing the feature version
 
 Here is an example of how a deletion would look like:
 
