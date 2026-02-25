@@ -38,6 +38,7 @@ from metaxy.models.types import FeatureKey, PushResult
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
     from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_selection import FeatureSelection
 
 
 class SystemTableStorage:
@@ -908,7 +909,7 @@ class SystemTableStorage:
     def _load_feature_definitions_raw(
         self,
         *,
-        projects: list[str] | None = None,
+        projects: Sequence[str] | None = None,
         filters: Sequence[nw.Expr] | None = None,
         graph: FeatureGraph | None = None,
     ) -> list[FeatureDefinition]:
@@ -936,6 +937,36 @@ class SystemTableStorage:
 
         return definitions
 
+    def resolve_selection(self, selection: FeatureSelection) -> list[FeatureDefinition]:
+        """Resolve a feature selection to definitions from the store.
+
+        Args:
+            selection: Describes which features to load.
+
+        Returns:
+            Matching definitions. Only features that exist in the store are
+            returned — missing keys are silently omitted.
+        """
+        if selection.all:
+            return self._definitions_from_dataframe(self._read_latest_features_by_project())
+
+        clauses: list[nw.Expr] = []
+
+        if selection.projects:
+            clauses.append(nw.col("project").is_in(selection.projects))
+        if selection.keys:
+            clauses.append(nw.col("feature_key").is_in(selection.keys))
+
+        if clauses:
+            expr = clauses[0]
+            for c in clauses[1:]:
+                expr = expr | c
+            filters = [expr]
+        else:
+            filters = None
+
+        return self._definitions_from_dataframe(self._read_latest_features_by_project(filters=filters))
+
     def _definitions_from_dataframe(self, features_df: pl.DataFrame) -> list[FeatureDefinition]:
         """Create FeatureDefinition objects from a features DataFrame.
 
@@ -962,7 +993,7 @@ class SystemTableStorage:
 
     def _read_latest_features_by_project(
         self,
-        projects: list[str] | None = None,
+        projects: Sequence[str] | None = None,
         *,
         filters: Sequence[nw.Expr] | None = None,
     ) -> pl.DataFrame:

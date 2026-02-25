@@ -1,11 +1,22 @@
 """Tests for loading feature definitions from metadata stores."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import narwhals as nw
+import pytest
 from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec, sync_external_features
+from metaxy import (
+    BaseFeature,
+    FeatureDep,
+    FeatureKey,
+    FeatureSelection,
+    FieldKey,
+    FieldSpec,
+    MetadataStore,
+    sync_external_features,
+)
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
@@ -1114,3 +1125,88 @@ def test_sync_external_features_warns_on_invalid_stored_feature(tmp_path: Path):
     invalid_warnings = [w for w in caught if w.category is InvalidStoredFeatureWarning]
     assert len(invalid_warnings) == 1
     assert "sync_test/corrupt" in str(invalid_warnings[0].message)
+
+
+# ── resolve_selection tests ──────────────────────────────────────────
+
+
+def _push_project(store: MetadataStore, project: str, keys: Sequence[str]) -> None:
+    """Define features for a project, push them to the store, then clear the graph."""
+    graph = FeatureGraph()
+    with graph.use():
+        for key in keys:
+            type(
+                f"_Feat_{key.replace('/', '_')}",
+                (BaseFeature,),
+                {"__metaxy_project__": project},
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(key),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            )
+        with store:
+            SystemTableStorage(store).push_graph_snapshot(project=project)
+
+
+@pytest.fixture
+def two_project_store(store: MetadataStore) -> MetadataStore:
+    """Store pre-populated with features from two projects."""
+    _push_project(store, "proj-a", ["sel/a1", "sel/a2"])
+    _push_project(store, "proj-b", ["sel/b1"])
+    return store
+
+
+class TestResolveSelection:
+    def test_by_projects(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(projects=["proj-a"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2")}
+
+    def test_by_multiple_projects(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(projects=["proj-a", "proj-b"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+    def test_by_keys(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(keys=["sel/a1", "sel/b1"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/b1")}
+
+    def test_by_keys_missing_ignored(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(keys=["sel/a1", "sel/nonexistent"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1")}
+
+    def test_all(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(all=True),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+    def test_empty_store(self, store: MetadataStore):
+        with store:
+            defs = SystemTableStorage(store).resolve_selection(
+                FeatureSelection(projects=["anything"]),
+            )
+        assert defs == []
+
+    def test_or_merges_projects_and_keys(self, two_project_store: MetadataStore):
+        sel = FeatureSelection(projects=["proj-a"]) | FeatureSelection(keys=["sel/b1"])
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(sel)
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+    def test_projects_and_keys_combined(self, two_project_store: MetadataStore):
+        sel = FeatureSelection(projects=["proj-a"], keys=["sel/b1"])
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(sel)
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
