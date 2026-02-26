@@ -7,16 +7,12 @@ including version mismatch detection and warning/error handling.
 from __future__ import annotations
 
 import warnings
-from contextlib import nullcontext
 from typing import TYPE_CHECKING, Literal
-
-import narwhals as nw
 
 from metaxy._decorators import public
 from metaxy._exceptions import ExternalFeatureVersionMismatchError
 from metaxy._warnings import (
     ExternalFeatureVersionMismatchWarning,
-    InvalidStoredFeatureWarning,
     UnresolvedExternalFeatureWarning,
 )
 from metaxy.models.feature import FeatureGraph
@@ -25,6 +21,7 @@ from metaxy.models.types import FeatureKey
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
     from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_selection import FeatureSelection
 
 
 def _format_field_mismatches(
@@ -122,23 +119,90 @@ def _check_version_mismatches(
         raise ExternalFeatureVersionMismatchError(message)
 
 
+def _load_selection(
+    store: MetadataStore,
+    selection: FeatureSelection,
+    graph: FeatureGraph,
+) -> list[FeatureDefinition]:
+    """Load features matching *selection* from the store into *graph*, including transitive deps."""
+    from metaxy.metadata_store.system import SystemTableStorage
+    from metaxy.models.feature_selection import FeatureSelection as FS
+
+    result: list[FeatureDefinition] = []
+    # Seed with non-external keys already in the graph so transitive dep
+    # resolution doesn't redundantly fetch features we already have.
+    loaded_keys: set[FeatureKey] = {
+        key for key, defn in graph.feature_definitions_by_key.items() if not defn.is_external
+    }
+
+    with store:
+        storage = SystemTableStorage(store)
+        current_selection: FS | None = selection
+
+        while current_selection is not None:
+            batch = storage.resolve_selection(current_selection)
+            for defn in batch:
+                if defn.key not in loaded_keys:
+                    result.append(defn)
+                    loaded_keys.add(defn.key)
+                    graph.add_feature_definition(defn, on_conflict="ignore")
+
+            # Discover transitive deps not yet in the graph
+            missing_keys = [
+                dep.feature
+                for defn in batch
+                for dep in defn.spec.deps
+                if dep.feature not in graph.feature_definitions_by_key
+            ]
+            current_selection = FS(keys=missing_keys) if missing_keys else None
+
+    return result
+
+
+def _filter_selection(
+    selection: FeatureSelection,
+    exclude_keys: set[FeatureKey],
+) -> FeatureSelection | None:
+    """Remove already-loaded keys from a selection.
+
+    Returns None if the filtered selection would be empty.
+    For project-based or all-based selections, returns unchanged since
+    we can't know which keys they expand to without hitting the store.
+    """
+    from metaxy.models.feature_selection import FeatureSelection as FS
+
+    # project-based or all-based selections can't be pre-filtered
+    if selection.all or selection.projects:
+        return selection
+
+    if selection.keys is not None:
+        remaining = [k for k in selection.keys if k not in exclude_keys]
+        if not remaining:
+            return None
+        return FS(keys=remaining)
+
+    return selection
+
+
 @public
 def sync_external_features(
     store: MetadataStore,
     *,
+    selection: FeatureSelection | None = None,
     on_version_mismatch: Literal["warn", "error"] | None = None,
 ) -> list[FeatureDefinition]:
-    """Sync external feature definitions from a metadata store if the graph has any.
+    """Sync external feature definitions from a metadata store into the active [`FeatureGraph`][metaxy.FeatureGraph].
 
-    This function loads feature definitions from the metadata store to replace
-    external feature placeholders in the active graph. It also validates that
-    the versions match and warns or errors on mismatches.
+    Replaces external feature placeholders in the active graph with real
+    definitions loaded from the store. Validates that versions match and
+    warns or errors on mismatches.
 
-    Additionally, this function loads any feature keys specified in the
-    `features` config field, warning if any of them are not found in the metadata store.
+    When *selection* is provided, the selected features are loaded in addition
+    to any external features already present in the graph.
 
     Args:
         store: Metadata store to load from. Will be opened automatically if not already open.
+        selection: Optional additional features to load from the store.
         on_version_mismatch: Optional override for the `on_version_mismatch` setting on external feature definitions.
 
             !!! info
@@ -156,24 +220,20 @@ def sync_external_features(
 
         # Or with explicit error handling
         mx.sync_external_features(store, on_version_mismatch="error")
+
+        # Load specific features by selection
+        mx.sync_external_features(store, selection=mx.FeatureSelection(projects=["upstream"]))
         ```
     """
     from metaxy.config import MetaxyConfig
-    from metaxy.metadata_store.system import SystemTableStorage
+    from metaxy.models.feature_selection import FeatureSelection as FS
 
     graph = FeatureGraph.get_active()
     config = MetaxyConfig.get(_allow_default_config=True)
 
-    if not graph.has_external_features:
-        return []
-
-    # Check if locked mode is enabled
-    if config.locked:
-        on_version_mismatch = "error"
-
-    # Record versions of external features BEFORE loading
+    # Collect external feature keys
     external_versions_before: dict[FeatureKey, tuple[str, dict[str, str], FeatureDefinition]] = {}
-    external_keys: list[str] = []
+    external_keys: list[FeatureKey] = []
     for key, defn in graph.feature_definitions_by_key.items():
         if defn.is_external:
             external_versions_before[key] = (
@@ -181,24 +241,32 @@ def sync_external_features(
                 graph.get_feature_version_by_field(key),
                 defn,
             )
-            external_keys.append(key.to_string())
+            external_keys.append(key)
 
-    # Use nullcontext if store is already open, otherwise open it
-    cm = nullcontext(store) if store._is_open else store
-    result: list[FeatureDefinition] = []
-    with cm:
-        storage = SystemTableStorage(store)
-        for key_str in external_keys:
-            try:
-                loaded = storage._load_feature_definitions_raw(
-                    filters=[nw.col("feature_key") == key_str],
-                )
-                result.extend(loaded)
-            except Exception as e:
-                warnings.warn(
-                    f"Skipping feature '{key_str}': failed to load from store: {e}",
-                    InvalidStoredFeatureWarning,
-                )
+    # Build combined selection: external keys + user-provided selection
+    # Filter selection keys that are already non-external in the graph to avoid
+    # unnecessary store I/O.
+    non_external_keys = {key for key, defn in graph.feature_definitions_by_key.items() if not defn.is_external}
+    if selection is not None:
+        selection = _filter_selection(selection, non_external_keys)
+
+    parts: list[FS] = []
+    if external_keys:
+        parts.append(FS(keys=external_keys))
+    if selection is not None:
+        parts.append(selection)
+
+    if not parts:
+        return []
+
+    combined: FS = parts[0]
+    for part in parts[1:]:
+        combined = combined | part
+
+    if config.locked:
+        on_version_mismatch = "error"
+
+    result = _load_selection(store, combined, graph)
 
     # Check for version mismatches
     _check_version_mismatches(graph, external_versions_before, on_version_mismatch)

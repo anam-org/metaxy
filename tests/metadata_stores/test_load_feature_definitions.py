@@ -1210,3 +1210,159 @@ class TestResolveSelection:
         with two_project_store:
             defs = SystemTableStorage(two_project_store).resolve_selection(sel)
         assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+
+# ── sync_external_features with selection tests ──────────────────────
+
+
+def _push_project_with_deps(
+    store: MetadataStore,
+    project: str,
+    features: dict[str, list[str]],
+) -> None:
+    """Push features with optional deps.
+
+    Args:
+        store: Target store.
+        project: Project name for all features.
+        features: Mapping of feature key to list of dep keys (empty list = no deps).
+    """
+    g = FeatureGraph()
+    with g.use():
+        for key, deps in features.items():
+            type(
+                f"_Feat_{key.replace('/', '_')}",
+                (BaseFeature,),
+                {"__metaxy_project__": project},
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(key),
+                    deps=[FeatureDep(feature=d) for d in deps],
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            )
+        with store:
+            SystemTableStorage(store).push_graph_snapshot(project=project)
+
+
+class TestSyncWithSelection:
+    def test_by_projects(self, store: MetadataStore):
+        """Selection loads all features from the specified projects."""
+        _push_project(store, "upstream", ["load/a", "load/b"])
+
+        result = sync_external_features(store, selection=FeatureSelection(projects=["upstream"]))
+        assert {d.key for d in result} == {FeatureKey("load/a"), FeatureKey("load/b")}
+
+    def test_by_keys(self, store: MetadataStore):
+        """Selection loads only the specified keys."""
+        _push_project(store, "upstream", ["load/x", "load/y", "load/z"])
+
+        result = sync_external_features(store, selection=FeatureSelection(keys=["load/x", "load/z"]))
+        assert {d.key for d in result} == {FeatureKey("load/x"), FeatureKey("load/z")}
+
+    def test_all(self, store: MetadataStore):
+        """Selection with all=True loads every feature in the store."""
+        _push_project(store, "proj-a", ["load/a1"])
+        _push_project(store, "proj-b", ["load/b1"])
+
+        result = sync_external_features(store, selection=FeatureSelection(all=True))
+        assert {d.key for d in result} == {FeatureKey("load/a1"), FeatureKey("load/b1")}
+
+    def test_adds_to_graph(self, store: MetadataStore, graph: FeatureGraph):
+        """Loaded features are added to the active graph."""
+        _push_project(store, "upstream", ["load/added"])
+
+        assert FeatureKey("load/added") not in graph.feature_definitions_by_key
+
+        sync_external_features(store, selection=FeatureSelection(keys=["load/added"]))
+
+        assert FeatureKey("load/added") in graph.feature_definitions_by_key
+        assert graph.feature_definitions_by_key[FeatureKey("load/added")].is_external is False
+
+    def test_transitive_deps_resolved(self, store: MetadataStore):
+        """Transitive deps are loaded iteratively."""
+        _push_project_with_deps(
+            store,
+            "upstream",
+            {
+                "chain/c": [],
+                "chain/b": ["chain/c"],
+                "chain/a": ["chain/b"],
+            },
+        )
+
+        result = sync_external_features(store, selection=FeatureSelection(keys=["chain/a"]))
+        assert {d.key for d in result} == {
+            FeatureKey("chain/a"),
+            FeatureKey("chain/b"),
+            FeatureKey("chain/c"),
+        }
+
+    def test_transitive_deps_already_in_graph_not_reloaded(self, store: MetadataStore, graph: FeatureGraph):
+        """Deps already present in the graph are not re-fetched."""
+        _push_project_with_deps(
+            store,
+            "upstream",
+            {
+                "dep/base": [],
+                "dep/top": ["dep/base"],
+            },
+        )
+
+        sync_external_features(store, selection=FeatureSelection(keys=["dep/base"]))
+        assert FeatureKey("dep/base") in graph.feature_definitions_by_key
+
+        result = sync_external_features(store, selection=FeatureSelection(keys=["dep/top"]))
+        result_keys = {d.key for d in result}
+        assert FeatureKey("dep/top") in result_keys
+        assert FeatureKey("dep/base") not in result_keys
+
+    def test_sync_replaces_external_placeholders(self, store: MetadataStore, graph: FeatureGraph):
+        """sync_external_features replaces external placeholders with real definitions."""
+        _push_project(store, "upstream", ["sync/ext"])
+
+        external = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey("sync/ext"),
+                fields=[FieldSpec(key=FieldKey(["v"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        graph.add_feature_definition(external)
+
+        result = sync_external_features(store)
+
+        assert len(result) == 1
+        assert result[0].key == FeatureKey("sync/ext")
+        assert graph.feature_definitions_by_key[FeatureKey("sync/ext")].is_external is False
+
+    def test_sync_no_externals_no_selection_returns_empty(self, store: MetadataStore):
+        """sync_external_features with no external features and no selection returns empty list."""
+        _push_project(store, "upstream", ["sync/noop"])
+
+        result = sync_external_features(store)
+        assert result == []
+
+    def test_sync_warns_unresolved(self, store: MetadataStore, graph: FeatureGraph):
+        """sync_external_features warns about external keys not found in the store."""
+        import warnings
+
+        from metaxy._warnings import UnresolvedExternalFeatureWarning
+
+        external = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey("sync/ghost"),
+                fields=[FieldSpec(key=FieldKey(["v"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        graph.add_feature_definition(external)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            sync_external_features(store)
+
+        unresolved = [w for w in caught if w.category is UnresolvedExternalFeatureWarning]
+        assert len(unresolved) == 1
+        assert "sync/ghost" in str(unresolved[0].message)

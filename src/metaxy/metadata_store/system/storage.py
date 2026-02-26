@@ -970,26 +970,40 @@ class SystemTableStorage:
     def _definitions_from_dataframe(self, features_df: pl.DataFrame) -> list[FeatureDefinition]:
         """Create FeatureDefinition objects from a features DataFrame.
 
+        Rows that fail to deserialize are warned about and skipped.
+
         Args:
             features_df: DataFrame with feature_spec, feature_schema, feature_class_path,
                 and project columns.
 
         Returns:
-            List of FeatureDefinition objects.
+            List of successfully deserialized FeatureDefinition objects.
         """
+        import warnings
+
+        from metaxy._warnings import InvalidStoredFeatureWarning
         from metaxy.models.feature_definition import FeatureDefinition
 
         source = str(self.store)
-        return [
-            FeatureDefinition.from_stored_data(
-                feature_spec=row["feature_spec"],
-                feature_schema=row["feature_schema"],
-                feature_class_path=row["feature_class_path"],
-                project=row["project"],
-                source=source,
-            )
-            for row in features_df.iter_rows(named=True)
-        ]
+        definitions: list[FeatureDefinition] = []
+        for row in features_df.iter_rows(named=True):
+            try:
+                definitions.append(
+                    FeatureDefinition.from_stored_data(
+                        feature_spec=row["feature_spec"],
+                        feature_schema=row["feature_schema"],
+                        feature_class_path=row["feature_class_path"],
+                        project=row["project"],
+                        source=source,
+                    )
+                )
+            except Exception as e:
+                feature_key = row.get("feature_key", "<unknown>")
+                warnings.warn(
+                    f"Skipping feature '{feature_key}': failed to load from store: {e}",
+                    InvalidStoredFeatureWarning,
+                )
+        return definitions
 
     def _read_latest_features_by_project(
         self,
