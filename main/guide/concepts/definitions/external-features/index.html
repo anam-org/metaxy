@@ -1095,6 +1095,45 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#loading-extra-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading Extra Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Loading Extra Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-sync_external_features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via sync_external_features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-metaxy-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via Metaxy configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3620,6 +3659,45 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#loading-extra-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading Extra Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Loading Extra Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-sync_external_features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via sync_external_features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-metaxy-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via Metaxy configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3756,7 +3834,7 @@ External feature definitions are stored in a <code>metaxy.lock</code> file and a
 </div>
 </li>
 <li>
-<p>Run <code>metaxy lock</code> in the current Metaxy project - this pulls <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store into a <code>metaxy.lock</code> file. Only explicit feature dependencies are pulled in. Subsequent <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.init"><code>metaxy.init</code></a> calls will now automatically add these feature definitions to the feature graph.</p>
+<p>Run <code>metaxy lock</code> in the current Metaxy project - this pulls <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store into a <code>metaxy.lock</code> file. Only explicit feature dependencies are pulled in (plus any <a href="#loading-extra-features"><code>extra_features</code></a> configured in <code>metaxy.toml</code>). Subsequent <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.init&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.init"><code>metaxy.init</code></a> calls will now automatically add these feature definitions to the feature graph.</p>
 </li>
 </ol>
 <div class="admonition example">
@@ -3837,6 +3915,36 @@ External feature definitions are stored in a <code>metaxy.lock</code> file and a
 because <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.sync_external_features"><code>sync_external_features</code></a> is very lightweight on the first call and a no-op on subsequent calls.
 It only does anything if the current feature graph does not contain any <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external features</abbr>.</p>
 </div>
+<h3 id="loading-extra-features">Loading Extra Features<a class="headerlink" href="#loading-extra-features" title="Permanent link">&para;</a></h3>
+<p>Sometimes a project needs access to feature definitions it does not directly depend on. For example, a dashboard service might display metadata for features produced by other projects without computing any features itself. Since these feature definitions are not referenced via <code>deps=</code>, they would not normally be pulled into the graph.</p>
+<h4 id="via-sync_external_features">Via <code>sync_external_features</code><a class="headerlink" href="#via-sync_external_features" title="Permanent link">&para;</a></h4>
+<p>The first option is to do it manually by providing a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSelection&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../../reference/api/definitions/feature-selection/#metaxy.FeatureSelection"><code>FeatureSelection</code></a> to <code>sync_external_features</code>.</p>
+<h4 id="via-metaxy-configuration">Via <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr><a class="headerlink" href="#via-metaxy-configuration" title="Permanent link">&para;</a></h4>
+<p>The <code>[[extra_features]]</code> section in <code>metaxy.toml</code> can be used to declare additional feature definitions to load from the metadata store. Each entry is a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.FeatureSelection&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt;" href="../../../../reference/api/definitions/feature-selection/#metaxy.FeatureSelection"><code>FeatureSelection</code></a>.</p>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my_dashboard&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">[[extra_features]]</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">projects</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;team_a&quot;</span><span class="p">]</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">[[extra_features]]</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">projects</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;team_b&quot;</span><span class="p">]</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">keys</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;shared/feature_x&quot;</span><span class="p">]</span>
+</span></code></pre></div>
+<p>To load every feature available in the metadata store:</p>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[[extra_features]]</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">all</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span></code></pre></div>
+<p>Multiple entries are combined together. The resulting selection is used automatically by <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.sync_external_features&lt;/span&gt;" href="../../../../reference/api/initialization/#metaxy.sync_external_features"><code>sync_external_features</code></a>, <code>metaxy lock</code>, and any operation that triggers a sync.</p>
 
 
 

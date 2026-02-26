@@ -3449,24 +3449,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    📝 Changelog
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -3483,64 +3465,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#010" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.1.0
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0.1.0">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#experimental" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Experimental
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -3565,53 +3489,6 @@
   
     
   
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#010" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0.1.0
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0.1.0">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Added
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#experimental" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Experimental
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -3652,10 +3529,25 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 <p>This functionality is experimental.</p>
 </div>
 </div>
+<h1 id="110">1.1.0<a class="headerlink" href="#110" title="Permanent link">&para;</a></h1>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>A new top-level <a href="../reference/configuration/#metaxy.config.MetaxyConfig.extra_features"><code>extra_features</code></a> configuration option has been added. It can be used to register additional <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store on the feature graph. Learn more <a href="../guide/concepts/definitions/external-features/#loading-extra-features">here</a>.</p>
+</li>
+<li>
+<p><a href="../integrations/metadata-stores/storage/ducklake/">DuckLake</a> integration has been revamped, tested, and documented. Thanks <a href="https://github.com/geoHeil">@geoHeil</a>!</p>
+</li>
+</ul>
+<h3 id="fixes">Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>(<img alt="💥" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f4a5.svg" title=":boom:" /> breaking) Fixed a bug where <code>MetadataStore</code> erroneously did not require being opened with <code>"w"</code> write mode before writing data</li>
+<li>Fixed a bug where <code>MetadataStore</code> would not properly handle nested context manager calls</li>
+</ul>
 <h2 id="010">0.1.0<a class="headerlink" href="#010" title="Permanent link">&para;</a></h2>
 <p>The first public Metaxy release <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" />!</p>
 <p>This release should be considered an <em>alpha</em> release: it is ready for production use and has been dogfooded internally at <a href="https://anam.ai">Anam.ai</a>, but we don't have any community feedback yet.</p>
-<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><a href="../guide/concepts/definitions/features/">Feature Definitions</a> and related models</p>
