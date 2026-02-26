@@ -28,6 +28,11 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 - [DuckLake](/integrations/metadata-stores/storage/ducklake.md) integration has been revamped, tested, and documented. Thanks [@geoHeil](https://github.com/geoHeil)!
 
+### Fixes
+
+- (:boom: breaking) Fixed a bug where `MetadataStore` erroneously did not require being opened with `"w"` write mode before writing data
+- Fixed a bug where `MetadataStore` would not properly handle nested context manager calls
+
 <!-- --8<-- [start:releases] -->
 
 ## 0.1.0

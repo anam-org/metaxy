@@ -212,7 +212,7 @@ class MetadataStore(ABC):
         self._mode_stack: list[AccessMode] = []
         self._versioning_engine = versioning_engine
         self._materialization_id = materialization_id
-        self._open_cm: AbstractContextManager[Self] | None = None
+        self._exit_stack: list[AbstractContextManager[Any]] = []
         self._transaction_timestamp: datetime | None = None
         self._soft_delete_in_progress: bool = False
 
@@ -1261,9 +1261,9 @@ class MetadataStore(ABC):
         Returns:
             Self: The opened store instance
         """
-        self._open_cm = self.open("r")  # ty: ignore[invalid-assignment]
-        self._open_cm.__enter__()  # ty: ignore[possibly-missing-attribute]
-
+        cm = self.open("r")
+        cm.__enter__()
+        self._exit_stack.append(cm)
         return self
 
     def _validate_after_open(self) -> None:
@@ -1290,14 +1290,8 @@ class MetadataStore(ABC):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        # Delegate to open()'s context manager (which manages _context_depth)
-        if self._open_cm is not None:
-            self._open_cm.__exit__(exc_type, exc_val, exc_tb)
-            self._open_cm = None
-
-    @property
-    def _context_depth(self) -> int:
-        return len(self._mode_stack)
+        if self._exit_stack:
+            self._exit_stack.pop().__exit__(exc_type, exc_val, exc_tb)
 
     @property
     def _access_mode(self) -> AccessMode:

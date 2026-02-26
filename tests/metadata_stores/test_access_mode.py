@@ -422,3 +422,109 @@ def test_nested_write_mode_restores(tmp_path: Path, test_graph, test_features: d
         )
         with pytest.raises(StoreNotOpenError, match="open in read mode"):
             store.write(test_features["UpstreamFeatureA"], metadata)
+
+
+# ========== Nested __enter__/__exit__ (with store:) tests ==========
+
+
+def test_nested_with_store_read_read(tmp_path: Path) -> None:
+    """Nested `with store:` inside `with store:` keeps store open after inner exit."""
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    with store:
+        assert store._is_open
+        assert len(store._mode_stack) == 1
+
+        with store:
+            assert store._is_open
+            assert len(store._mode_stack) == 2
+            assert store._access_mode == "r"
+
+        # After inner exit, store remains open at outer depth
+        assert store._is_open
+        assert len(store._mode_stack) == 1
+        assert store._access_mode == "r"
+
+    assert not store._is_open
+    assert len(store._mode_stack) == 0
+
+
+def test_nested_with_store_write_read(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+    """Nested `with store:` (read) inside `with store.open("w"):` preserves write mode after inner exit."""
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    with store.open("w"):
+        assert store._is_open
+        assert store._access_mode == "w"
+
+        with store:
+            assert store._is_open
+            assert len(store._mode_stack) == 2
+            assert store._access_mode == "r"
+
+        # After inner read exit, write mode is restored
+        assert store._is_open
+        assert len(store._mode_stack) == 1
+        assert store._access_mode == "w"
+
+        # Write still works in outer context
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": ["s1"],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+            }
+        )
+        store.write(test_features["UpstreamFeatureA"], metadata)
+
+    assert not store._is_open
+
+
+def test_nested_three_levels_deep(tmp_path: Path) -> None:
+    """Three levels of nesting unwind correctly."""
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    with store:
+        assert len(store._mode_stack) == 1
+
+        with store:
+            assert len(store._mode_stack) == 2
+
+            with store:
+                assert len(store._mode_stack) == 3
+                assert store._is_open
+
+            assert len(store._mode_stack) == 2
+            assert store._is_open
+
+        assert len(store._mode_stack) == 1
+        assert store._is_open
+
+    assert len(store._mode_stack) == 0
+    assert not store._is_open
+
+
+def test_nested_with_store_exit_stack_cleanup(tmp_path: Path) -> None:
+    """Exit stack is empty after all contexts exit."""
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    assert len(store._exit_stack) == 0
+
+    with store:
+        assert len(store._exit_stack) == 1
+
+        with store:
+            assert len(store._exit_stack) == 2
+
+        assert len(store._exit_stack) == 1
+
+    assert len(store._exit_stack) == 0
+
+
+def test_nested_with_store_exception_in_inner(tmp_path: Path) -> None:
+    """Inner exception properly unwinds both nesting levels."""
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+
+    with pytest.raises(ValueError, match="test error"):
+        with store:
+            with store:
+                raise ValueError("test error")
+
+    assert not store._is_open
+    assert len(store._mode_stack) == 0
+    assert len(store._exit_stack) == 0
