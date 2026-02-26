@@ -4119,7 +4119,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
-<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> fetched from the metadata store.</li>
+<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</li>
 <li><a href="#metaxy-mcp"><code>mcp</code></a>: <a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata in metadata stores.</li>
 <li><a href="#metaxy-push"><code>push</code></a>: Push feature definitions to the metadata store</li>
@@ -4159,6 +4159,11 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="go">metaxy config print [OPTIONS]</span>
 </span></code></pre></div>
 <p>Print the current <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>config<span class="w"> </span>print
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>config<span class="w"> </span>print<span class="w"> </span>--format<span class="w"> </span>json
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--format, -f</code>: Output format: 'toml' (with syntax highlighting) or 'json'.  <em>[choices: toml, json]</em>  <em>[default: toml]</em></li>
@@ -4174,7 +4179,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-describe-graph">metaxy describe graph<a class="headerlink" href="#metaxy-describe-graph" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="go">metaxy describe graph [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy describe graph [ARGS]</span>
 </span></code></pre></div>
 <p>Describe a graph snapshot.</p>
 <p>Shows detailed information about a graph snapshot including:
@@ -4183,17 +4188,43 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 - Root features (features with no dependencies)
 - Leaf features (features with no dependents)
 - Project breakdown (if there some features are defined in different projects)</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>describe<span class="w"> </span>graph
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="go">Graph Snapshot: abc123def456...</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="go">┌─────────────────────┬────────┐</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="go">│ Metric              │ Value  │</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="go">├─────────────────────┼────────┤</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="go">│ Feature Count       │ 42     │</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="go">│ Graph Depth         │ 5      │</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="go">│ Root Features       │ 8      │</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="go">│ Leaf Features       │ 12     │</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="go">└─────────────────────┴────────┘</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="go">Root Features:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="go">• user__profile</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="go">• transaction__history</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="go">...</span>
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>SNAPSHOT, --snapshot</code>: Project version to describe (defaults to current graph from code)</li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 </ul>
 <h3 id="metaxy-describe-features">metaxy describe features<a class="headerlink" href="#metaxy-describe-features" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="go">metaxy describe features [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy describe features [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Describe one or more features in detail.</p>
 <p>Shows comprehensive information about features including project, key,
 version, description, fields with their versions and dependencies.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>describe<span class="w"> </span>feature<span class="w"> </span>my_feature
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>describe<span class="w"> </span>feature<span class="w"> </span>namespace/feature<span class="w"> </span>another/feature
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>describe<span class="w"> </span>feature<span class="w"> </span>my_feature<span class="w"> </span>--format<span class="w"> </span>json
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>describe<span class="w"> </span>feature<span class="w"> </span>--all-features
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
@@ -4214,18 +4245,28 @@ version, description, fields with their versions and dependencies.</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy graph history [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy graph history [ARGS]</span>
 </span></code></pre></div>
 <p>Show history of recorded graph snapshots.</p>
 <p>Displays all recorded graph snapshots from the metadata store,
 showing project versions, when they were recorded, and feature counts.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span><span class="nb">history</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="go">Graph Snapshot History</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="go">┌──────────────┬─────────────────────┬───────────────┐</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="go">│ Project version   │ Recorded At    │ Feature Count │</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="go">├──────────────┼─────────────────────┼───────────────┤</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="go">│ abc123...    │ 2025-01-15 10:30:00 │ 42            │</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="go">│ def456...    │ 2025-01-14 09:15:00 │ 40            │</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="go">└──────────────┴─────────────────────┴───────────────┘</span>
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 <li><code>LIMIT, --limit</code>: Limit number of snapshots to show (defaults to all)</li>
 </ul>
 <h3 id="metaxy-graph-render">metaxy graph render<a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Render feature graph visualization.</p>
 <p>Visualize the feature graph in different formats:
@@ -4234,6 +4275,37 @@ showing project versions, when they were recorded, and feature counts.</p>
   - cards: Panel/card-based view with dependency edges
 - mermaid: Mermaid flowchart markup
 - graphviz: Graphviz DOT format</p>
+<p><strong>Examples</strong></p>
+<p>Render to terminal (default graph view):
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render
+</span></code></pre></div></p>
+<p>Render as cards with dependency edges:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--type<span class="w"> </span>cards
+</span></code></pre></div></p>
+<p>Minimal view:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--minimal
+</span></code></pre></div></p>
+<p>Everything:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--verbose
+</span></code></pre></div></p>
+<p>Save Mermaid diagram to file:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>mermaid<span class="w"> </span>--output<span class="w"> </span>graph.mmd
+</span></code></pre></div></p>
+<p>Graphviz DOT format (pipe to dot command):
+<div class="language-console highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>graphviz<span class="w"> </span><span class="p">|</span><span class="w"> </span>dot<span class="w"> </span>-Tpng<span class="w"> </span>-o<span class="w"> </span>graph.png
+</span></code></pre></div></p>
+<p>Show only structure with short hashes:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--no-show-fields<span class="w"> </span>--hash-length<span class="w"> </span><span class="m">6</span>
+</span></code></pre></div></p>
+<p>Focus on a specific feature and its dependencies:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--feature<span class="w"> </span>video/processing<span class="w"> </span>--up<span class="w"> </span><span class="m">2</span>
+</span></code></pre></div></p>
+<p>Show a feature and its downstream dependents:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--feature<span class="w"> </span>video/files<span class="w"> </span>--down<span class="w"> </span><span class="m">1</span>
+</span></code></pre></div></p>
+<p>Render historical snapshot:
+<div class="language-console highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--snapshot<span class="w"> </span>abc123...<span class="w"> </span>--store<span class="w"> </span>prod
+</span></code></pre></div></p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--format, -f</code>: Output format: terminal, mermaid, or graphviz  <em>[default: terminal]</em></li>
@@ -4268,18 +4340,30 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="go">metaxy list features [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="go">metaxy list features [OPTIONS]</span>
 </span></code></pre></div>
 <p>List Metaxy features in the current project.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features<span class="w"> </span>--verbose
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features<span class="w"> </span>--format<span class="w"> </span>json
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--verbose, --no-verbose, -v</code>: Show detailed information including field dependencies and versions.  <em>[default: False]</em></li>
 <li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-list-stores">metaxy list stores<a class="headerlink" href="#metaxy-list-stores" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="go">metaxy list stores [OPTIONS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="go">metaxy list stores [OPTIONS]</span>
 </span></code></pre></div>
 <p>List configured metadata stores.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>stores
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>stores<span class="w"> </span>--format<span class="w"> </span>json
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--format, -f</code>: Output format: 'plain' (default) or 'json'.  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
@@ -4295,9 +4379,12 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="go">metaxy metadata status [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Check metadata completeness and freshness for specified features.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>status<span class="w"> </span>my/feature
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
@@ -4316,9 +4403,16 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-delete">metaxy metadata delete<a class="headerlink" href="#metaxy-metadata-delete" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="go">metaxy metadata delete [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Delete metadata rows matching filters.</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>my/feature<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;status = &#39;inactive&#39;&quot;</span>
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>--all-features<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;created_at &lt; &#39;2024-01-01&#39;&quot;</span><span class="w"> </span>--hard
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>test_feature<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;1=1&quot;</span><span class="w"> </span>--yes
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
@@ -4334,12 +4428,23 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 </ul>
 <h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Copy metadata from one store to another.</p>
 <p>Copies metadata for specified features from source to destination store.
 By default, copies all versions (--with-feature-history) and deduplicates by
 keeping only the latest row per sample (--no-with-sample-history).</p>
+<p><strong>Examples</strong></p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>my/feature<span class="w"> </span>--from<span class="w"> </span>prod<span class="w"> </span>--to<span class="w"> </span>dev
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>feat1<span class="w"> </span>feat2<span class="w"> </span>--from<span class="w"> </span>prod<span class="w"> </span>--to<span class="w"> </span>dev
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>--all-features<span class="w"> </span>--from<span class="w"> </span>prod<span class="w"> </span>--to<span class="w"> </span>dev
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>feat1<span class="w"> </span>--from<span class="w"> </span>prod<span class="w"> </span>--to<span class="w"> </span>dev<span class="w"> </span>--current-only
+</span></code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>feat1<span class="w"> </span>--from<span class="w"> </span>prod<span class="w"> </span>--to<span class="w"> </span>dev<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;sample_uid IN (1, 2)&quot;</span>
+</span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
@@ -4354,7 +4459,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy mcp</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="go">metaxy mcp</span>
 </span></code></pre></div>
 <p><a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</p>
 <p><strong>Global</strong>:</p>
@@ -4366,7 +4471,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-push">metaxy push<a class="headerlink" href="#metaxy-push" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Push feature definitions to the metadata store</p>
 <p><strong>Parameters</strong>:</p>
@@ -4383,9 +4488,9 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-lock">metaxy lock<a class="headerlink" href="#metaxy-lock" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
-<p>Generate <code>metaxy.lock</code> file with <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> fetched from the metadata store.</p>
+<p>Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
