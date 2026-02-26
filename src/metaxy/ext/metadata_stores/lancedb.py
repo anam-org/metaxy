@@ -374,3 +374,13 @@ class LanceDBMetadataStore(MetadataStore):
     @classmethod
     def config_model(cls) -> type[LanceDBMetadataStoreConfig]:
         return LanceDBMetadataStoreConfig
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Support pickling by clearing unpicklable state."""
+        # Get base class pickle state, then add LanceDB-specific cleanup
+        reconstructor, args, state = super().__reduce__()
+
+        # Clear LanceDB connection (unpicklable)
+        state["_conn"] = None
+
+        return (reconstructor, args, state)

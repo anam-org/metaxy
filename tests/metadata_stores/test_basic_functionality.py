@@ -34,6 +34,36 @@ def test_store_is_pickleable(store: MetadataStore):
 
 
 @parametrize_with_cases("store", cases=AllStoresCases)
+def test_store_is_pickleable_while_open(store: MetadataStore):
+    """Test that an open store can be pickled and the unpickled copy is closed."""
+    key = FeatureKey(["test_pickle_open"])
+
+    class MyFeature(
+        BaseFeature,
+        spec=FeatureSpec(key=key, id_columns=["id"]),
+    ):
+        id: str
+
+    with store.open("w"):
+        # Pickle while the store is open
+        pickled = pickle.dumps(store)
+        unpickled_store = pickle.loads(pickled)
+
+        # Unpickled store should NOT be open
+        assert type(unpickled_store) is type(store)
+        assert not unpickled_store._is_open
+
+    # Reopen the unpickled store and verify it works
+    with unpickled_store.open("w"):
+        unpickled_store.write(
+            key,
+            pl.DataFrame([{"id": "1", "metaxy_provenance_by_field": {"default": "asd"}}]),
+        )
+        result = unpickled_store.read(key).collect().to_polars()
+        assert result.shape[0] == 1
+
+
+@parametrize_with_cases("store", cases=AllStoresCases)
 def test_has_feature(store: MetadataStore):
     """Test that metadata stores can be pickled and unpickled."""
     key = FeatureKey(["test"])

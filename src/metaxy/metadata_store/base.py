@@ -1293,6 +1293,19 @@ class MetadataStore(ABC):
         if self._exit_stack:
             self._exit_stack.pop().__exit__(exc_type, exc_val, exc_tb)
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Support pickling by clearing unpicklable state."""
+        state = self.__dict__.copy()
+
+        # this is the only one that really matters
+        state["_exit_stack"] = []
+
+        # there are just nice to clear as well
+        state["_is_open"] = False
+        state["_mode_stack"] = []
+
+        return (self.__class__.__new__, (self.__class__,), state)
+
     @property
     def _access_mode(self) -> AccessMode:
         return self._mode_stack[-1] if self._mode_stack else "r"
