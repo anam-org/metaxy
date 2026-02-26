@@ -16,7 +16,7 @@ from metaxy.metadata_store.system import (
 @pytest.fixture
 def store(tmp_path: Path):
     """Create fresh store for each test."""
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as s:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as s:
         yield s
 
 

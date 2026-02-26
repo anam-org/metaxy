@@ -50,7 +50,7 @@ def test_metadata_status_up_to_date(
         metaxy_project.write_sample_metadata("video/files_root")
 
         # Now compute and write downstream metadata with correct provenance
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
@@ -411,7 +411,7 @@ def test_metadata_status_with_explicit_store(
         metaxy_project.write_sample_metadata("video/files_root", store_name="dev")
 
         # Now compute and write downstream metadata with correct provenance
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
@@ -739,11 +739,11 @@ def test_metadata_status_with_global_filter(
 
         feature_key_root = FeatureKey(["video", "files_root"])
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key_root, upstream_data)
 
         # Write downstream metadata for only category A samples (3 samples)
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             # Resolve the full increment first
@@ -899,11 +899,11 @@ def test_metadata_status_with_multiple_global_filters(
 
         feature_key_root = FeatureKey(["video", "files_root"])
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key_root, upstream_data)
 
         # Write downstream metadata for all samples
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
@@ -987,7 +987,7 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
             }
         )
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key, initial_data)
 
         # Step 2: Write updated data for samples 1, 2, 3 with height filled
@@ -1004,7 +1004,7 @@ def test_metadata_status_root_feature_with_filter_after_overwrites(
             }
         )
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key, updated_data)
 
         # After deduplication:
@@ -1172,7 +1172,7 @@ def test_metadata_status_with_progress_flag(
         metaxy_project.write_sample_metadata("video/files_root", id_values={"sample_uid": [1, 2, 3, 4, 5]})
 
         # Write downstream metadata for only 2 out of 5 samples (40% processed)
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
@@ -1253,7 +1253,7 @@ def test_metadata_status_verbose_includes_progress(
         metaxy_project.write_sample_metadata("video/files_root")
 
         # Write downstream for only 1 out of 3 samples
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
@@ -1376,7 +1376,7 @@ def test_metadata_status_progress_100_percent(
         metaxy_project.write_sample_metadata("video/files_root")
 
         # Write downstream metadata for all samples
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
@@ -1483,7 +1483,7 @@ def test_metadata_delete_soft_delete_with_filter(metaxy_project: TempMetaxyProje
         feature_key = FeatureKey(["logs"])
         # feature_cls removed - using feature_key directly
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key, test_data)
 
         # Soft delete debug logs
@@ -1555,7 +1555,7 @@ def test_metadata_delete_hard_delete_with_filter(metaxy_project: TempMetaxyProje
         feature_key = FeatureKey(["logs"])
         # feature_cls removed - using feature_key directly
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key, test_data)
 
         # Hard delete debug logs
@@ -1760,7 +1760,7 @@ def test_metadata_delete_with_multiple_filters(metaxy_project: TempMetaxyProject
         feature_key = FeatureKey(["logs"])
         # feature_cls removed - using feature_key directly
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key, test_data)
 
         # Delete debug AND old (should delete only s1)
@@ -1995,7 +1995,7 @@ def test_metadata_delete_dry_run(metaxy_project: TempMetaxyProject, capsys: pyte
         feature_key = FeatureKey(["logs"])
         # feature_cls removed - using feature_key directly
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             store.write(feature_key, test_data)
 
         # Run dry-run
@@ -2088,7 +2088,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
                 METAXY_PROVENANCE_BY_FIELD: [{"status": "p1"}, {"status": "p2"}, {"status": "p3"}],
             }
         )
-        with graph_v1.use(), store:
+        with graph_v1.use(), store.open("w"):
             store.write(feature_key, v1_data)
 
     # Write v2 metadata (different feature version)
@@ -2108,7 +2108,7 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
                 METAXY_PROVENANCE_BY_FIELD: [{"status": "p4"}, {"status": "p5"}],
             }
         )
-        with graph_v2.use(), store:
+        with graph_v2.use(), store.open("w"):
             store.write(feature_key, v2_data)
 
         # Now we have:
@@ -2369,13 +2369,13 @@ root_path = "{prod_path}"
 
         upstream_key = FeatureKey(["upstream"])
 
-        with graph.use(), prod_store:
+        with graph.use(), prod_store.open("w"):
             prod_store.write(upstream_key, upstream_data)
 
         # Now compute downstream metadata using dev store (reads upstream from fallback)
         downstream_key = FeatureKey(["downstream"])
 
-        with graph.use(), dev_store:
+        with graph.use(), dev_store.open("w"):
             # resolve_update should read upstream from fallback (prod) store
             increment = dev_store.resolve_update(downstream_key, lazy=False)
             # Write downstream to dev store
@@ -2482,7 +2482,7 @@ root_path = "{prod_path}"
 
         root_key = FeatureKey(["root"])
 
-        with graph.use(), prod_store:
+        with graph.use(), prod_store.open("w"):
             prod_store.write(root_key, root_data)
 
         # Run CLI status command WITH fallback enabled

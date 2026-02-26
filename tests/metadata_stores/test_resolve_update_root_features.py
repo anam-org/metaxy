@@ -132,7 +132,7 @@ class TestResolveUpdateRootFeatures:
         graph = FeatureGraph()
         video_feature = create_video_embeddings_feature(graph)
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write initial metadata
             initial_metadata = pl.DataFrame(
                 {

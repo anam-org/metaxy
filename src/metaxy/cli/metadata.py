@@ -386,7 +386,7 @@ def delete(
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
-    with metadata_store:
+    with metadata_store.open("w"):
         # Resolve feature keys
         selector.resolve("plain")
 
@@ -408,19 +408,18 @@ def delete(
 
         errors: dict[str, str] = {}
 
-        with metadata_store.open("w"):
-            for feature_key in selector:
-                try:
-                    metadata_store.delete(
-                        feature_key,
-                        filters=filters,
-                        soft=soft,
-                        with_feature_history=with_feature_history,
-                    )
-                except Exception as e:  # pragma: no cover - CLI surface
-                    error_msg = str(e)
-                    errors[feature_key.to_string()] = error_msg
-                    error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
+        for feature_key in selector:
+            try:
+                metadata_store.delete(
+                    feature_key,
+                    filters=filters,
+                    soft=soft,
+                    with_feature_history=with_feature_history,
+                )
+            except Exception as e:  # pragma: no cover - CLI surface
+                error_msg = str(e)
+                errors[feature_key.to_string()] = error_msg
+                error_console.print(f"[red]Error deleting {feature_key.to_string()}:[/red] {error_msg}")
 
         mode_str = "soft" if soft else "hard"
         console.print(f"[green]✓[/green] Deletion complete ({mode_str} delete)")

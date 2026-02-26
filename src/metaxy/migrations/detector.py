@@ -253,7 +253,7 @@ def generate_full_graph_migration(
     if project is None:
         project = next(iter(active_graph.feature_definitions_by_key.values())).project
 
-    with store:
+    with store.open("w"):
         snapshot_result = SystemTableStorage(store).push_graph_snapshot(project=project)
 
     # Generate migration ID (timestamp first for sorting)

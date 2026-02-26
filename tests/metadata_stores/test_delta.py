@@ -22,7 +22,7 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
     store_path = tmp_path / "delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with DeltaMetadataStore(store_path) as store:
+    with DeltaMetadataStore(store_path).open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -96,7 +96,7 @@ def test_delta_s3_storage_options_passed(s3_bucket_and_storage_options, test_fea
     store_path = f"s3://{bucket_name}/delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with DeltaMetadataStore(store_path, storage_options=storage_options) as store:
+    with DeltaMetadataStore(store_path, storage_options=storage_options).open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -127,7 +127,7 @@ def test_delta_sink_lazyframe_local(tmp_path, test_features) -> None:
         }
     )
 
-    with DeltaMetadataStore(store_path) as store:
+    with DeltaMetadataStore(store_path).open("w") as store:
         store.write(feature_cls, metadata_lazy)
 
         # Verify the table was created
@@ -161,7 +161,7 @@ def test_delta_sink_lazyframe_s3(s3_bucket_and_storage_options, test_features) -
         }
     )
 
-    with DeltaMetadataStore(store_path, storage_options=storage_options) as store:
+    with DeltaMetadataStore(store_path, storage_options=storage_options).open("w") as store:
         store.write(feature_cls, metadata_lazy)
 
         # Verify the feature exists

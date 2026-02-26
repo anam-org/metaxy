@@ -436,7 +436,7 @@ def test_get_failed_features_with_retry(store):
 
     storage = SystemTableStorage(store)
 
-    with store:
+    with store.open("w"):
         migration_id = "test_migration_retry"
         project = "test"
 
@@ -575,7 +575,7 @@ def test_full_graph_migration_get_status_info(store):
 
     storage = SystemTableStorage(store)
 
-    with store:
+    with store.open("w"):
         migration = FullGraphMigration(
             migration_id="test_status_info",
             parent="initial",

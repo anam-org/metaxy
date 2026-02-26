@@ -25,7 +25,7 @@ def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: 
         test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
-    with ClickHouseMetadataStore(clickhouse_db) as store:
+    with ClickHouseMetadataStore(clickhouse_db).open("w") as store:
         import polars as pl
 
         metadata = pl.DataFrame(
@@ -96,7 +96,7 @@ def test_clickhouse_persistence(clickhouse_db: str, test_graph, test_features: d
     """
 
     # Write data in first instance
-    with ClickHouseMetadataStore(clickhouse_db) as store1:
+    with ClickHouseMetadataStore(clickhouse_db).open("w") as store1:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -136,7 +136,7 @@ def test_clickhouse_hash_algorithms(
         HashAlgorithm.XXHASH32,
         HashAlgorithm.XXHASH64,
     ]:
-        with ClickHouseMetadataStore(clickhouse_db, hash_algorithm=algorithm) as store:
+        with ClickHouseMetadataStore(clickhouse_db, hash_algorithm=algorithm).open("w") as store:
             # Drop the feature metadata before each iteration to ensure clean state
             # Since we're testing the same feature with different hash algorithms
             store.drop_feature_metadata(test_features["UpstreamFeatureA"])
@@ -521,7 +521,7 @@ def test_clickhouse_map_column_resolve_update_write(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -618,7 +618,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
     feature_key = feature_cls.spec.key
     plan = test_graph.get_feature_plan(feature_key)
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -814,7 +814,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
     feature_key = feature_cls.spec.key
 
     # auto_cast_struct_for_map=True is the default
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -892,7 +892,9 @@ def test_clickhouse_auto_cast_struct_for_map_false(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=False).open(
+        "w"
+    ) as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -953,7 +955,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1048,7 +1050,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1123,7 +1125,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1201,7 +1203,9 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True) as store:
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False, auto_cast_struct_for_map=True).open(
+        "w"
+    ) as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 

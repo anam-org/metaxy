@@ -424,7 +424,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph, 
     ):
         pass
 
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Write user feature metadata with user_id
         user_df = nw.from_native(
             pl.DataFrame(
@@ -604,7 +604,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph, tmp_pat
     assert LegacyFeature.spec().id_columns == ["sample_uid"]
 
     # Test with metadata store
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         df = nw.from_native(
             pl.DataFrame(
                 {

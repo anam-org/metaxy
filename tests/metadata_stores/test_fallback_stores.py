@@ -188,7 +188,7 @@ def test_fallback_store_warning_issued(
     results = {}
 
     # Setup: Write root feature to fallback store
-    with fallback_store:
+    with fallback_store.open("w"):
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
         fallback_store.write(RootFeature, root_data)
 
@@ -273,7 +273,7 @@ def test_no_fallback_warning_when_all_local(
         suffix="single",
     )
 
-    with store:
+    with store.open("w"):
         # Write root feature to same store
         root_data = pl.DataFrame(
             {
@@ -345,7 +345,7 @@ def test_fallback_store_switches_to_polars_components(
         suffix="all_local",
     )
 
-    with store_all_local:
+    with store_all_local.open("w"):
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
         store_all_local.write(RootFeature, root_data_with_prov)
 
@@ -374,7 +374,7 @@ def test_fallback_store_switches_to_polars_components(
     )
 
     # Write root to fallback store
-    with fallback_store:
+    with fallback_store.open("w"):
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
         fallback_store.write(RootFeature, root_data_with_prov)
 
@@ -448,7 +448,7 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
         suffix="polars_engine",
     )
 
-    with store:
+    with store.open("w"):
         root_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -504,7 +504,7 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
         fallback_stores=[fallback_store],
     )
 
-    with primary_store, fallback_store:
+    with primary_store.open("w"), fallback_store:
         # Write data to PRIMARY store (not fallback)
         root_data = pl.DataFrame(
             {
@@ -552,7 +552,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
     )
 
     # Write data ONLY to fallback store
-    with fallback_store:
+    with fallback_store.open("w"):
         root_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],

@@ -43,7 +43,7 @@ def main():
     store = cfg.get_store("dev")
 
     # Step 1: Write audio metadata
-    with store:
+    with store.open("w"):
         increment = store.resolve_update(Audio, samples=AUDIO_SAMPLES)
         if len(increment.new) > 0:
             print(f"Found {len(increment.new)} new audio recordings")
@@ -55,7 +55,7 @@ def main():
             print("No new or changed audio recordings")
 
     # Step 2: Compute speaker embeddings
-    with store:
+    with store.open("w"):
         increment = store.resolve_update(SpeakerEmbedding)
 
         added_df = increment.new.to_polars()

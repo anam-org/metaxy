@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, cast
 import narwhals as nw
 from narwhals.typing import Frame
 from pydantic import Field
-from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy.metadata_store.base import (
@@ -109,7 +108,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         # DuckDB (use DuckDBMetadataStore instead for better hash support)
         store = IbisMetadataStore("duckdb:///metadata.db")
 
-        with store:
+        with store.open("w"):
             store.write(MyFeature, df)
         ```
     """
@@ -283,56 +282,18 @@ class IbisMetadataStore(MetadataStore, ABC):
         else:
             return self._conn
 
-    @contextmanager
-    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
-        """Open connection to database via Ibis.
-
-        Subclasses should override this to add backend-specific initialization
-        (e.g., loading extensions) and must call this method via super().open(mode).
-
-        Args:
-            mode: Access mode. Subclasses may use this to set backend-specific connection
-                parameters (e.g., `read_only` for DuckDB).
-
-        Yields:
-            Self: The store instance with connection open
-        """
+    def _open_connection(self, mode: AccessMode) -> None:  # noqa: ARG002
         import ibis
 
-        # Increment context depth to support nested contexts
-        self._context_depth += 1
+        if self.connection_string:
+            self._conn = ibis.connect(self.connection_string)  # ty: ignore[invalid-assignment]
+        else:
+            assert self.backend is not None, "backend must be set if connection_string is None"
+            backend_module = getattr(ibis, self.backend)
+            self._conn = backend_module.connect(**self.connection_params)
 
-        try:
-            # Only perform actual open on first entry
-            if self._context_depth == 1:
-                # Setup: Connect to database
-                if self.connection_string:
-                    # Use connection string
-                    self._conn = ibis.connect(self.connection_string)  # ty: ignore[invalid-assignment]
-                else:
-                    # Use backend + params
-                    # Get backend-specific connect function
-                    assert self.backend is not None, "backend must be set if connection_string is None"
-                    backend_module = getattr(ibis, self.backend)
-                    self._conn = backend_module.connect(**self.connection_params)
-
-                # Mark store as open and validate
-                self._is_open = True
-                self._validate_after_open()
-
-            yield self
-        finally:
-            # Decrement context depth
-            self._context_depth -= 1
-
-            # Only perform actual close on last exit
-            if self._context_depth == 0:
-                # Teardown: Close connection
-                if self._conn is not None:
-                    # Ibis connections may not have explicit close method
-                    # but setting to None releases resources
-                    self._conn = None
-                self._is_open = False
+    def _close_connection(self) -> None:
+        self._conn = None
 
     @property
     def sqlalchemy_url(self) -> str:

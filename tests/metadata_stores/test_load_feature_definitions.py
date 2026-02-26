@@ -46,7 +46,7 @@ def test_load_feature_definitions_raw_into_graph(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -82,7 +82,7 @@ def test_load_feature_definitions_raw_uses_active_graph_by_default(tmp_path: Pat
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -120,7 +120,7 @@ def test_load_feature_definitions_raw_by_project(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
 
@@ -179,7 +179,7 @@ def test_load_feature_definitions_raw_preserves_dependencies(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -212,7 +212,7 @@ def test_load_feature_definitions_raw_loads_latest_snapshot(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -229,7 +229,7 @@ def test_load_feature_definitions_raw_loads_latest_snapshot(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -258,7 +258,7 @@ def test_mx_load_feature_definitions_raw_public_api(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -294,7 +294,7 @@ def test_feature_depending_on_loaded_definition(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -366,7 +366,7 @@ def test_load_feature_definitions_raw_with_filters(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -409,7 +409,7 @@ def test_load_feature_definitions_raw_with_filters_via_storage(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -448,7 +448,7 @@ def test_load_feature_definitions_raw_filters_applied_after_deduplication(tmp_pa
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -465,7 +465,7 @@ def test_load_feature_definitions_raw_filters_applied_after_deduplication(tmp_pa
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -543,7 +543,7 @@ def test_snapshot_succeeds_after_loading_external_dependencies(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -608,7 +608,7 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -641,7 +641,7 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
         assert "external_only" not in snapshot
 
         # Push should succeed and only push the non-external feature
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
 
@@ -674,7 +674,7 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -764,7 +764,7 @@ def test_sync_external_features_warns_on_version_mismatch(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -810,7 +810,7 @@ def test_sync_external_features_raises_on_version_mismatch_when_error(tmp_path: 
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -864,7 +864,7 @@ def test_sync_external_features_consolidates_multiple_mismatches(tmp_path: Path)
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -925,7 +925,7 @@ def test_sync_external_features_no_warning_when_versions_match(tmp_path: Path):
         # Get the real feature version to use in our external definition
         expected_version_by_field = source_graph.get_feature_version_by_field(["version_match"])
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -975,7 +975,7 @@ def test_sync_external_features_on_version_mismatch_override_to_error(tmp_path: 
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -1019,7 +1019,7 @@ def test_sync_external_features_on_version_mismatch_override_to_warn(tmp_path: P
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -1078,7 +1078,7 @@ def test_sync_external_features_warns_on_invalid_stored_feature(tmp_path: Path):
         ):
             pass
 
-        with DuckDBMetadataStore(database=store_path) as store:
+        with DuckDBMetadataStore(database=store_path).open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -1144,7 +1144,7 @@ def _push_project(store: MetadataStore, project: str, keys: Sequence[str]) -> No
                     fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
                 ),
             )
-        with store:
+        with store.open("w"):
             SystemTableStorage(store).push_graph_snapshot(project=project)
 
 
@@ -1240,7 +1240,7 @@ def _push_project_with_deps(
                     fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
                 ),
             )
-        with store:
+        with store.open("w"):
             SystemTableStorage(store).push_graph_snapshot(project=project)
 
 

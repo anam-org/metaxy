@@ -56,7 +56,7 @@ def test_project_can_push_with_unresolved_external_dependency(tmp_path: Path) ->
         assert "project_b/upstream" not in snapshot
 
         # Should be able to push to fresh store
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot(project="project_a")
 
@@ -90,7 +90,7 @@ def test_entangled_projects_can_both_push_to_same_store(tmp_path: Path) -> None:
         ):
             __metaxy_project__ = "project_a"
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result_a = storage.push_graph_snapshot(project="project_a")
             assert not result_a.already_pushed
@@ -118,7 +118,7 @@ def test_entangled_projects_can_both_push_to_same_store(tmp_path: Path) -> None:
         ):
             __metaxy_project__ = "project_b"
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result_b = storage.push_graph_snapshot(project="project_b")
             assert not result_b.already_pushed
@@ -322,7 +322,7 @@ def test_push_idempotent_for_project_snapshot(tmp_path: Path) -> None:
         ):
             __metaxy_project__ = "project_a"
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
 
             # First push

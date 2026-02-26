@@ -11,6 +11,7 @@ import pytest
 
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.exceptions import StoreNotOpenError
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -316,17 +317,108 @@ def test_drop_feature_metadata_in_write_mode(tmp_path: Path, test_graph, test_fe
 
 
 def test_with_store_pattern_works(tmp_path: Path) -> None:
-    """Test that 'with store:' pattern works by calling open() internally."""
+    """Test that 'with store:' pattern always opens in READ mode."""
     db_path = tmp_path / "test.duckdb"
 
-    # Test with auto_create_tables=True (opens in WRITE mode)
+    # Create the DB first
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w"):
+        pass
+
+    # with store: always opens in READ mode regardless of auto_create_tables
     store = DuckDBMetadataStore(db_path, auto_create_tables=True)
     with store:
         assert store._is_open
+        assert store._access_mode == "r"
     assert not store._is_open
 
-    # Test with auto_create_tables=False (opens in READ mode)
     store2 = DuckDBMetadataStore(db_path, auto_create_tables=False)
     with store2:
         assert store2._is_open
+        assert store2._access_mode == "r"
     assert not store2._is_open
+
+
+def test_write_in_read_mode_raises(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+    """Write operations raise StoreNotOpenError when store is in read mode."""
+    db_path = tmp_path / "test.duckdb"
+
+    # Create the DB first
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w"):
+        pass
+
+    store = DuckDBMetadataStore(db_path, auto_create_tables=False)
+    with store:
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": ["s1"],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+            }
+        )
+        with pytest.raises(StoreNotOpenError, match="open in read mode"):
+            store.write(test_features["UpstreamFeatureA"], metadata)
+
+
+def test_drop_in_read_mode_raises(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+    """drop_feature_metadata raises StoreNotOpenError when store is in read mode."""
+    db_path = tmp_path / "test.duckdb"
+
+    # Create with data
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": ["s1"],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+            }
+        )
+        store.write(test_features["UpstreamFeatureA"], metadata)
+
+    store = DuckDBMetadataStore(db_path, auto_create_tables=False)
+    with store:
+        with pytest.raises(StoreNotOpenError, match="open in read mode"):
+            store.drop_feature_metadata(test_features["UpstreamFeatureA"])
+
+
+def test_nested_write_mode_escalates(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+    """Nested open("w") inside open("r") allows writes in the inner block.
+
+    Uses DeltaMetadataStore because Delta has no physical read-only connection
+    constraint (unlike DuckDB which locks the connection mode at open time).
+    """
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    with store:
+        assert store._access_mode == "r"
+
+        with store.open("w"):
+            assert store._access_mode == "w"
+            metadata = pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                }
+            )
+            store.write(test_features["UpstreamFeatureA"], metadata)
+
+
+def test_nested_write_mode_restores(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+    """After nested open("w") exits, mode reverts to "r".
+
+    Uses DeltaMetadataStore because Delta has no physical read-only connection
+    constraint (unlike DuckDB which locks the connection mode at open time).
+    """
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    with store:
+        assert store._access_mode == "r"
+
+        with store.open("w"):
+            assert store._access_mode == "w"
+
+        # After exiting nested write, mode reverts to read
+        assert store._access_mode == "r"
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": ["s1"],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+            }
+        )
+        with pytest.raises(StoreNotOpenError, match="open in read mode"):
+            store.write(test_features["UpstreamFeatureA"], metadata)

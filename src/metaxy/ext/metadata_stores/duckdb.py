@@ -1,6 +1,6 @@
 """DuckDB metadata store - thin wrapper around IbisMetadataStore."""
 
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -288,38 +288,26 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return hash_functions
 
     # ------------------------------------------------------------------ DuckLake
-    @contextmanager
-    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
-        """Open DuckDB connection with specified access mode.
-
-        Args:
-            mode: Access mode (READ or WRITE). Defaults to READ.
-                READ mode sets read_only=True for concurrent access.
-
-        Yields:
-            Self: The store instance with connection open
-        """
-        # Setup: Configure connection params based on mode
+    def _open_connection(self, mode: AccessMode) -> None:
         if mode == "r":
-            self.connection_params["read_only"] = True
+            db = self.connection_params.get("database", "")
+            is_local = db and db != ":memory:" and not db.startswith(("md:", "motherduck:", "s3://", "http"))
+            if not is_local or Path(db).exists():
+                self.connection_params["read_only"] = True
+            else:
+                self.connection_params.pop("read_only", None)
         else:
-            # Remove read_only if present (switching to WRITE)
             self.connection_params.pop("read_only", None)
 
-        # Call parent context manager to establish connection
-        # Each outermost open() creates a fresh DuckDB connection (see
-        # IbisMetadataStore.open).  Extensions and DuckLake attachment are
-        # per-connection state, so they must be configured on every entry at
-        # depth 1.  install_extension() is a no-op when already on disk;
-        # load_extension() is required per-connection.
-        with super().open(mode):
-            if self._context_depth == 1:
-                self._load_extensions()
-                if self._ducklake_attachment is not None:
-                    self._ducklake_attachment._attached = False
-                    self._ducklake_attachment.configure(self._duckdb_raw_connection())
+        super()._open_connection(mode)
 
-            yield self
+        self._load_extensions()
+        if self._ducklake_attachment is not None:
+            self._ducklake_attachment._attached = False
+            self._ducklake_attachment.configure(self._duckdb_raw_connection())
+
+    def _close_connection(self) -> None:
+        super()._close_connection()
 
     def preview_ducklake_sql(self) -> list[str]:
         """Return DuckLake attachment SQL if configured."""

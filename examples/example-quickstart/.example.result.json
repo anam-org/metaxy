@@ -73,7 +73,7 @@
             }
           }
         },
-        "timestamp": "2026-02-13T16:09:27.718876",
+        "timestamp": "2026-02-26T00:07:40.582504",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -83,7 +83,7 @@
         "returncode": 0,
         "stdout": "Quickstart Pipeline\n============================================================\n\n[Video] 3 new, 0 stale\n[Video] Wrote 3 samples\n\n[Audio] 3 new, 0 stale\n[Audio] Wrote 3 samples\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-13T16:09:28.330566",
+        "timestamp": "2026-02-26T00:07:41.119865",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -93,7 +93,7 @@
         "returncode": 0,
         "stdout": "Quickstart Pipeline\n============================================================\n\n[Video] 0 new, 0 stale\n\n[Audio] 0 new, 0 stale\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-13T16:09:29.015931",
+        "timestamp": "2026-02-26T00:07:41.648298",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       }

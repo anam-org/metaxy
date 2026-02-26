@@ -14,7 +14,6 @@ import polars as pl
 from narwhals.typing import Frame
 from packaging.version import Version
 from pydantic import Field
-from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy._utils import collect_to_polars
@@ -171,37 +170,11 @@ class DeltaMetadataStore(MetadataStore):
         with self._create_polars_versioning_engine(plan) as engine:
             yield engine
 
-    @contextmanager
-    def open(self, mode: AccessMode = "r") -> Iterator[Self]:  # noqa: ARG002
-        """Open the Delta Lake store.
+    def _open_connection(self, mode: AccessMode) -> None:  # noqa: ARG002
+        pass
 
-        Delta-rs opens connections lazily per operation, so no connection state management needed.
-
-        Args:
-            mode: Access mode for this connection session (accepted for consistency but not used).
-
-        Yields:
-            Self: The store instance with connection open
-        """
-        # Increment context depth to support nested contexts
-        self._context_depth += 1
-
-        try:
-            # Only perform actual open on first entry
-            if self._context_depth == 1:
-                # Mark store as open and validate
-                # Note: Delta auto-creates tables on first write, no need to pre-create them
-                self._is_open = True
-                self._validate_after_open()
-
-            yield self
-        finally:
-            # Decrement context depth
-            self._context_depth -= 1
-
-            # Only perform actual close on last exit
-            if self._context_depth == 0:
-                self._is_open = False
+    def _close_connection(self) -> None:
+        pass
 
     @cached_property
     def default_delta_write_options(self) -> dict[str, Any]:

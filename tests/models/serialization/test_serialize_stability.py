@@ -18,7 +18,7 @@ def test_push_graph_snapshot_stability(store: MetadataStore, test_graph: Feature
 
     # Ensure this graph is active so push_graph_snapshot uses it
     with graph.use():
-        with store:
+        with store.open("w"):
             # Infer project from graph (all features share same project in test_graph)
             snapshot_dict = graph.to_snapshot()
             project = next(iter(snapshot_dict.values()))["project"]
@@ -75,7 +75,7 @@ def test_serialize_uses_to_snapshot(store: MetadataStore, test_graph: FeatureGra
 
     # Ensure this graph is active so push_graph_snapshot uses it
     with graph.use():
-        with store:
+        with store.open("w"):
             # Serialize to the store
             result = SystemTableStorage(store).push_graph_snapshot()
 

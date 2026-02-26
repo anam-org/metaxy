@@ -25,7 +25,7 @@ def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str
     """
     db_path = tmp_path / "test.duckdb"
 
-    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
         import polars as pl
 
         metadata = pl.DataFrame(
@@ -47,7 +47,7 @@ def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph, test_features: 
     table_prefix = "prod_v2_"
     feature = test_features["UpstreamFeatureA"]
 
-    with DuckDBMetadataStore(db_path, auto_create_tables=True, table_prefix=table_prefix) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True, table_prefix=table_prefix).open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -137,7 +137,7 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
     db_path = tmp_path / "test.duckdb"
 
     # Write data in first instance
-    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store1:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store1:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],

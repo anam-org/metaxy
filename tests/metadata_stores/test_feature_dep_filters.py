@@ -170,7 +170,7 @@ def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
         )
 
         # Write upstream metadata to store
-        with store:
+        with store.open("w"):
             from metaxy.metadata_store import HashAlgorithmNotSupportedError
 
             try:

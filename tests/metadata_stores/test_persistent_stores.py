@@ -225,7 +225,7 @@ def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
     """
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
-    with persistent_store as store:
+    with persistent_store.open("w") as store:
         # Write data and record version
         data = pl.DataFrame(
             {

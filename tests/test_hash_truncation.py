@@ -434,7 +434,7 @@ class TestMetadataStoreTruncation:
         config = MetaxyConfig(project="test", hash_truncation_length=16)
         with config.use():
             # Store should use truncated field provenances
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
                 # Write some dummy metadata with provenance_by_field
                 metadata = pl.DataFrame(
                     {
@@ -480,7 +480,7 @@ class TestMigrationCompatibility:
                 pass
 
             # Record snapshot
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
                 result = SystemTableStorage(store).push_graph_snapshot()
 
                 snapshot_v1 = result.project_version
@@ -562,7 +562,7 @@ class TestEndToEnd:
             assert len(graph.project_version) == 16
 
             # Store metadata
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
                 # Record snapshot
                 result = SystemTableStorage(store).push_graph_snapshot()
 

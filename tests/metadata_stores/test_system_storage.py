@@ -16,7 +16,7 @@ from .conftest import AllStoresCases
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_write_and_read_system_events(store: MetadataStore):
     """Test writing and reading migration events across all store types."""
-    with store:
+    with store.open("w"):
         storage = SystemTableStorage(store)
         migration_id = "mig_001"
 
@@ -51,7 +51,7 @@ def test_write_and_read_system_events(store: MetadataStore):
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_get_migration_status_across_stores(store: MetadataStore):
     """Test computing migration status from events across all store types."""
-    with store:
+    with store.open("w"):
         storage = SystemTableStorage(store)
         migration_id = "mig_002"
 
@@ -81,7 +81,7 @@ def test_get_migration_status_across_stores(store: MetadataStore):
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_migration_failed_status(store: MetadataStore):
     """Test migration failed status across all store types."""
-    with store:
+    with store.open("w"):
         storage = SystemTableStorage(store)
         migration_id = "mig_003"
 
@@ -103,7 +103,7 @@ def test_migration_failed_status(store: MetadataStore):
 @parametrize_with_cases("store", cases=AllStoresCases)
 def test_multiple_migrations_sequence(store: MetadataStore):
     """Test multiple migrations in sequence across all store types."""
-    with store:
+    with store.open("w"):
         storage = SystemTableStorage(store)
 
         # First migration

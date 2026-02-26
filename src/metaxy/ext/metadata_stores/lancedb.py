@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -11,7 +11,6 @@ from typing import Any
 import narwhals as nw
 from narwhals.typing import Frame
 from pydantic import Field
-from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy._utils import collect_to_polars
@@ -166,48 +165,16 @@ class LanceDBMetadataStore(MetadataStore):
             # No cleanup needed for Polars engine
             pass
 
-    @contextmanager
-    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
-        """Open LanceDB connection.
+    def _open_connection(self, mode: AccessMode) -> None:  # noqa: ARG002
+        import lancedb
 
-        For local filesystem paths, creates the directory if it doesn't exist.
-        For remote URIs (S3, LanceDB Cloud, etc.), connects directly.
-        Tables are created on-demand when features are first written.
+        if is_local_path(self.uri):
+            Path(self.uri).mkdir(parents=True, exist_ok=True)
 
-        Args:
-            mode: Access mode (READ or WRITE). Accepted for consistency but not used
-                by LanceDB (LanceDB handles concurrent access internally).
+        self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
 
-        Yields:
-            Self: The store instance
-
-        Raises:
-            ConnectionError: If remote connection fails (e.g., invalid credentials)
-        """
-        # Increment context depth to support nested contexts
-        self._context_depth += 1
-
-        try:
-            # Only perform actual open on first entry
-            if self._context_depth == 1:
-                import lancedb
-
-                if is_local_path(self.uri):
-                    Path(self.uri).mkdir(parents=True, exist_ok=True)
-
-                self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
-                self._is_open = True
-                self._validate_after_open()
-
-            yield self
-        finally:
-            # Decrement context depth
-            self._context_depth -= 1
-
-            # Only perform actual close on last exit
-            if self._context_depth == 0:
-                self._conn = None
-                self._is_open = False
+    def _close_connection(self) -> None:
+        self._conn = None
 
     @property
     def conn(self) -> Any:

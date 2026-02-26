@@ -277,7 +277,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph, tmp_path: Pa
     ):
         pass
 
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Write metadata with string ID
         df = nw.from_native(
             pl.DataFrame(

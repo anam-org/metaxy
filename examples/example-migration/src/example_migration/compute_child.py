@@ -15,7 +15,7 @@ child_key = mx.FeatureKey(["examples", "child"])
 # Load upstream data for sample_uids (use system temp dir for cross-platform compatibility)
 data_dir = Path(tempfile.gettempdir()) / "migration_example_data"
 upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
-with config.get_store() as store:
+with config.get_store().open("w") as store:
     feature_version = mx.current_graph().get_feature_version(child_key)
     print(f"Computing {child_key.to_string()}...")
     print(f"  feature_version: {feature_version[:16]}...")

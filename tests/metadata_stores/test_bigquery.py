@@ -261,7 +261,7 @@ def test_bigquery_table_operations(mock_bigquery_connection, test_graph, test_fe
         with BigQueryMetadataStore(
             project_id="test-project",
             dataset_id="test_dataset",
-        ) as store:
+        ).open("w") as store:
             # Mock the write operation
             store._write_feature = MagicMock()  # ty: ignore[invalid-assignment]
 

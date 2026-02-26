@@ -520,7 +520,7 @@ def test_load_all_features_from_store_warns_on_invalid_feature(tmp_path: Path):
         ):
             pass
 
-        with DuckDBMetadataStore(database=store_path) as store:
+        with DuckDBMetadataStore(database=store_path).open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -573,7 +573,7 @@ class TestGenerateLockFileSelection:
                         fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
                     ),
                 )
-            with store:
+            with store.open("w"):
                 SystemTableStorage(store).push_graph_snapshot(project=project)
 
     def test_selection_by_projects(self, store: MetadataStore, tmp_path: Path):
@@ -766,7 +766,7 @@ def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Pa
         ):
             pass
 
-        with DuckDBMetadataStore(database=store_path) as store:
+        with DuckDBMetadataStore(database=store_path).open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 

@@ -335,7 +335,7 @@ def test_resolve_update_downstream_feature(
         ).example()
 
     # Write upstream metadata to store
-    with store, graph.use():
+    with store.open("w"), graph.use():
         try:
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in upstream_data.items():
@@ -410,7 +410,7 @@ def test_resolve_update_detects_changes(
         ).example()
 
     # Write initial data
-    with store, graph.use():
+    with store.open("w"), graph.use():
         try:
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in initial_upstream.items():
@@ -520,7 +520,7 @@ def test_resolve_update_lazy_execution(
             max_rows=10,
         ).example()
 
-    with store:
+    with store.open("w"):
         try:
             # Write upstream metadata
             for feat_key_str, upstream_df in upstream_data.items():
@@ -611,7 +611,7 @@ def test_resolve_update_idempotency(
             max_rows=10,
         ).example()
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         try:
             # Write all upstream data (includes transitive dependencies)
             for feat_key_str, upstream_df in upstream_data.items():
@@ -692,7 +692,7 @@ def test_resolve_update_filters_with_feature_class_key(
         }
     )
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         store.write(UpstreamFeature, upstream_df)
 
         # Use feature class as filter key - should filter upstream to only value > 15
@@ -750,7 +750,7 @@ def test_resolve_update_filters_with_feature_key_object(
         }
     )
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         store.write(UpstreamFeature, upstream_df)
 
         # Use FeatureKey as filter key
@@ -809,7 +809,7 @@ def test_resolve_update_global_filters(
         }
     )
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         store.write(UpstreamFeature, upstream_df)
 
         # Use global_filters to filter by sample_uid across all features
@@ -868,7 +868,7 @@ def test_resolve_update_global_filters_combined_with_filters(
         }
     )
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         store.write(UpstreamFeature, upstream_df)
 
         # Use both global_filters and feature-specific filters
@@ -944,7 +944,7 @@ def test_expansion_lineage_multiple_writes_with_resolve_update(
 
     store = default_store
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         # Write upstream video metadata for 2 videos
         video_data = pl.DataFrame(
             {
@@ -1082,7 +1082,7 @@ def test_expansion_lineage_orphaned_when_upstream_removed(
 
     store = default_store
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         import narwhals as nw
 
         # Write upstream video metadata for 5 videos
@@ -1210,7 +1210,7 @@ def test_expansion_lineage_orphaned_with_duplicate_writes(
 
     store = default_store
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         import narwhals as nw
 
         # Write upstream video metadata for 2 videos
@@ -1333,7 +1333,7 @@ def test_identity_lineage_orphaned_with_multiple_writes_no_dedup(
 
     store = default_store
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         import narwhals as nw
 
         # Write upstream metadata for 10 chunks
@@ -1576,7 +1576,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
     # Create local store that reads upstream from fallback
     local_store = DeltaMetadataStore(root_path=tmp_path / "delta_local", fallback_stores=[fallback_store])
 
-    with fallback_store, local_store, graph.use():
+    with fallback_store.open("w"), local_store.open("w"), graph.use():
         import narwhals as nw
 
         # Write upstream metadata to FALLBACK store for 100 chunks
@@ -1629,7 +1629,7 @@ def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
         # Now check status WITHOUT fallback
         # Create a new store without fallback to simulate checking local-only status
         local_only_store = DeltaMetadataStore(root_path=tmp_path / "delta_local_only")
-        with local_only_store:
+        with local_only_store.open("w"):
             # Copy upstream and downstream from local_store to local_only_store
             upstream_data = local_store._read_feature(Upstream)
             downstream_data = local_store._read_feature(Downstream)
@@ -1782,7 +1782,7 @@ def test_resolve_update_optional_dependencies(
         ).example()
 
     try:
-        with store, graph.use():
+        with store.open("w"), graph.use():
             # Write upstream data to store
             for feature_key_str, upstream_df in upstream_data.items():
                 feat_key = FeatureKey([feature_key_str])
@@ -1899,7 +1899,7 @@ def test_optional_dependency_null_handling_and_provenance_stability(
         pass
 
     try:
-        with any_store:
+        with any_store.open("w"):
             # === INITIAL DATA ===
             # Required parent has samples s1, s2, s3
             required_df = pl.DataFrame(
@@ -2082,7 +2082,7 @@ def test_all_optional_deps_outer_join_behavior(
         pass
 
     try:
-        with any_store:
+        with any_store.open("w"):
             # OptionalA has s1, s2
             optional_a_df = pl.DataFrame(
                 {
@@ -2214,7 +2214,7 @@ def test_aggregation_lineage_field_level_provenance_isolation(
         pass
 
     try:
-        with any_store:
+        with any_store.open("w"):
             # Initial upstream data - using minimal required columns
             # write fills in missing metaxy columns
             upstream_v1 = pl.DataFrame(
@@ -2394,7 +2394,7 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
         )
 
         try:
-            with any_store:  # Store ops inside FeatureGraph context!
+            with any_store.open("w"):  # Store ops inside FeatureGraph context!
                 any_store.write(SensorReadingsV1, upstream_v1)
 
                 increment_v1 = any_store.resolve_update(HourlyStatsV1)
@@ -2484,7 +2484,7 @@ def test_aggregation_lineage_field_level_provenance_definition_change(
         )
 
         try:
-            with any_store:  # Store ops inside FeatureGraph context!
+            with any_store.open("w"):  # Store ops inside FeatureGraph context!
                 any_store.write(SensorReadingsV2, upstream_v2)
 
                 increment_v2 = any_store.resolve_update(HourlyStatsV2)
@@ -2574,7 +2574,7 @@ def test_aggregation_lineage_preserves_user_columns(
 
     store = default_store
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         # Write upstream data - multiple notes per chunk
         upstream_df = pl.DataFrame(
             {
@@ -2682,7 +2682,7 @@ def test_aggregation_lineage_preserves_columns_with_global_filter(
 
     store = default_store
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         # Write upstream data with different datasets
         upstream_df = pl.DataFrame(
             {

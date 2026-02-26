@@ -93,7 +93,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(tmp_pa
     # Setup v1 data and snapshot
     store_path = tmp_path / "delta_store"
     store_v1 = DeltaMetadataStore(root_path=store_path)
-    with graph_v1.use(), store_v1:
+    with graph_v1.use(), store_v1.open("w"):
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -185,7 +185,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path: Pa
 
     # Setup data and snapshot
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    with graph.use(), store:
+    with graph.use(), store.open("w"):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -359,7 +359,7 @@ def test_snapshot_stores_both_versions(tmp_path: Path):
 
     # Create store and record snapshot
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-    with graph.use(), store:
+    with graph.use(), store.open("w"):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
