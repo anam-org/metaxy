@@ -1252,6 +1252,50 @@ print("SUCCESS: Plugin correctly loaded config from METAXY_CONFIG")
     assert "SUCCESS" in result.stdout
 
 
+class TestConfigExtraFeatures:
+    """Tests for the extra_features config field."""
+
+    def test_default_empty(self) -> None:
+        config = MetaxyConfig()
+        assert config.extra_features == []
+
+    def test_from_toml(self, tmp_path: Path) -> None:
+        """Verify [[extra_features]] TOML sections parse into list[FeatureSelection]."""
+        from metaxy import FeatureSelection
+
+        config_file = tmp_path / "metaxy.toml"
+        config_file.write_text("""
+project = "my_project"
+
+[[extra_features]]
+projects = ["upstream_a"]
+
+[[extra_features]]
+projects = ["upstream_b"]
+keys = ["shared/feature_x"]
+""")
+        config = MetaxyConfig.load(config_file)
+
+        assert len(config.extra_features) == 2
+        assert config.extra_features[0] == FeatureSelection(projects=["upstream_a"])
+        assert config.extra_features[1] == FeatureSelection(projects=["upstream_b"], keys=["shared/feature_x"])
+
+    def test_from_toml_all(self, tmp_path: Path) -> None:
+        from metaxy import FeatureSelection
+
+        config_file = tmp_path / "metaxy.toml"
+        config_file.write_text("""
+project = "my_project"
+
+[[extra_features]]
+all = true
+""")
+        config = MetaxyConfig.load(config_file)
+
+        assert len(config.extra_features) == 1
+        assert config.extra_features[0] == FeatureSelection(all=True)
+
+
 class TestToToml:
     """Tests for to_toml serialization methods."""
 

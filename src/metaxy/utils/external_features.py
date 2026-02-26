@@ -243,18 +243,18 @@ def sync_external_features(
             )
             external_keys.append(key)
 
-    # Build combined selection: external keys + user-provided selection
+    # Build combined selection: external keys + user-provided selection + config extra_features
     # Filter selection keys that are already non-external in the graph to avoid
     # unnecessary store I/O.
     non_external_keys = {key for key, defn in graph.feature_definitions_by_key.items() if not defn.is_external}
     if selection is not None:
         selection = _filter_selection(selection, non_external_keys)
-
     parts: list[FS] = []
     if external_keys:
         parts.append(FS(keys=external_keys))
     if selection is not None:
         parts.append(selection)
+    parts.extend(config.extra_features)
 
     if not parts:
         return []

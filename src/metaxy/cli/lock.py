@@ -1,5 +1,7 @@
 """Lock command for Metaxy CLI."""
 
+from functools import reduce
+from operator import or_
 from typing import Annotated
 
 import cyclopts
@@ -81,6 +83,7 @@ def lock(
                 metadata_store,
                 output_path,
                 exclude_project=config.project,
+                selection=reduce(or_, config.extra_features) if config.extra_features else None,
             )
     except FeatureNotFoundError as e:
         error = CLIError(

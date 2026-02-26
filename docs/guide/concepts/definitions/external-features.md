@@ -38,7 +38,7 @@ Metaxy can automatically generate a `metaxy.lock` file with external feature def
     !!! tip
         This command is expected to be executed as part of the CI/CD pipeline.
 
-2. Run `metaxy lock` in the current Metaxy project - this pulls external feature definitions from the metadata store into a `metaxy.lock` file. Only explicit feature dependencies are pulled in. Subsequent [`metaxy.init`][metaxy.init] calls will now automatically add these feature definitions to the feature graph.
+2. Run `metaxy lock` in the current Metaxy project - this pulls external feature definitions from the metadata store into a `metaxy.lock` file. Only explicit feature dependencies are pulled in (plus any [`extra_features`](#loading-extra-features) configured in `metaxy.toml`). Subsequent [`metaxy.init`][metaxy.init] calls will now automatically add these feature definitions to the feature graph.
 
 !!! example "Multi-environment setup"
 
@@ -121,3 +121,35 @@ Additionally, the following actions always trigger `sync_external_features`:
     This behavior can be disabled by setting `sync=False` in the global Metaxy configuration. However, we advise to keep it enabled,
     because [`sync_external_features`][metaxy.sync_external_features] is very lightweight on the first call and a no-op on subsequent calls.
     It only does anything if the current feature graph does not contain any external features.
+
+### Loading Extra Features
+
+Sometimes a project needs access to feature definitions it does not directly depend on. For example, a dashboard service might display metadata for features produced by other projects without computing any features itself. Since these feature definitions are not referenced via `deps=`, they would not normally be pulled into the graph.
+
+#### Via `sync_external_features`
+
+The first option is to do it manually by providing a [`FeatureSelection`][metaxy.FeatureSelection] to `sync_external_features`.
+
+#### Via Metaxy configuration
+
+The `[[extra_features]]` section in `metaxy.toml` can be used to declare additional feature definitions to load from the metadata store. Each entry is a [`FeatureSelection`][metaxy.FeatureSelection].
+
+```toml title="metaxy.toml"
+project = "my_dashboard"
+
+[[extra_features]]
+projects = ["team_a"]
+
+[[extra_features]]
+projects = ["team_b"]
+keys = ["shared/feature_x"]
+```
+
+To load every feature available in the metadata store:
+
+```toml title="metaxy.toml"
+[[extra_features]]
+all = true
+```
+
+Multiple entries are combined together. The resulting selection is used automatically by [`sync_external_features`][metaxy.sync_external_features], `metaxy lock`, and any operation that triggers a sync.

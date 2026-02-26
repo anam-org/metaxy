@@ -1366,3 +1366,64 @@ class TestSyncWithSelection:
         unresolved = [w for w in caught if w.category is UnresolvedExternalFeatureWarning]
         assert len(unresolved) == 1
         assert "sync/ghost" in str(unresolved[0].message)
+
+
+# ── sync_external_features with config extra_features tests ───────────
+
+
+class TestSyncWithConfigExtraFeatures:
+    def test_sync_uses_config_extra_features(self, store: MetadataStore):
+        """Config extra_features are loaded even without explicit selection."""
+        from metaxy.config import MetaxyConfig
+
+        _push_project(store, "upstream", ["cfg/a", "cfg/b"])
+
+        config = MetaxyConfig.get().model_copy(
+            update={"extra_features": [FeatureSelection(projects=["upstream"])]},
+        )
+        with config.use():
+            result = sync_external_features(store)
+
+        assert {d.key for d in result} == {FeatureKey("cfg/a"), FeatureKey("cfg/b")}
+
+    def test_sync_merges_config_and_explicit_selection(self, store: MetadataStore):
+        """Both config extra_features and explicit selection contribute features."""
+        from metaxy.config import MetaxyConfig
+
+        _push_project(store, "proj-a", ["merge/a1"])
+        _push_project(store, "proj-b", ["merge/b1"])
+
+        config = MetaxyConfig.get().model_copy(
+            update={"extra_features": [FeatureSelection(projects=["proj-a"])]},
+        )
+        with config.use():
+            result = sync_external_features(store, selection=FeatureSelection(keys=["merge/b1"]))
+
+        assert {d.key for d in result} == {FeatureKey("merge/a1"), FeatureKey("merge/b1")}
+
+    def test_sync_multiple_config_extra_features(self, store: MetadataStore):
+        """Multiple entries in extra_features list are all loaded."""
+        from metaxy.config import MetaxyConfig
+
+        _push_project(store, "proj-a", ["multi/a1"])
+        _push_project(store, "proj-b", ["multi/b1"])
+
+        config = MetaxyConfig.get().model_copy(
+            update={
+                "extra_features": [
+                    FeatureSelection(projects=["proj-a"]),
+                    FeatureSelection(projects=["proj-b"]),
+                ],
+            },
+        )
+        with config.use():
+            result = sync_external_features(store)
+
+        assert {d.key for d in result} == {FeatureKey("multi/a1"), FeatureKey("multi/b1")}
+
+    def test_sync_empty_config_extra_features_is_noop(self, store: MetadataStore):
+        """Default config (empty list), no selection — returns empty like today."""
+        _push_project(store, "upstream", ["noop/a"])
+
+        result = sync_external_features(store)
+        assert result == []
