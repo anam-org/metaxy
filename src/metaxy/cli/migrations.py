@@ -58,19 +58,27 @@ def generate(
       Each operation will have a 'features' list with all feature keys.
 
     Examples:
-        # Generate diff migration with DataVersionReconciliation operation
+        Generate diff migration with DataVersionReconciliation operation:
+        ```console
         $ metaxy migrations generate --op metaxy.migrations.ops.DataVersionReconciliation
+        ```
 
-        # Generate full graph migration (all features)
+        Generate full graph migration (all features):
+        ```console
         $ metaxy migrations generate --migration-type full --op myproject.ops.CustomBackfill
+        ```
 
-        # Custom operation type
+        Custom operation type:
+        ```console
         $ metaxy migrations generate --op myproject.ops.CustomReconciliation
+        ```
 
-        # Multiple operations
+        Multiple operations:
+        ```console
         $ metaxy migrations generate \
             --op metaxy.migrations.ops.DataVersionReconciliation \
             --op myproject.ops.CustomBackfill
+        ```
     """
     import shlex
     import sys
@@ -201,17 +209,25 @@ def apply(
     Tracks execution state in database (events).
 
     Examples:
-        # Apply all unapplied migrations in chain order
+        Apply all unapplied migrations in chain order:
+        ```console
         $ metaxy migrations apply
+        ```
 
-        # Apply specific migration (and all its unapplied predecessors)
+        Apply specific migration (and all its unapplied predecessors):
+        ```console
         $ metaxy migrations apply 20250113_103000
+        ```
 
-        # Dry run
+        Dry run:
+        ```console
         $ metaxy migrations apply --dry-run
+        ```
 
-        # Re-run all migrations, including already completed ones
+        Re-run all migrations, including already completed ones:
+        ```console
         $ metaxy migrations apply --rerun
+        ```
     """
     from pathlib import Path
 
@@ -362,9 +378,9 @@ def status():
     Shows execution status from database events.
     Displays the parent chain in order.
 
-    Example:
+    Examples:
+        ```console
         $ metaxy migrations status
-
         Migration:
         ────────────────────────────────────────────
         ✓ 20250110_120000 (parent: initial)
@@ -376,6 +392,7 @@ def status():
           Features: 3 affected
 
         ⚠ Multiple heads detected: [20250110_120000_a, 20250110_120000_b]
+        ```
     """
     from pathlib import Path
 
@@ -488,11 +505,12 @@ def list_migrations():
 
     Displays a simple table showing migration ID, creation time, and operations.
 
-    Example:
+    Examples:
+        ```console
         $ metaxy migrations list
-
         20250110_120000  2025-01-10 12:00  DataVersionReconciliation
         20250113_103000  2025-01-13 10:30  DataVersionReconciliation
+        ```
     """
     from pathlib import Path
 
@@ -567,11 +585,15 @@ def explain(
     Computes and displays the GraphDiff between the two snapshots on-demand.
 
     Examples:
-        # Explain latest migration (head of chain)
+        Explain latest migration (head of chain):
+        ```console
         $ metaxy migrations explain
+        ```
 
-        # Explain specific migration
+        Explain specific migration:
+        ```console
         $ metaxy migrations explain 20250113_103000
+        ```
     """
     from pathlib import Path
 
@@ -736,14 +758,20 @@ def describe(
     - Execution status if already run
 
     Examples:
-        # Describe all migrations in chain order
+        Describe all migrations in chain order:
+        ```console
         $ metaxy migrations describe
+        ```
 
-        # Describe specific migration
+        Describe specific migration:
+        ```console
         $ metaxy migrations describe 20250127_120000
+        ```
 
-        # Describe multiple migrations
+        Describe multiple migrations:
+        ```console
         $ metaxy migrations describe 20250101_120000 20250102_090000
+        ```
     """
     from pathlib import Path
 

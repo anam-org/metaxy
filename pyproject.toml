@@ -207,6 +207,7 @@ examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
 metaxy-testing = { workspace = true }
 griffe-pydantic = { git = "https://github.com/danielgafni/griffe-pydantic.git", branch = "feat/configurable-bases" }
+cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "docstring-parser-skipped-sections" }
 
 [tool.vulture]
 exclude = [

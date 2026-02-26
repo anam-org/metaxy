@@ -86,11 +86,9 @@ def status(
     """Check metadata completeness and freshness for specified features.
 
     Examples:
+        ```console
         $ metaxy metadata status my/feature
-        $ metaxy metadata status feat1 feat2
-        $ metaxy metadata status --all-features
-        $ metaxy metadata status --store dev --all-features
-        $ metaxy metadata status --all-features --filter "status = 'active'"
+        ```
     """
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import load_graph_for_command
@@ -363,9 +361,17 @@ def delete(
     """Delete metadata rows matching filters.
 
     Examples:
+        ```console
         $ metaxy metadata delete my/feature --filter "status = 'inactive'"
+        ```
+
+        ```console
         $ metaxy metadata delete --all-features --filter "created_at < '2024-01-01'" --hard
-        $ metaxy metadata delete test_feature --filter "1=1" --yes  # Delete all rows
+        ```
+
+        ```console
+        $ metaxy metadata delete test_feature --filter "1=1" --yes
+        ```
     """
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
@@ -580,11 +586,25 @@ def copy(
     keeping only the latest row per sample (--no-with-sample-history).
 
     Examples:
+        ```console
         $ metaxy metadata copy my/feature --from prod --to dev
+        ```
+
+        ```console
         $ metaxy metadata copy feat1 feat2 --from prod --to dev
+        ```
+
+        ```console
         $ metaxy metadata copy --all-features --from prod --to dev
+        ```
+
+        ```console
         $ metaxy metadata copy feat1 --from prod --to dev --current-only
+        ```
+
+        ```console
         $ metaxy metadata copy feat1 --from prod --to dev --filter "sample_uid IN (1, 2)"
+        ```
     """
     from rich.status import Status
 

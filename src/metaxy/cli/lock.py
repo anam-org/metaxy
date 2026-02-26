@@ -12,7 +12,7 @@ from metaxy.cli.console import console, error_console
 # Lock subcommand app
 app = cyclopts.App(
     name="lock",
-    help="Generate `metaxy.lock` file with external feature definitions fetched from the metadata store.",
+    help="Generate `metaxy.lock` file with [external feature definitions](https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/) fetched from the metadata store.",
     console=console,
     error_console=error_console,
 )
