@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 import tomli
 
+from metaxy import MetadataStore
+
 
 class TestLockCommand:
     """Tests for metaxy lock command."""
@@ -546,6 +548,176 @@ def test_load_all_features_from_store_warns_on_invalid_feature(tmp_path: Path):
     assert len(caught) == 1
     assert caught[0].category is InvalidStoredFeatureWarning
     assert "test/will_corrupt" in str(caught[0].message)
+
+
+class TestGenerateLockFileSelection:
+    """Tests for the `selection` parameter on `generate_lock_file`."""
+
+    @staticmethod
+    def _push_project(store: MetadataStore, project: str, keys: list[str]) -> None:
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+        from metaxy.models.feature import FeatureGraph
+
+        g = FeatureGraph()
+        with g.use():
+            for key in keys:
+                type(
+                    f"_Feat_{key.replace('/', '_')}",
+                    (BaseFeature,),
+                    {"__metaxy_project__": project},
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(key),
+                        fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                    ),
+                )
+            with store:
+                SystemTableStorage(store).push_graph_snapshot(project=project)
+
+    def test_selection_by_projects(self, store: MetadataStore, tmp_path: Path):
+        """Selection with projects= locks all features from those projects."""
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "upstream", ["up/a", "up/b"])
+
+        lock_path = tmp_path / "metaxy.lock"
+        count = generate_lock_file(store, lock_path, selection=FeatureSelection(projects=["upstream"]))
+
+        assert count == 2
+        content = tomli.loads(lock_path.read_text())
+        assert set(content["features"].keys()) == {"up/a", "up/b"}
+
+    def test_selection_by_keys(self, store: MetadataStore, tmp_path: Path):
+        """Selection with keys= locks only the specified features."""
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "upstream", ["up/a", "up/b", "up/c"])
+
+        lock_path = tmp_path / "metaxy.lock"
+        count = generate_lock_file(store, lock_path, selection=FeatureSelection(keys=["up/a", "up/c"]))
+
+        assert count == 2
+        content = tomli.loads(lock_path.read_text())
+        assert set(content["features"].keys()) == {"up/a", "up/c"}
+
+    def test_selection_all(self, store: MetadataStore, tmp_path: Path):
+        """Selection with all=True locks every feature in the store."""
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "proj-a", ["a/x"])
+        self._push_project(store, "proj-b", ["b/y"])
+
+        lock_path = tmp_path / "metaxy.lock"
+        count = generate_lock_file(store, lock_path, selection=FeatureSelection(all=True))
+
+        assert count == 2
+        content = tomli.loads(lock_path.read_text())
+        assert set(content["features"].keys()) == {"a/x", "b/y"}
+
+    def test_selection_combined_with_graph_deps(self, store: MetadataStore, tmp_path: Path):
+        """Selection features are unioned with graph-discovered dependencies."""
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+        from metaxy.models.feature import FeatureGraph
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "upstream", ["up/dep", "up/extra"])
+
+        # Local feature depends on up/dep (graph-discovered)
+        g = FeatureGraph()
+        with g.use():
+
+            class Local(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey("local/feat"),
+                    deps=[FeatureDep(feature="up/dep")],
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            ):
+                __metaxy_project__ = "local"
+
+            lock_path = tmp_path / "metaxy.lock"
+            # selection adds up/extra on top of graph-discovered up/dep
+            count = generate_lock_file(
+                store,
+                lock_path,
+                exclude_project="local",
+                selection=FeatureSelection(keys=["up/extra"]),
+            )
+
+        assert count == 2
+        content = tomli.loads(lock_path.read_text())
+        assert set(content["features"].keys()) == {"up/dep", "up/extra"}
+
+    def test_selection_missing_key_raises(self, store: MetadataStore, tmp_path: Path):
+        """Selection with a key not in the store raises FeatureNotFoundError."""
+        from metaxy.metadata_store.exceptions import FeatureNotFoundError
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "upstream", ["up/exists"])
+
+        lock_path = tmp_path / "metaxy.lock"
+        with pytest.raises(FeatureNotFoundError, match="up/ghost"):
+            generate_lock_file(store, lock_path, selection=FeatureSelection(keys=["up/exists", "up/ghost"]))
+
+    def test_selection_excludes_local_features(self, store: MetadataStore, tmp_path: Path):
+        """Features defined locally in the graph are excluded even if matched by selection."""
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy.models.feature import FeatureGraph
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "upstream", ["shared/feat", "up/other"])
+
+        g = FeatureGraph()
+        with g.use():
+            # Local project also defines shared/feat
+            class SharedFeat(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey("shared/feat"),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            ):
+                __metaxy_project__ = "local"
+
+            lock_path = tmp_path / "metaxy.lock"
+            count = generate_lock_file(
+                store,
+                lock_path,
+                exclude_project="local",
+                selection=FeatureSelection(projects=["upstream"]),
+            )
+
+        # shared/feat is local, so only up/other should be locked
+        assert count == 1
+        content = tomli.loads(lock_path.read_text())
+        assert set(content["features"].keys()) == {"up/other"}
+
+    def test_selection_no_matches_produces_empty_lock(self, store: MetadataStore, tmp_path: Path):
+        """Selection that matches nothing produces an empty lock file."""
+        from metaxy.models.feature_selection import FeatureSelection
+        from metaxy.utils.lock_file import generate_lock_file
+
+        self._push_project(store, "upstream", ["up/a"])
+
+        lock_path = tmp_path / "metaxy.lock"
+        count = generate_lock_file(store, lock_path, selection=FeatureSelection(projects=["nonexistent"]))
+
+        assert count == 0
+        content = tomli.loads(lock_path.read_text())
+        assert content["features"] == {}
 
 
 def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Path):
