@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from metaxy.models.feature_selection import FeatureSelection
+from metaxy.models.types import FeatureKey
 
 
 class TestValidation:
@@ -17,7 +18,7 @@ class TestValidation:
 
     def test_keys_mode(self):
         sel = FeatureSelection(keys=["a/b", "c/d"])
-        assert sel.keys == ["a/b", "c/d"]
+        assert sel.keys == [FeatureKey("a/b"), FeatureKey("c/d")]
 
     def test_all_mode(self):
         sel = FeatureSelection(all=True)
@@ -26,7 +27,7 @@ class TestValidation:
     def test_both_projects_and_keys(self):
         sel = FeatureSelection(projects=["p"], keys=["a/b"])
         assert sel.projects == ["p"]
-        assert sel.keys == ["a/b"]
+        assert sel.keys == [FeatureKey("a/b")]
 
     def test_no_mode_raises(self):
         with pytest.raises(ValidationError, match="At least one"):
@@ -49,12 +50,12 @@ class TestOr:
 
     def test_merges_keys(self):
         result = FeatureSelection(keys=["x/1"]) | FeatureSelection(keys=["x/2"])
-        assert result.keys == ["x/1", "x/2"]
+        assert result.keys == [FeatureKey("x/1"), FeatureKey("x/2")]
 
     def test_mixed_fields(self):
         result = FeatureSelection(projects=["a"]) | FeatureSelection(keys=["x/1"])
         assert result.projects == ["a"]
-        assert result.keys == ["x/1"]
+        assert result.keys == [FeatureKey("x/1")]
 
     def test_all_absorbs(self):
         result = FeatureSelection(projects=["a"]) | FeatureSelection(all=True)
@@ -72,7 +73,7 @@ class TestAnd:
 
     def test_intersects_keys(self):
         result = FeatureSelection(keys=["x/1", "x/2"]) & FeatureSelection(keys=["x/2", "x/3"])
-        assert result.keys == ["x/2"]
+        assert result.keys == [FeatureKey("x/2")]
 
     def test_all_passes_through(self):
         sel = FeatureSelection(projects=["a"])
@@ -92,7 +93,7 @@ class TestSub:
 
     def test_subtracts_keys(self):
         result = FeatureSelection(keys=["x/1", "x/2"]) - FeatureSelection(keys=["x/1"])
-        assert result.keys == ["x/2"]
+        assert result.keys == [FeatureKey("x/2")]
 
     def test_sub_all_raises(self):
         """Subtracting all from a selection empties it, which fails validation."""

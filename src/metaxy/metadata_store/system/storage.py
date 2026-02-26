@@ -955,7 +955,7 @@ class SystemTableStorage:
         if selection.projects:
             clauses.append(nw.col("project").is_in(selection.projects))
         if selection.keys:
-            clauses.append(nw.col("feature_key").is_in(selection.keys))
+            clauses.append(nw.col("feature_key").is_in([k.to_string() for k in selection.keys]))
 
         if clauses:
             expr = clauses[0]

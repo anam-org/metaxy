@@ -285,13 +285,14 @@ nav:
       - Initialization: reference/api/initialization.md
       - Definitions:
         - reference/api/definitions/index.md
-        - Feature Spec: reference/api/definitions/feature-spec.md
-        - Feature: reference/api/definitions/feature.md
-        - Field: reference/api/definitions/field.md
-        - Fields Mapping: reference/api/definitions/fields-mapping.md
-        - Lineage Relationship: reference/api/definitions/relationship.md
-        - Graph: reference/api/definitions/graph.md
+        - FeatureSpec: reference/api/definitions/feature-spec.md
+        - BaseFeature: reference/api/definitions/feature.md
+        - FieldSpec: reference/api/definitions/field.md
+        - FieldsMapping: reference/api/definitions/fields-mapping.md
+        - LineageRelationship: reference/api/definitions/relationship.md
+        - FeatureGraph: reference/api/definitions/graph.md
         - Filters: reference/api/definitions/filters.md
+        - FeatureSelection: reference/api/definitions/feature-selection.md
       - MetadataStore:
         - Base: reference/api/metadata-stores/base.md
         - Exceptions: reference/api/metadata-stores/exceptions.md

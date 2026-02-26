@@ -9,11 +9,14 @@ Import style enforcement:
     namespace along with common symbols for convenience.
 """
 
+from doctest import ELLIPSIS
+
 from sybil import Sybil
 from sybil.document import PythonDocStringDocument
 from sybil.evaluators.python import PythonEvaluator
 from sybil.parsers.markdown.codeblock import CodeBlockParser
 from sybil.parsers.markdown.skip import SkipParser
+from sybil.parsers.rest.doctest import DocTestParser
 
 import metaxy as mx
 
@@ -154,6 +157,7 @@ def sybil_teardown(namespace):
 python_evaluator = ImportStyleCheckingEvaluator()
 parsers = [
     SkipParser(),
+    DocTestParser(optionflags=ELLIPSIS),
     CodeBlockParser(language="python", evaluator=python_evaluator),
     CodeBlockParser(language="py", evaluator=python_evaluator),
 ]
