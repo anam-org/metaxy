@@ -19,12 +19,13 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
         This functionality is experimental.
 
 <!-- --8<-- [end:header] -->
+<!-- --8<-- [start:releases] -->
 
 # 1.1.0
 
 ### Added
 
-- A new top-level [`extra_features`](/reference/configuration.md#extra-features) configuration option has been added. It can be used to register additional external feature definitions from the metadata store on the feature graph. Learn more [here](/guide/concepts/definitions/external-features.md/#loading-extra-features).
+- A new top-level [`extra_features`](/reference/configuration.md#metaxy.config.MetaxyConfig.extra_features) configuration option has been added. It can be used to register additional external feature definitions from the metadata store on the feature graph. Learn more [here](/guide/concepts/definitions/external-features.md/#loading-extra-features).
 
 - [DuckLake](/integrations/metadata-stores/storage/ducklake.md) integration has been revamped, tested, and documented. Thanks [@geoHeil](https://github.com/geoHeil)!
 
@@ -32,8 +33,6 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 - (:boom: breaking) Fixed a bug where `MetadataStore` erroneously did not require being opened with `"w"` write mode before writing data
 - Fixed a bug where `MetadataStore` would not properly handle nested context manager calls
-
-<!-- --8<-- [start:releases] -->
 
 ## 0.1.0
 
