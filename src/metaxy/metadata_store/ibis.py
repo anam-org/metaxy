@@ -282,7 +282,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         else:
             return self._conn
 
-    def _open_connection(self, mode: AccessMode) -> None:  # noqa: ARG002
+    def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
         import ibis
 
         if self.connection_string:
@@ -292,7 +292,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             backend_module = getattr(ibis, self.backend)
             self._conn = backend_module.connect(**self.connection_params)
 
-    def _close_connection(self) -> None:
+    def _close(self) -> None:
         self._conn = None
 
     @property

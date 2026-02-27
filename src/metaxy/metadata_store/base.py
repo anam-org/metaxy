@@ -1229,18 +1229,18 @@ class MetadataStore(ABC):
         self._mode_stack.append(mode)
         try:
             if len(self._mode_stack) == 1:
-                self._open_connection(mode)
+                self._open(mode)
                 self._is_open = True
                 self._validate_after_open()
             yield self
         finally:
             self._mode_stack.pop()
             if not self._mode_stack:
-                self._close_connection()
+                self._close()
                 self._is_open = False
 
     @abstractmethod
-    def _open_connection(self, mode: AccessMode) -> None:
+    def _open(self, mode: AccessMode) -> None:
         """Open backend-specific connection/resources.
 
         Args:
@@ -1249,7 +1249,7 @@ class MetadataStore(ABC):
         ...
 
     @abstractmethod
-    def _close_connection(self) -> None:
+    def _close(self) -> None:
         """Close backend-specific connection/resources."""
         ...
 

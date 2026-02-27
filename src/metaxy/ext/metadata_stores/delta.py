@@ -170,10 +170,10 @@ class DeltaMetadataStore(MetadataStore):
         with self._create_polars_versioning_engine(plan) as engine:
             yield engine
 
-    def _open_connection(self, mode: AccessMode) -> None:  # noqa: ARG002
+    def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
         pass
 
-    def _close_connection(self) -> None:
+    def _close(self) -> None:
         pass
 
     @cached_property

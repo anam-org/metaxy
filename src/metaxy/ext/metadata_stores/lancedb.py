@@ -165,7 +165,7 @@ class LanceDBMetadataStore(MetadataStore):
             # No cleanup needed for Polars engine
             pass
 
-    def _open_connection(self, mode: AccessMode) -> None:  # noqa: ARG002
+    def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
         import lancedb
 
         if is_local_path(self.uri):
@@ -173,7 +173,7 @@ class LanceDBMetadataStore(MetadataStore):
 
         self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
 
-    def _close_connection(self) -> None:
+    def _close(self) -> None:
         self._conn = None
 
     @property

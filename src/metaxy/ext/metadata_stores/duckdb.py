@@ -288,7 +288,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return hash_functions
 
     # ------------------------------------------------------------------ DuckLake
-    def _open_connection(self, mode: AccessMode) -> None:
+    def _open(self, mode: AccessMode) -> None:
         if mode == "r":
             db = self.connection_params.get("database", "")
             is_local = db and db != ":memory:" and not db.startswith(("md:", "motherduck:", "s3://", "http"))
@@ -299,15 +299,15 @@ class DuckDBMetadataStore(IbisMetadataStore):
         else:
             self.connection_params.pop("read_only", None)
 
-        super()._open_connection(mode)
+        super()._open(mode)
 
         self._load_extensions()
         if self._ducklake_attachment is not None:
             self._ducklake_attachment._attached = False
             self._ducklake_attachment.configure(self._duckdb_raw_connection())
 
-    def _close_connection(self) -> None:
-        super()._close_connection()
+    def _close(self) -> None:
+        super()._close()
 
     def preview_ducklake_sql(self) -> list[str]:
         """Return DuckLake attachment SQL if configured."""
