@@ -101,7 +101,7 @@ class VersioningEngine(ABC):
                     continue
                 df = cast(
                     FrameT,
-                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),
+                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),  # ty: ignore[invalid-argument-type]
                 )
             return df
 
@@ -126,7 +126,7 @@ class VersioningEngine(ABC):
             else:
                 df = cast(
                     FrameT,
-                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),
+                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),  # ty: ignore[invalid-argument-type]
                 )
 
         # Then, join all optional dependencies
