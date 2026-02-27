@@ -3537,7 +3537,8 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 </ul>
 <h3 id="fixes">Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
 <ul>
-<li>fixed <code>/metaxy</code> skill and <code>metaxy</code> MCP server not being properly installed by the Claude plugin</li>
+<li>Fixed <code>DuckDBMetadataStore</code> assuming <code>"community"</code> extension repo instead of <code>"core"</code> when loading extensions with unspecified repos</li>
+<li>Fixed <code>/metaxy</code> skill and <code>metaxy</code> MCP server not being properly installed by the Claude plugin</li>
 <li>(<img alt="💥" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f4a5.svg" title=":boom:" /> breaking) Fixed a bug where <code>MetadataStore</code> erroneously did not require being opened with <code>"w"</code> write mode before writing data</li>
 <li>Fixed a bug where <code>MetadataStore</code> would not properly handle nested context manager calls</li>
 </ul>
