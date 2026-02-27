@@ -1,5 +1,8 @@
 {
   "name": "metaxy",
+  "metadata": {
+    "description": "Claude Code plugin for Metaxy"
+  },
   "owner": {
     "name": "Anam"
   },
