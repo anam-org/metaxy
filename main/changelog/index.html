@@ -3532,15 +3532,12 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 <h1 id="110">1.1.0<a class="headerlink" href="#110" title="Permanent link">&para;</a></h1>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
-<li>
-<p>A new top-level <a href="../reference/configuration/#metaxy.config.MetaxyConfig.extra_features"><code>extra_features</code></a> configuration option has been added. It can be used to register additional <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store on the feature graph. Learn more <a href="../guide/concepts/definitions/external-features/#loading-extra-features">here</a>.</p>
-</li>
-<li>
-<p><a href="../integrations/metadata-stores/storage/ducklake/">DuckLake</a> integration has been revamped, tested, and documented. Thanks <a href="https://github.com/geoHeil">@geoHeil</a>!</p>
-</li>
+<li>A new top-level <a href="../reference/configuration/#metaxy.config.MetaxyConfig.extra_features"><code>extra_features</code></a> configuration option has been added. It can be used to register additional <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store on the feature graph. Learn more <a href="../guide/concepts/definitions/external-features/#loading-extra-features">here</a>.</li>
+<li><a href="../integrations/metadata-stores/storage/ducklake/">DuckLake</a> integration has been revamped, tested, and documented. Thanks <a href="https://github.com/geoHeil">@geoHeil</a>!</li>
 </ul>
 <h3 id="fixes">Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
 <ul>
+<li>fixed <code>/metaxy</code> skill and <code>metaxy</code> MCP server not being properly installed by the Claude plugin</li>
 <li>(<img alt="💥" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f4a5.svg" title=":boom:" /> breaking) Fixed a bug where <code>MetadataStore</code> erroneously did not require being opened with <code>"w"</code> write mode before writing data</li>
 <li>Fixed a bug where <code>MetadataStore</code> would not properly handle nested context manager calls</li>
 </ul>
@@ -3549,30 +3546,16 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 <p>This release should be considered an <em>alpha</em> release: it is ready for production use and has been dogfooded internally at <a href="https://anam.ai">Anam.ai</a>, but we don't have any community feedback yet.</p>
 <h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
 <ul>
-<li>
-<p><a href="../guide/concepts/definitions/features/">Feature Definitions</a> and related models</p>
-</li>
-<li>
-<p>Metaxy <a href="../guide/concepts/versioning/">versioning engine</a> and <a href="../reference/system-columns/">storage layout</a></p>
-</li>
-<li>
-<p><a href="../guide/concepts/metadata-stores/">MetadataStore API</a></p>
-</li>
-<li>
-<p>Integrations: <a href="../integrations/metadata-stores/storage/delta/">DeltaLake</a>, <a href="../integrations/orchestration/dagster/">Dagster</a>, <a href="../integrations/compute/ray/">Ray</a>, <a href="../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="../integrations/ai/mcp/">MCP</a>, <a href="../integrations/ai/claude/">Claude</a></p>
-</li>
+<li><a href="../guide/concepts/definitions/features/">Feature Definitions</a> and related models</li>
+<li>Metaxy <a href="../guide/concepts/versioning/">versioning engine</a> and <a href="../reference/system-columns/">storage layout</a></li>
+<li><a href="../guide/concepts/metadata-stores/">MetadataStore API</a></li>
+<li>Integrations: <a href="../integrations/metadata-stores/storage/delta/">DeltaLake</a>, <a href="../integrations/orchestration/dagster/">Dagster</a>, <a href="../integrations/compute/ray/">Ray</a>, <a href="../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="../integrations/ai/mcp/">MCP</a>, <a href="../integrations/ai/claude/">Claude</a></li>
 </ul>
 <h3 id="experimental">Experimental<a class="headerlink" href="#experimental" title="Permanent link">&para;</a></h3>
 <ul>
-<li>
-<p><a href="../reference/cli/">CLI</a></p>
-</li>
-<li>
-<p><a href="../guide/concepts/definitions/external-features/#metaxylock-file"><code>metaxy.lock</code>-based workflow</a> for <abbr title="Metaxy codebases which have more than one distinct Python environment. | /guide/concepts/projects/#multi-environment-setups">multi-environment setups</abbr></p>
-</li>
-<li>
-<p>Integrations: <a href="../integrations/metadata-stores/databases/duckdb/">DuckDB</a>, <a href="../integrations/metadata-stores/databases/bigquery/">BigQuery</a>, <a href="../integrations/metadata-stores/databases/lancedb/">LanceDB</a>, <a href="../integrations/plugins/sqlalchemy/">SQLAlchemy</a>, <a href="../integrations/plugins/sqlmodel/">SQLModel</a></p>
-</li>
+<li><a href="../reference/cli/">CLI</a></li>
+<li><a href="../guide/concepts/definitions/external-features/#metaxylock-file"><code>metaxy.lock</code>-based workflow</a> for <abbr title="Metaxy codebases which have more than one distinct Python environment. | /guide/concepts/projects/#multi-environment-setups">multi-environment setups</abbr></li>
+<li>Integrations: <a href="../integrations/metadata-stores/databases/duckdb/">DuckDB</a>, <a href="../integrations/metadata-stores/databases/bigquery/">BigQuery</a>, <a href="../integrations/metadata-stores/databases/lancedb/">LanceDB</a>, <a href="../integrations/plugins/sqlalchemy/">SQLAlchemy</a>, <a href="../integrations/plugins/sqlmodel/">SQLModel</a></li>
 </ul>
 
 
