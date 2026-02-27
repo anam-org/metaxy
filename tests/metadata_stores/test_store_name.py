@@ -31,7 +31,6 @@ class NamedStoreCases:
         return DuckDBMetadataStore(
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
-            extensions=["hashfuncs"],
             name="staging",
         )
 

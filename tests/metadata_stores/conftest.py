@@ -75,7 +75,6 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
     return DuckDBMetadataStore(
         database=tmp_path / "test.duckdb",
         hash_algorithm=HashAlgorithm.XXHASH64,
-        extensions=["hashfuncs"],
     )
 
 
@@ -98,7 +97,6 @@ class AllStoresCases:
         return DuckDBMetadataStore(
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
-            extensions=["hashfuncs"],
         )
 
     @pytest.mark.ibis

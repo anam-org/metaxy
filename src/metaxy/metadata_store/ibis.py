@@ -293,6 +293,8 @@ class IbisMetadataStore(MetadataStore, ABC):
             self._conn = backend_module.connect(**self.connection_params)
 
     def _close(self) -> None:
+        if self._conn is not None:
+            self._conn.disconnect()
         self._conn = None
 
     @property

@@ -30,7 +30,8 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 ### Fixes
 
-- fixed `/metaxy` skill and `metaxy` MCP server not being properly installed by the Claude plugin
+- Fixed `DuckDBMetadataStore` assuming `"community"` extension repo instead of `"core"` when loading extensions with unspecified repos
+- Fixed `/metaxy` skill and `metaxy` MCP server not being properly installed by the Claude plugin
 - (:boom: breaking) Fixed a bug where `MetadataStore` erroneously did not require being opened with `"w"` write mode before writing data
 - Fixed a bug where `MetadataStore` would not properly handle nested context manager calls
 

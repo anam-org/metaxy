@@ -228,7 +228,7 @@ def test_duckdb_config_with_extensions() -> None:
                 type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
-                    "extensions": ["hashfuncs", "json"],
+                    "extensions": ["json"],
                 },
             )
         }

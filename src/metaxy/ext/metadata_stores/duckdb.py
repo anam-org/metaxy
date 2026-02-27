@@ -28,7 +28,8 @@ class ExtensionSpec(BaseModel):
     """DuckDB extension specification accepted by DuckDBMetadataStore."""
 
     name: str
-    repository: str | None = None
+    repository: str = "core"
+    """Extension repository: `"core"` for official extensions, `"community"` for community extensions."""
     init_sql: Sequence[str] = ()
     """SQL statements to execute immediately after loading the extension."""
 
@@ -44,7 +45,6 @@ class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
 
         [stores.dev.config]
         database = "metadata.db"
-        extensions = ["hashfuncs"]
         hash_algorithm = "xxhash64"
         ```
     """
@@ -58,7 +58,7 @@ class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
     )
     extensions: Sequence[str | ExtensionSpec] | None = Field(
         default=None,
-        description="DuckDB extensions to install and load on open.",
+        description="DuckDB extensions to install and load on open. If only a string is provided, the `core` repository is assumed.",
     )
     ducklake: DuckLakeConfig | None = Field(
         default=None,
@@ -127,7 +127,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
             config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
             extensions: List of DuckDB extensions to install and load on open.
-                Supports strings (community repo) or
+                Supports strings (assumes `"core"` repo) or
                 [metaxy.ext.metadata_stores.duckdb.ExtensionSpec][] instances.
             ducklake: Optional [DuckLake](https://ducklake.select/) attachment configuration.
                 Learn more [here](/integrations/metadata-stores/storage/ducklake.md).
@@ -211,10 +211,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         duckdb_conn = self._duckdb_raw_connection()
         for ext in self.extensions:
-            if ext.repository is not None:
-                duckdb_conn.install_extension(ext.name, repository=ext.repository)
-            else:
-                duckdb_conn.install_extension(ext.name)
+            duckdb_conn.install_extension(ext.name, repository=ext.repository)
             duckdb_conn.load_extension(ext.name)
             for sql in ext.init_sql:
                 duckdb_conn.execute(sql)

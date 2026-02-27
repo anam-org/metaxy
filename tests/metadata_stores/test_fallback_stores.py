@@ -72,13 +72,9 @@ def create_store_for_fallback(
     """
     if store_type == "duckdb":
         db_path = tmp_path / f"fallback_test_{suffix}_{hash_algorithm.value}.duckdb"
-        extensions: list[str] = (
-            ["hashfuncs"] if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64] else []
-        )
         return DuckDBMetadataStore(
             db_path,
             hash_algorithm=hash_algorithm,
-            extensions=extensions,
             versioning_engine=versioning_engine,
             fallback_stores=fallback_stores,
         )
