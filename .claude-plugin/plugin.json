@@ -1,8 +1,10 @@
 {
   "name": "metaxy",
   "description": "Provides the /metaxy skill for guidance on feature definitions, versioning, and metadata stores, plus MCP tools for exploring feature graphs and querying metadata.",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "author": {
     "name": "Anam"
-  }
+  },
+  "skills": "./.claude-plugin/skills/",
+  "mcpServers": "./.claude-plugin/.mcp.json"
 }
