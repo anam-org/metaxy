@@ -77,6 +77,9 @@ lancedb = [
   "lancedb>=0.15.0",
   "polars>=1.36.1",
 ]
+postgres = [
+  "ibis-framework[postgres]>=11.0.0",
+]
 mcp = [
   "fastmcp>=2.0.0",
 ]
@@ -109,8 +112,10 @@ dev = [
   "hypothesis>=6.142.4",
   "ruff>=0.14.4",
   "syrupy>=5.0.0",
-  "ibis-framework[duckdb,clickhouse]>=11.0.0",
+  "ibis-framework[duckdb,clickhouse,postgres]>=11.0.0",
   "lancedb>=0.15.0",
+  "pytest-postgresql>=6.1.0",
+  "psycopg[binary]>=3.2.0", # Bundle libpq to avoid LD_LIBRARY_PATH issues
   "vulture>=2.14",
   "prek>=0.2.11",
   "pytest-env>=1.2.0",
@@ -301,6 +306,9 @@ markers = [
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
   "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
+  "lancedb: LanceDB store tests",
+  "postgresql: PostgreSQL store tests",
+  "integration: Integration tests (require external services)",
 ]
 
 [tool.deptry.package_module_name_map]
