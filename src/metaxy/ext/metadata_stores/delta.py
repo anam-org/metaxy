@@ -215,13 +215,18 @@ class DeltaMetadataStore(MetadataStore):
         # for weird reasons deltalake.DeltaTable.is_deltatable() sometimes hangs in multi-threading settings
         # but a deltalake.DeltaTable can be constructed just fine
         # so we are relying on DeltaTableNotFoundError to check for existence
-        from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
+        # from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
+        from deltalake import DeltaTable
 
-        try:
-            _ = self._open_delta_table(feature, without_files=True)
-        except DeltaTableNotFoundError:
-            return False
-        return True
+        # try:
+        #     _ = self._open_delta_table(feature, without_files=True)
+        # except DeltaTableNotFoundError:
+        #     return False
+        # return True
+
+        return DeltaTable.is_deltatable(
+            self._feature_uri(self._resolve_feature_key(feature)), storage_options=self.storage_options
+        )
 
     @overload
     def _cast_enum_to_string(self, frame: pl.DataFrame) -> pl.DataFrame: ...
