@@ -1,0 +1,37 @@
+name: Generate PDF from Markdown
+on:
+  push:
+    paths:
+      - 'docs/paper.bib'
+      - 'docs/paper.md'
+      - 'docs/paper/img/**'
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main ]
+    paths:
+      - 'docs/paper.bib'
+      - 'docs/paper.md'
+      - 'docs/paper/img/**'
+jobs:
+  paper:
+    permissions:
+      contents: read
+      actions: write
+    runs-on: ubuntu-latest
+    name: Paper Draft
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: TeX and PDF
+        uses: docker://openjournals/paperdraft:latest
+        with:
+          journal: joss
+          args: '-k ./docs/paper.md'
+      - name: Upload PDF to Artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: generated-paper
+          path: ./docs/paper.pdf
