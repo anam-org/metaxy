@@ -21,7 +21,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
-# 1.1.0
+## 1.1.0
 
 ### Added
 
