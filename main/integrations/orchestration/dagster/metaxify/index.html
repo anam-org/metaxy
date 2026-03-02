@@ -3885,6 +3885,12 @@
 <p>It's highly recommended to <code>@metaxify</code> all your Dagster assets that <strong>produce Metaxy features</strong>.
 It's also recommended to use it in combination with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyIOManager&lt;/span&gt;" href="../api/#metaxy.ext.dagster.MetaxyIOManager"><code>MetaxyIOManager</code></a>.</p>
 <p><code>@metaxify</code> modifies most of the attributes available on the asset spec.</p>
+<div class="admonition question">
+<p class="admonition-title">What's the relationship between Metaxy features and Dagster assets?</p>
+<p>Typically, there's a 1:1 mapping between Metaxy features and Dagster assets, but it is not required to be so.
+The integration supports multiple Dagster assets contributing to the same Metaxy feature by setting <code>"metaxy/partition"</code> asset metadata key.
+Learn more in <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.metaxify.metaxify&lt;/span&gt;" href="../api/#metaxy.ext.dagster.metaxify.metaxify"><code>@metaxify</code></a> API docs.</p>
+</div>
 <h2 id="deps">Deps<a class="headerlink" href="#deps" title="Permanent link">&para;</a></h2>
 <p>Upstream Metaxy features are injected into <code>deps</code>.</p>
 <!-- dprint-ignore-start -->
