@@ -12,6 +12,12 @@ It's also recommended to use it in combination with [`MetaxyIOManager`][metaxy.e
 
 `@metaxify` modifies most of the attributes available on the asset spec.
 
+!!! question "What's the relationship between Metaxy features and Dagster assets?"
+
+    Typically, there's a 1:1 mapping between Metaxy features and Dagster assets, but it is not required to be so.
+    The integration supports multiple Dagster assets contributing to the same Metaxy feature by setting `"metaxy/partition"` asset metadata key.
+    Learn more in [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] API docs.
+
 ## Deps
 
 Upstream Metaxy features are injected into `deps`.
