@@ -873,8 +873,8 @@ wheels = [
 
 [[package]]
 name = "cyclopts"
-version = "4.5.5.dev3+ga2079f62e"
-source = { git = "https://github.com/BrianPugh/cyclopts.git?branch=docstring-parser-skipped-sections#a2079f62e8712169e0c8abf14859b59301cc8bf8" }
+version = "4.6.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "docstring-parser" },
@@ -882,6 +882,10 @@ dependencies = [
     { name = "rich-rst" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/49/5c/88a4068c660a096bbe87efc5b7c190080c9e86919c36ec5f092cb08d852f/cyclopts-4.6.0.tar.gz", hash = "sha256:483c4704b953ea6da742e8de15972f405d2e748d19a848a4d61595e8e5360ee5", size = 162724, upload-time = "2026-02-23T15:44:49.286Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/eb/1e8337755a70dc7d7ff10a73dc8f20e9352c9ad6c2256ed863ac95cd3539/cyclopts-4.6.0-py3-none-any.whl", hash = "sha256:0a891cb55bfd79a3cdce024db8987b33316aba11071e5258c21ac12a640ba9f2", size = 200518, upload-time = "2026-02-23T15:44:47.854Z" },
 ]
 
 [package.optional-dependencies]
@@ -3009,7 +3013,7 @@ examples = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cyclopts", git = "https://github.com/BrianPugh/cyclopts.git?branch=docstring-parser-skipped-sections" },
+    { name = "cyclopts", specifier = ">=4.4.0" },
     { name = "dagster", marker = "extra == 'dagster'", specifier = ">=1.12.3" },
     { name = "dagster-shared", marker = "extra == 'dagster'", specifier = ">=1.12.0" },
     { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.2.1" },
@@ -3085,7 +3089,7 @@ dev = [
     { name = "vulture", specifier = ">=2.14" },
 ]
 docs = [
-    { name = "cyclopts", extras = ["mkdocs"], git = "https://github.com/BrianPugh/cyclopts.git?branch=docstring-parser-skipped-sections" },
+    { name = "cyclopts", extras = ["mkdocs"] },
     { name = "examples", editable = "examples" },
     { name = "griffe", specifier = ">=1.14.0" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.1.2" },
