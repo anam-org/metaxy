@@ -189,6 +189,10 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://docs.metaxy.io/main/publications/2026-introducing-metaxy/paper/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://docs.metaxy.io/main/reference/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -270,6 +274,10 @@
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/metadata-stores/exceptions/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/slides/2026-introducing-metaxy/intro/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
 </urlset>
