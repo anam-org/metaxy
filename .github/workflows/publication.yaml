@@ -2,9 +2,9 @@ name: Generate PDF from Markdown
 on:
   push:
     paths:
-      - 'docs/paper.bib'
-      - 'docs/paper.md'
-      - 'docs/paper/img/**'
+      - 'publications/2026-introducing-metaxy/introducing-metaxy.md'
+      - 'publications/2026-introducing-metaxy/paper.bib'
+      - 'publications/2026-introducing-metaxy/assets/**'
     branches:
       - main
   workflow_dispatch:
@@ -12,9 +12,9 @@ on:
     types: [opened, synchronize, reopened]
     branches: [ main ]
     paths:
-      - 'docs/paper.bib'
-      - 'docs/paper.md'
-      - 'docs/paper/img/**'
+      - 'publications/2026-introducing-metaxy/introducing-metaxy.md'
+      - 'publications/2026-introducing-metaxy/paper.bib'
+      - 'publications/2026-introducing-metaxy/assets/**'
 jobs:
   paper:
     permissions:
@@ -29,9 +29,9 @@ jobs:
         uses: docker://openjournals/paperdraft:latest
         with:
           journal: joss
-          args: '-k ./docs/paper.md'
+          args: '-k ./publications/2026-introducing-metaxy/introducing-metaxy.md'
       - name: Upload PDF to Artifacts
         uses: actions/upload-artifact@v5
         with:
           name: generated-paper
-          path: ./docs/paper.pdf
+          path: ./publications/2026-introducing-metaxy/introducing-metaxy.pdf

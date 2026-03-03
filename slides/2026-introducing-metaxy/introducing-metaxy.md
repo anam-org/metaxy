@@ -1,10 +1,10 @@
 ---
 theme: default
 # background: /img/race.jpg
-title: Metaxy
+title: "Perfecting the art of doing nothing - introducing metaxy: rapid feature exploration on a budget"
 info: |
-  ## Introducing Metaxy
-  Rapid feature exploration unlocked - at a budget.
+  ## Perfecting the art of doing nothing
+  Introducing Metaxy: rapid feature exploration on a budget.
 
   Learn more at [Metaxy](https://docs.metaxy.io)
 class: text-center
@@ -20,9 +20,8 @@ themeConfig:
 
 <img src="/img/metaxy.svg" class="mx-auto mb-4 w-24 h-24" />
 
-# Metaxy
+# Perfecting the art of doing <span style="color: #696FCC;">nothing</span>
 
-Streamlining multimodal data handling
 
 <div @click="$slidev.nav.next" class="mt-12 py-1" hover:bg="white op-10">
   Accelerating multimodal AI experimentation without massive cost. <carbon:arrow-right />
@@ -32,7 +31,7 @@ Streamlining multimodal data handling
   <button @click="$slidev.nav.openInEditor()" title="Open in Editor" class="slidev-icon-btn">
     <carbon:edit />
   </button>
-  <a href="https://github.com/anam-org/metaxy/tree/main/docs/slides/slides-introduction.md" target="_blank" class="slidev-icon-btn">
+  <a href="https://github.com/anam-org/metaxy/tree/main/slides/2026-introducing-metaxy/introducing-metaxy.md" target="_blank" class="slidev-icon-btn">
     <carbon:logo-github />
   </a>
 </div>

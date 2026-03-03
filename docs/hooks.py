@@ -11,14 +11,34 @@ from mkdocs.structure.files import Files
 
 log = logging.getLogger("mkdocs")
 
-SLIDES_DIR = Path(__file__).parent / "slides"
-SLIDES_ENTRY = "slides-introduction.md"
+DOCS_DIR = Path(__file__).parent
+ROOT_DIR = DOCS_DIR.parent
+SLIDES_DIR = ROOT_DIR / "slides" / "2026-introducing-metaxy"
+PUBLICATIONS_DIR = ROOT_DIR / "publications" / "2026-introducing-metaxy"
+DOCS_SLIDES_DIR = DOCS_DIR / "slides" / "2026-introducing-metaxy"
+DOCS_PUBLICATIONS_DIR = DOCS_DIR / "publications" / "2026-introducing-metaxy"
+SLIDES_ENTRY = "introducing-metaxy.md"
 SLIDES_OUTPUT = "dist"
 HIDDEN_NODE_MODULES = SLIDES_DIR / ".node_modules"
+PUBLICATION_ASSETS_DIR = (
+    DOCS_DIR / "assets" / "publications" / "2026-introducing-metaxy"
+)
+SLIDES_PUBLIC_IMG_DIR = SLIDES_DIR / "public" / "img"
+SHARED_SLIDES_ASSET_SOURCES = {
+    "anatomy.svg": PUBLICATION_ASSETS_DIR / "anatomy.svg",
+    "feature.svg": PUBLICATION_ASSETS_DIR / "feature.svg",
+    "pipeline.svg": PUBLICATION_ASSETS_DIR / "pipeline.svg",
+    "metaxy.svg": DOCS_DIR / "assets" / "metaxy.svg",
+    "coffee.jpg": DOCS_DIR
+    / "assets"
+    / "slides"
+    / "2026-introducing-metaxy"
+    / "coffee.jpg",
+    "race.jpg": DOCS_DIR / "assets" / "slides" / "2026-introducing-metaxy" / "race.jpg",
+}
 EXCLUDED_DOCS = {
-    "paper.md",
-    "slides/README.md",
-    f"slides/{SLIDES_ENTRY}",
+    "slides/2026-introducing-metaxy/README.md",
+    f"slides/2026-introducing-metaxy/{SLIDES_ENTRY}",
 }
 
 
@@ -34,6 +54,61 @@ _ensure_metaxy_config()
 def _run(command: list[str]) -> None:
     """Run a subprocess command with error handling."""
     subprocess.run(command, check=True, cwd=SLIDES_DIR)
+
+
+def _remove_stale_slide_root_index() -> None:
+    """Drop stale Slidev root index.html that conflicts with README.md -> index.html."""
+    stale_index = SLIDES_DIR / "index.html"
+    if stale_index.exists() and stale_index.is_file():
+        stale_index.unlink()
+
+
+def _sync_docs_mounts() -> None:
+    """Mirror top-level slides/publications into docs/ for MkDocs file discovery."""
+    mounts = (
+        (SLIDES_DIR, DOCS_SLIDES_DIR),
+        (PUBLICATIONS_DIR, DOCS_PUBLICATIONS_DIR),
+    )
+    for src, dst in mounts:
+        if not src.exists():
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.exists() or dst.is_symlink():
+            if dst.is_symlink() or dst.is_file():
+                dst.unlink()
+            else:
+                shutil.rmtree(dst)
+        shutil.copytree(
+            src,
+            dst,
+            symlinks=True,
+            ignore=shutil.ignore_patterns("node_modules", ".node_modules"),
+        )
+
+
+def _sync_slides_svg_assets() -> None:
+    """Keep shared Slidev assets aligned by symlinking with copy fallback."""
+    SLIDES_PUBLIC_IMG_DIR.mkdir(parents=True, exist_ok=True)
+
+    for name, src in SHARED_SLIDES_ASSET_SOURCES.items():
+        dst = SLIDES_PUBLIC_IMG_DIR / name
+
+        if not src.exists():
+            log.warning("Skipping missing shared Slidev asset source: %s", src)
+            continue
+
+        if dst.exists() or dst.is_symlink():
+            if dst.is_symlink() and dst.resolve() == src.resolve():
+                continue
+            if dst.is_dir():
+                shutil.rmtree(dst)
+            else:
+                dst.unlink()
+
+        try:
+            dst.symlink_to(src.resolve())
+        except OSError:
+            shutil.copy2(src, dst)
 
 
 def _restore_node_modules() -> None:
@@ -118,6 +193,9 @@ def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
 
 def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
     """Build the Slidev deck before MkDocs collects site files."""
+    _remove_stale_slide_root_index()
+    _sync_slides_svg_assets()
+    _sync_docs_mounts()
     _restore_node_modules()
 
     entry_path = SLIDES_DIR / SLIDES_ENTRY
@@ -167,6 +245,7 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
         log.info("Building Slidev slides into %s.", output_dir)
         runner = _select_runner(bun_path=bun, npx_path=npx)
         _run(runner)
+        _sync_docs_mounts()
     finally:
         _hide_node_modules()
 
@@ -177,7 +256,9 @@ def on_files(files: Files, config) -> Files:  # pragma: no cover - executed by M
         [
             f
             for f in files
-            if not f.src_path.replace("\\", "/").startswith("slides/node_modules")
+            if not f.src_path.replace("\\", "/").startswith(
+                "slides/2026-introducing-metaxy/node_modules"
+            )
             and f.src_path not in EXCLUDED_DOCS
         ]
     )
@@ -185,7 +266,8 @@ def on_files(files: Files, config) -> Files:  # pragma: no cover - executed by M
     removed = len(files) - len(filtered_files)
     if removed:
         log.debug(
-            "Excluded %d files under slides/node_modules from MkDocs build.", removed
+            "Excluded %d files under slides/2026-introducing-metaxy/node_modules from MkDocs build.",
+            removed,
         )
 
     return filtered_files

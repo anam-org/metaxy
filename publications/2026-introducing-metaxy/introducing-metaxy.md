@@ -27,6 +27,7 @@ bibliography: paper.bib
 # Summary
 
 Software that processes large datasets often repeats expensive computations when any part of the input data or processing logic changes.
+Metaxy is about perfecting the art of doing nothing: only compute what changed, save time and money, and accelerate exploration.
 In machine learning pipelines that handle video, audio, and images, these computations run on Graphics Processing Units (GPUs) that cost 10 to 100 times more per hour than standard processors.
 A small change to one processing step can trigger unnecessary recomputation of unrelated steps, wasting both time and money.
 
@@ -63,7 +64,7 @@ By computing diffs before execution, teams quantify the impact of each change an
 
 The target audience includes ML engineers working with multimodal data, MLOps teams managing production feature pipelines, and research labs operating under compute budgets.
 
-![Metaxy tracks separate version hashes for each field of every record. In this example, the `audio` and `frames` fields of a video feature propagate independently through downstream features. A change to the audio processing algorithm only triggers recomputation of audio-dependent downstream fields, leaving frame-dependent fields unchanged.\label{fig:anatomy}](paper-assets/anatomy.svg)
+![Metaxy tracks separate version hashes for each field of every record. In this example, the `audio` and `frames` fields of a video feature propagate independently through downstream features. A change to the audio processing algorithm only triggers recomputation of audio-dependent downstream fields, leaving frame-dependent fields unchanged.\label{fig:anatomy}](assets/anatomy.svg)
 
 # State of the Field
 

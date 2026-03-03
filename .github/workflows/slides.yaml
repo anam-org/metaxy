@@ -9,13 +9,13 @@ on:
   #   types: [opened, synchronize, reopened]
   #   branches: [ main ]
   #   paths:
-  #     - 'docs/slides/**'
+  #     - 'slides/**'
   workflow_dispatch:
     inputs:
       slides_json:
-        description: 'JSON-Liste, z. B. ["slides-introduction.md"]'
+        description: 'JSON list, e.g. ["introducing-metaxy.md"]'
         required: false
-        default: '["slides-introduction.md"]'
+        default: '["introducing-metaxy.md"]'
 
 concurrency:
   group: slides-main-${{ github.ref }}
@@ -30,12 +30,10 @@ jobs:
   build:
     name: Build slides and render PDF
     runs-on: ubuntu-latest
-    env:
-      DEFAULT_SLIDES: '["slides.md","slides-vde-2025-10.md"]'
     strategy:
       fail-fast: false
       matrix:
-        file: ${{ fromJSON(github.event.inputs.slides_json || '["slides-introduction.md"]') }}
+        file: ${{ fromJSON(github.event.inputs.slides_json || '["introducing-metaxy.md"]') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -45,10 +43,10 @@ jobs:
           bun-version: 1.3.1
 
       - name: Install
-        run: cd docs/slides bun install --frozen-lockfile
+        run: cd slides/2026-introducing-metaxy && bun install --frozen-lockfile
 
       - name: Export ${{ matrix.file }}
-        run: cd docs/slides && bun run export --  "${{ matrix.file }}"
+        run: cd slides/2026-introducing-metaxy && bun run export --  "${{ matrix.file }}"
 
       - name: Compute safe artifact name
         id: safename
@@ -63,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: slides-${{ steps.safename.outputs.safe }}
-          path: slides/*-export.pdf
+          path: slides/2026-introducing-metaxy/*-export.pdf
           if-no-files-found: warn
           retention-days: 5
 

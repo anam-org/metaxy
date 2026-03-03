@@ -14,3 +14,11 @@ Technical documentation for Metaxy.
 - **[Configuration](./configuration.md)** - Configuration options
 
 - **[Storage Layout](./system-columns.md)** - Feature table schema documentation
+
+Slide decks
+
+- **[Introducing Metaxy](../slides/2026-introducing-metaxy/intro.md)** - Getting to know Metaxy
+
+Scientific publications
+
+- **[Introducing Metaxy](../publications/2026-introducing-metaxy/introducing-metaxy.md)** - Research paper describing the design of Metaxy

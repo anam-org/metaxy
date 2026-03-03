@@ -62,6 +62,8 @@ The full list can be found [here](https://docs.metaxy.io/latest/integrations).
 
 - [Dagster + Metaxy](https://dagster.io/blog/building-real-time-interactive-avatars-with-metaxy) by Dagster labs
 
+- [Docling + Slurm + Metaxy](https://georgheiler.com/2026/02/22/metaxy-dagster-slurm-multimodal/) by ASCII
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
