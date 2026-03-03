@@ -33,6 +33,7 @@ from metaxy.models.feature import (
     graph,
 )
 from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.models.feature_selection import FeatureSelection
 from metaxy.models.feature_spec import (
     FeatureDep,
     FeatureSpec,
@@ -153,6 +154,7 @@ __all__ = [
     "BaseFeature",
     "experimental",
     "FeatureDefinition",
+    "FeatureSelection",
     "FeatureGraph",
     "graph",
     "FeatureSpec",

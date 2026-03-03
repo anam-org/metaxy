@@ -91,7 +91,7 @@ def features_with_deps(graph: FeatureGraph):
 @pytest.fixture
 def store(tmp_path) -> Iterator[DeltaMetadataStore]:
     """Create an empty metadata store."""
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         yield store
 
 

@@ -25,7 +25,7 @@ def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str
     """
     db_path = tmp_path / "test.duckdb"
 
-    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
         import polars as pl
 
         metadata = pl.DataFrame(
@@ -47,7 +47,7 @@ def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph, test_features: 
     table_prefix = "prod_v2_"
     feature = test_features["UpstreamFeatureA"]
 
-    with DuckDBMetadataStore(db_path, auto_create_tables=True, table_prefix=table_prefix) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True, table_prefix=table_prefix).open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -137,7 +137,7 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
     db_path = tmp_path / "test.duckdb"
 
     # Write data in first instance
-    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store1:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store1:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -160,20 +160,20 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
 
 def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
-    from metaxy.ext.metadata_stores._ducklake_support import DuckLakeAttachmentConfig
+    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 
     db_path = tmp_path / "ducklake.duckdb"
     metadata_path = tmp_path / "ducklake_catalog.duckdb"
     storage_dir = tmp_path / "ducklake_storage"
 
-    ducklake_config = DuckLakeAttachmentConfig.model_validate(
+    ducklake_config = DuckLakeConfig.model_validate(
         {
             "alias": "lake",
-            "metadata_backend": {
+            "catalog": {
                 "type": "duckdb",
                 "uri": str(metadata_path),
             },
-            "storage_backend": {
+            "storage": {
                 "type": "local",
                 "path": str(storage_dir),
             },
@@ -228,7 +228,7 @@ def test_duckdb_config_with_extensions() -> None:
                 type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
-                    "extensions": ["hashfuncs", "json"],
+                    "extensions": ["json"],
                 },
             )
         }

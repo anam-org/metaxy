@@ -911,7 +911,7 @@ class TestMetaxifyMaterialization:
         ).with_io_manager_key("metaxy_io_manager")
 
         # First, write data directly to the store (simulating external feature population)
-        with mx.MetaxyConfig.get().get_store("dev") as store:
+        with mx.MetaxyConfig.get().get_store("dev").open("w") as store:
             store.write(
                 feature=upstream_feature,
                 df=pl.DataFrame(

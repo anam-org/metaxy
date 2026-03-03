@@ -83,7 +83,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write upstream metadata
             upstream_data = pl.DataFrame(
                 {
@@ -132,7 +132,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write upstream metadata for 10 samples
             upstream_data = pl.DataFrame(
                 {
@@ -178,7 +178,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write empty upstream metadata (0 rows) with proper schema
             upstream_data = pl.DataFrame(
                 {
@@ -219,7 +219,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write upstream with composite keys
             upstream_data = pl.DataFrame(
                 {
@@ -276,7 +276,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write 6 sensor readings (2 hours × 3 readings each)
             upstream_data = pl.DataFrame(
                 {
@@ -345,7 +345,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write 3 videos
             upstream_data = pl.DataFrame(
                 {
@@ -419,7 +419,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write upstream
             upstream_data = pl.DataFrame(
                 {
@@ -475,7 +475,7 @@ class TestCalculateInputProgress:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write upstream A
             upstream_a_data = pl.DataFrame(
                 {

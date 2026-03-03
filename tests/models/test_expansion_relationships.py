@@ -59,7 +59,7 @@ class TestExpansionRelationships:
         assert aggregation_cols is None, f"Expected None for expansion relationships, got {aggregation_cols}"
 
         # Test with metadata store
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Write parent metadata
             video_data = pl.DataFrame(
                 {
@@ -132,7 +132,7 @@ class TestExpansionRelationships:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Parent metadata
             article_data = pl.DataFrame(
                 {

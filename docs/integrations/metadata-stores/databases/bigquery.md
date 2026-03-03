@@ -1,9 +1,9 @@
 ---
-title: "BigQuery Metadata Store"
-description: "BigQuery as a metadata store backend."
+title: "Metaxy + BigQuery"
+description: "Learn how to use BigQuery as a Metaxy metadata store."
 ---
 
-# BigQuery
+# Metaxy + BigQuery
 
 !!! warning "Experimental"
 
@@ -17,7 +17,7 @@ description: "BigQuery as a metadata store backend."
 pip install 'metaxy[bigquery]'
 ```
 
----
+## API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.metadata_stores.bigquery

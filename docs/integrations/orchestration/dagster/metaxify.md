@@ -1,6 +1,6 @@
 ---
-title: "Dagster @metaxify Decorator"
-description: "The @metaxify decorator for Dagster assets."
+title: "Metaxy + Dagster: @metaxify Decorator"
+description: "Learn how to use the @metaxify decorator to enrich Dagster assets with information from Metaxy."
 ---
 
 # Metaxify
@@ -11,6 +11,12 @@ It's highly recommended to `@metaxify` all your Dagster assets that **produce Me
 It's also recommended to use it in combination with [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager].
 
 `@metaxify` modifies most of the attributes available on the asset spec.
+
+!!! question "What's the relationship between Metaxy features and Dagster assets?"
+
+    Typically, there's a 1:1 mapping between Metaxy features and Dagster assets, but it is not required to be so.
+    The integration supports multiple Dagster assets contributing to the same Metaxy feature by setting `"metaxy/partition"` asset metadata key.
+    Learn more in [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] API docs.
 
 ## Deps
 

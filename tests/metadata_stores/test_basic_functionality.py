@@ -46,7 +46,7 @@ def test_has_feature(store: MetadataStore):
 
         id: str
 
-    with store:
+    with store.open("w"):
         assert not store.has_feature(key)
         assert not store.has_feature(MyFeature)
 

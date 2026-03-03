@@ -34,8 +34,13 @@ def print_config(
     """Print the current Metaxy configuration.
 
     Examples:
+        ```console
         $ metaxy config print
+        ```
+
+        ```console
         $ metaxy config print --format json
+        ```
     """
     from rich.syntax import Syntax
 

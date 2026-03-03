@@ -42,7 +42,7 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
     """
     # Convert to narwhals if needed (works with both eager and lazy frames)
     df_nw = nw.from_native(df)
-    columns = df_nw.collect_schema().names()  # ty: ignore[possibly-missing-attribute]
+    columns = df_nw.collect_schema().names()  # ty: ignore[unresolved-attribute]
 
     columns_to_add: list[nw.Expr] = []
 
@@ -71,7 +71,7 @@ def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:
                 columns_to_add.append(nw.lit("test_data_version").alias(METAXY_DATA_VERSION))
 
     if columns_to_add:
-        df_nw = df_nw.with_columns(columns_to_add)  # ty: ignore[possibly-missing-attribute]
+        df_nw = df_nw.with_columns(columns_to_add)  # ty: ignore[unresolved-attribute]
 
     return df_nw.to_native()
 

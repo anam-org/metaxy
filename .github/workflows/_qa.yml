@@ -38,6 +38,7 @@ jobs:
     outputs:
       test: ${{ steps.filter.outputs.test }}
       docs: ${{ steps.filter.outputs.docs }}
+      claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,6 +61,8 @@ jobs:
               - '.github/workflows/**'
               - mkdocs.yml
               - 'docs/**'
+            claude-plugin:
+              - '.claude-plugin/**'
 
   lint:
     runs-on: depot-ubuntu-latest
@@ -332,6 +335,61 @@ jobs:
       - name: Test Docs Snippets
         run: uv run pytest ./docs
 
+  claude-plugin:
+    runs-on: depot-ubuntu-latest
+    needs: filter
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.claude-plugin == 'true' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate plugin manifest
+        run: claude plugin validate .
+      - name: Validate plugin component paths
+        run: |
+          plugin_json=".claude-plugin/plugin.json"
+
+          # Check custom skill paths resolve to directories with SKILL.md files
+          skills_path=$(jq -r '.skills // empty' "$plugin_json")
+          if [ -n "$skills_path" ]; then
+            echo "Checking skills path: $skills_path"
+            found=0
+            for skill_dir in "$skills_path"/*/; do
+              if [ -f "${skill_dir}SKILL.md" ]; then
+                echo "  ✓ Found skill: $(basename "$skill_dir")"
+                found=$((found + 1))
+              else
+                echo "  ✗ Missing SKILL.md in: $skill_dir"
+                exit 1
+              fi
+            done
+            if [ "$found" -eq 0 ]; then
+              echo "  ✗ No skills found in $skills_path"
+              exit 1
+            fi
+            echo "  Found $found skill(s)"
+          fi
+
+          # Check custom MCP config is valid JSON
+          mcp_path=$(jq -r '.mcpServers // empty' "$plugin_json")
+          if [ -n "$mcp_path" ] && [ ! -f "$mcp_path" ]; then
+            echo "✗ MCP config not found: $mcp_path"
+            exit 1
+          elif [ -n "$mcp_path" ]; then
+            echo "Checking MCP config: $mcp_path"
+            jq empty "$mcp_path"
+            echo "  ✓ Valid JSON"
+            server_count=$(jq 'keys | length' "$mcp_path")
+            echo "  Found $server_count MCP server(s)"
+          fi
+
+          echo "✓ All plugin component paths valid"
+
   check:
     permissions: {}
     if: always()
@@ -346,6 +404,7 @@ jobs:
       - format
       - typecheck
       - docs
+      - claude-plugin
 
     steps:
       - name: All Green
@@ -353,4 +412,4 @@ jobs:
         uses: re-actors/alls-green@release/v1
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs
+          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs, claude-plugin

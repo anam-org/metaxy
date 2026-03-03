@@ -75,7 +75,6 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
     return DuckDBMetadataStore(
         database=tmp_path / "test.duckdb",
         hash_algorithm=HashAlgorithm.XXHASH64,
-        extensions=["hashfuncs"],
     )
 
 
@@ -98,7 +97,6 @@ class AllStoresCases:
         return DuckDBMetadataStore(
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
-            extensions=["hashfuncs"],
         )
 
     @pytest.mark.ibis
@@ -106,16 +104,16 @@ class AllStoresCases:
     @pytest.mark.duckdb
     @pytest.mark.ducklake
     def case_duckdb_ducklake(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.ext.metadata_stores._ducklake_support import DuckLakeAttachmentConfig
+        from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 
         return DuckDBMetadataStore(
             database=tmp_path / "test_ducklake.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
-            ducklake=DuckLakeAttachmentConfig.model_validate(
+            ducklake=DuckLakeConfig.model_validate(
                 {
                     "alias": "integration_lake",
-                    "metadata_backend": {"type": "duckdb", "uri": str(tmp_path / "ducklake_catalog.duckdb")},
-                    "storage_backend": {"type": "local", "path": str(tmp_path / "ducklake_storage")},
+                    "catalog": {"type": "duckdb", "uri": str(tmp_path / "ducklake_catalog.duckdb")},
+                    "storage": {"type": "local", "path": str(tmp_path / "ducklake_storage")},
                 }
             ),
         )

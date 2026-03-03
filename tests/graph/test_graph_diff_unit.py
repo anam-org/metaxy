@@ -155,7 +155,7 @@ class TestSnapshotResolver:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Record a snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -368,7 +368,7 @@ class TestGraphDiffer:
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Record snapshot
             result = SystemTableStorage(store).push_graph_snapshot()
 

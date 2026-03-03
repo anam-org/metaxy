@@ -1,5 +1,5 @@
 ---
-title: "Dagster Integration"
+title: "Metaxy + Dagster"
 description: "Dagster integration for Metaxy."
 ---
 

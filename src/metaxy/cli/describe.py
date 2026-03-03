@@ -50,9 +50,9 @@ def graph(
     - Leaf features (features with no dependents)
     - Project breakdown (if there some features are defined in different projects)
 
-    Example:
+    Examples:
+        ```console
         $ metaxy describe graph
-
         Graph Snapshot: abc123def456...
         ┌─────────────────────┬────────┐
         │ Metric              │ Value  │
@@ -67,6 +67,7 @@ def graph(
         • user__profile
         • transaction__history
         ...
+        ```
     """
     from metaxy.cli.context import AppContext
     from metaxy.graph.describe import describe_graph
@@ -182,10 +183,21 @@ def feature(
     version, description, fields with their versions and dependencies.
 
     Examples:
+        ```console
         $ metaxy describe feature my_feature
+        ```
+
+        ```console
         $ metaxy describe feature namespace/feature another/feature
+        ```
+
+        ```console
         $ metaxy describe feature my_feature --format json
+        ```
+
+        ```console
         $ metaxy describe feature --all-features
+        ```
     """
     from metaxy.cli.context import AppContext
 

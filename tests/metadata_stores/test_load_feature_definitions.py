@@ -1,11 +1,22 @@
 """Tests for loading feature definitions from metadata stores."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import narwhals as nw
+import pytest
 from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec, sync_external_features
+from metaxy import (
+    BaseFeature,
+    FeatureDep,
+    FeatureKey,
+    FeatureSelection,
+    FieldKey,
+    FieldSpec,
+    MetadataStore,
+    sync_external_features,
+)
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
@@ -35,7 +46,7 @@ def test_load_feature_definitions_raw_into_graph(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -71,7 +82,7 @@ def test_load_feature_definitions_raw_uses_active_graph_by_default(tmp_path: Pat
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -109,7 +120,7 @@ def test_load_feature_definitions_raw_by_project(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
 
@@ -168,7 +179,7 @@ def test_load_feature_definitions_raw_preserves_dependencies(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -201,7 +212,7 @@ def test_load_feature_definitions_raw_loads_latest_snapshot(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -218,7 +229,7 @@ def test_load_feature_definitions_raw_loads_latest_snapshot(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -247,7 +258,7 @@ def test_mx_load_feature_definitions_raw_public_api(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -283,7 +294,7 @@ def test_feature_depending_on_loaded_definition(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -355,7 +366,7 @@ def test_load_feature_definitions_raw_with_filters(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -398,7 +409,7 @@ def test_load_feature_definitions_raw_with_filters_via_storage(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -437,7 +448,7 @@ def test_load_feature_definitions_raw_filters_applied_after_deduplication(tmp_pa
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -454,7 +465,7 @@ def test_load_feature_definitions_raw_filters_applied_after_deduplication(tmp_pa
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -532,7 +543,7 @@ def test_snapshot_succeeds_after_loading_external_dependencies(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -597,7 +608,7 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -630,7 +641,7 @@ def test_external_features_never_pushed_to_metadata_store(tmp_path: Path):
         assert "external_only" not in snapshot
 
         # Push should succeed and only push the non-external feature
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
 
@@ -663,7 +674,7 @@ def test_resolve_update_loads_external_feature_definitions(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -753,7 +764,7 @@ def test_sync_external_features_warns_on_version_mismatch(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -799,7 +810,7 @@ def test_sync_external_features_raises_on_version_mismatch_when_error(tmp_path: 
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -853,7 +864,7 @@ def test_sync_external_features_consolidates_multiple_mismatches(tmp_path: Path)
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -914,7 +925,7 @@ def test_sync_external_features_no_warning_when_versions_match(tmp_path: Path):
         # Get the real feature version to use in our external definition
         expected_version_by_field = source_graph.get_feature_version_by_field(["version_match"])
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -964,7 +975,7 @@ def test_sync_external_features_on_version_mismatch_override_to_error(tmp_path: 
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -1008,7 +1019,7 @@ def test_sync_external_features_on_version_mismatch_override_to_warn(tmp_path: P
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -1067,7 +1078,7 @@ def test_sync_external_features_warns_on_invalid_stored_feature(tmp_path: Path):
         ):
             pass
 
-        with DuckDBMetadataStore(database=store_path) as store:
+        with DuckDBMetadataStore(database=store_path).open("w") as store:
             storage = SystemTableStorage(store)
             storage.push_graph_snapshot()
 
@@ -1114,3 +1125,305 @@ def test_sync_external_features_warns_on_invalid_stored_feature(tmp_path: Path):
     invalid_warnings = [w for w in caught if w.category is InvalidStoredFeatureWarning]
     assert len(invalid_warnings) == 1
     assert "sync_test/corrupt" in str(invalid_warnings[0].message)
+
+
+# ── resolve_selection tests ──────────────────────────────────────────
+
+
+def _push_project(store: MetadataStore, project: str, keys: Sequence[str]) -> None:
+    """Define features for a project, push them to the store, then clear the graph."""
+    graph = FeatureGraph()
+    with graph.use():
+        for key in keys:
+            type(
+                f"_Feat_{key.replace('/', '_')}",
+                (BaseFeature,),
+                {"__metaxy_project__": project},
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(key),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            )
+        with store.open("w"):
+            SystemTableStorage(store).push_graph_snapshot(project=project)
+
+
+@pytest.fixture
+def two_project_store(store: MetadataStore) -> MetadataStore:
+    """Store pre-populated with features from two projects."""
+    _push_project(store, "proj-a", ["sel/a1", "sel/a2"])
+    _push_project(store, "proj-b", ["sel/b1"])
+    return store
+
+
+class TestResolveSelection:
+    def test_by_projects(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(projects=["proj-a"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2")}
+
+    def test_by_multiple_projects(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(projects=["proj-a", "proj-b"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+    def test_by_keys(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(keys=["sel/a1", "sel/b1"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/b1")}
+
+    def test_by_keys_missing_ignored(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(keys=["sel/a1", "sel/nonexistent"]),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1")}
+
+    def test_all(self, two_project_store: MetadataStore):
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(
+                FeatureSelection(all=True),
+            )
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+    def test_empty_store(self, store: MetadataStore):
+        with store:
+            defs = SystemTableStorage(store).resolve_selection(
+                FeatureSelection(projects=["anything"]),
+            )
+        assert defs == []
+
+    def test_or_merges_projects_and_keys(self, two_project_store: MetadataStore):
+        sel = FeatureSelection(projects=["proj-a"]) | FeatureSelection(keys=["sel/b1"])
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(sel)
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+    def test_projects_and_keys_combined(self, two_project_store: MetadataStore):
+        sel = FeatureSelection(projects=["proj-a"], keys=["sel/b1"])
+        with two_project_store:
+            defs = SystemTableStorage(two_project_store).resolve_selection(sel)
+        assert {d.key for d in defs} == {FeatureKey("sel/a1"), FeatureKey("sel/a2"), FeatureKey("sel/b1")}
+
+
+# ── sync_external_features with selection tests ──────────────────────
+
+
+def _push_project_with_deps(
+    store: MetadataStore,
+    project: str,
+    features: dict[str, list[str]],
+) -> None:
+    """Push features with optional deps.
+
+    Args:
+        store: Target store.
+        project: Project name for all features.
+        features: Mapping of feature key to list of dep keys (empty list = no deps).
+    """
+    g = FeatureGraph()
+    with g.use():
+        for key, deps in features.items():
+            type(
+                f"_Feat_{key.replace('/', '_')}",
+                (BaseFeature,),
+                {"__metaxy_project__": project},
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(key),
+                    deps=[FeatureDep(feature=d) for d in deps],
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            )
+        with store.open("w"):
+            SystemTableStorage(store).push_graph_snapshot(project=project)
+
+
+class TestSyncWithSelection:
+    def test_by_projects(self, store: MetadataStore):
+        """Selection loads all features from the specified projects."""
+        _push_project(store, "upstream", ["load/a", "load/b"])
+
+        result = sync_external_features(store, selection=FeatureSelection(projects=["upstream"]))
+        assert {d.key for d in result} == {FeatureKey("load/a"), FeatureKey("load/b")}
+
+    def test_by_keys(self, store: MetadataStore):
+        """Selection loads only the specified keys."""
+        _push_project(store, "upstream", ["load/x", "load/y", "load/z"])
+
+        result = sync_external_features(store, selection=FeatureSelection(keys=["load/x", "load/z"]))
+        assert {d.key for d in result} == {FeatureKey("load/x"), FeatureKey("load/z")}
+
+    def test_all(self, store: MetadataStore):
+        """Selection with all=True loads every feature in the store."""
+        _push_project(store, "proj-a", ["load/a1"])
+        _push_project(store, "proj-b", ["load/b1"])
+
+        result = sync_external_features(store, selection=FeatureSelection(all=True))
+        assert {d.key for d in result} == {FeatureKey("load/a1"), FeatureKey("load/b1")}
+
+    def test_adds_to_graph(self, store: MetadataStore, graph: FeatureGraph):
+        """Loaded features are added to the active graph."""
+        _push_project(store, "upstream", ["load/added"])
+
+        assert FeatureKey("load/added") not in graph.feature_definitions_by_key
+
+        sync_external_features(store, selection=FeatureSelection(keys=["load/added"]))
+
+        assert FeatureKey("load/added") in graph.feature_definitions_by_key
+        assert graph.feature_definitions_by_key[FeatureKey("load/added")].is_external is False
+
+    def test_transitive_deps_resolved(self, store: MetadataStore):
+        """Transitive deps are loaded iteratively."""
+        _push_project_with_deps(
+            store,
+            "upstream",
+            {
+                "chain/c": [],
+                "chain/b": ["chain/c"],
+                "chain/a": ["chain/b"],
+            },
+        )
+
+        result = sync_external_features(store, selection=FeatureSelection(keys=["chain/a"]))
+        assert {d.key for d in result} == {
+            FeatureKey("chain/a"),
+            FeatureKey("chain/b"),
+            FeatureKey("chain/c"),
+        }
+
+    def test_transitive_deps_already_in_graph_not_reloaded(self, store: MetadataStore, graph: FeatureGraph):
+        """Deps already present in the graph are not re-fetched."""
+        _push_project_with_deps(
+            store,
+            "upstream",
+            {
+                "dep/base": [],
+                "dep/top": ["dep/base"],
+            },
+        )
+
+        sync_external_features(store, selection=FeatureSelection(keys=["dep/base"]))
+        assert FeatureKey("dep/base") in graph.feature_definitions_by_key
+
+        result = sync_external_features(store, selection=FeatureSelection(keys=["dep/top"]))
+        result_keys = {d.key for d in result}
+        assert FeatureKey("dep/top") in result_keys
+        assert FeatureKey("dep/base") not in result_keys
+
+    def test_sync_replaces_external_placeholders(self, store: MetadataStore, graph: FeatureGraph):
+        """sync_external_features replaces external placeholders with real definitions."""
+        _push_project(store, "upstream", ["sync/ext"])
+
+        external = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey("sync/ext"),
+                fields=[FieldSpec(key=FieldKey(["v"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        graph.add_feature_definition(external)
+
+        result = sync_external_features(store)
+
+        assert len(result) == 1
+        assert result[0].key == FeatureKey("sync/ext")
+        assert graph.feature_definitions_by_key[FeatureKey("sync/ext")].is_external is False
+
+    def test_sync_no_externals_no_selection_returns_empty(self, store: MetadataStore):
+        """sync_external_features with no external features and no selection returns empty list."""
+        _push_project(store, "upstream", ["sync/noop"])
+
+        result = sync_external_features(store)
+        assert result == []
+
+    def test_sync_warns_unresolved(self, store: MetadataStore, graph: FeatureGraph):
+        """sync_external_features warns about external keys not found in the store."""
+        import warnings
+
+        from metaxy._warnings import UnresolvedExternalFeatureWarning
+
+        external = FeatureDefinition.external(
+            spec=SampleFeatureSpec(
+                key=FeatureKey("sync/ghost"),
+                fields=[FieldSpec(key=FieldKey(["v"]))],
+            ),
+            feature_schema={},
+            project="placeholder",
+        )
+        graph.add_feature_definition(external)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            sync_external_features(store)
+
+        unresolved = [w for w in caught if w.category is UnresolvedExternalFeatureWarning]
+        assert len(unresolved) == 1
+        assert "sync/ghost" in str(unresolved[0].message)
+
+
+# ── sync_external_features with config extra_features tests ───────────
+
+
+class TestSyncWithConfigExtraFeatures:
+    def test_sync_uses_config_extra_features(self, store: MetadataStore):
+        """Config extra_features are loaded even without explicit selection."""
+        from metaxy.config import MetaxyConfig
+
+        _push_project(store, "upstream", ["cfg/a", "cfg/b"])
+
+        config = MetaxyConfig.get().model_copy(
+            update={"extra_features": [FeatureSelection(projects=["upstream"])]},
+        )
+        with config.use():
+            result = sync_external_features(store)
+
+        assert {d.key for d in result} == {FeatureKey("cfg/a"), FeatureKey("cfg/b")}
+
+    def test_sync_merges_config_and_explicit_selection(self, store: MetadataStore):
+        """Both config extra_features and explicit selection contribute features."""
+        from metaxy.config import MetaxyConfig
+
+        _push_project(store, "proj-a", ["merge/a1"])
+        _push_project(store, "proj-b", ["merge/b1"])
+
+        config = MetaxyConfig.get().model_copy(
+            update={"extra_features": [FeatureSelection(projects=["proj-a"])]},
+        )
+        with config.use():
+            result = sync_external_features(store, selection=FeatureSelection(keys=["merge/b1"]))
+
+        assert {d.key for d in result} == {FeatureKey("merge/a1"), FeatureKey("merge/b1")}
+
+    def test_sync_multiple_config_extra_features(self, store: MetadataStore):
+        """Multiple entries in extra_features list are all loaded."""
+        from metaxy.config import MetaxyConfig
+
+        _push_project(store, "proj-a", ["multi/a1"])
+        _push_project(store, "proj-b", ["multi/b1"])
+
+        config = MetaxyConfig.get().model_copy(
+            update={
+                "extra_features": [
+                    FeatureSelection(projects=["proj-a"]),
+                    FeatureSelection(projects=["proj-b"]),
+                ],
+            },
+        )
+        with config.use():
+            result = sync_external_features(store)
+
+        assert {d.key for d in result} == {FeatureKey("multi/a1"), FeatureKey("multi/b1")}
+
+    def test_sync_empty_config_extra_features_is_noop(self, store: MetadataStore):
+        """Default config (empty list), no selection — returns empty like today."""
+        _push_project(store, "upstream", ["noop/a"])
+
+        result = sync_external_features(store)
+        assert result == []

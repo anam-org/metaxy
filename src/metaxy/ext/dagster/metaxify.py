@@ -56,10 +56,16 @@ class metaxify:
 
     !!! tip
         Multiple Dagster assets can contribute to the same Metaxy feature.
-        This is a perfectly valid setup since Metaxy writes are append-only. In order to do this, set the following metadata keys:
+        This is a perfectly valid setup since Metaxy writes are append-only.
+        In order to do this, set the following metadata keys:
 
-            - `"metaxy/feature"` pointing to the same Metaxy feature key
-            - `"metaxy/partition"` should be set to a dictionary mapping column names to values produced by the specific Dagster asset
+        - `"metaxy/feature"` pointing to the same Metaxy feature key
+
+        - `"metaxy/partition"` should be set to a dictionary mapping column names
+        to values produced by the specific Dagster asset
+
+        `"metaxy/partition"` will be used to create Narwhals filter expressions
+            allowing to identify the specific feature slice produced by the Dagster asset.
 
     !!! example
         ```py  {hl_lines="8"}

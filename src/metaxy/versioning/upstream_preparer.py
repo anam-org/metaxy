@@ -137,7 +137,7 @@ class UpstreamPreparer(Generic[FrameT]):
             cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
             cols_to_drop = [col for col in columns_to_drop if col in cols]
             if cols_to_drop:
-                result[feature_key] = RenamedDataFrame(
+                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
                     df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
                     id_column_tracker=renamed_df.id_column_tracker,
                 )

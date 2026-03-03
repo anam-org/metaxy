@@ -19,8 +19,21 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
         This functionality is experimental.
 
 <!-- --8<-- [end:header] -->
-
 <!-- --8<-- [start:releases] -->
+
+## 1.1.0
+
+### Added
+
+- A new top-level [`extra_features`](/reference/configuration.md#metaxy.config.MetaxyConfig.extra_features) configuration option has been added. It can be used to register additional external feature definitions from the metadata store on the feature graph. Learn more [here](/guide/concepts/definitions/external-features.md/#loading-extra-features).
+- [DuckLake](/integrations/metadata-stores/storage/ducklake.md) integration has been revamped, tested, and documented. Thanks [@geoHeil](https://github.com/geoHeil)!
+
+### Fixes
+
+- Fixed `DuckDBMetadataStore` assuming `"community"` extension repo instead of `"core"` when loading extensions with unspecified repos
+- Fixed `/metaxy` skill and `metaxy` MCP server not being properly installed by the Claude plugin
+- (:boom: breaking) Fixed a bug where `MetadataStore` erroneously did not require being opened with `"w"` write mode before writing data
+- Fixed a bug where `MetadataStore` would not properly handle nested context manager calls
 
 ## 0.1.0
 
@@ -31,19 +44,14 @@ This release should be considered an *alpha* release: it is ready for production
 ### Added
 
 - [Feature Definitions](/guide/concepts/definitions/features.md) and related models
-
 - Metaxy [versioning engine](/guide/concepts/versioning.md) and [storage layout](/reference/system-columns.md)
-
 - [MetadataStore API](/guide/concepts/metadata-stores.md)
-
 - Integrations: [DeltaLake](/integrations/metadata-stores/storage/delta.md), [Dagster](/integrations/orchestration/dagster/index.md), [Ray](/integrations/compute/ray.md), [ClickHouse](/integrations/metadata-stores/databases/clickhouse.md), [MCP](/integrations/ai/mcp.md), [Claude](/integrations/ai/claude.md)
 
 ### Experimental
 
 - [CLI](/reference/cli.md)
-
 - [`metaxy.lock`-based workflow](/guide/concepts/definitions/external-features.md/#metaxylock-file) for multi-environment setups
-
 - Integrations: [DuckDB](/integrations/metadata-stores/databases/duckdb.md), [BigQuery](/integrations/metadata-stores/databases/bigquery.md), [LanceDB](/integrations/metadata-stores/databases/lancedb.md), [SQLAlchemy](/integrations/plugins/sqlalchemy.md), [SQLModel](/integrations/plugins/sqlmodel.md)
 
 <!-- --8<-- [end:releases] -->

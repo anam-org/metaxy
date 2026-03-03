@@ -39,16 +39,17 @@ def history(
     Displays all recorded graph snapshots from the metadata store,
     showing project versions, when they were recorded, and feature counts.
 
-    Example:
+    Examples:
+        ```console
         $ metaxy graph history
-
         Graph Snapshot History
         ┌──────────────┬─────────────────────┬───────────────┐
-        │ Project version   │ Recorded At         │ Feature Count │
+        │ Project version   │ Recorded At    │ Feature Count │
         ├──────────────┼─────────────────────┼───────────────┤
         │ abc123...    │ 2025-01-15 10:30:00 │ 42            │
         │ def456...    │ 2025-01-14 09:15:00 │ 40            │
         └──────────────┴─────────────────────┴───────────────┘
+        ```
     """
     from metaxy.cli.context import AppContext
 
@@ -152,35 +153,55 @@ def render(
     - graphviz: Graphviz DOT format
 
     Examples:
-        # Render to terminal (default graph view)
+        Render to terminal (default graph view):
+        ```console
         $ metaxy graph render
+        ```
 
-        # Render as cards with dependency edges
+        Render as cards with dependency edges:
+        ```console
         $ metaxy graph render --type cards
+        ```
 
-        # Minimal view
+        Minimal view:
+        ```console
         $ metaxy graph render --minimal
+        ```
 
-        # Everything
+        Everything:
+        ```console
         $ metaxy graph render --verbose
+        ```
 
-        # Save Mermaid diagram to file
+        Save Mermaid diagram to file:
+        ```console
         $ metaxy graph render --format mermaid --output graph.mmd
+        ```
 
-        # Graphviz DOT format (pipe to dot command)
+        Graphviz DOT format (pipe to dot command):
+        ```console
         $ metaxy graph render --format graphviz | dot -Tpng -o graph.png
+        ```
 
-        # Custom: show only structure with short hashes
+        Show only structure with short hashes:
+        ```console
         $ metaxy graph render --no-show-fields --hash-length 6
+        ```
 
-        # Focus on a specific feature and its dependencies
+        Focus on a specific feature and its dependencies:
+        ```console
         $ metaxy graph render --feature video/processing --up 2
+        ```
 
-        # Show a feature and its downstream dependents
+        Show a feature and its downstream dependents:
+        ```console
         $ metaxy graph render --feature video/files --down 1
+        ```
 
-        # Render historical snapshot
+        Render historical snapshot:
+        ```console
         $ metaxy graph render --snapshot abc123... --store prod
+        ```
     """
     from metaxy.graph import (
         CardsRenderer,

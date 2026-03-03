@@ -326,7 +326,7 @@ def test_feature_definition_version_recorded_in_metadata_store(snapshot: Snapsho
 
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
-        with store:
+        with store.open("w"):
             # Record the feature graph snapshot
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()
@@ -380,7 +380,7 @@ def test_feature_definition_version_idempotent_snapshot_recording(tmp_path: Path
 
         store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
-        with store:
+        with store.open("w"):
             # First push
             storage = SystemTableStorage(store)
             result = storage.push_graph_snapshot()

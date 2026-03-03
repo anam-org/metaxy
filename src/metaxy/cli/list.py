@@ -45,9 +45,17 @@ def features(
     """List Metaxy features in the current project.
 
     Examples:
+        ```console
         $ metaxy list features
+        ```
+
+        ```console
         $ metaxy list features --verbose
+        ```
+
+        ```console
         $ metaxy list features --format json
+        ```
     """
     from metaxy.cli.context import AppContext
     from metaxy.models.plan import FQFieldKey
@@ -247,8 +255,13 @@ def stores(
     """List configured metadata stores.
 
     Examples:
+        ```console
         $ metaxy list stores
+        ```
+
+        ```console
         $ metaxy list stores --format json
+        ```
     """
     from metaxy.cli.context import AppContext
 

@@ -73,7 +73,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
 
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # User provides samples with provenance_by_field
             user_samples = pl.DataFrame(
                 {
@@ -154,7 +154,7 @@ class TestResolveUpdateSkipComparisonRootFeatures:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write initial metadata to store
             initial_metadata = pl.DataFrame(
                 {
@@ -240,7 +240,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write upstream metadata
             upstream_data = pl.DataFrame(
                 {
@@ -315,7 +315,7 @@ class TestResolveUpdateSkipComparisonDownstreamFeatures:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write upstream metadata
             upstream_data = pl.DataFrame(
                 {
@@ -468,7 +468,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write some initial metadata
             initial_metadata = pl.DataFrame(
                 {
@@ -538,7 +538,7 @@ class TestResolveUpdateSkipComparisonDefaultBehavior:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write some initial metadata
             initial_metadata = pl.DataFrame(
                 {
@@ -637,7 +637,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write root metadata
             root_data = pl.DataFrame(
                 {
@@ -746,7 +746,7 @@ class TestResolveUpdateSkipComparisonComplexScenarios:
             ):
                 pass
 
-        with graph.use(), store:
+        with graph.use(), store.open("w"):
             # Write root metadata
             root_data = pl.DataFrame(
                 {

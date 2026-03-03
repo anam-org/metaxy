@@ -29,7 +29,7 @@ def main():
         }
     )
 
-    with store:
+    with store.open("w"):
         # showcase: resolve incremental update for a root feature
         increment = store.resolve_update(Video, samples=nw.from_native(samples))
         if len(increment.new) > 0:
@@ -37,7 +37,7 @@ def main():
             store.write(Video, increment.new)
 
     # Resolve videos that need to be split into chunks
-    with store:
+    with store.open("w"):
         increment = store.resolve_update(VideoChunk)
         # the DataFrame dimensions matches Video (with ID column renamed)
 
@@ -79,7 +79,7 @@ def main():
             store.write(VideoChunk, nw.from_native(chunk_df))
 
     # Process face recognition on video chunks
-    with store:
+    with store.open("w"):
         increment = store.resolve_update(FaceRecognition)
         print(
             f"Found {len(increment.new)} new video chunks and {len(increment.stale)} stale video chunks that need face recognition"

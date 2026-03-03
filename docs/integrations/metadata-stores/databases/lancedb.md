@@ -1,9 +1,9 @@
 ---
-title: "LanceDB Metadata Store"
-description: "LanceDB as a metadata store backend."
+title: "Metaxy + LanceDB"
+description: "Learn how to use LanceDB as a Metaxy metadata store."
 ---
 
-# LanceDB
+# Metaxy + LanceDB
 
 !!! warning "Experimental"
 
@@ -30,7 +30,7 @@ Point `uri` at any supported URI (`s3://`, `gs://`, `az://`, `db://`, ...) and f
 All tables are stored within a single LanceDB database at the configured URI location.
 Each feature gets its own Lance table.
 
----
+## API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.metadata_stores.lancedb

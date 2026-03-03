@@ -19,7 +19,7 @@ config = mx.init()
 # feature showcase: get feature definitions by key
 parent_key = mx.FeatureKey(["examples", "parent"])
 
-with config.get_store() as store:
+with config.get_store().open("w") as store:
     result = SystemTableStorage(store).push_graph_snapshot()
 
     project_version = result.project_version

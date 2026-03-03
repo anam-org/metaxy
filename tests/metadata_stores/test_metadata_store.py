@@ -149,7 +149,7 @@ def multi_env_stores(
     staging = DeltaMetadataStore(root_path=tmp_path / "delta_staging", fallback_stores=[prod])
     dev = DeltaMetadataStore(root_path=tmp_path / "delta_dev", fallback_stores=[staging])
 
-    with prod:
+    with prod.open("w"):
         # Populate prod with upstream data
         upstream_data = make_upstream_a_data(
             sample_uids=[1, 2, 3],
@@ -306,7 +306,7 @@ def test_soft_delete_from_fallback_creates_soft_deletion_marker(
     staging = multi_env_stores["staging"]
     prod = multi_env_stores["prod"]
 
-    with dev, staging, prod:
+    with dev.open("w"), staging.open("w"), prod.open("w"):
         assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
 
         dev.delete(
@@ -346,7 +346,7 @@ def test_write_to_dev_not_prod(
     dev = multi_env_stores["dev"]
     prod = multi_env_stores["prod"]
 
-    with dev, prod:
+    with dev.open("w"), prod.open("w"):
         new_data = pl.DataFrame(
             {
                 "sample_uid": [4, 5],

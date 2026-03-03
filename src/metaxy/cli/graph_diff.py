@@ -88,29 +88,45 @@ def render(
     - graphviz: Graphviz DOT format
 
     Examples:
-        # Show merged graph with default terminal renderer
+        Show merged graph with default terminal renderer:
+        ```console
         $ metaxy graph-diff render latest current
+        ```
 
-        # Cards view
+        Cards view:
+        ```console
         $ metaxy graph-diff render latest current --format cards
+        ```
 
-        # Focus on specific feature with 2 levels up and 1 level down
+        Focus on specific feature with 2 levels up and 1 level down:
+        ```console
         $ metaxy graph-diff render latest current --feature user/profile --up 2 --down 1
+        ```
 
-        # Show only changed fields (hide unchanged)
+        Show only changed fields (hide unchanged):
+        ```console
         $ metaxy graph-diff render latest current --show-changed-fields-only
+        ```
 
-        # Save Mermaid diagram to file
+        Save Mermaid diagram to file:
+        ```console
         $ metaxy graph-diff render latest current --format mermaid --output diff.mmd
+        ```
 
-        # Graphviz DOT format
+        Graphviz DOT format:
+        ```console
         $ metaxy graph-diff render latest current --format graphviz --output diff.dot
+        ```
 
-        # Minimal view
+        Minimal view:
+        ```console
         $ metaxy graph-diff render latest current --minimal
+        ```
 
-        # Everything
+        Everything:
+        ```console
         $ metaxy graph-diff render latest current --verbose
+        ```
     """
     from metaxy.graph import (
         CardsRenderer,

@@ -172,7 +172,7 @@ def test_full_graph_migration_single_operation_single_feature(tmp_path: Path):
     temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Setup data
         Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
@@ -238,7 +238,7 @@ def test_full_graph_migration_single_operation_multiple_features(tmp_path: Path)
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -283,7 +283,7 @@ def test_full_graph_migration_multiple_operations(tmp_path: Path):
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -346,7 +346,7 @@ def test_full_graph_migration_topological_sorting(tmp_path: Path):
     temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -394,7 +394,7 @@ def test_full_graph_migration_operation_fails(tmp_path: Path):
     temp_module.write_features({"FeatureA": feature_a_spec, "FeatureB": feature_b_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -436,7 +436,7 @@ def test_full_graph_migration_invalid_operation_class(tmp_path: Path):
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -476,7 +476,7 @@ def test_full_graph_migration_dry_run(tmp_path: Path):
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -536,7 +536,7 @@ def test_full_graph_migration_resume_after_partial_failure(tmp_path: Path):
     temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Setup data
         Upstream = graph.feature_definitions_by_key[FeatureKey(["test", "upstream"])]
         Downstream = graph.feature_definitions_by_key[FeatureKey(["test", "downstream"])]
@@ -601,7 +601,7 @@ def test_full_graph_migration_operation_specific_config(tmp_path: Path):
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -640,7 +640,7 @@ def test_full_graph_migration_events_tracking(tmp_path: Path):
     temp_module.write_features({"Feature": feature_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
         project_version = graph.project_version
 
@@ -703,7 +703,7 @@ def test_data_version_reconciliation_requires_from_snapshot(tmp_path: Path):
     temp_module.write_features({"Upstream": upstream_spec, "Downstream": downstream_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         SystemTableStorage(store).push_graph_snapshot()
 
         op = DataVersionReconciliation()
@@ -732,7 +732,7 @@ def test_data_version_reconciliation_root_feature_error(tmp_path: Path):
     temp_module.write_features({"Root": root_spec})
     graph = temp_module.graph
 
-    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with graph.use(), DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         Root = graph.feature_definitions_by_key[FeatureKey(["test", "root"])]
 
         # Write some data

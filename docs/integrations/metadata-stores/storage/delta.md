@@ -1,9 +1,9 @@
 ---
-title: "Delta Lake Metadata Store"
-description: "Delta Lake as a metadata store backend."
+title: "Metaxy + Delta Lake"
+description: "Learn how to use Delta Lake to store Metaxy metadata."
 ---
 
-# Delta Lake
+# Metaxy + Delta Lake
 
 [Delta Lake](https://delta.io/) is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure [`DeltaMetadataStore`][metaxy.ext.metadata_stores.delta.DeltaMetadataStore]. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.
 
@@ -20,21 +20,7 @@ It supports the local filesystem and remote object stores.
 pip install 'metaxy[delta]'
 ```
 
-## Using Object Stores
-
-Point `root_path` at any supported URI (`s3://`, `abfss://`, `gs://`, ...) and forward credentials with `storage_options`.
-The dict is passed verbatim to [`deltalake`](https://delta-io.github.io/delta-rs/integrations/object-storage/special_configuration/).
-
-Learn more in the [API docs][metaxy.ext.metadata_stores.delta.DeltaMetadataStore].
-
-## Storage Layout
-
-It's possible to control how feature keys map to DeltaLake table locations with the `layout` parameter:
-
-- `nested` (default) places every feature in its own directory: `your/feature/key.delta`
-- `flat` stores all of them in the same directory: `your__feature_key.delta`
-
----
+## API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.metadata_stores.delta

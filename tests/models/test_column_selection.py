@@ -1059,7 +1059,7 @@ class TestColumnSelection:
             pass
 
         # Create store and push snapshot
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table

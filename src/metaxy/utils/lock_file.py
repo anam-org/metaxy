@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.models.feature import FeatureGraph
+    from metaxy.models.feature_selection import FeatureSelection
 
 
 class LockedFeatureInfo(BaseModel):
@@ -115,6 +116,7 @@ def generate_lock_file(
     output_path: Path,
     *,
     exclude_project: str | None = None,
+    selection: FeatureSelection | None = None,
 ) -> int:
     """Generate a lock file with feature definitions from a metadata store.
 
@@ -126,6 +128,8 @@ def generate_lock_file(
         output_path: Path to write the lock file.
         exclude_project: Optional project name to exclude from the lock file.
             Features belonging to this project will be skipped.
+        selection: Optional feature selection to include additional features
+            beyond those discovered from the graph's dependencies.
 
     Returns:
         Number of features locked.
@@ -153,7 +157,7 @@ def generate_lock_file(
     # External deps are those referenced but not defined locally
     external_keys_needed = referenced_dep_keys - local_keys
 
-    if not external_keys_needed:
+    if not external_keys_needed and not selection:
         _write_lock_file(output_path, LockFile(features={}))
         return 0
 
@@ -163,6 +167,14 @@ def generate_lock_file(
         storage = SystemTableStorage(store)
         # Single query: load all features except current project
         all_store_definitions, db_versions = _load_all_features_from_store(storage, exclude_project)
+
+    # Resolve selection against loaded features
+    if selection:
+        _apply_selection(selection, all_store_definitions, local_keys, external_keys_needed)
+
+    if not external_keys_needed:
+        _write_lock_file(output_path, LockFile(features={}))
+        return 0
 
     # Resolve transitive dependencies in memory
     definitions, missing = _resolve_transitive_deps(external_keys_needed, all_store_definitions, local_keys, graph)
@@ -226,6 +238,27 @@ def _load_all_features_from_store(
         db_versions[defn.key] = row["metaxy_feature_version"]
 
     return definitions, db_versions
+
+
+def _apply_selection(
+    selection: FeatureSelection,
+    all_store_definitions: dict[FeatureKey, FeatureDefinition],
+    local_keys: set[FeatureKey],
+    external_keys_needed: set[FeatureKey],
+) -> None:
+    """Add feature keys matching the selection to ``external_keys_needed`` (mutates in place)."""
+    if selection.all:
+        external_keys_needed.update(k for k in all_store_definitions if k not in local_keys)
+        return
+
+    if selection.projects:
+        project_set = set(selection.projects)
+        for key, defn in all_store_definitions.items():
+            if defn.project in project_set and key not in local_keys:
+                external_keys_needed.add(key)
+
+    if selection.keys:
+        external_keys_needed.update(k for k in selection.keys if k not in local_keys)
 
 
 def _resolve_transitive_deps(

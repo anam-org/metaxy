@@ -30,7 +30,7 @@ def test_push_graph_snapshot_with_default_tags(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Push without explicit tags
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -64,7 +64,7 @@ def test_push_graph_snapshot_with_custom_tags(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Push with custom tags
             custom_tags = {
                 "environment": "production",
@@ -106,7 +106,7 @@ def test_push_graph_snapshot_tags_persist_across_pushes(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # First push
             SystemTableStorage(store).push_graph_snapshot(tags={"environment": "staging"})
 
@@ -146,7 +146,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # First push
             SystemTableStorage(store).push_graph_snapshot(tags={"environment": "staging", "build": "123"})
 

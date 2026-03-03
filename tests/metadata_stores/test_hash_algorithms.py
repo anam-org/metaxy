@@ -83,7 +83,7 @@ def test_hash_algorithm_produces_consistent_hashes(
     # Create store with specific hash algorithm
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         # Write parent metadata
         store.write(ParentFeature, parent_df)
 
@@ -184,7 +184,7 @@ def test_hash_truncation(
 
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         # Write parent metadata
         store.write(ParentFeature, parent_df)
 
@@ -249,7 +249,7 @@ def test_field_level_provenance_structure(
 
     store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         # Generate test data
         upstream_data, _ = downstream_metadata_strategy(
             child_plan,
@@ -339,7 +339,7 @@ def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataSt
 
     parent_df = upstream_data["parent"]
 
-    with any_store, graph.use():
+    with any_store.open("w"), graph.use():
         # Write parent metadata
         any_store.write(ParentFeature, parent_df)
 

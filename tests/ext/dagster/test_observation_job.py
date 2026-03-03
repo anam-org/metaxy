@@ -103,7 +103,7 @@ class TestBuildMetaxyObservationJob:
         # Check observation events - asset key is feature key due to metaxify
         obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs.records) == 1
-        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_meta["dagster/row_count"].value == 3
 
     def test_returns_list_for_multi_asset(
@@ -211,7 +211,7 @@ class TestBuildMetaxyObservationJob:
 
         obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs.records) == 1
-        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_meta["dagster/row_count"].value == 0
         assert obs_meta["error"].value == "Feature not found"
 
@@ -360,7 +360,7 @@ class TestPartitionedObservationJob:
 
         obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "partitioned"]), limit=1)
         assert len(obs.records) == 1
-        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         # Total count across all partitions
         assert obs_meta["dagster/row_count"].value == 5
         # Partition count
@@ -410,12 +410,12 @@ class TestBuildMetaxyMultiObservationJob:
         # Check observations for both features
         obs_a_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs_a_records.records) == 1
-        obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_a_meta["dagster/row_count"].value == 3
 
         obs_b_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "b"]), limit=1)
         assert len(obs_b_records.records) == 1
-        obs_b_meta = obs_b_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_b_meta = obs_b_records.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_b_meta["dagster/row_count"].value == 2
 
     def test_basic_multi_observation_job_with_selection_and_defs(
@@ -516,7 +516,7 @@ class TestBuildMetaxyMultiObservationJob:
 
         obs = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs.records) == 1
-        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_meta = obs.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_meta["dagster/row_count"].value == 0
         assert obs_meta["error"].value == "Feature not found"
 
@@ -583,7 +583,7 @@ class TestBuildMetaxyMultiObservationJob:
         # Should have observation for feature_a
         obs_a_records = instance.fetch_observations(dg.AssetKey(["test", "obs_job", "a"]), limit=1)
         assert len(obs_a_records.records) == 1
-        obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_a_meta = obs_a_records.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_a_meta["dagster/row_count"].value == 3
 
         # Should NOT have observation for feature_b (it was filtered out)
@@ -893,7 +893,7 @@ class TestMultiObservationJobWithMetaxyPartition:
             f"Expected 1 observation for obs_us, but got {len(obs_us_records.records)}"
         )
         # obs_us should see only US region rows (2 rows)
-        obs_us_meta = obs_us_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_us_meta = obs_us_records.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_us_meta["dagster/row_count"].value == 2, (
             f"Expected obs_us to see 2 rows (US region only), but got {obs_us_meta['dagster/row_count'].value}"
         )
@@ -903,7 +903,7 @@ class TestMultiObservationJobWithMetaxyPartition:
             f"Expected 1 observation for obs_eu, but got {len(obs_eu_records.records)}"
         )
         # obs_eu should see only EU region rows (3 rows)
-        obs_eu_meta = obs_eu_records.records[0].asset_observation.metadata  # ty: ignore[possibly-missing-attribute]
+        obs_eu_meta = obs_eu_records.records[0].asset_observation.metadata  # ty: ignore[unresolved-attribute]
         assert obs_eu_meta["dagster/row_count"].value == 3, (
             f"Expected obs_eu to see 3 rows (EU region only), but got {obs_eu_meta['dagster/row_count'].value}"
         )

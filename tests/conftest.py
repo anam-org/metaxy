@@ -302,7 +302,7 @@ def clickhouse_server(tmp_path_factory):
 
     process: subprocess.Popen[bytes] | None = None
     try:
-        process = subprocess.Popen(  # ty: ignore[no-matching-overload]
+        process = subprocess.Popen(
             [
                 clickhouse_bin,
                 "server",

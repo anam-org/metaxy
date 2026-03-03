@@ -51,7 +51,7 @@ def test_load_snapshot_data_computes_proper_field_versions(
     # Field versions should be different from each other (different code versions)
     assert parent_field1_version != parent_field2_version
 
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -94,7 +94,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
     ):
         pass
 
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 
@@ -131,7 +131,7 @@ def test_field_key_normalization(graph: FeatureGraph, tmp_path: Path):
     ):
         pass
 
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
         # Record snapshot
         result = SystemTableStorage(store).push_graph_snapshot()
 

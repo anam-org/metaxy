@@ -330,7 +330,7 @@ class TestSystemTableRecording:
             # already-stored FeatureDefinition.
 
             # Create a store and record snapshot (while the test graph is still active)
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+            with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
                 storage = SystemTableStorage(store)
                 result = storage.push_graph_snapshot()
 

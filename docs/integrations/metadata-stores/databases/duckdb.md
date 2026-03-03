@@ -1,15 +1,15 @@
 ---
 title: "DuckDB Metadata Store"
-description: "DuckDB as a metadata store backend."
+description: "Learn how to use DuckDB as a Metaxy metadata store."
 ---
 
-# DuckDB
+# Metaxy + DuckDB
 
 [DuckDB](https://duckdb.org/) is an embedded analytical database. To use Metaxy with DuckDB, configure [`DuckDBMetadataStore`][metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore]. This runs versioning computations natively in DuckDB.
 
 !!! warning
 
-    File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a `PostgreSQL` catalog, or refer to [DuckDB's documentation](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes) to learn about implementing application-side work-arounds.
+    File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider using [Motherduck](https://motherduck.com/), [DuckLake](../storage/ducklake.md) with a `PostgreSQL` catalog, or refer to [DuckDB's documentation](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes) to learn about implementing application-side work-arounds.
 
 !!! tip
 
@@ -21,19 +21,7 @@ description: "DuckDB as a metadata store backend."
 pip install 'metaxy[duckdb]'
 ```
 
-## Extensions
-
-DuckDB extensions can be loaded automatically:
-
-```py
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
-
-store = DuckDBMetadataStore(":memory:", extensions=["hashfuncs"])
-```
-
-`hashfuncs` is typically used by the versioning engine.
-
----
+## API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.metadata_stores.duckdb

@@ -59,7 +59,7 @@ def test_record_snapshot_first_time(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             result = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
@@ -127,7 +127,7 @@ def test_record_snapshot_metadata_only_changes(tmp_path: Path):
         spec_version_v1 = Downstream.feature_spec_version()
 
         # First push
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
             assert result1.project_version == snapshot_v1
@@ -225,7 +225,7 @@ def test_record_snapshot_no_changes(tmp_path: Path):
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # First push
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
@@ -292,7 +292,7 @@ def test_record_snapshot_partial_metadata_changes(tmp_path: Path):
         project = graph_v1.feature_definitions_by_key[FeatureKey(["feature_a"])].project
         snapshot_v1 = graph_v1.get_project_version(project)
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
             assert result1.project_version == snapshot_v1
@@ -394,7 +394,7 @@ def test_record_snapshot_append_only_behavior(tmp_path: Path):
         project = graph_v1.feature_definitions_by_key[FeatureKey(["upstream"])].project
         snapshot_v1 = graph_v1.get_project_version(project)
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Push v1
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.project_version == snapshot_v1
@@ -493,7 +493,7 @@ def test_record_snapshot_computational_change(tmp_path: Path):
         project = graph_v1.feature_definitions_by_key[FeatureKey(["my_feature"])].project
         snapshot_v1 = graph_v1.get_project_version(project)
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.project_version == snapshot_v1
 
@@ -553,7 +553,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion, t
         ):
             pass
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             results.append(
                 {
@@ -662,7 +662,7 @@ def test_feature_info_changes_trigger_repush(tmp_path: Path):
         snapshot_v1 = graph_v1.get_project_version(project)
 
         # First push
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_pushed is False
             assert result1.project_version == snapshot_v1
@@ -773,7 +773,7 @@ def test_push_graph_snapshot_requires_project_for_multi_project_graph(tmp_path: 
     MetaxyConfig.reset()
 
     with graph.use():
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             with pytest.raises(ValueError, match="Project is required.*multiple projects"):
                 SystemTableStorage(store).push_graph_snapshot()
 
@@ -827,7 +827,7 @@ def test_push_ignores_other_project_features_with_unresolved_deps(tmp_path: Path
     graph.add_feature_definition(other_def)
 
     with graph.use():
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # This should succeed: we're only pushing my_project, so the unresolved
             # dependency in other_project's feature should be ignored
             result = SystemTableStorage(store).push_graph_snapshot(project="my_project")

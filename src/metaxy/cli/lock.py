@@ -1,5 +1,7 @@
 """Lock command for Metaxy CLI."""
 
+from functools import reduce
+from operator import or_
 from typing import Annotated
 
 import cyclopts
@@ -10,7 +12,7 @@ from metaxy.cli.console import console, error_console
 # Lock subcommand app
 app = cyclopts.App(
     name="lock",
-    help="Generate `metaxy.lock` file with external feature definitions fetched from the metadata store.",
+    help="Generate `metaxy.lock` file with [external feature definitions](https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/) fetched from the metadata store.",
     console=console,
     error_console=error_console,
 )
@@ -81,6 +83,7 @@ def lock(
                 metadata_store,
                 output_path,
                 exclude_project=config.project,
+                selection=reduce(or_, config.extra_features) if config.extra_features else None,
             )
     except FeatureNotFoundError as e:
         error = CLIError(

@@ -562,7 +562,7 @@ def setup_store_with_data(
     upstream_data, golden_downstream = generate_plan_data(empty_store, feature_plan_config)
 
     try:
-        with empty_store:
+        with empty_store.open("w"):
             # Use graph.use() to make it the current graph (needed for write)
             with graph.use():
                 write_upstream_to_store(empty_store, feature_plan_config, upstream_data)
@@ -781,7 +781,7 @@ def test_store_resolve_update_matches_golden_provenance(
     new data is written on top of existing data.
     """
     try:
-        with any_store:
+        with any_store.open("w"):
             # Track current downstream data for golden increment calculation
             # Key: feature_version -> downstream DataFrame
             # This mirrors what the store does: filter by feature_version
@@ -865,7 +865,7 @@ def test_golden_reference_with_duplicate_timestamps(
     child_key = child_feature_plan.feature.key
     child_version = graph.get_feature_version(child_key)
 
-    with store, graph.use():
+    with store.open("w"), graph.use():
         try:
             from datetime import timedelta
 
@@ -991,7 +991,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
     parent_df = upstream_data["parent"]
 
     try:
-        with empty_store:
+        with empty_store.open("w"):
             from datetime import datetime, timezone
 
             import polars as pl
@@ -1060,7 +1060,7 @@ def test_golden_reference_partial_duplicates(
     child_version = graph.get_feature_version(child_key)
 
     try:
-        with store, graph.use():
+        with store.open("w"), graph.use():
             from datetime import timedelta
 
             import polars as pl
@@ -1385,7 +1385,7 @@ def test_expansion_changed_rows_not_duplicated(
         frame_id: str
 
     try:
-        with any_store:
+        with any_store.open("w"):
             # === INITIAL DATA ===
             video_df = pl.DataFrame(
                 {

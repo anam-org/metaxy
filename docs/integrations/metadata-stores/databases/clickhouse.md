@@ -1,9 +1,9 @@
 ---
-title: "ClickHouse Metadata Store"
-description: "ClickHouse as a metadata store backend."
+title: "Metaxy + ClickHouse"
+description: "Learn how to use ClickHouse as a Metaxy metadata store."
 ---
 
-# ClickHouse
+# Metaxy + ClickHouse
 
 [ClickHouse](https://clickhouse.com/) is a (1) column-oriented OLAP database designed for real-time analytics. To use Metaxy with ClickHouse, configure [`ClickHouseMetadataStore`][metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore]. Versioning computations run natively in ClickHouse, making it well-suited for high-throughput production workloads.
 { .annotate }
@@ -83,7 +83,7 @@ pip install clickhouse-sqlalchemy
     - **Partitioning**: Partition your tables!
     - **Ordering**: It's probably a good idea to use `(metaxy_feature_version, <id_columns>, metaxy_updated_at)`
 
----
+## API Reference
 
 <!-- dprint-ignore-start -->
 ::: metaxy.ext.metadata_stores.clickhouse

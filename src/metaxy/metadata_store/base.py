@@ -209,10 +209,10 @@ class MetadataStore(ABC):
         """
         self._name = name
         self._is_open = False
-        self._context_depth = 0
+        self._mode_stack: list[AccessMode] = []
         self._versioning_engine = versioning_engine
         self._materialization_id = materialization_id
-        self._open_cm: AbstractContextManager[Self] | None = None
+        self._exit_stack: list[AbstractContextManager[Any]] = []
         self._transaction_timestamp: datetime | None = None
         self._soft_delete_in_progress: bool = False
 
@@ -925,7 +925,7 @@ class MetadataStore(ABC):
             - Fallback stores are never used for writes.
 
         """
-        self._check_open()
+        self._check_write_mode()
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
@@ -1210,14 +1210,12 @@ class MetadataStore(ABC):
                 ),
             )
 
-    @abstractmethod
     @contextmanager
     def open(self, mode: AccessMode = "r") -> Iterator[Self]:
         """Open/initialize the store for operations.
 
         Context manager that opens the store with specified access mode.
-        Called internally by `__enter__`.
-        Child classes should implement backend-specific connection setup/teardown here.
+        Manages a mode stack to support nested contexts with mode escalation.
 
         Args:
             mode: Access mode for this connection session.
@@ -1228,6 +1226,31 @@ class MetadataStore(ABC):
         Note:
             Users should prefer using `with store:` pattern except when write access mode is needed.
         """
+        self._mode_stack.append(mode)
+        try:
+            if len(self._mode_stack) == 1:
+                self._open(mode)
+                self._is_open = True
+                self._validate_after_open()
+            yield self
+        finally:
+            self._mode_stack.pop()
+            if not self._mode_stack:
+                self._close()
+                self._is_open = False
+
+    @abstractmethod
+    def _open(self, mode: AccessMode) -> None:
+        """Open backend-specific connection/resources.
+
+        Args:
+            mode: Access mode for this connection session.
+        """
+        ...
+
+    @abstractmethod
+    def _close(self) -> None:
+        """Close backend-specific connection/resources."""
         ...
 
     def __enter__(self) -> Self:
@@ -1238,13 +1261,9 @@ class MetadataStore(ABC):
         Returns:
             Self: The opened store instance
         """
-        # Determine mode based on auto_create_tables
-        mode = "w" if self.auto_create_tables else "r"
-
-        # Open the store (open() manages _context_depth internally)
-        self._open_cm = self.open(mode)  # ty: ignore[invalid-assignment]
-        self._open_cm.__enter__()  # ty: ignore[possibly-missing-attribute]
-
+        cm = self.open("r")
+        cm.__enter__()
+        self._exit_stack.append(cm)
         return self
 
     def _validate_after_open(self) -> None:
@@ -1271,10 +1290,12 @@ class MetadataStore(ABC):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        # Delegate to open()'s context manager (which manages _context_depth)
-        if self._open_cm is not None:
-            self._open_cm.__exit__(exc_type, exc_val, exc_tb)
-            self._open_cm = None
+        if self._exit_stack:
+            self._exit_stack.pop().__exit__(exc_type, exc_val, exc_tb)
+
+    @property
+    def _access_mode(self) -> AccessMode:
+        return self._mode_stack[-1] if self._mode_stack else "r"
 
     def _check_open(self) -> None:
         """Check if store is open, raise error if not.
@@ -1286,6 +1307,19 @@ class MetadataStore(ABC):
             raise StoreNotOpenError(
                 f"{self.__class__.__name__} must be opened before use. "
                 'Use it as a context manager: `with store: ...` or `with store.open(mode="w"): ...`'
+            )
+
+    def _check_write_mode(self) -> None:
+        """Check if store is open in write mode.
+
+        Raises:
+            StoreNotOpenError: If store is not open or not in write mode
+        """
+        self._check_open()
+        if self._access_mode != "w":
+            raise StoreNotOpenError(
+                f"{self.__class__.__name__} is open in read mode. "
+                'Write operations require write mode: `with store.open(mode="w"): ...`'
             )
 
     # ========== Hash Algorithm Validation ==========
@@ -1634,7 +1668,7 @@ class MetadataStore(ABC):
                 store_with_data.drop_feature_metadata(MyFeature)
             ```
         """
-        self._check_open()
+        self._check_write_mode()
         feature_key = self._resolve_feature_key(feature)
         if self._is_system_table(feature_key):
             raise NotImplementedError(f"{self.__class__.__name__} does not support deletes for system tables")
@@ -1667,7 +1701,7 @@ class MetadataStore(ABC):
             records with the same feature version but an older `metaxy_created_at` would be targeted as
             well. Consider adding additional conditions to `filters` if you want to avoid that.
         """
-        self._check_open()
+        self._check_write_mode()
         feature_key = self._resolve_feature_key(feature)
 
         # Normalize filters to list

@@ -23,6 +23,7 @@ from pydantic_settings import (
 from typing_extensions import Self
 
 from metaxy._decorators import public
+from metaxy.models.feature_selection import FeatureSelection
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
@@ -408,6 +409,11 @@ class MetaxyConfig(BaseSettings):
     sync: bool = PydanticField(
         default=True,
         description="Whether to automatically [sync external feature definitions][metaxy.sync_external_features] from the metadata during some operations. It's recommended to keep this enabled as it ensures versioning correctness for external feature definitions with a negligible performance impact.",
+    )
+
+    extra_features: list[FeatureSelection] = PydanticField(
+        default_factory=list,
+        description="Extra features to load from the metadata store when calling [`sync_external_features`][metaxy.sync_external_features]. Each entry is a [`FeatureSelection`][metaxy.FeatureSelection]. All entries are combined together. Learn more [here](/guide/concepts/definitions/external-features.md/#loading-extra-features).",
     )
 
     metaxy_lock_path: str = PydanticField(

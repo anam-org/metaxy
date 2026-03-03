@@ -1,5 +1,8 @@
 {
   "name": "metaxy",
+  "metadata": {
+    "description": "Claude Code plugin for Metaxy"
+  },
   "owner": {
     "name": "Anam"
   },
@@ -11,7 +14,7 @@
         "url": "https://github.com/anam-org/metaxy.git"
       },
       "description": "Feature metadata management for multimodal data and ML pipelines. Provides guidance on feature definitions, versioning, metadata stores, and testing.",
-      "version": "0.1.6",
+      "version": "0.1.7",
       "homepage": "https://anam-org.github.io/metaxy/"
     }
   ]

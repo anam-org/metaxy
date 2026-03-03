@@ -46,7 +46,7 @@ Since `"raw/video"` is a **root feature**, it doesn't have any dependencies.
 That's it! Easy.
 
 !!! question annotate "Why classes?"
-    Some of the tooling Metaxy is aiming to integrate with, such as [SQLModel](/integrations/plugins/sqlmodel.md) or [Lance](/integrations/metadata-stores/databases/lancedb.md) are using class-based table definitions.
+    Some of the tooling Metaxy is aiming to integrate with, such as [SQLModel](/integrations/plugins/sqlmodel.md) or [Lance](/integrations/metadata-stores/databases/lancedb.md) is using class-based table definitions.
     It was practical to start from this interface, since it's somewhat more complicated to implement and support.
     More feature definition and registration methods are likely to be introduced in the future, since Metaxy doesn't
     use the class information in any way (1).

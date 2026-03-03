@@ -33,7 +33,7 @@ def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):
             custom_field: str = Field(description="A custom field")
             another_field: int = Field(default=42, description="An integer field")
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -101,7 +101,7 @@ def test_feature_schema_differs_between_features(tmp_path: Path):
             field_b: int
             field_c: bool = Field(default=True)
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 
@@ -232,7 +232,7 @@ def test_feature_schema_for_feature_without_custom_fields(tmp_path: Path):
 
             pass  # No custom fields, just inherits from Feature
 
-        with DeltaMetadataStore(root_path=tmp_path / "delta_store") as store:
+        with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
             # Push snapshot
             SystemTableStorage(store).push_graph_snapshot()
 

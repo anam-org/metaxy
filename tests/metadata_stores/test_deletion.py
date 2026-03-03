@@ -85,7 +85,7 @@ def test_soft_deleted_rows_filtered_by_default(
         created_at=[base_time, base_time],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(SoftDeleteFeature, initial_df)
         # Use delete to soft-delete row "a" instead of manually writing a deleted row
         any_store.delete(SoftDeleteFeature, filters=nw.col("sample_uid") == "a", soft=True)
@@ -140,7 +140,7 @@ def test_write_delete_write_sequence(
         created_at=[base_time + timedelta(seconds=2)],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(WriteDeleteWriteFeature, write1_df)
         any_store.write(WriteDeleteWriteFeature, delete_df)
         any_store.write(WriteDeleteWriteFeature, write2_df)
@@ -193,7 +193,7 @@ def test_write_delete_write_delete_sequence(
         created_at=[base_time + timedelta(seconds=2)],
     )
 
-    with any_store:
+    with any_store.open("w"):
         # Write first value
         any_store.write(WriteDeleteWriteDeleteFeature, write1_df)
         # Soft delete it
@@ -244,7 +244,7 @@ def test_soft_delete_historical_version_preserves_latest(
         created_at=[newer_time],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(VersionedFeature, first_version)
         any_store.write(VersionedFeature, latest_version)
 
@@ -289,7 +289,7 @@ def test_soft_delete_then_overwrite_restores_row(
         created_at=[base_time],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(RestoreFeature, initial)
         any_store.delete(RestoreFeature, filters=nw.col("sample_uid") == "a")
 
@@ -412,7 +412,7 @@ def test_hard_delete_historical_version_preserves_latest(
         created_at=[newer_time],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(VersionedHardDeleteFeature, first_version)
         any_store.write(VersionedHardDeleteFeature, latest_version)
 
@@ -453,7 +453,7 @@ def test_hard_delete_then_overwrite_restores_row(
         created_at=[base_time],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(RestoreHardDeleteFeature, initial)
         any_store.delete(
             RestoreHardDeleteFeature,
@@ -508,7 +508,7 @@ def test_soft_delete_preserves_original_created_at(
         created_at=[base_time],
     )
 
-    with any_store:
+    with any_store.open("w"):
         any_store.write(SoftDeleteTimestampFeature, initial_df)
 
         # Perform soft delete
