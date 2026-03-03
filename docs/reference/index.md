@@ -21,4 +21,4 @@ Slide decks
 
 Scientific publications
 
-- **[Introducing Metaxy](../publications/2026-introducing-metaxy/introducing-metaxy.md)** - Research paper describing the design of Metaxy
+- **[Introducing Metaxy](../publications/2026-introducing-metaxy/paper.md)** - Research paper describing the design of Metaxy

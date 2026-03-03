@@ -306,7 +306,7 @@ nav:
     - CLI: reference/cli.md
     - System Columns: reference/system-columns.md
     - Publications:
-      - Introducing Metaxy (2026): publications/2026-introducing-metaxy/introducing-metaxy.md
+      - Introducing Metaxy (2026): publications/2026-introducing-metaxy/paper.md
     - Slides:
       - Introducing Metaxy (2026): slides/2026-introducing-metaxy/intro.md
   - 📝 Changelog: changelog.md
