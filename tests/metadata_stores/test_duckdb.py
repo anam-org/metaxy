@@ -15,6 +15,7 @@ from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.types import FeatureKey
 
 
 def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
@@ -239,6 +240,41 @@ def test_duckdb_read_mode_read_only_selection(
         assert store.connection_params.get("read_only") is True
     else:
         assert "read_only" not in store.connection_params
+
+
+def test_duckdb_get_filtered_lazy_does_not_require_list_tables(
+    tmp_path: Path, test_graph, test_features: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """_get_filtered_ibis_lazy should avoid metadata scans via list_tables."""
+    db_path = tmp_path / "test.duckdb"
+    feature = test_features["UpstreamFeatureA"]
+
+    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
+        store.write(
+            feature,
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"frames": "h1", "audio": "h1"},
+                        {"frames": "h2", "audio": "h2"},
+                    ],
+                }
+            ),
+        )
+
+        def _fail_list_tables(*args: Any, **kwargs: Any) -> Any:  # noqa: ARG001
+            raise AssertionError("list_tables should not be called by _get_filtered_ibis_lazy")
+
+        monkeypatch.setattr(type(store.conn), "list_tables", _fail_list_tables)
+
+        existing = store._get_filtered_ibis_lazy(feature)
+        assert existing is not None
+        existing_df = existing.collect().to_polars().sort("sample_uid")
+        assert existing_df["sample_uid"].to_list() == [1, 2]
+
+        missing = store._get_filtered_ibis_lazy(FeatureKey(["test_stores", "missing_feature"]))
+        assert missing is None
 
 
 def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
