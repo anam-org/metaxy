@@ -81,7 +81,7 @@ def _sync_docs_mounts() -> None:
         shutil.copytree(
             src,
             dst,
-            symlinks=True,
+            symlinks=False,
             ignore=shutil.ignore_patterns("node_modules", ".node_modules"),
         )
 
@@ -106,7 +106,8 @@ def _sync_slides_svg_assets() -> None:
                 dst.unlink()
 
         try:
-            dst.symlink_to(src.resolve())
+            relative_src = Path(os.path.relpath(src, start=dst.parent))
+            dst.symlink_to(relative_src)
         except OSError:
             shutil.copy2(src, dst)
 

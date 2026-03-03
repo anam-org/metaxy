@@ -34,4 +34,5 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: generated-paper
-          path: ./publications/2026-introducing-metaxy/introducing-metaxy.pdf
+          path: ./publications/2026-introducing-metaxy/*.pdf
+          if-no-files-found: error
