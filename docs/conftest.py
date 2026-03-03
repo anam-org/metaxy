@@ -228,7 +228,7 @@ parsers = [
 ]
 
 # Configure Sybil to parse markdown files in docs/
-pytest_collect_file = Sybil(
+_sybil_collect_file = Sybil(
     parsers=parsers,
     patterns=["**/*.md"],
     setup=sybil_setup,
@@ -242,7 +242,19 @@ pytest_collect_file = Sybil(
         # Plugin pages with complex setup requirements
         "integrations/plugins/sqlalchemy.md",  # Requires Alembic context
         "integrations/plugins/sqlmodel.md",  # Requires SQLModel setup
+        # Slides use Slidev magic-move syntax with illustrative code blocks
+        "slides/**",
+        "docs/slides/**",
+        "**/slides/**",
         # Internal docs
         ".mkdocs-metaxy/*",
     ],
 ).pytest()
+
+
+def pytest_collect_file(file_path, parent):
+    """Skip Slidev markdown docs and delegate all other markdown to Sybil."""
+    path_str = str(file_path).replace("\\", "/")
+    if "/slides/" in path_str and path_str.endswith(".md"):
+        return None
+    return _sybil_collect_file(file_path, parent)

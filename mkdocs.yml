@@ -59,6 +59,7 @@ theme:
 hooks:
   - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_public.py
   - docs/.mkdocs-metaxy/src/mkdocs_metaxy/validate_glossary.py
+  - docs/hooks.py
 
 plugins:
   - search
@@ -304,6 +305,10 @@ nav:
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
     - System Columns: reference/system-columns.md
+    - Publications:
+      - Introducing Metaxy (2026): publications/2026-introducing-metaxy/paper.md
+    - Slides:
+      - Introducing Metaxy (2026): slides/2026-introducing-metaxy/intro.md
   - 📝 Changelog: changelog.md
 
 extra:

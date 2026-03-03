@@ -123,5 +123,6 @@ Here are a few more useful links:
 
 - [Announcement post](https://anam.ai/blog/metaxy) by Anam
 - [Dagster + Metaxy](https://dagster.io/blog/building-real-time-interactive-avatars-with-metaxy) by Dagster labs
+- [Docling + Slurm + Metaxy](https://georgheiler.com/2026/02/22/metaxy-dagster-slurm-multimodal/) by ASCII
 
 [^1]: The CLI is not tested on Windows yet.

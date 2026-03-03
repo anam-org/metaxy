@@ -37,6 +37,9 @@ PLAN.md
 .claude/plans
 plans/*.md
 .cache/
+docs/slides/.node_modules/
+docs/slides/
+docs/publications/
 .pg-wrappers/initdb
 .pg-wrappers/pg_ctl
 .pg-wrappers/postgres
@@ -49,3 +52,4 @@ devenv.local.yaml
 # direnv
 .devenv/
 .devenv.flake.nix
+slides/*/.node_modules/*

@@ -1,0 +1,38 @@
+name: Generate PDF from Markdown
+on:
+  push:
+    paths:
+      - 'publications/2026-introducing-metaxy/paper.md'
+      - 'publications/2026-introducing-metaxy/paper.bib'
+      - 'publications/2026-introducing-metaxy/assets/**'
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main ]
+    paths:
+      - 'publications/2026-introducing-metaxy/paper.md'
+      - 'publications/2026-introducing-metaxy/paper.bib'
+      - 'publications/2026-introducing-metaxy/assets/**'
+jobs:
+  paper:
+    permissions:
+      contents: read
+      actions: write
+    runs-on: ubuntu-latest
+    name: Paper Draft
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: TeX and PDF
+        uses: docker://openjournals/paperdraft:latest
+        with:
+          journal: joss
+          args: '-k ./publications/2026-introducing-metaxy/paper.md'
+      - name: Upload PDF to Artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: generated-paper
+          path: ./publications/2026-introducing-metaxy/*.pdf
+          if-no-files-found: error
