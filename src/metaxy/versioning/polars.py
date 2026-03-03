@@ -33,6 +33,11 @@ class PolarsVersioningEngine(VersioningEngine):
     }
 
     @classmethod
+    def supported_hash_algorithms(cls) -> frozenset[HashAlgorithm]:
+        """Return the public set of hash algorithms supported by this engine."""
+        return frozenset(cls._HASH_FUNCTION_MAP)
+
+    @classmethod
     def implementation(cls) -> nw.Implementation:
         return nw.Implementation.POLARS
 
