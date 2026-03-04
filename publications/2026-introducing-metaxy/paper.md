@@ -14,11 +14,11 @@ authors:
     orcid: 0000-0002-8684-1163
     affiliation: "2, 3"
 affiliations:
-  - name: Anam
+  - name: Anam, Romania
     index: 1
-  - name: Complexity Science Hub Vienna (CSH)
+  - name: Complexity Science Hub Vienna (CSH), Austria
     index: 2
-  - name: Austrian Supply Chain Intelligence Institute (ASCII)
+  - name: Austrian Supply Chain Intelligence Institute (ASCII), Austria
     index: 3
 date: 2026-02-16
 bibliography: paper.bib
