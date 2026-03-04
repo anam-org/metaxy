@@ -14,7 +14,7 @@ authors:
     orcid: 0000-0002-8684-1163
     affiliation: "2, 3"
 affiliations:
-  - name: Anam, Romania
+  - name: Anam, United Kingdom
     index: 1
   - name: Complexity Science Hub Vienna (CSH), Austria
     index: 2
