@@ -38,6 +38,10 @@ jobs:
 
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
 
       - name: Build documentation
         env:
