@@ -61,6 +61,7 @@ jobs:
               - '.github/workflows/**'
               - mkdocs.yml
               - 'docs/**'
+              - slides/2026-introducing-metaxy/package-lock.json
             claude-plugin:
               - '.claude-plugin/**'
 
