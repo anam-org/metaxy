@@ -59,13 +59,16 @@ claude-resolve-conflicts prompt="":
 docs-build:
     uv run --group docs mkdocs build --clean --strict
 
+docs-build-full:
+    METAXY_BUILD_PUBLICATIONS=1 METAXY_SYNC_DOCS_MOUNTS=1 uv run --group docs mkdocs build --clean --strict
+
 docs-serve:
-    uv run --group docs mkdocs serve --clean --livereload
+    METAXY_SYNC_DOCS_MOUNTS=1 uv run --group docs mkdocs serve --clean --livereload
 
 docs-publish version:
     git branch -D gh-pages
     git fetch origin gh-pages
-    uv run --group docs --all-extras mike deploy --push --update-aliases {{version}}
+    METAXY_SYNC_DOCS_MOUNTS=1 uv run --group docs --all-extras mike deploy --push --update-aliases {{version}}
 
 test-and-submit:
     just ruff

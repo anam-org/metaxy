@@ -331,6 +331,8 @@ jobs:
         uses: ./.github/actions/setup-devenv
       - name: Build Docs
         id: docs
+        env:
+          METAXY_SYNC_DOCS_MOUNTS: "1"
         run: uv run mkdocs build --strict
       - name: Test Docs Snippets
         run: uv run pytest ./docs

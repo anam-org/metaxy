@@ -40,6 +40,8 @@ jobs:
         uses: ./.github/actions/setup-devenv
 
       - name: Build documentation
+        env:
+          METAXY_SYNC_DOCS_MOUNTS: "1"
         run: uv run mkdocs build --strict
 
       - name: Configure Git for Mike

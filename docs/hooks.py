@@ -42,6 +42,25 @@ EXCLUDED_DOCS = {
 }
 
 
+def _is_truthy_env(name: str) -> bool:
+    """Return True when an environment variable is set to a truthy value."""
+    value = os.environ.get(name, "")
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _should_sync_docs_mounts() -> bool:
+    """Control whether top-level slides/publications are mirrored into docs/."""
+    value = os.environ.get("METAXY_SYNC_DOCS_MOUNTS")
+    if value is None:
+        return True
+    return _is_truthy_env("METAXY_SYNC_DOCS_MOUNTS")
+
+
+def _should_force_build_publications() -> bool:
+    """Control whether publication artifacts are force-rebuilt."""
+    return _is_truthy_env("METAXY_BUILD_PUBLICATIONS")
+
+
 def _ensure_metaxy_config() -> None:
     """Ensure MkDocs runs with a configured MetaxyConfig to silence warnings."""
     if not MetaxyConfig.is_set():
@@ -193,10 +212,13 @@ def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
 
 
 def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
-    """Build the Slidev deck before MkDocs collects site files."""
+    """Build publication artifacts before MkDocs collects site files."""
     _remove_stale_slide_root_index()
     _sync_slides_svg_assets()
-    _sync_docs_mounts()
+
+    if _should_sync_docs_mounts():
+        _sync_docs_mounts()
+
     _restore_node_modules()
 
     entry_path = SLIDES_DIR / SLIDES_ENTRY
@@ -205,16 +227,13 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
         _hide_node_modules()
         return
 
-    if os.environ.get("METAXY_SKIP_SLIDEV"):
+    dist_index = SLIDES_DIR / SLIDES_OUTPUT / "index.html"
+    should_build = _should_force_build_publications() or not dist_index.exists()
+    if not should_build:
         log.info(
-            "METAXY_SKIP_SLIDEV detected; skipping Slidev build and preserving existing artifacts."
+            "Skipping Slidev rebuild: publication artifacts already exist. "
+            "Set METAXY_BUILD_PUBLICATIONS=1 to force rebuild."
         )
-        dist_index = SLIDES_DIR / SLIDES_OUTPUT / "index.html"
-        if not dist_index.exists():
-            log.warning(
-                "Slidev dist output missing at %s; ensure slides are built before skipping.",
-                dist_index,
-            )
         _hide_node_modules()
         return
 
@@ -246,7 +265,8 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
         log.info("Building Slidev slides into %s.", output_dir)
         runner = _select_runner(bun_path=bun, npx_path=npx)
         _run(runner)
-        _sync_docs_mounts()
+        if _should_sync_docs_mounts():
+            _sync_docs_mounts()
     finally:
         _hide_node_modules()
 
