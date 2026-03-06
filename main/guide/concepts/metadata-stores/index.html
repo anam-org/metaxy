@@ -16,7 +16,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../deletions/">
+        <link rel="next" href="../definitions/features/">
       
       
         
@@ -737,66 +737,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3_2" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Metadata Stores
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_1_3_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Metadata Stores
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-    
-  
-  
-  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
@@ -867,10 +807,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#writes" class="md-nav__link">
+  <a href="#writing-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Writes
+        Writing Metadata
       
     </span>
   </a>
@@ -878,10 +818,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reads" class="md-nav__link">
+  <a href="#reading-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reads
+        Reading Metadata
       
     </span>
   </a>
@@ -889,22 +829,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#increment-resolution" class="md-nav__link">
+  <a href="#resolving-incremental-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Increment Resolution
+        Resolving Incremental Updates
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Increment Resolution">
+    <nav class="md-nav" aria-label="Resolving Incremental Updates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#custom-staleness-conditions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom Staleness Conditions
+        Custom staleness conditions
       
     </span>
   </a>
@@ -917,21 +857,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deletes" class="md-nav__link">
+  <a href="#deleting-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deletes
+        Deleting Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#soft-deletes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Soft deletes
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#rebases" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#hard-deletes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rebases
+        Hard deletes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-metadata-from-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting metadata from CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rebasing-metadata-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebasing Metadata Versions
       
     </span>
   </a>
@@ -963,42 +942,6 @@
     </ul>
   
 </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../deletions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Deletions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -1045,7 +988,7 @@
   <span class="md-ellipsis">
     
   
-    Defining Features
+    Feature System
   
 
     
@@ -1061,7 +1004,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Defining Features
+    Feature System
   
 
           </label>
@@ -1081,7 +1024,7 @@
   <span class="md-ellipsis">
     
   
-    Features
+    Defining Features
   
 
     
@@ -3858,10 +3801,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#writes" class="md-nav__link">
+  <a href="#writing-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Writes
+        Writing Metadata
       
     </span>
   </a>
@@ -3869,10 +3812,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reads" class="md-nav__link">
+  <a href="#reading-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reads
+        Reading Metadata
       
     </span>
   </a>
@@ -3880,22 +3823,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#increment-resolution" class="md-nav__link">
+  <a href="#resolving-incremental-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Increment Resolution
+        Resolving Incremental Updates
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Increment Resolution">
+    <nav class="md-nav" aria-label="Resolving Incremental Updates">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#custom-staleness-conditions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom Staleness Conditions
+        Custom staleness conditions
       
     </span>
   </a>
@@ -3908,21 +3851,60 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deletes" class="md-nav__link">
+  <a href="#deleting-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deletes
+        Deleting Metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deleting Metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#soft-deletes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Soft deletes
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#rebases" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#hard-deletes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rebases
+        Hard deletes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-metadata-from-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting metadata from CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rebasing-metadata-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebasing Metadata Versions
       
     </span>
   </a>
@@ -4015,24 +3997,6 @@
   
 
       
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="./" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Metadata Stores
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
     </ol>
   </nav>
 
@@ -4104,22 +4068,22 @@
 <ol>
 <li>with <code>"my/feature"</code> key</li>
 </ol>
-<h2 id="writes">Writes<a class="headerlink" href="#writes" title="Permanent link">&para;</a></h2>
-<p>In order to save metadata into a metadata store, you can use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.write"><code>MetadataStore.write</code></a> method:</p>
+<h2 id="writing-metadata">Writing Metadata<a class="headerlink" href="#writing-metadata" title="Permanent link">&para;</a></h2>
+<p>In order to write metadata to a metadata store, you can use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.write"><code>MetadataStore.write</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
-<p>Subsequent writes effectively overwrite the previous metadata, while actually <a href="../../../metaxy/design/#metadata-operations">appending</a> to the same table.</p>
+<p>Subsequent writes effectively overwrite the previous metadata, while actually <a href="../../../metaxy/design/#metadata-operations">appending</a> rows to the same table.</p>
 <details class="tip">
 <summary>Flushing Metadata In The Background</summary>
 <p>Usually it's desired to write metadata to the metadata store as soon as it becomes available.
 This ensures the pipeline can resume processing after a failure and no data is lost.
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.utils.BufferedMetadataWriter&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.BufferedMetadataWriter"><code>BufferedMetadataWriter</code></a> can be used to achieve this: it writes metadata in real-time from a background thread.</p>
 </details>
-<h2 id="reads">Reads<a class="headerlink" href="#reads" title="Permanent link">&para;</a></h2>
+<h2 id="reading-metadata">Reading Metadata<a class="headerlink" href="#reading-metadata" title="Permanent link">&para;</a></h2>
 <p>Metadata can be retrieved using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>MetadataStore.read</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
@@ -4131,7 +4095,7 @@ This ensures the pipeline can resume processing after a failure and no data is l
 </span></code></pre></div>
 </div>
 <p>By default, Metaxy drops historical records with the same feature version, which makes the <code>write</code>-<code>read</code> sequence idempotent for an outside observer.</p>
-<h2 id="increment-resolution">Increment Resolution<a class="headerlink" href="#increment-resolution" title="Permanent link">&para;</a></h2>
+<h2 id="resolving-incremental-updates">Resolving Incremental Updates<a class="headerlink" href="#resolving-incremental-updates" title="Permanent link">&para;</a></h2>
 <p>Increments can be computed using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
@@ -4155,7 +4119,7 @@ This ensures the pipeline can resume processing after a failure and no data is l
 </ol>
 <p>It is up to the caller to decide how to handle the processing and potential deletion of orphaned samples.</p>
 <p>Once processing is complete, the caller is expected to call <code>MetadataStore.write</code> to record metadata about the processed samples.</p>
-<h3 id="custom-staleness-conditions">Custom Staleness Conditions<a class="headerlink" href="#custom-staleness-conditions" title="Permanent link">&para;</a></h3>
+<h3 id="custom-staleness-conditions">Custom staleness conditions<a class="headerlink" href="#custom-staleness-conditions" title="Permanent link">&para;</a></h3>
 <p class="annotate">By default, <code>resolve_update</code> only marks samples as stale when their upstream provenance has changed. The <code>staleness_predicates</code> parameter allows marking additional records as stale based on arbitrary conditions.
 This is useful for forcing reprocessing after a bug fix that affected <em>metadata</em> (1), backfilling records that were processed with incomplete data, or invalidating samples that meet certain quality criteria.</p>
 <ol>
@@ -4186,12 +4150,8 @@ This is useful for forcing reprocessing after a bug fix that affected <em>metada
 <p class="admonition-title">How are increments computed?</p>
 <p>Learn more <a href="../versioning/">here</a>.</p>
 </div>
-<h2 id="deletes">Deletes<a class="headerlink" href="#deletes" title="Permanent link">&para;</a></h2>
-<p class="annotate">Metadata stores support deletions, which are not required during normal Metaxy operations (1).</p>
-<ol>
-<li>deletions might be necessary when working with <a href="../definitions/relationship/">expansion linear relationships</a> and re-computing samples without changing the feature version</li>
-</ol>
-<p>Here is an example of how a deletion would look like:</p>
+<h2 id="deleting-metadata">Deleting Metadata<a class="headerlink" href="#deleting-metadata" title="Permanent link">&para;</a></h2>
+<p>To delete rows from a metadata store, call <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.delete&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.delete"><code>MetadataStore.delete</code></a> and provide conditions to identify rows to be deleted:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
 </span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
@@ -4202,8 +4162,44 @@ This is useful for forcing reprocessing after a bug fix that affected <em>metada
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;metaxy_created_at&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)],</span>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="p">)</span>
 </span></code></pre></div>
-<p>Learn more about deletions <a href="../deletions/">here</a>.</p>
-<h2 id="rebases">Rebases<a class="headerlink" href="#rebases" title="Permanent link">&para;</a></h2>
+<p>Metaxy supports two deletion modes: <strong>soft deletes</strong> that only mark records as deleted, and <strong>hard deletes</strong> that physically remove records from storage.
+Soft deletion is enabled by default.</p>
+<h3 id="soft-deletes">Soft deletes<a class="headerlink" href="#soft-deletes" title="Permanent link">&para;</a></h3>
+<p>Soft deletes mark records as deleted without physically removing them. This is achieved by appending new rows with <code>metaxy_deleted_at</code> <a href="../../../reference/system-columns/">system column</a> set to the deletion timestamp. These records are still available and can be queried for if needed.</p>
+<p>By default, <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>MetadataStore.read</code></a> filters out soft-deleted records. In order to disable this filtering, set <code>include_soft_deleted</code> to <code>True</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="n">MyFeature</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="n">filters</span><span class="o">=</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;pending&quot;</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="p">)</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">active</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">)</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">all_rows</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">,</span> <span class="n">include_soft_deleted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="hard-deletes">Hard deletes<a class="headerlink" href="#hard-deletes" title="Permanent link">&para;</a></h3>
+<p>Hard deletes permanently remove rows from storage and can be enabled by setting <code>soft</code> to <code>False</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>        <span class="n">MyFeature</span><span class="p">,</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        <span class="n">filters</span><span class="o">=</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;quality&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.8</span><span class="p">,</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="n">soft</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="p">)</span>
+</span></code></pre></div>
+<h3 id="deleting-metadata-from-cli">Deleting metadata from CLI<a class="headerlink" href="#deleting-metadata-from-cli" title="Permanent link">&para;</a></h3>
+<p>It is possible to delete metadata from the command line:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Soft delete by default</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>--feature<span class="w"> </span>predictions<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;confidence &lt; 0.3&quot;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Hard delete</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>metaxy<span class="w"> </span>metadata<span class="w"> </span>delete<span class="w"> </span>--feature<span class="w"> </span>predictions<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;created_at &lt; &#39;2024-01-01&#39;&quot;</span><span class="w"> </span>--soft<span class="o">=</span><span class="nb">false</span>
+</span></code></pre></div>
+<p>Learn more in the <a href="../../../reference/cli/#metaxy-metadata-delete">CLI reference</a></p>
+<h2 id="rebasing-metadata-versions">Rebasing Metadata Versions<a class="headerlink" href="#rebasing-metadata-versions" title="Permanent link">&para;</a></h2>
 <p>When a feature definition changes but the underlying computation stays the same (e.g., dependency graph refactoring, field renaming, code reorganization), existing metadata can be rebased onto the new feature version using <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.rebase&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.rebase"><code>MetadataStore.rebase</code></a>. This recalculates provenance based on the target feature graph while preserving all user data columns.</p>
 <p class="annotate"><code>rebase</code> takes a dataframe of existing metadata, typically acquired with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>MetadataStore.read</code></a> (1). The returned frame includes the target feature and project version columns, so pass <code>preserve_feature_version=True</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.write"><code>MetadataStore.write</code></a> to retain them.</p>
 <ol>
@@ -4212,25 +4208,25 @@ This is useful for forcing reprocessing after a bug fix that affected <em>metada
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <p><!-- skip next -->
-<div class="language-py highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.models.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">METAXY_FEATURE_VERSION</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">existing</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="s2">&quot;example/child&quot;</span><span class="p">,</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="n">with_feature_history</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="c1"># an older feature version to be rebased</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">METAXY_FEATURE_VERSION</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;abc123&quot;</span><span class="p">],</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="p">)</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">rebased</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">rebase</span><span class="p">(</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="s2">&quot;example/child&quot;</span><span class="p">,</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="n">existing</span><span class="p">,</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="n">to_feature_version</span><span class="o">=</span><span class="s2">&quot;def456&quot;</span><span class="p">,</span>  <span class="c1"># new feature version</span>
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="p">)</span>
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;example/child&quot;</span><span class="p">,</span> <span class="n">rebased</span><span class="p">,</span> <span class="n">preserve_feature_version</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.models.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">METAXY_FEATURE_VERSION</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">existing</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>        <span class="s2">&quot;example/child&quot;</span><span class="p">,</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>        <span class="n">with_feature_history</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>        <span class="c1"># an older feature version to be rebased</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>        <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">METAXY_FEATURE_VERSION</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;abc123&quot;</span><span class="p">],</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="p">)</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="n">rebased</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">rebase</span><span class="p">(</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        <span class="s2">&quot;example/child&quot;</span><span class="p">,</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>        <span class="n">existing</span><span class="p">,</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>        <span class="n">to_feature_version</span><span class="o">=</span><span class="s2">&quot;def456&quot;</span><span class="p">,</span>  <span class="c1"># new feature version</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="p">)</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;example/child&quot;</span><span class="p">,</span> <span class="n">rebased</span><span class="p">,</span> <span class="n">preserve_feature_version</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div></p>
 </div>
 <p>Rebasing is also available as a CLI command with simplified options:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>rebase<span class="w"> </span>example/child<span class="w"> </span>--from<span class="w"> </span>abc123<span class="w"> </span>--to<span class="w"> </span>def456
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>rebase<span class="w"> </span>example/child<span class="w"> </span>--from<span class="w"> </span>abc123<span class="w"> </span>--to<span class="w"> </span>def456
 </span></code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -4240,14 +4236,14 @@ This is useful for forcing reprocessing after a bug fix that affected <em>metada
 <p>Metaxy metadata stores can be configured to pull missing metadata from another store. This is very useful for local and testing workflows, because it allows to avoid materializing the entire data pipeline locally.
 Instead, Metaxy stores can automatically pull missing metadata from production.</p>
 <p>Example <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>:</p>
-<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">[stores.dev]</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${HOME}/.metaxy/dev&quot;</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">[stores.prod]</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-prod-bucket/metaxy&quot;</span>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${HOME}/.metaxy/dev&quot;</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="k">[stores.prod]</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-prod-bucket/metaxy&quot;</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>

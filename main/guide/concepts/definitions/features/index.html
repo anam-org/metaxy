@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://docs.metaxy.io/main/guide/concepts/definitions/features/">
       
       
-        <link rel="prev" href="../../deletions/">
+        <link rel="prev" href="../../metadata-stores/">
       
       
         <link rel="next" href="../optional-dependencies/">
@@ -735,64 +735,6 @@
   
   
   
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_1_3_2" id="__nav_1_3_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Metadata Stores
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_1_3_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Metadata Stores
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../metadata-stores/" class="md-nav__link">
         
@@ -810,42 +752,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deletions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Deletions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -893,7 +799,7 @@
   <span class="md-ellipsis">
     
   
-    Defining Features
+    Feature System
   
 
     
@@ -909,7 +815,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Defining Features
+    Feature System
   
 
           </label>
@@ -938,7 +844,7 @@
   <span class="md-ellipsis">
     
   
-    Features
+    Defining Features
   
 
     
@@ -956,7 +862,7 @@
   <span class="md-ellipsis">
     
   
-    Features
+    Defining Features
   
 
     
@@ -1017,6 +923,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reusing-feature-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reusing Feature Definitions
+      
+    </span>
+  </a>
   
 </li>
       
@@ -3819,6 +3736,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#reusing-feature-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reusing Feature Definitions
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3892,7 +3820,7 @@
         <a href="./" class="md-path__link">
           
   <span class="md-ellipsis">
-    Defining Features
+    Feature System
   </span>
 
         </a>
@@ -4046,6 +3974,12 @@ Let's express this with Metaxy:</p>
 <h3 id="attaching-custom-metadata">Attaching custom metadata<a class="headerlink" href="#attaching-custom-metadata" title="Permanent link">&para;</a></h3>
 <p>Users can <a href="../../../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.</p>
+<h2 id="reusing-feature-definitions">Reusing Feature Definitions<a class="headerlink" href="#reusing-feature-definitions" title="Permanent link">&para;</a></h2>
+<p>It's often valuable to reuse the same base feature class across a few concrete feature definitions. To achieve this, set <code>spec</code> to <code>None</code>: this will instruct Metaxy to avoid attemptint to register this class on the feature graph. For example:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeatureBase</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="o">...</span>
+</span></code></pre></div>
 
 
 
