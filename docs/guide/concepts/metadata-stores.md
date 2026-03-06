@@ -130,7 +130,7 @@ This is useful for forcing reprocessing after a bug fix that affected *metadata*
 
 1. and not *data*, because in this case you should be changing the feature version
 
-Predicates are [Narwhals](https://narwhals-dev.github.io/narwhals/) expressions evaluated against stored metadata. Multiple predicates are OR'd together.
+Predicates are [Narwhals](https://narwhals-dev.github.io/narwhals/) expressions evaluated against stored metadata. When multiple predicates are provided, a sample is considered stale if it matches any of them.
 
 !!! example "Reprocess failed or incomplete samples"
 

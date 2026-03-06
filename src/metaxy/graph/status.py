@@ -268,8 +268,7 @@ def get_feature_metadata_status(
             (both upstream and target).
         target_filters: List of Narwhals filter expressions applied only to the target
             feature (or more precisely, the result of an increment calculation on it).
-        staleness_predicates: Narwhals expressions that mark matching records as stale
-            regardless of version. Multiple predicates are OR'd together.
+        staleness_predicates: Passed to [`resolve_update`][metaxy.MetadataStore.resolve_update].
         compute_progress: Whether to calculate progress percentage.
             When True, computes what percentage of input units have been processed.
             This requires additional computation (re-runs the input query).

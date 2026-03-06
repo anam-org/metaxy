@@ -85,6 +85,8 @@ class MetaxyDatasource(Datasource):
 
             - `"stale"`: samples that have been processed but have to be reprocessed
 
+        staleness_predicates: Passed to [`resolve_update`][metaxy.MetadataStore.resolve_update]
+            in incremental mode.
         filters: Sequence of Narwhals filter expressions to apply.
         columns: Subset of columns to include. Metaxy's system columns are always included.
         allow_fallback: If `True`, check fallback stores on main store miss.
@@ -101,6 +103,7 @@ class MetaxyDatasource(Datasource):
         config: mx.MetaxyConfig | None = None,
         *,
         incremental: bool = False,
+        staleness_predicates: Sequence[nw.Expr] | None = None,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
@@ -112,6 +115,7 @@ class MetaxyDatasource(Datasource):
         self.config = mx.init(config)
         self.store = store
         self.incremental = incremental
+        self.staleness_predicates = list(staleness_predicates) if staleness_predicates else None
         self.feature_version = feature_version
         self.filters = list(filters) if filters else None
         self.columns = list(columns) if columns else None
@@ -149,6 +153,7 @@ class MetaxyDatasource(Datasource):
             self._feature_key,
             lazy=True,
             target_filters=self.filters,
+            staleness_predicates=self.staleness_predicates,
         )
         # Add status column and concatenate added + changed
         added_with_status = increment.new.with_columns(nw.lit("new").alias("metaxy_status"))

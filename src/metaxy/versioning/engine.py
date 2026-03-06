@@ -656,7 +656,7 @@ class VersioningEngine(ABC):
             filters: Runtime filters to apply per feature.
             sample: For root features, user-provided DataFrame with provenance columns.
             staleness_predicates: Narwhals expressions that identify stale records regardless
-                of version. Records matching any predicate are treated as stale. OR'd together.
+                of version. A sample matching any predicate is treated as stale.
 
         Returns:
             Tuple of (added, changed, removed, input_df) DataFrames. Changed and

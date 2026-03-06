@@ -319,7 +319,7 @@ class MetadataStore(ABC):
                 be empty.
             staleness_predicates: Narwhals expressions to treat samples as stale even if their provenance is up-to-date.
                 These expressions are evaluated against existing feature metadata.
-                Multiple predicates are OR'd together.
+                When multiple predicates are provided, a sample is considered stale if it matches any of them.
 
         Raises:
             ValueError: If no `samples` dataframe has been provided when resolving an update for a root feature.

@@ -53,8 +53,7 @@ class IncrementResolver(Generic[FrameT]):
             current: Current metadata from the store, or None for initial load.
             join_columns: Columns to use for matching samples.
             staleness_predicates: Narwhals expressions that identify stale records
-                regardless of version. Records matching any predicate are treated as
-                stale. OR'd together.
+                regardless of version. A sample matching any predicate is treated as stale.
 
         Returns:
             Tuple of (added, changed, removed) DataFrames. Changed and removed
