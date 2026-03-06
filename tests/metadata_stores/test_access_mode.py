@@ -12,7 +12,6 @@ import pytest
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.exceptions import StoreNotOpenError
-from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -235,58 +234,6 @@ def test_mode_parameter_passed_to_open(tmp_path: Path) -> None:
         # Check that read_only flag is not set (WRITE mode)
         # Note: the flag may be removed by open() or set to False
         assert "read_only" not in store2.connection_params or store2.connection_params.get("read_only") is False
-
-
-@pytest.mark.parametrize(
-    ("database", "create_local_file", "expected_read_only"),
-    [
-        (None, False, False),
-        ("", False, False),
-        (":memory:", False, False),
-        ("md:test_db", False, True),
-        ("s3://bucket/test.duckdb", False, True),
-        ("http://example.com/test.duckdb", False, True),
-        ("http_local.duckdb", True, True),
-        ("http_local.duckdb", False, False),
-        ("existing.duckdb", True, True),
-        ("missing.duckdb", False, False),
-    ],
-)
-def test_duckdb_read_mode_read_only_selection(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    database: str | None,
-    create_local_file: bool,
-    expected_read_only: bool,
-) -> None:
-    """DuckDB READ mode sets read_only for remote and existing local DBs, but not :memory: or missing files."""
-
-    # Avoid opening a real backend connection; this test only validates selection logic in DuckDBMetadataStore._open.
-    monkeypatch.setattr(IbisMetadataStore, "_open", lambda self, mode: None)
-    monkeypatch.setattr(DuckDBMetadataStore, "_load_extensions", lambda self: None)
-
-    remote_prefixes = ("md:", "motherduck:", "s3://", "http://", "https://")
-    if database is None:
-        database_value = ":memory:"
-    elif database == "":
-        database_value = ""
-    elif database.startswith(remote_prefixes) or database == ":memory:":
-        database_value = database
-    else:
-        database_path = tmp_path / database
-        if create_local_file:
-            database_path.touch()
-        database_value = str(database_path)
-
-    store = DuckDBMetadataStore(database=database_value)
-    if database is None:
-        store.connection_params["database"] = None
-    store._open("r")
-
-    if expected_read_only:
-        assert store.connection_params.get("read_only") is True
-    else:
-        assert "read_only" not in store.connection_params
 
 
 def test_delta_store_modes(test_graph, test_features: dict[str, Any], tmp_path: Path) -> None:

@@ -4,6 +4,7 @@ from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
 from typing_extensions import Self
@@ -289,10 +290,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if mode == "r":
             db_param = self.connection_params.get("database")
             db = str(db_param) if db_param is not None else ""
-            is_in_memory = db == ":memory:"
-            is_remote = db.startswith(("md:", "motherduck:", "s3://", "http://", "https://"))
-            is_local_file = bool(db) and not is_in_memory and not is_remote
-            if not is_in_memory and (is_remote or (is_local_file and Path(db).exists())):
+            is_in_memory = db in {"", ":memory:"}
+            scheme = urlsplit(db).scheme if db else ""
+            is_windows_drive_path = len(scheme) == 1 and bool(Path(db).drive)
+            is_local_file = bool(db) and not is_in_memory and (scheme == "" or is_windows_drive_path)
+            is_remote = not (is_in_memory or is_local_file)
+            if is_remote or (is_local_file and Path(db).exists()):
                 self.connection_params["read_only"] = True
             else:
                 self.connection_params.pop("read_only", None)

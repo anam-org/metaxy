@@ -12,6 +12,7 @@ pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
@@ -156,6 +157,88 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
+
+
+def test_duckdb_in_memory_nested_write_from_read_mode(
+    test_graph,
+    test_features: dict[str, Any],
+) -> None:
+    """Regression test for issue #1016 without Dagster."""
+    feature = test_features["UpstreamFeatureA"]
+    store = DuckDBMetadataStore(database=":memory:", auto_create_tables=True)
+
+    with store:
+        with store.open("w"):
+            store.write(
+                feature,
+                pl.DataFrame(
+                    {
+                        "sample_uid": ["in_memory_1", "in_memory_2"],
+                        METAXY_PROVENANCE_BY_FIELD: [
+                            {"frames": "h1", "audio": "h1"},
+                            {"frames": "h2", "audio": "h2"},
+                        ],
+                    }
+                ),
+            )
+
+        result = collect_to_polars(store.read(feature)).sort("sample_uid")
+        assert result["sample_uid"].to_list() == ["in_memory_1", "in_memory_2"]
+
+
+@pytest.mark.parametrize(
+    ("database", "create_local_file", "expected_read_only"),
+    [
+        (None, False, False),
+        ("", False, False),
+        (":memory:", False, False),
+        ("md:test_db", False, True),
+        ("motherduck:test_db", False, True),
+        ("s3://bucket/test.duckdb", False, True),
+        ("gcs://bucket/test.duckdb", False, True),
+        ("azure://container/test.duckdb", False, True),
+        ("http://example.com/test.duckdb", False, True),
+        ("http_local.duckdb", True, True),
+        ("http_local.duckdb", False, False),
+        ("existing.duckdb", True, True),
+        ("missing.duckdb", False, False),
+    ],
+)
+def test_duckdb_read_mode_read_only_selection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    database: str | None,
+    create_local_file: bool,
+    expected_read_only: bool,
+) -> None:
+    """DuckDB READ mode sets read_only for remote and existing local DBs, but not :memory: or missing files."""
+    # Avoid opening a real backend connection; this test only validates selection logic in DuckDBMetadataStore._open.
+    monkeypatch.setattr(IbisMetadataStore, "_open", lambda self, mode: None)
+    monkeypatch.setattr(DuckDBMetadataStore, "_load_extensions", lambda self: None)
+
+    if database is None:
+        database_value = ":memory:"
+    elif database == "":
+        database_value = ""
+    elif "://" in database or database.startswith(("md:", "motherduck:")) or database == ":memory:":
+        database_value = database
+    else:
+        database_path = tmp_path / database
+        if create_local_file:
+            database_path.touch()
+        database_value = str(database_path)
+
+    store = DuckDBMetadataStore(database=database_value)
+    if database is None:
+        store.connection_params["database"] = None
+    # Ensure _open("r") actively manages this flag, including clearing stale values.
+    store.connection_params["read_only"] = True
+    store._open("r")
+
+    if expected_read_only:
+        assert store.connection_params.get("read_only") is True
+    else:
+        assert "read_only" not in store.connection_params
 
 
 def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
