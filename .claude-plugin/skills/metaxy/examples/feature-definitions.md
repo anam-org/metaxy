@@ -1,6 +1,6 @@
 # Feature Definitions
 
-See full documentation: https://anam-org.github.io/metaxy/guide/concepts/feature-definitions/
+See full documentation: https://docs.metaxy.io/latest/guide/concepts/definitions/features/
 
 !!! critical
 
@@ -17,20 +17,23 @@ import metaxy as mx
 class Video(
     mx.BaseFeature,
     spec=mx.FeatureSpec(
-        key="my/feature",
+        key="media/video",
         id_columns=["video_id"],
         fields=[
-            "audio",
-            "frames",
+            "audio",   # Logical field: describes a data content aspect
+            "frames",  # Logical field: not a metadata column
         ],
     ),
 ):
+    # Metadata columns: stored in the metadata store
     video_id: str
     path: str
     duration: float
     height: int
     width: int
 ```
+
+**Logical fields** (`fields` in `FeatureSpec`) describe the data contents for versioning and lineage. They do not correspond to metadata columns. **Metadata columns** (class attributes) are the actual data stored in the metadata store.
 
 ## Feature with Dependencies
 
@@ -48,6 +51,8 @@ class ChildFeature(
     ),
 ):
     sample_id: str
+    model_name: str
+    confidence: float
 ```
 
 ## Versioned Fields

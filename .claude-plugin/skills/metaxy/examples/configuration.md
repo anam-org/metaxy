@@ -1,6 +1,6 @@
 # Configuration
 
-See full documentation: https://anam-org.github.io/metaxy/reference/configuration/
+See full documentation: https://docs.metaxy.io/latest/reference/configuration/
 
 ## TOML Configuration
 
@@ -12,6 +12,9 @@ store = "dev"
 
 # Feature discovery paths
 entrypoints = ["src/my_project/features"]
+
+# Auto-create tables (global setting, not recommended for production)
+# auto_create_tables = true
 
 # Development store
 [stores.dev]
@@ -37,7 +40,6 @@ entrypoints = ["src/my_project/features"]
 type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 [tool.metaxy.stores.dev.config]
 root_path = "/tmp/metaxy/metadata"
-auto_create_tables = true
 ```
 
 ## Environment Variable Templating
@@ -64,7 +66,10 @@ store = config.get_store("dev")
 import metaxy as mx
 
 with mx.MetaxyConfig(
-    stores={"dev": mx.DeltaMetadataStore(root_path="/tmp/metaxy", auto_create_tables=True)}
+    stores={"dev": mx.StoreConfig(
+        type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+        config={"root_path": "/tmp/metaxy"},
+    )}
 ).use() as config:
     store = config.get_store("dev")
 ```

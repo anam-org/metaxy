@@ -1,6 +1,6 @@
 # Metadata Stores
 
-See full documentation: https://anam-org.github.io/metaxy/main/guide/concepts/metadata-stores/
+See full documentation: https://docs.metaxy.io/latest/guide/concepts/metadata-stores/
 
 ## Store Operations
 
@@ -14,8 +14,8 @@ with store:
     # increment.stale - samples with changed provenance
 
 with store:
-    # Read metadata
-    result = store.read(MyFeature, current_only=True)
+    # Read metadata (returns current non-superseded rows by default)
+    result = store.read(MyFeature)
     df = result.collect().to_polars()
 
 with store.open("w"):
