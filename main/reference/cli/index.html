@@ -4497,6 +4497,7 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
+<li><code>--stale-if, --empty-stale-if</code>: SQL WHERE clause predicate that marks matching records as stale regardless of version. Can be repeated.</li>
 <li><code>--snapshot-id</code>: Check metadata against a specific project version.</li>
 <li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
 <li><code>--verbose, --no-verbose</code>: Whether to display sample slices of dataframes.  <em>[default: False]</em></li>

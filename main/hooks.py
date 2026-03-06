@@ -150,7 +150,7 @@ def _hide_node_modules() -> None:
     node_modules.rename(HIDDEN_NODE_MODULES)
 
 
-def _ensure_dependencies(bun_path: str | None, npm_path: str | None) -> None:
+def _ensure_dependencies(bun_path: str | None) -> None:
     """Install Slidev dependencies if node_modules is missing."""
     node_modules = SLIDES_DIR / "node_modules"
     if node_modules.exists():
@@ -161,17 +161,10 @@ def _ensure_dependencies(bun_path: str | None, npm_path: str | None) -> None:
         _run([bun_path, "install"])
         return
 
-    if npm_path:
-        log.info("Installing Slidev dependencies with `npm install`.")
-        _run([npm_path, "install"])
-        return
-
-    raise RuntimeError(
-        "Unable to install Slidev dependencies: neither `bun` nor `npm` is available."
-    )
+    raise RuntimeError("Unable to install Slidev dependencies: `bun` is not available.")
 
 
-def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
+def _select_runner(bun_path: str | None) -> list[str]:
     """Choose the command used to build the Slidev deck."""
     slidev_args = [
         "slidev",
@@ -182,12 +175,6 @@ def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
         "--base",
         "./",
     ]
-
-    prefer_npx = os.environ.get("METAXY_SLIDES_RUNNER", "").lower() == "npx"
-
-    if prefer_npx and npx_path:
-        log.info("Using npx to build Slidev slides (runner=%s).", npx_path)
-        return [npx_path, *slidev_args]
 
     if bun_path:
         log.info(
@@ -201,14 +188,7 @@ def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
             *slidev_args[2:],  # pass through slide-specific arguments
         ]
 
-    if npx_path:
-        log.info("Fallback to npx to build Slidev slides (runner=%s).", npx_path)
-        return [npx_path, *slidev_args]
-
-    raise RuntimeError(
-        "Neither `bun` nor `npx` is available to build Slidev slides. "
-        "Install bun or Node.js (providing npx) to proceed."
-    )
+    raise RuntimeError("`bun` is required to build Slidev slides.")
 
 
 def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
@@ -238,32 +218,32 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
         return
 
     bun = shutil.which("bun")
-    npx = shutil.which("npx")
-    npm = shutil.which("npm")
+    running_in_ci = _is_truthy_env("CI")
 
-    if bun is None and npx is None:
-        log.warning(
-            "Skipping Slidev build because neither `bun` nor `npx` is available."
-        )
+    if bun is None:
+        if running_in_ci:
+            raise RuntimeError(
+                "CI Slidev build requires `bun`, but it was not found in PATH. "
+                "Install bun in the workflow before running mkdocs."
+            )
+        log.warning("Skipping Slidev build because `bun` is not available.")
         _hide_node_modules()
         return
 
     try:
         log.info(
-            "Slidev build environment: CI=%s, bun=%s, npx=%s, npm=%s",
+            "Slidev build environment: CI=%s, bun=%s",
             os.environ.get("CI"),
             bun,
-            npx,
-            npm,
         )
-        _ensure_dependencies(bun_path=bun, npm_path=npm)
+        _ensure_dependencies(bun_path=bun)
 
         output_dir = SLIDES_DIR / SLIDES_OUTPUT
         if output_dir.exists():
             shutil.rmtree(output_dir)
 
         log.info("Building Slidev slides into %s.", output_dir)
-        runner = _select_runner(bun_path=bun, npx_path=npx)
+        runner = _select_runner(bun_path=bun)
         _run(runner)
         if _should_sync_docs_mounts():
             _sync_docs_mounts()
