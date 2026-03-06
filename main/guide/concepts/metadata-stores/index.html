@@ -928,6 +928,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rebases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fallback-stores" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3908,6 +3919,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rebases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rebases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fallback-stores" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4083,7 +4105,7 @@
 <li>with <code>"my/feature"</code> key</li>
 </ol>
 <h2 id="writes">Writes<a class="headerlink" href="#writes" title="Permanent link">&para;</a></h2>
-<p>In order to save metadata into a metadata store, you can use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.write"><code>write</code></a> method:</p>
+<p>In order to save metadata into a metadata store, you can use the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.write"><code>MetadataStore.write</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
@@ -4098,7 +4120,7 @@ This ensures the pipeline can resume processing after a failure and no data is l
 <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.utils.BufferedMetadataWriter&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.BufferedMetadataWriter"><code>BufferedMetadataWriter</code></a> can be used to achieve this: it writes metadata in real-time from a background thread.</p>
 </details>
 <h2 id="reads">Reads<a class="headerlink" href="#reads" title="Permanent link">&para;</a></h2>
-<p>Metadata can be retrieved using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>read</code></a> method:</p>
+<p>Metadata can be retrieved using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>MetadataStore.read</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
@@ -4110,7 +4132,7 @@ This ensures the pipeline can resume processing after a failure and no data is l
 </div>
 <p>By default, Metaxy drops historical records with the same feature version, which makes the <code>write</code>-<code>read</code> sequence idempotent for an outside observer.</p>
 <h2 id="increment-resolution">Increment Resolution<a class="headerlink" href="#increment-resolution" title="Permanent link">&para;</a></h2>
-<p>Increments can be computed using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a> method:</p>
+<p>Increments can be computed using the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a> method:</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <p><!-- skip next -->
@@ -4181,18 +4203,51 @@ This is useful for forcing reprocessing after a bug fix that affected <em>metada
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <p>Learn more about deletions <a href="../deletions/">here</a>.</p>
+<h2 id="rebases">Rebases<a class="headerlink" href="#rebases" title="Permanent link">&para;</a></h2>
+<p>When a feature definition changes but the underlying computation stays the same (e.g., dependency graph refactoring, field renaming, code reorganization), existing metadata can be rebased onto the new feature version using <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.rebase&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.rebase"><code>MetadataStore.rebase</code></a>. This recalculates provenance based on the target feature graph while preserving all user data columns.</p>
+<p class="annotate"><code>rebase</code> takes a dataframe of existing metadata, typically acquired with <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.read&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.read"><code>MetadataStore.read</code></a> (1). The returned frame includes the target feature and project version columns, so pass <code>preserve_feature_version=True</code> to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.write&lt;/span&gt;" href="../../../reference/api/metadata-stores/base/#metaxy.MetadataStore.write"><code>MetadataStore.write</code></a> to retain them.</p>
+<ol>
+<li>With non-default version filtering. See an example below.</li>
+</ol>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p><!-- skip next -->
+<div class="language-py highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.models.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">METAXY_FEATURE_VERSION</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">):</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">existing</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="s2">&quot;example/child&quot;</span><span class="p">,</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="n">with_feature_history</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="c1"># an older feature version to be rebased</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">nw</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="n">METAXY_FEATURE_VERSION</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;abc123&quot;</span><span class="p">],</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="p">)</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">rebased</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">rebase</span><span class="p">(</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="s2">&quot;example/child&quot;</span><span class="p">,</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="n">existing</span><span class="p">,</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="n">to_feature_version</span><span class="o">=</span><span class="s2">&quot;def456&quot;</span><span class="p">,</span>  <span class="c1"># new feature version</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="p">)</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;example/child&quot;</span><span class="p">,</span> <span class="n">rebased</span><span class="p">,</span> <span class="n">preserve_feature_version</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div></p>
+</div>
+<p>Rebasing is also available as a CLI command with simplified options:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>rebase<span class="w"> </span>example/child<span class="w"> </span>--from<span class="w"> </span>abc123<span class="w"> </span>--to<span class="w"> </span>def456
+</span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use <code>--dry-run</code> to preview how many rows would be affected without writing the result.</p>
+</div>
 <h2 id="fallback-stores">Fallback Stores<a class="headerlink" href="#fallback-stores" title="Permanent link">&para;</a></h2>
 <p>Metaxy metadata stores can be configured to pull missing metadata from another store. This is very useful for local and testing workflows, because it allows to avoid materializing the entire data pipeline locally.
 Instead, Metaxy stores can automatically pull missing metadata from production.</p>
 <p>Example <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr>:</p>
-<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[stores.dev]</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${HOME}/.metaxy/dev&quot;</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="k">[stores.prod]</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-prod-bucket/metaxy&quot;</span>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;${HOME}/.metaxy/dev&quot;</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">[stores.prod]</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.metadata_stores.delta.DeltaMetadataStore&quot;</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-prod-bucket/metaxy&quot;</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>

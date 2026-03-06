@@ -157,8 +157,10 @@ def sybil_setup(namespace):
     import narwhals as nw
     from metaxy.models import feature as feature_module
     from metaxy_testing.doctest_fixtures import (
+        ChildFeature,
         DocsStoreFixtures,
         MyFeature,
+        ParentFeature,
         register_doctest_fixtures,
         sample_data,
     )
@@ -191,6 +193,8 @@ def sybil_setup(namespace):
     namespace["nw"] = nw
     namespace["graph"] = isolated_graph
     namespace["MyFeature"] = MyFeature
+    namespace["ParentFeature"] = ParentFeature
+    namespace["ChildFeature"] = ChildFeature
     namespace["df"] = sample_data
     # `store` is pre-populated with MyFeature data for examples that need existing data
     namespace["store"] = store_fixtures.store_with_data

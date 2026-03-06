@@ -3652,6 +3652,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy-metadata-rebase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy metadata rebase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy-metadata-copy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4189,6 +4200,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy-metadata-rebase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy metadata rebase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy-metadata-copy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4300,6 +4322,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-metadata"><code>metadata</code></a><ul>
 <li><a href="#metaxy-metadata-status"><code>status</code></a></li>
 <li><a href="#metaxy-metadata-delete"><code>delete</code></a></li>
+<li><a href="#metaxy-metadata-rebase"><code>rebase</code></a></li>
 <li><a href="#metaxy-metadata-copy"><code>copy</code></a></li>
 </ul>
 </li>
@@ -4528,8 +4551,20 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>FEATURES, --features, --empty-features</code>: Feature keys (e.g., 'my_feature' or 'namespace/feature').  <em>[default: ()]</em></li>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 </ul>
+<h3 id="metaxy-metadata-rebase">metaxy metadata rebase<a class="headerlink" href="#metaxy-metadata-rebase" title="Permanent link">&para;</a></h3>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy metadata rebase --from STR [OPTIONS] FEATURE</span>
+</span></code></pre></div>
+<p>Rebase metadata from one feature version to another, recalculating provenance.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>FEATURE, --feature</code>: Feature key to rebase.  <strong>[required]</strong></li>
+<li><code>--from</code>: Source feature version hash.  <strong>[required]</strong></li>
+<li><code>--to</code>: Target feature version hash. Defaults to the current feature version.</li>
+<li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
+<li><code>--dry-run, --no-dry-run</code>: Preview without executing.  <em>[default: False]</em></li>
+</ul>
 <h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy metadata copy --from STR --to STR [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Copy metadata from one store to another.</p>
 <p>Copies metadata for specified features from source to destination store.
@@ -4549,7 +4584,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Apply to all features in the project's feature graph.  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-mcp">metaxy mcp<a class="headerlink" href="#metaxy-mcp" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="go">metaxy mcp</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy mcp</span>
 </span></code></pre></div>
 <p><a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</p>
 <p><strong>Global</strong>:</p>
@@ -4561,7 +4596,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-push">metaxy push<a class="headerlink" href="#metaxy-push" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy push [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Push feature definitions to the metadata store</p>
 <p><strong>Parameters</strong>:</p>
@@ -4578,7 +4613,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-lock">metaxy lock<a class="headerlink" href="#metaxy-lock" title="Permanent link">&para;</a></h2>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</p>
 <p><strong>Parameters</strong>:</p>
