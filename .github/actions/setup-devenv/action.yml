@@ -33,10 +33,34 @@ runs:
         # Allow builtins.getEnv for DEVENV_PYTHON_VERSION
         DEVENV_NIX_FLAGS: "--impure"
       run: |
-        direnv allow .
-        direnv export gha >> "$GITHUB_ENV"
+        tmp_devenv_dir="$(mktemp -d)"
+        cp devenv.nix devenv.yaml devenv.lock "$tmp_devenv_dir/"
+
+        cat > "$tmp_devenv_dir/.envrc" <<'EOF'
+        eval "$(devenv direnvrc)"
+        use devenv
+        EOF
+
+        (
+          cd "$tmp_devenv_dir"
+          direnv allow .
+          direnv export gha >> "$GITHUB_ENV"
+        )
+        rm -rf "$tmp_devenv_dir"
 
     - name: Install Python dependencies
       if: inputs.install-deps == 'true'
       shell: bash
       run: uv sync --all-extras --all-groups
+
+    - name: Assert devenv.lock unchanged
+      shell: bash
+      run: |
+        if ! git ls-files --error-unmatch devenv.lock >/dev/null 2>&1; then
+          exit 0
+        fi
+        if ! git diff --exit-code -- devenv.lock; then
+          echo "::error::devenv.lock was modified during CI setup. CI must not modify lockfiles."
+          git --no-pager diff -- devenv.lock || true
+          exit 1
+        fi
