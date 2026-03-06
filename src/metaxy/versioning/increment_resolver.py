@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import functools
+import operator
 from typing import TYPE_CHECKING, Generic, cast
 
 import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
+    _STALE_BY_PREDICATE,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
@@ -35,18 +38,23 @@ class IncrementResolver(Generic[FrameT]):
         expected: FrameT,
         current: FrameT | None,
         join_columns: list[str],
+        staleness_predicates: tuple[nw.Expr, ...] = (),
     ) -> tuple[FrameT, FrameT | None, FrameT | None]:
         """Compare expected and current metadata to find incremental changes.
 
         Performs set operations using provenance columns to identify:
         - Added: Samples in expected but not in current (anti-join)
-        - Changed: Samples in both with different provenance (inner join + filter)
+        - Changed: Samples in both with different provenance (inner join + filter),
+          plus samples matching any staleness predicate regardless of provenance
         - Removed: Samples in current but not in expected (anti-join)
 
         Args:
             expected: DataFrame with expected provenance from upstream.
             current: Current metadata from the store, or None for initial load.
             join_columns: Columns to use for matching samples.
+            staleness_predicates: Narwhals expressions that identify stale records
+                regardless of version. Records matching any predicate are treated as
+                stale. OR'd together.
 
         Returns:
             Tuple of (added, changed, removed) DataFrames. Changed and removed
@@ -76,22 +84,36 @@ class IncrementResolver(Generic[FrameT]):
             ),
         )
 
-        # Find changed samples (in both but different provenance)
+        # Evaluate staleness predicates against current metadata before the join,
+        # so predicates can reference user columns (e.g. dataset, extra) from stored metadata.
+        select_columns = [*join_columns, f"__current_{METAXY_PROVENANCE}"]
+        if staleness_predicates:
+            current = current.with_columns(
+                functools.reduce(operator.or_, staleness_predicates).alias(_STALE_BY_PREDICATE),
+            )
+            select_columns.append(_STALE_BY_PREDICATE)
+
+        current_for_join = cast(FrameT, current.select(select_columns))
+
+        expected_columns = expected.collect_schema().names()  # ty: ignore[invalid-argument-type]
+
+        joined = expected.join(  # ty: ignore[invalid-argument-type]
+            current_for_join,  # ty: ignore[invalid-argument-type]
+            on=join_columns,
+            how="inner",
+            suffix="__right",
+        )
+
+        # Changed: provenance differs OR marked stale by predicates
+        changed_filter: nw.Expr = nw.col(f"__current_{METAXY_PROVENANCE}").is_null() | (
+            nw.col(METAXY_PROVENANCE) != nw.col(f"__current_{METAXY_PROVENANCE}")
+        )
+        if staleness_predicates:
+            changed_filter = changed_filter | nw.col(_STALE_BY_PREDICATE)
+
         changed = cast(
             FrameT,
-            expected.join(  # ty: ignore[invalid-argument-type]
-                cast(  # ty: ignore[invalid-argument-type]
-                    FrameT,
-                    current.select(*join_columns, f"__current_{METAXY_PROVENANCE}"),
-                ),
-                on=join_columns,
-                how="inner",
-            )
-            .filter(
-                nw.col(f"__current_{METAXY_PROVENANCE}").is_null()
-                | (nw.col(METAXY_PROVENANCE) != nw.col(f"__current_{METAXY_PROVENANCE}"))
-            )
-            .drop(f"__current_{METAXY_PROVENANCE}"),
+            joined.filter(changed_filter).select(expected_columns),
         )
 
         # Find removed samples (in current but not expected)

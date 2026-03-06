@@ -276,6 +276,7 @@ class MetadataStore(ABC):
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
+        staleness_predicates: Sequence[nw.Expr] | None = None,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
@@ -316,6 +317,9 @@ class MetadataStore(ABC):
             skip_comparison: If True, skip the increment comparison logic and return all
                 upstream samples in `increment.new`. The `changed` and `removed` frames will
                 be empty.
+            staleness_predicates: Narwhals expressions to treat samples as stale even if their provenance is up-to-date.
+                These expressions are evaluated against existing feature metadata.
+                Multiple predicates are OR'd together.
 
         Raises:
             ValueError: If no `samples` dataframe has been provided when resolving an update for a root feature.
@@ -346,6 +350,27 @@ class MetadataStore(ABC):
             )
             with store.open(mode="w"):
                 result = store.resolve_update(MyFeature, samples=nw.from_native(samples))
+            ```
+
+        !!! example "With staleness predicates"
+
+            Force reprocessing of failed or incomplete samples,
+            regardless of whether their upstream provenance has changed:
+
+            <!-- skip: next -->
+            ```py
+            import narwhals as nw
+
+            with store.open(mode="w"):
+                result = store.resolve_update(
+                    MyFeature,
+                    staleness_predicates=[
+                        nw.col("status") == "failed",
+                        nw.col("embedding_dim").is_null(),
+                    ],
+                )
+
+                # result.stale includes both version-stale and predicate-matched samples
             ```
         """
         import narwhals as nw
@@ -544,6 +569,7 @@ class MetadataStore(ABC):
                     hash_algorithm=self.hash_algorithm,
                     filters=filters_by_key,
                     sample=samples_nw.lazy() if samples_nw is not None else None,
+                    staleness_predicates=tuple(staleness_predicates) if staleness_predicates else (),
                 )
 
         # Convert None to empty DataFrames

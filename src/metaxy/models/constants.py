@@ -57,6 +57,11 @@ METAXY_DELETED_AT = f"{SYSTEM_COLUMN_PREFIX}deleted_at"
 METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
 """External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
 
+# --- Internal Column Names (used during increment resolution) ---------------------
+
+_STALE_BY_PREDICATE = "__stale_by_predicate"
+"""Temporary boolean column marking rows matched by user-provided staleness predicates."""
+
 # --- System Column Sets ------------------------------------------------------------
 
 ALL_SYSTEM_COLUMNS = frozenset(

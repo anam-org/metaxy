@@ -21,6 +21,12 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## Unreleased
+
+### Added
+
+- `staleness_predicates` parameter on [`resolve_update`][metaxy.MetadataStore.resolve_update] to mark records as stale based on arbitrary Narwhals expressions, regardless of version
+
 ## 1.1.0
 
 ### Added

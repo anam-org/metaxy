@@ -640,6 +640,7 @@ class VersioningEngine(ABC):
         hash_algorithm: HashAlgorithm,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]],
         sample: FrameT | None,
+        staleness_predicates: tuple[nw.Expr, ...] = (),
     ) -> tuple[FrameT, FrameT | None, FrameT | None, FrameT | None]:
         """Compute expected provenance and compare with current to find changes.
 
@@ -654,6 +655,8 @@ class VersioningEngine(ABC):
             hash_algorithm: Hash algorithm for provenance computation.
             filters: Runtime filters to apply per feature.
             sample: For root features, user-provided DataFrame with provenance columns.
+            staleness_predicates: Narwhals expressions that identify stale records regardless
+                of version. Records matching any predicate are treated as stale. OR'd together.
 
         Returns:
             Tuple of (added, changed, removed, input_df) DataFrames. Changed and
@@ -682,7 +685,7 @@ class VersioningEngine(ABC):
         from metaxy.versioning.increment_resolver import IncrementResolver
 
         resolver: IncrementResolver[FrameT] = IncrementResolver(self.plan, self)
-        added, changed, removed = resolver.resolve(expected, current, join_columns)
+        added, changed, removed = resolver.resolve(expected, current, join_columns, staleness_predicates)
 
         return added, changed, removed, input_df
 

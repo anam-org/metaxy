@@ -122,6 +122,34 @@ It is up to the caller to decide how to handle the processing and potential dele
 
 Once processing is complete, the caller is expected to call `MetadataStore.write` to record metadata about the processed samples.
 
+### Custom Staleness Conditions
+
+By default, `resolve_update` only marks samples as stale when their upstream provenance has changed. The `staleness_predicates` parameter allows marking additional records as stale based on arbitrary conditions.
+This is useful for forcing reprocessing after a bug fix that affected *metadata* (1), backfilling records that were processed with incomplete data, or invalidating samples that meet certain quality criteria.
+{ .annotate }
+
+1. and not *data*, because in this case you should be changing the feature version
+
+Predicates are [Narwhals](https://narwhals-dev.github.io/narwhals/) expressions evaluated against stored metadata. Multiple predicates are OR'd together.
+
+!!! example "Reprocess failed or incomplete samples"
+
+    <!-- skip next -->
+    ```py
+    import narwhals as nw
+
+    with store.open("w"):
+        inc = store.resolve_update(
+            "my/feature",
+            staleness_predicates=[
+                nw.col("status") == "failed",
+                nw.col("embedding_dim").is_null(),
+            ],
+        )
+    ```
+
+    Any record where `status` is `"failed"` **or** `embedding` is null will appear in `inc.stale`, even if its upstream provenance has not changed.
+
 !!! tip "Where are increments computed?"
 
   Learn more [here](../../metaxy/design.md#compute).
