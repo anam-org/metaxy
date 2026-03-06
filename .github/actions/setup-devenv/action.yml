@@ -31,7 +31,7 @@ runs:
       shell: bash
       env:
         # Allow builtins.getEnv for DEVENV_PYTHON_VERSION
-        DEVENV_NIX_FLAGS: "--impure"
+        DEVENV_NIX_FLAGS: "--impure --no-update-lock-file"
       run: |
         direnv allow .
         direnv export gha >> "$GITHUB_ENV"
