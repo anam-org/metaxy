@@ -253,6 +253,7 @@ def get_feature_metadata_status(
     use_fallback: bool = True,
     global_filters: Sequence[nw.Expr] | None = None,
     target_filters: Sequence[nw.Expr] | None = None,
+    staleness_predicates: Sequence[nw.Expr] | None = None,
     compute_progress: bool = False,
 ) -> FeatureMetadataStatusWithIncrement:
     """Get metadata status for a single feature.
@@ -267,6 +268,8 @@ def get_feature_metadata_status(
             (both upstream and target).
         target_filters: List of Narwhals filter expressions applied only to the target
             feature (or more precisely, the result of an increment calculation on it).
+        staleness_predicates: Narwhals expressions that mark matching records as stale
+            regardless of version. Multiple predicates are OR'd together.
         compute_progress: Whether to calculate progress percentage.
             When True, computes what percentage of input units have been processed.
             This requires additional computation (re-runs the input query).
@@ -343,6 +346,7 @@ def get_feature_metadata_status(
         lazy=True,
         global_filters=list(global_filters) if global_filters else None,
         target_filters=list(target_filters) if target_filters else None,
+        staleness_predicates=list(staleness_predicates) if staleness_predicates else None,
     )
 
     # Count changes

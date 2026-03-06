@@ -2916,3 +2916,204 @@ root_path = "{prod_path}"
         assert result.returncode == 0
         assert "Warning" in result.stdout
         assert "No valid features to copy" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_stale_if_basic(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
+    """Status command with --stale-if marks matching records as stale regardless of version."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata with a 'status' column
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3, 4, 5],
+                "value": ["val_1", "val_2", "val_3", "val_4", "val_5"],
+                "status": ["ok", "failed", "ok", "failed", "ok"],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 6)],
+            }
+        )
+
+        feature_key_root = FeatureKey(["video", "files_root"])
+
+        with graph.use(), store.open("w"):
+            store.write(feature_key_root, upstream_data)
+
+        # Resolve downstream, join with extra 'status' column, and write
+        with graph.use(), store.open("w"):
+            feature_key = FeatureKey(["video", "files"])
+            increment = store.resolve_update(feature_key, lazy=False)
+            downstream_df = increment.new.to_polars()
+
+            extra_df = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3, 4, 5],
+                    "status": ["ok", "failed", "ok", "failed", "ok"],
+                }
+            )
+            downstream_df = downstream_df.join(extra_df, on="sample_uid", how="left")
+            store.write(feature_key, downstream_df)
+
+        # Run status with --stale-if to mark 'failed' records as stale
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "video/files",
+                "--stale-if",
+                "status = 'failed'",
+                "--format",
+                output_format,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["store_rows"] == 5
+            # 2 records have status='failed' (sample_uid 2 and 4)
+            assert feature["stale"] == 2
+            assert feature["missing"] == 0
+            assert feature["needs_update"] is True
+        else:
+            assert "video/files" in result.stdout
+            # Stale count of 2 should appear
+            assert "2" in result.stdout
+            # Needs update icon
+            assert "\u26a0" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_stale_if_multiple_predicates(
+    metaxy_project: TempMetaxyProject, output_format: str, capsys: pytest.CaptureFixture[str]
+):
+    """Multiple --stale-if flags are OR'd together."""
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata with 'dataset' and 'status' columns
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3, 4],
+                "value": ["val_1", "val_2", "val_3", "val_4"],
+                "dataset": ["mead", "voxceleb", "mead", "voxceleb"],
+                "status": ["ok", "failed", "ok", "ok"],
+                "metaxy_provenance_by_field": [{"default": f"hash{i}"} for i in range(1, 5)],
+            }
+        )
+
+        feature_key_root = FeatureKey(["video", "files_root"])
+
+        with graph.use(), store.open("w"):
+            store.write(feature_key_root, upstream_data)
+
+        # Resolve downstream, join with extra columns, and write
+        with graph.use(), store.open("w"):
+            feature_key = FeatureKey(["video", "files"])
+            increment = store.resolve_update(feature_key, lazy=False)
+            downstream_df = increment.new.to_polars()
+
+            extra_df = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3, 4],
+                    "dataset": ["mead", "voxceleb", "mead", "voxceleb"],
+                    "status": ["ok", "failed", "ok", "ok"],
+                }
+            )
+            downstream_df = downstream_df.join(extra_df, on="sample_uid", how="left")
+            store.write(feature_key, downstream_df)
+
+        # Run status with two --stale-if flags (OR'd together)
+        # dataset='mead' matches samples 1, 3
+        # status='failed' matches sample 2
+        # Combined (OR): samples 1, 2, 3 are stale
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "status",
+                "video/files",
+                "--stale-if",
+                "dataset = 'mead'",
+                "--stale-if",
+                "status = 'failed'",
+                "--format",
+                output_format,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["store_rows"] == 4
+            # 3 records match: samples 1, 2, 3
+            assert feature["stale"] == 3
+            assert feature["missing"] == 0
+            assert feature["needs_update"] is True
+        else:
+            assert "video/files" in result.stdout
+            # Stale count of 3 should appear
+            assert "3" in result.stdout
+            # Needs update icon
+            assert "\u26a0" in result.stdout

@@ -67,6 +67,18 @@ GlobalFilterArgs = Annotated[
     ),
 ]
 
+# Type alias for staleness predicate arguments
+# --stale-if: Marks matching records as stale regardless of version
+StalenessPredicateArgs = Annotated[
+    list[nw.Expr],
+    cyclopts.Parameter(
+        name=["--stale-if"],
+        help="SQL WHERE clause predicate that marks matching records as stale regardless of version. Can be repeated.",
+        converter=_convert_filters,
+        accepts_keys=False,
+    ),
+]
+
 
 def print_error(
     console: Console,

@@ -10,7 +10,7 @@ import narwhals as nw
 from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
-from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat
+from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat, StalenessPredicateArgs
 
 if TYPE_CHECKING:
     from metaxy import FeatureDefinition
@@ -41,6 +41,7 @@ def status(
     ] = None,
     filters: FilterArgs | None = None,
     global_filters: GlobalFilterArgs | None = None,
+    staleness_predicates: StalenessPredicateArgs | None = None,
     project_version: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -97,6 +98,7 @@ def status(
     # Normalize filter arguments
     target_filters_list = filters if filters else None
     global_filters_list = global_filters if global_filters else None
+    staleness_predicates_list = staleness_predicates if staleness_predicates else None
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
@@ -144,6 +146,7 @@ def status(
                     use_fallback=allow_fallback_stores,
                     global_filters=global_filters_list,
                     target_filters=target_filters_list,
+                    staleness_predicates=staleness_predicates_list,
                     compute_progress=compute_progress,
                 )
 
