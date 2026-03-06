@@ -69,7 +69,7 @@ Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [f
 
 ## Writes
 
-In order to save metadata into a metadata store, you can use the [`write`][metaxy.MetadataStore.write] method:
+In order to save metadata into a metadata store, you can use the [`MetadataStore.write`][metaxy.MetadataStore.write] method:
 
 !!! example
 
@@ -84,7 +84,7 @@ Subsequent writes effectively overwrite the previous metadata, while actually [a
 
 ## Reads
 
-Metadata can be retrieved using the [`read`][metaxy.MetadataStore.read] method:
+Metadata can be retrieved using the [`MetadataStore.read`][metaxy.MetadataStore.read] method:
 
 !!! example
 
@@ -100,7 +100,7 @@ By default, Metaxy drops historical records with the same feature version, which
 
 ## Increment Resolution
 
-Increments can be computed using the [`resolve_update`][metaxy.MetadataStore.resolve_update] method:
+Increments can be computed using the [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] method:
 
 !!! example
 
@@ -180,6 +180,46 @@ with store.open("w"):
 ```
 
 Learn more about deletions [here](./deletions.md).
+
+## Rebases
+
+When a feature definition changes but the underlying computation stays the same (e.g., dependency graph refactoring, field renaming, code reorganization), existing metadata can be rebased onto the new feature version using [`MetadataStore.rebase`][metaxy.MetadataStore.rebase]. This recalculates provenance based on the target feature graph while preserving all user data columns.
+
+`rebase` takes a dataframe of existing metadata, typically acquired with [`MetadataStore.read`][metaxy.MetadataStore.read] (1). The returned frame includes the target feature and project version columns, so pass `preserve_feature_version=True` to [`MetadataStore.write`][metaxy.MetadataStore.write] to retain them.
+{ .annotate }
+
+1. With non-default version filtering. See an example below.
+
+!!! example
+
+    <!-- skip next -->
+    ```py
+    from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+    with store.open("w"):
+        existing = store.read(
+            "example/child",
+            with_feature_history=True,
+            # an older feature version to be rebased
+            filters=[nw.col(METAXY_FEATURE_VERSION) == "abc123"],
+        )
+        rebased = store.rebase(
+            "example/child",
+            existing,
+            to_feature_version="def456",  # new feature version
+        )
+        store.write("example/child", rebased, preserve_feature_version=True)
+    ```
+
+Rebasing is also available as a CLI command with simplified options:
+
+```console
+$ metaxy metadata rebase example/child --from abc123 --to def456
+```
+
+!!! tip
+
+    Use `--dry-run` to preview how many rows would be affected without writing the result.
 
 ## Fallback Stores
 

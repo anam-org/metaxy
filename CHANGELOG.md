@@ -19,13 +19,16 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
         This functionality is experimental.
 
 <!-- --8<-- [end:header] -->
-<!-- --8<-- [start:releases] -->
 
-## Unreleased
+## 1.2.0
 
 ### Added
 
 - `staleness_predicates` parameter on [`resolve_update`][metaxy.MetadataStore.resolve_update] to mark records as stale based on arbitrary Narwhals expressions, regardless of version
+- `MetadataStore.write` now fills `metaxy_data_version` and `metaxy_data_version_by_field` values in place of `Null`s on per-row basis instead of checking whether the whole column presence.
+- Added [Rebases](/guide/concepts/definitions/metadata-stores.md#rebases) functionality which allows backfilling metadata from historical feature versions. It's available via [CLI](/reference/CLI.md#metaxy-metadata-rebase) or as [`MetadataStore.rebase`][metaxy.MetadataStore.rebase].
+
+<!-- --8<-- [start:releases] -->
 
 ## 1.1.0
 

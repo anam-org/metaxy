@@ -14,13 +14,19 @@ import polars as pl
 
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.models.feature import BaseFeature, FeatureGraph
-from metaxy.models.feature_spec import FeatureSpec
+from metaxy.models.feature_spec import FeatureDep, FeatureKey, FeatureSpec
 
 if TYPE_CHECKING:
     from metaxy.config import MetaxyConfig
 
-# Define spec at module level for stable reference
+# Define specs at module level for stable reference
 _MY_FEATURE_SPEC = FeatureSpec(key="my/feature", id_columns=["id"], fields=["part/1", "part/2"])
+_PARENT_FEATURE_SPEC = FeatureSpec(key="example/parent", id_columns=["id"])
+_CHILD_FEATURE_SPEC = FeatureSpec(
+    key="example/child",
+    id_columns=["id"],
+    deps=[FeatureDep(feature=FeatureKey("example/parent"))],
+)
 
 sample_data = pl.DataFrame(
     {
@@ -50,9 +56,26 @@ class MyFeature(BaseFeature, spec=None):
     quality: float | None = None
 
 
+class ParentFeature(BaseFeature, spec=None):
+    """Root feature for docstring examples."""
+
+    id: str
+
+
+class ChildFeature(BaseFeature, spec=None):
+    """Non-root feature that depends on ParentFeature."""
+
+    id: str
+    score: float | None = None
+
+
 # Set up class attributes (bypassing metaclass project detection)
 MyFeature._spec = _MY_FEATURE_SPEC
 MyFeature.__metaxy_project__ = "docs"
+ParentFeature._spec = _PARENT_FEATURE_SPEC
+ParentFeature.__metaxy_project__ = "docs"
+ChildFeature._spec = _CHILD_FEATURE_SPEC
+ChildFeature.__metaxy_project__ = "docs"
 
 
 def register_doctest_fixtures(graph: FeatureGraph) -> None:
@@ -63,6 +86,10 @@ def register_doctest_fixtures(graph: FeatureGraph) -> None:
     """
     MyFeature.graph = graph
     graph.add_feature(MyFeature)
+    ParentFeature.graph = graph
+    graph.add_feature(ParentFeature)
+    ChildFeature.graph = graph
+    graph.add_feature(ChildFeature)
 
 
 class DocsStoreFixtures:
@@ -150,4 +177,10 @@ class DocsStoreFixtures:
         return self._config
 
 
-__all__ = ["MyFeature", "register_doctest_fixtures", "DocsStoreFixtures"]
+__all__ = [
+    "ChildFeature",
+    "DocsStoreFixtures",
+    "MyFeature",
+    "ParentFeature",
+    "register_doctest_fixtures",
+]

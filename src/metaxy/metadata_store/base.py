@@ -290,7 +290,7 @@ class MetadataStore(ABC):
 
                 !!! info "Required for root features"
                     Metaxy doesn't know how to populate input metadata for root features,
-                    so `samples` argument for **must** be provided for them.
+                    so `samples` argument **must** be provided for them.
 
                 !!! tip
                     For non-root features, use `samples` to customize the automatic upstream loading and field provenance calculation.
@@ -925,6 +925,7 @@ class MetadataStore(ABC):
         feature: CoercibleToFeatureKey,
         df: IntoFrame,
         materialization_id: str | None = None,
+        preserve_feature_version: bool = False,
     ) -> None:
         """
         Write metadata for a feature (append-only by design).
@@ -939,6 +940,10 @@ class MetadataStore(ABC):
             materialization_id: Optional external orchestration ID for this write.
                 Overrides the store's default `materialization_id` if provided.
                 Useful for tracking which orchestration run produced this metadata.
+            preserve_feature_version: If `True`, keep the `metaxy_feature_version`
+                and `metaxy_project_version` already present in `df` instead of
+                overwriting them with the current graph's versions.
+                Is useful when writing [rebased](/guide/concepts/metadata-stores.md#rebases) metadata.
 
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
@@ -951,6 +956,8 @@ class MetadataStore(ABC):
             - Fallback stores are never used for writes.
 
         """
+        from contextlib import nullcontext
+
         self._check_write_mode()
 
         feature_key = self._resolve_feature_key(feature)
@@ -974,11 +981,13 @@ class MetadataStore(ABC):
 
             raise MetadataSchemaError(f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column")
 
-        # Add all required system columns
-        # warning: for dataframes that do not match the native MetadataStore implementation
-        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
-        # while calculating the missing METAXY_DATA_VERSION column
-        df_nw = self._add_system_columns(df_nw, feature, materialization_id=materialization_id)
+        ctx = allow_feature_version_override() if preserve_feature_version else nullcontext()
+        with ctx:
+            # Add all required system columns
+            # warning: for dataframes that do not match the native MetadataStore implementation
+            # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
+            # while calculating the missing METAXY_DATA_VERSION column
+            df_nw = self._add_system_columns(df_nw, feature, materialization_id=materialization_id)
 
         self._validate_schema(df_nw)
         self._write_feature(feature_key, df_nw)
@@ -1583,20 +1592,38 @@ class MetadataStore(ABC):
             nw.lit(materialization_id or self._materialization_id, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID)
         )
 
-        # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
+        # data_version defaults to provenance but can be user-overridden.
+        # When the column is missing, add it from provenance.
+        # When the column is present, fill null rows from provenance (partial override).
         # Re-fetch columns since df may have been modified
         columns = df.collect_schema().names()
 
         if METAXY_DATA_VERSION_BY_FIELD not in columns:
             df = df.with_columns(nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD))
             df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
-        elif METAXY_DATA_VERSION not in columns:
-            df = self.hash_struct_version_column(
-                plan=self._resolve_feature_plan(feature_key),
-                df=df,
-                struct_column=METAXY_DATA_VERSION_BY_FIELD,
-                hash_column=METAXY_DATA_VERSION,
+        else:
+            # Fill null data_version_by_field rows from provenance
+            df = df.with_columns(
+                nw.when(nw.col(METAXY_DATA_VERSION_BY_FIELD).is_null())
+                .then(nw.col(METAXY_PROVENANCE_BY_FIELD))
+                .otherwise(nw.col(METAXY_DATA_VERSION_BY_FIELD))
+                .alias(METAXY_DATA_VERSION_BY_FIELD)
             )
+            if METAXY_DATA_VERSION not in columns:
+                df = self.hash_struct_version_column(
+                    plan=self._resolve_feature_plan(feature_key),
+                    df=df,
+                    struct_column=METAXY_DATA_VERSION_BY_FIELD,
+                    hash_column=METAXY_DATA_VERSION,
+                )
+            else:
+                # Fill null data_version rows from provenance
+                df = df.with_columns(
+                    nw.when(nw.col(METAXY_DATA_VERSION).is_null())
+                    .then(nw.col(METAXY_PROVENANCE))
+                    .otherwise(nw.col(METAXY_DATA_VERSION))
+                    .alias(METAXY_DATA_VERSION)
+                )
 
         # Cast system columns with Null dtype to their correct types
         # This handles edge cases where empty DataFrames or certain operations
@@ -1760,6 +1787,127 @@ class MetadataStore(ABC):
                 filter_list = [version_filter, *filter_list]
 
             self._delete_feature(feature_key, filter_list, with_feature_history=with_feature_history)
+
+    @public
+    def rebase(
+        self,
+        feature: CoercibleToFeatureKey,
+        df: FrameT,
+        *,
+        to_feature_version: str | None = None,
+    ) -> FrameT:
+        """Rebase metadata from one feature version to another.
+
+        Recalculates Metaxy versioning columns for the desired feature version.
+        User-provided `metaxy_data_version` values are preserved.
+
+        The caller is responsible for providing a `df` with the right historical feature version.
+        The returned frame includes `metaxy_feature_version` and `metaxy_project_version` columns
+        set to the target version; pass `preserve_feature_version=True` to
+        [`MetadataStore.write`][metaxy.MetadataStore.write] to keep them.
+
+        Args:
+            feature: Feature to rebase.
+            df: Existing metadata to rebase (must contain `metaxy_provenance_by_field`).
+            to_feature_version: Target feature version. Defaults to the current feature version.
+                When different from the current version, the historical feature graph
+                is loaded from the metadata store's system storage (must be pushed beforehand).
+
+        Returns:
+            Rebased frame with recalculated provenance, feature version, and project version.
+
+        Raises:
+            ValueError: If feature is a root feature (no upstream dependencies).
+            ValueError: If `to_feature_version` is provided but not found in
+                the store's system storage.
+        """
+        feature_key = self._resolve_feature_key(feature)
+        plan = current_graph().get_feature_plan(feature_key)
+
+        if not plan.deps:
+            raise ValueError(
+                f"Cannot rebase root feature {feature_key.to_string()}. "
+                f"Root features have user-defined provenance that cannot be automatically rebased. "
+                f"Re-run the computation pipeline to generate new data."
+            )
+
+        current = current_graph()
+        current_version = current.get_feature_version(feature_key)
+
+        if to_feature_version is None or to_feature_version == current_version:
+            target_graph = current
+            to_feature_version = current_version
+            target_project_version = current.project_version
+        else:
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system.storage import SystemTableStorage
+
+            # Look up the project_version associated with to_feature_version
+            storage = SystemTableStorage(self)
+            versions_lazy = storage._read_system_metadata(FEATURE_VERSIONS_KEY)
+            project_version_df = (
+                versions_lazy.filter(
+                    nw.col(METAXY_FEATURE_VERSION) == to_feature_version,
+                    nw.col("feature_key") == feature_key.to_string(),
+                )
+                .select(METAXY_PROJECT_VERSION)
+                .unique()
+                .collect()
+                .to_polars()
+            )
+
+            if project_version_df.height == 0:
+                raise ValueError(
+                    f"Feature version '{to_feature_version}' for '{feature_key.to_string()}' "
+                    f"not found in system storage. Run `metaxy push` first."
+                )
+
+            target_project_version = project_version_df[METAXY_PROJECT_VERSION][0]
+
+            # Load the feature graph for the target version
+            target_graph = storage.load_graph_from_snapshot(target_project_version)
+
+        # Null out data_version where it matches provenance (default, not user-overridden)
+        # so _add_system_columns fills them from new provenance after write
+        working = df.with_columns(  # ty: ignore[invalid-argument-type]
+            nw.when(nw.col(METAXY_DATA_VERSION) == nw.col(METAXY_PROVENANCE))
+            .then(nw.lit(None, dtype=nw.String))
+            .otherwise(nw.col(METAXY_DATA_VERSION))
+            .alias(METAXY_DATA_VERSION),
+            nw.when(nw.col(METAXY_DATA_VERSION) == nw.col(METAXY_PROVENANCE))
+            .then(nw.lit(None))
+            .otherwise(nw.col(METAXY_DATA_VERSION_BY_FIELD))
+            .alias(METAXY_DATA_VERSION_BY_FIELD),
+        )
+
+        # Drop all provenance/version columns — resolve_update will recalculate
+        # provenance_by_field from the target graph's upstream metadata.
+        columns_to_drop = [
+            c
+            for c in working.collect_schema().names()
+            if c in {METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD, METAXY_FEATURE_VERSION, METAXY_PROJECT_VERSION}
+        ]
+        working = working.drop(*columns_to_drop)
+
+        # Recalculate provenance under the target feature graph.
+        # samples=None so resolve_update loads upstream and builds fresh provenance_by_field.
+        with target_graph.use():
+            increment = self.resolve_update(feature_key, skip_comparison=True, lazy=True)
+
+        # Join fresh provenance onto the user data from the original frame.
+        # Only take provenance columns from increment.new; everything else comes from working.
+        id_columns = list(plan.feature.id_columns)
+        provenance_columns = [METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD]
+        rebased = working.lazy().join(
+            increment.new.select([*id_columns, *provenance_columns]),
+            on=id_columns,
+            how="inner",
+        )
+
+        return rebased.with_columns(  # type: ignore[return-value]
+            nw.lit(to_feature_version).alias(METAXY_FEATURE_VERSION),
+            nw.lit(target_project_version).alias(METAXY_PROJECT_VERSION),
+        )
 
     @abstractmethod
     def _read_feature(
@@ -2137,52 +2285,51 @@ class MetadataStore(ABC):
         total_rows = 0
         features_copied = 0
 
-        with allow_feature_version_override():
-            for feature_key in features_to_copy:
-                try:
-                    # Build combined filters for this feature
-                    feature_filters: list[nw.Expr] = []
+        for feature_key in features_to_copy:
+            try:
+                # Build combined filters for this feature
+                feature_filters: list[nw.Expr] = []
 
-                    # Add global filters
-                    if global_filters:
-                        feature_filters.extend(global_filters)
+                # Add global filters
+                if global_filters:
+                    feature_filters.extend(global_filters)
 
-                    # Add feature-specific filters
-                    if filters:
-                        feature_key_str = feature_key.to_string()
-                        if feature_key_str in filters:
-                            feature_filters.extend(filters[feature_key_str])
+                # Add feature-specific filters
+                if filters:
+                    feature_key_str = feature_key.to_string()
+                    if feature_key_str in filters:
+                        feature_filters.extend(filters[feature_key_str])
 
-                    # Read metadata from source with all filters applied
-                    source_lazy = from_store.read(
-                        feature_key,
-                        filters=feature_filters if feature_filters else None,
-                        allow_fallback=False,
-                        with_feature_history=with_feature_history,
-                        with_sample_history=with_sample_history,
-                    )
+                # Read metadata from source with all filters applied
+                source_lazy = from_store.read(
+                    feature_key,
+                    filters=feature_filters if feature_filters else None,
+                    allow_fallback=False,
+                    with_feature_history=with_feature_history,
+                    with_sample_history=with_sample_history,
+                )
 
-                    # Collect to narwhals DataFrame to get row count
-                    source_df = source_lazy.collect()
-                    row_count = len(source_df)
+                # Collect to narwhals DataFrame to get row count
+                source_df = source_lazy.collect()
+                row_count = len(source_df)
 
-                    if row_count == 0:
-                        logger.warning(f"No rows found for {feature_key.to_string()}, skipping")
-                        continue
-
-                    # Write to destination (preserving project_version and feature_version)
-                    self.write(feature_key, source_df)
-
-                    features_copied += 1
-                    total_rows += row_count
-                    logger.info(f"Copied {row_count} rows for {feature_key.to_string()}")
-
-                except FeatureNotFoundError:
-                    logger.warning(f"Feature {feature_key.to_string()} not found in source store, skipping")
+                if row_count == 0:
+                    logger.warning(f"No rows found for {feature_key.to_string()}, skipping")
                     continue
-                except Exception as e:
-                    logger.error(f"Error copying {feature_key.to_string()}: {e}", exc_info=True)
-                    raise
+
+                # Write to destination (preserving project_version and feature_version)
+                self.write(feature_key, source_df, preserve_feature_version=True)
+
+                features_copied += 1
+                total_rows += row_count
+                logger.info(f"Copied {row_count} rows for {feature_key.to_string()}")
+
+            except FeatureNotFoundError:
+                logger.warning(f"Feature {feature_key.to_string()} not found in source store, skipping")
+                continue
+            except Exception as e:
+                logger.error(f"Error copying {feature_key.to_string()}: {e}", exc_info=True)
+                raise
 
         logger.info(f"Copy complete: {features_copied} features, {total_rows} total rows")
 

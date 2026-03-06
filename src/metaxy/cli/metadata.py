@@ -549,6 +549,88 @@ def _print_dry_run_info(
 
 
 @app.command()
+def rebase(
+    feature: Annotated[str, cyclopts.Parameter(help="Feature key to rebase.")],
+    *,
+    from_version: Annotated[
+        str,
+        cyclopts.Parameter(
+            name=["--from"],
+            help="Source feature version hash.",
+        ),
+    ],
+    to_version: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--to"],
+            help="Target feature version hash. Defaults to the current feature version.",
+        ),
+    ] = None,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store name (defaults to configured default store).",
+        ),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--dry-run"],
+            help="Preview without executing.",
+        ),
+    ] = False,
+) -> None:
+    """Rebase metadata from one feature version to another, recalculating provenance.
+
+    Examples:
+        ```console
+        $ metaxy metadata rebase my/feature --from abc123 --to def456
+        ```
+
+        ```console
+        $ metaxy metadata rebase my/feature --from abc123 --to def456 --dry-run
+        ```
+    """
+    from metaxy.cli.context import AppContext
+    from metaxy.metadata_store.exceptions import FeatureNotFoundError
+    from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    with metadata_store.open("w"):
+        try:
+            existing = metadata_store.read(
+                feature,
+                with_feature_history=True,
+                filters=[nw.col(METAXY_FEATURE_VERSION) == from_version],
+                allow_fallback=False,
+            )
+        except FeatureNotFoundError:
+            console.print(f"[yellow]Warning:[/yellow] Feature '{feature}' not found in store.")
+            existing = None
+
+        if existing is None:
+            rows_affected = 0
+        elif dry_run:
+            rows_affected = existing.lazy().collect().shape[0]
+        else:
+            rebased = metadata_store.rebase(
+                feature,
+                existing,
+                to_feature_version=to_version,
+            )
+            rows_affected = rebased.lazy().select(nw.len()).collect().item()
+            metadata_store.write(feature, rebased.to_native(), preserve_feature_version=True)
+
+    if dry_run:
+        console.print(f"[bold cyan]Dry run[/bold cyan]: {rows_affected} row(s) would be rebased")
+    else:
+        console.print(f"[green]✓[/green] Rebased {rows_affected} row(s)")
+
+
+@app.command()
 def copy(
     selector: FeatureSelector = FeatureSelector(),
     *,

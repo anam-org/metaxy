@@ -3117,3 +3117,295 @@ def test_metadata_status_stale_if_multiple_predicates(
             assert "3" in result.stdout
             # Needs update icon
             assert "\u26a0" in result.stdout
+
+
+# ============================================================================
+# Reconcile Command Tests
+# ============================================================================
+
+
+def test_metadata_rebase_command(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Rebase updates metaxy_feature_version and provenance to the target version."""
+    import narwhals as nw
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
+
+        class Upstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "downstream"]),
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["default"]),
+                        code_version="1",
+                        deps=[FieldDep(feature=Upstream, fields=[FieldKey(["default"])])],
+                    )
+                ],
+                deps=[FeatureDep(feature=Upstream)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream and downstream metadata
+        metaxy_project.write_sample_metadata("video/upstream")
+
+        with graph.use(), store.open("w"):
+            downstream_key = FeatureKey(["video", "downstream"])
+            increment = store.resolve_update(downstream_key)
+            store.write(downstream_key, increment.new.to_polars())
+            old_feature_version = graph.get_feature_version(downstream_key)
+
+            # Push v1 graph snapshot so rebase can look up graphs
+            from metaxy.metadata_store.system.storage import SystemTableStorage
+
+            SystemTableStorage(store).push_graph_snapshot()
+
+    # Create v2 with new code_version
+    def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
+
+        class Upstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "downstream"]),
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["default"]),
+                        code_version="2",
+                        deps=[FieldDep(feature=Upstream, fields=[FieldKey(["default"])])],
+                    )
+                ],
+                deps=[FeatureDep(feature=Upstream)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features_v2):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        downstream_key = FeatureKey(["video", "downstream"])
+        new_feature_version = graph.get_feature_version(downstream_key)
+
+        # Push v2 graph snapshot
+        with graph.use(), store.open("w"):
+            from metaxy.metadata_store.system.storage import SystemTableStorage
+
+            SystemTableStorage(store).push_graph_snapshot()
+
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "rebase",
+                "video/downstream",
+                "--from",
+                old_feature_version,
+                "--to",
+                new_feature_version,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Rebased" in output
+        assert "3 row(s)" in output
+
+        # Read back and verify versioning columns
+        with graph.use(), store.open("r"):
+            rebased = (
+                store.read(
+                    downstream_key,
+                    with_feature_history=True,
+                    filters=[nw.col("metaxy_feature_version") == new_feature_version],
+                )
+                .collect()
+                .to_polars()
+            )
+            assert rebased.height == 3
+            assert rebased["metaxy_feature_version"].unique().to_list() == [new_feature_version]
+
+            # provenance_by_field should have entries for all downstream fields
+            expected_version_by_field = graph.get_feature_version_by_field(downstream_key)
+            for row_pbf in rebased["metaxy_provenance_by_field"].to_list():
+                for field_key in expected_version_by_field:
+                    assert field_key in row_pbf
+
+            # provenance and data_version should be populated and consistent
+            provenance_values = rebased["metaxy_provenance"].to_list()
+            assert all(p is not None for p in provenance_values)
+            assert rebased["metaxy_data_version"].to_list() == provenance_values
+
+            # No rows should remain with the old feature version
+            old_rows = (
+                store.read(
+                    downstream_key,
+                    with_feature_history=True,
+                    filters=[nw.col("metaxy_feature_version") == old_feature_version],
+                )
+                .collect()
+                .to_polars()
+            )
+            assert old_rows.height == 0
+
+
+def test_metadata_rebase_defaults_to_current_version(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
+    """Omitting --to defaults to the current feature version."""
+    import narwhals as nw
+
+    def features():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
+
+        class Upstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "downstream"]),
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["default"]),
+                        code_version="1",
+                        deps=[FieldDep(feature=Upstream, fields=[FieldKey(["default"])])],
+                    )
+                ],
+                deps=[FeatureDep(feature=Upstream)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        metaxy_project.write_sample_metadata("video/upstream")
+
+        with graph.use(), store.open("w"):
+            downstream_key = FeatureKey(["video", "downstream"])
+            increment = store.resolve_update(downstream_key)
+            store.write(downstream_key, increment.new.to_polars())
+            old_feature_version = graph.get_feature_version(downstream_key)
+
+    # Create v2 with new code_version
+    def features_v2():
+        from metaxy_testing.models import SampleFeatureSpec
+
+        from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
+
+        class Upstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "upstream"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "downstream"]),
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["default"]),
+                        code_version="2",
+                        deps=[FieldDep(feature=Upstream, fields=[FieldKey(["default"])])],
+                    )
+                ],
+                deps=[FeatureDep(feature=Upstream)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features_v2):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        downstream_key = FeatureKey(["video", "downstream"])
+        new_feature_version = graph.get_feature_version(downstream_key)
+
+        # No --to flag, no push_graph_snapshot needed (uses current graph directly)
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "rebase",
+                "video/downstream",
+                "--from",
+                old_feature_version,
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Rebased" in output
+        assert "3 row(s)" in output
+
+        # Verify rebased rows have the new feature version and correct provenance
+        with graph.use(), store.open("r"):
+            rebased = (
+                store.read(
+                    downstream_key,
+                    with_feature_history=True,
+                    filters=[nw.col("metaxy_feature_version") == new_feature_version],
+                )
+                .collect()
+                .to_polars()
+            )
+            assert rebased.height == 3
+            assert rebased["metaxy_feature_version"].unique().to_list() == [new_feature_version]
+
+            # provenance_by_field should have entries for all downstream fields
+            expected_version_by_field = graph.get_feature_version_by_field(downstream_key)
+            for row_pbf in rebased["metaxy_provenance_by_field"].to_list():
+                for field_key in expected_version_by_field:
+                    assert field_key in row_pbf
+
+            # provenance and data_version should be populated and consistent
+            provenance_values = rebased["metaxy_provenance"].to_list()
+            assert all(p is not None for p in provenance_values)
+            assert rebased["metaxy_data_version"].to_list() == provenance_values

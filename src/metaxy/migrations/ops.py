@@ -172,7 +172,6 @@ class DataVersionReconciliation(BaseOperation):
         to_project_version = project_version
         import narwhals as nw
 
-        from metaxy.metadata_store.base import allow_feature_version_override
         from metaxy.metadata_store.exceptions import FeatureNotFoundError
         from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
         from metaxy.models.feature import FeatureGraph
@@ -308,8 +307,7 @@ class DataVersionReconciliation(BaseOperation):
             nw.lit(to_project_version).alias("metaxy_project_version"),
         )
 
-        with allow_feature_version_override():
-            store.write(feature_key_obj, df_to_write_nw)
+        store.write(feature_key_obj, df_to_write_nw, preserve_feature_version=True)
 
         return len(df_to_write)
 
