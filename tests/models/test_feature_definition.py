@@ -2,7 +2,7 @@
 
 import pytest
 
-from metaxy import FeatureDefinition
+from metaxy import CoercibleToFieldKey, FeatureDefinition
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -352,7 +352,7 @@ class TestExternalProvenanceOverride:
                 "other": {"type": "string"},
             },
         }
-        provenance = {"value": "abc123", "other": "def456"}
+        provenance: dict[CoercibleToFieldKey, str] = {"value": "abc123", "other": "def456"}
 
         definition = mx.FeatureDefinition.external(
             spec=spec,

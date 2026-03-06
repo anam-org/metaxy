@@ -81,10 +81,10 @@ class TestFeatureKey:
         assert hash(key1) == hash(key2)
         # Can be used in sets and dicts
         my_set = {key1, key2}
-        assert_type(my_set, set[FeatureKey])  # ty: ignore[type-assertion-failure]
+        assert_type(my_set, set[FeatureKey])
         assert my_set == {key1}
         my_dict = {key1: 1, key2: 2}
-        assert_type(my_dict, dict[FeatureKey, int])  # ty: ignore[type-assertion-failure]
+        assert_type(my_dict, dict[FeatureKey, int])
         assert my_dict == {key1: 2}
 
     def test_table_name_property(self):

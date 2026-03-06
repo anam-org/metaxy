@@ -9,6 +9,7 @@ from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy import (
     BaseFeature,
+    CoercibleToFieldKey,
     FeatureDep,
     FeatureKey,
     FeatureSelection,
@@ -935,7 +936,9 @@ def test_sync_external_features_no_warning_when_versions_match(tmp_path: Path):
         # Add external feature with provenance override matching the real feature
         # Convert string keys to FieldKey for type safety
         # Note: project must match the project of the saved feature (project doesn't need to match - sync uses feature keys)
-        provenance_override = {FieldKey([k]): v for k, v in expected_version_by_field.items()}
+        provenance_override: dict[CoercibleToFieldKey, str] = {
+            FieldKey([k]): v for k, v in expected_version_by_field.items()
+        }
         external_def = FeatureDefinition.external(
             spec=SampleFeatureSpec(
                 key=FeatureKey(["version_match"]),

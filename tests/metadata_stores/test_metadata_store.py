@@ -1,6 +1,7 @@
 """Tests for metadata store."""
 
 from collections.abc import Iterator, Sequence
+from typing import Any
 
 import narwhals as nw
 import polars as pl
@@ -88,7 +89,7 @@ def make_upstream_a_data():
         prefix: str,
         include_path: bool,
     ) -> pl.DataFrame:
-        data = {
+        data: dict[str, list[Any]] = {
             "sample_uid": list(sample_uids),
             "metaxy_provenance_by_field": [
                 {
