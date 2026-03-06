@@ -287,9 +287,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
     # ------------------------------------------------------------------ DuckLake
     def _open(self, mode: AccessMode) -> None:
         if mode == "r":
-            db = self.connection_params.get("database", "")
-            is_local = db and db != ":memory:" and not db.startswith(("md:", "motherduck:", "s3://", "http"))
-            if not is_local or Path(db).exists():
+            db_param = self.connection_params.get("database")
+            db = str(db_param) if db_param is not None else ""
+            is_in_memory = db == ":memory:"
+            is_remote = db.startswith(("md:", "motherduck:", "s3://", "http://", "https://"))
+            is_local_file = bool(db) and not is_in_memory and not is_remote
+            if not is_in_memory and (is_remote or (is_local_file and Path(db).exists())):
                 self.connection_params["read_only"] = True
             else:
                 self.connection_params.pop("read_only", None)

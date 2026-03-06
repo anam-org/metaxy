@@ -217,6 +217,44 @@ class TestMetaxyIOManagerHandleOutput:
         assert result2.success
         assert captured_data["rows"] == 3
 
+    def test_handle_output_with_none_in_memory_duckdb_does_not_fail(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        duckdb_in_memory_resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Regression test for issue #1016 with in-memory DuckDB in read mode."""
+
+        @dg.asset(
+            metadata={"metaxy/feature": "features/upstream"},
+            io_manager_key="metaxy_io_manager",
+        )
+        def my_asset(store: dg.ResourceParam[mx.MetadataStore]):
+            # Write data inside the asset and return None to trigger metadata logging path.
+            with store.open("w"):
+                store.write(
+                    upstream_feature,
+                    pl.DataFrame(
+                        {
+                            "id": ["in_memory_1", "in_memory_2"],
+                            "metaxy_provenance_by_field": [
+                                {"value": "v1"},
+                                {"value": "v2"},
+                            ],
+                        }
+                    ),
+                )
+            return None
+
+        result = dg.materialize(
+            [my_asset],
+            resources=duckdb_in_memory_resources,
+            instance=instance,
+        )
+
+        assert result.success
+        assert len(result.get_asset_materialization_events()) == 1
+
 
 class TestMetaxyIOManagerLoadInput:
     """Test load_input functionality."""

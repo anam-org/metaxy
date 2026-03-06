@@ -57,6 +57,21 @@ def resources(metaxy_config: mx.MetaxyConfig) -> dict[str, Any]:
 
 
 @pytest.fixture
+def duckdb_in_memory_resources() -> Iterator[dict[str, Any]]:
+    """Dagster resources configured with an in-memory DuckDB metadata store."""
+    store_config = mx.StoreConfig(
+        type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+        config={"database": ":memory:"},
+    )
+    with mx.MetaxyConfig(stores={"dev": store_config}).use():
+        store = mxd.MetaxyStoreFromConfigResource(name="dev")
+        yield {
+            "store": store,
+            "metaxy_io_manager": mxd.MetaxyIOManager(store=store),
+        }
+
+
+@pytest.fixture
 def instance() -> Iterator[dg.DagsterInstance]:
     """Ephemeral Dagster instance for testing."""
     with dg.DagsterInstance.ephemeral() as instance:
