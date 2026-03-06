@@ -67,7 +67,7 @@ Metaxy is built around a few core ideas that work together to solve the problem 
 
 <div class="grid cards" markdown>
 
--   :material-delete-outline: **[Deletions](deletions.md)**
+-   :material-delete-outline: **[Deletions](metadata-stores.md#deleting-metadata)**
 
     ---
 

@@ -59,9 +59,9 @@ All historical records for a given feature are stored in the same table. They ca
 Metaxy tables are **immutable**. Once written, a row is never modified or deleted (1).
 { .annotate }
 
-1. but users can [delete rows](../guide/concepts/deletions.md#hard-deletes) manually if needed
+1. but users can [delete rows](../guide/concepts/metadata-stores.md#hard-deletes) manually if needed
 
-As discussed earlier, writing metadata in Metaxy is done by **appending** to a feature table. Subsequent writes with the same feature version effectively act as overwrites. This is achieved by filtering out older rows using the `metaxy_updated_at` columns (1). [Soft-deletes](../guide/concepts/deletions.md#soft-deletes) are implemented as appends as well.
+As discussed earlier, writing metadata in Metaxy is done by **appending** to a feature table. Subsequent writes with the same feature version effectively act as overwrites. This is achieved by filtering out older rows using the `metaxy_updated_at` columns (1). [Soft-deletes](../guide/concepts/metadata-stores.md#soft-deletes) are implemented as appends as well.
 { .annotate }
 
 1. also known as merge-on-read
@@ -74,7 +74,7 @@ The append-only design choice has a few significant benefits:
 
 !!! tip
 
-    Users can implement [storage cleanup](../guide/concepts/deletions.md#hard-deletes) based on their specific needs and constraints.
+    Users can implement [storage cleanup](../guide/concepts/metadata-stores.md#hard-deletes) based on their specific needs and constraints.
 
 - avoids additional write-time checks or operations, which has performance benefits
 

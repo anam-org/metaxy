@@ -226,11 +226,9 @@ nav:
     - 🚀 Quickstart: guide/quickstart/quickstart.md
     - 💡 Concepts:
       - Overview: guide/concepts/index.md
-      - Metadata Stores:
-        - Metadata Stores: guide/concepts/metadata-stores.md
-        - Deletions: guide/concepts/deletions.md
-      - Defining Features:
-        - Features: guide/concepts/definitions/features.md
+      - Metadata Stores: guide/concepts/metadata-stores.md
+      - Feature System:
+        - Defining Features: guide/concepts/definitions/features.md
         - Optional Dependencies: guide/concepts/definitions/optional-dependencies.md
         - Lineage Types: guide/concepts/definitions/relationship.md
         - External Features: guide/concepts/definitions/external-features.md

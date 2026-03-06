@@ -219,7 +219,7 @@ Here is how the change affects feature and field versions through the feature gr
 
 ## Incremental Computations
 
-The single most important piece of code in Metaxy is the [`resolve_update`][metaxy.MetadataStore.resolve_update] method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process [here](./metadata-stores.md#increment-resolution).
+The single most important piece of code in Metaxy is the [`resolve_update`][metaxy.MetadataStore.resolve_update] method. For a given feature, it takes the inputs (1), computes the expected provenances for the given feature, and compares it with the current state in the metadata store. Learn more about this process [here](./metadata-stores.md#resolving-incremental-updates).
 { .annotate }
 
 1. metadata from the upstream features

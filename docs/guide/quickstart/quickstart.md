@@ -65,7 +65,7 @@ The `increment` object is an instance of [`Increment`][metaxy.Increment] and con
 - `increment.orphaned`: samples which were previously recorded but are no longer present in the input `samples` DataFrame
 
 It's up to you how to handle these dataframes.
-Usually there will be a processing step iterating over all the rows in `increment.new` and `increment.stale` (possibly in parallel, using something like [Ray](/integrations/compute/ray.md)), while `increment.orphaned` may be used to cleanup the no longer needed data and [metadata](/guide/concepts/deletions.md).
+Usually there will be a processing step iterating over all the rows in `increment.new` and `increment.stale` (possibly in parallel, using something like [Ray](/integrations/compute/ray.md)), while `increment.orphaned` may be used to cleanup the no longer needed data and [metadata](/guide/concepts/metadata-stores.md#deleting-metadata).
 
 These dataframes have pre-computed provenance columns which **should not be modified** and eventually should be written to the metadata store.
 

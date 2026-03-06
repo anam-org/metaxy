@@ -67,9 +67,9 @@ Now the `store` is ready to be used. We'll also assume there is a `MyFeature` [f
 
 1. with `"my/feature"` key
 
-## Writes
+## Writing Metadata
 
-In order to save metadata into a metadata store, you can use the [`MetadataStore.write`][metaxy.MetadataStore.write] method:
+In order to write metadata to a metadata store, you can use the [`MetadataStore.write`][metaxy.MetadataStore.write] method:
 
 !!! example
 
@@ -78,11 +78,11 @@ In order to save metadata into a metadata store, you can use the [`MetadataStore
         store.write(MyFeature, df)
     ```
 
-Subsequent writes effectively overwrite the previous metadata, while actually [appending](../../metaxy/design.md#metadata-operations) to the same table.
+Subsequent writes effectively overwrite the previous metadata, while actually [appending](../../metaxy/design.md#metadata-operations) rows to the same table.
 
 --8<-- "flushing-metadata.md"
 
-## Reads
+## Reading Metadata
 
 Metadata can be retrieved using the [`MetadataStore.read`][metaxy.MetadataStore.read] method:
 
@@ -98,7 +98,7 @@ Metadata can be retrieved using the [`MetadataStore.read`][metaxy.MetadataStore.
 
 By default, Metaxy drops historical records with the same feature version, which makes the `write`-`read` sequence idempotent for an outside observer.
 
-## Increment Resolution
+## Resolving Incremental Updates
 
 Increments can be computed using the [`MetadataStore.resolve_update`][metaxy.MetadataStore.resolve_update] method:
 
@@ -122,7 +122,7 @@ It is up to the caller to decide how to handle the processing and potential dele
 
 Once processing is complete, the caller is expected to call `MetadataStore.write` to record metadata about the processed samples.
 
-### Custom Staleness Conditions
+### Custom staleness conditions
 
 By default, `resolve_update` only marks samples as stale when their upstream provenance has changed. The `staleness_predicates` parameter allows marking additional records as stale based on arbitrary conditions.
 This is useful for forcing reprocessing after a bug fix that affected *metadata* (1), backfilling records that were processed with incomplete data, or invalidating samples that meet certain quality criteria.
@@ -158,14 +158,9 @@ Predicates are [Narwhals](https://narwhals-dev.github.io/narwhals/) expressions 
 
     Learn more [here](./versioning.md).
 
-## Deletes
+## Deleting Metadata
 
-Metadata stores support deletions, which are not required during normal Metaxy operations (1).
-{ .annotate }
-
-1. deletions might be necessary when working with [expansion linear relationships](./definitions/relationship.md) and re-computing samples without changing the feature version
-
-Here is an example of how a deletion would look like:
+To delete rows from a metadata store, call [`MetadataStore.delete`][metaxy.MetadataStore.delete] and provide conditions to identify rows to be deleted:
 
 ```py
 from datetime import datetime, timedelta, timezone
@@ -179,9 +174,59 @@ with store.open("w"):
     )
 ```
 
-Learn more about deletions [here](./deletions.md).
+Metaxy supports two deletion modes: **soft deletes** that only mark records as deleted, and **hard deletes** that physically remove records from storage.
+Soft deletion is enabled by default.
 
-## Rebases
+### Soft deletes
+
+Soft deletes mark records as deleted without physically removing them. This is achieved by appending new rows with `metaxy_deleted_at` [system column](../../reference/system-columns.md) set to the deletion timestamp. These records are still available and can be queried for if needed.
+
+By default, [`MetadataStore.read`][metaxy.MetadataStore.read] filters out soft-deleted records. In order to disable this filtering, set `include_soft_deleted` to `True`:
+
+```python
+import narwhals as nw
+
+with store.open("w"):
+    store.delete(
+        MyFeature,
+        filters=nw.col("status") == "pending",
+    )
+
+with store:
+    active = store.read(MyFeature)
+    all_rows = store.read(MyFeature, include_soft_deleted=True)
+```
+
+### Hard deletes
+
+Hard deletes permanently remove rows from storage and can be enabled by setting `soft` to `False`:
+
+```python
+import narwhals as nw
+
+with store.open("w"):
+    store.delete(
+        MyFeature,
+        filters=nw.col("quality") < 0.8,
+        soft=False,
+    )
+```
+
+### Deleting metadata from CLI
+
+It is possible to delete metadata from the command line:
+
+```bash
+# Soft delete by default
+metaxy metadata delete --feature predictions --filter "confidence < 0.3"
+
+# Hard delete
+metaxy metadata delete --feature predictions --filter "created_at < '2024-01-01'" --soft=false
+```
+
+Learn more in the [CLI reference](../../reference/cli.md#metaxy-metadata-delete)
+
+## Rebasing Metadata Versions
 
 When a feature definition changes but the underlying computation stays the same (e.g., dependency graph refactoring, field renaming, code reorganization), existing metadata can be rebased onto the new feature version using [`MetadataStore.rebase`][metaxy.MetadataStore.rebase]. This recalculates provenance based on the target feature graph while preserving all user data columns.
 

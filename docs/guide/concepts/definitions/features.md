@@ -121,3 +121,13 @@ The [Data Versioning](../versioning.md) docs explain more about how Metaxy calcu
 
 Users can [attach](/reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.
+
+## Reusing Feature Definitions
+
+It's often valuable to reuse the same base feature class across a few concrete feature definitions. To achieve this, set `spec` to `None`: this will instruct Metaxy to avoid attemptint to register this class on the feature graph. For example:
+
+```py
+class MyFeatureBase(mx.BaseFeature, spec=None):
+    id: str
+    ...
+```
