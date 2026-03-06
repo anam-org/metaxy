@@ -25,16 +25,18 @@ runs:
 
     - name: Install devenv
       shell: bash
-      run: nix profile install nixpkgs#devenv nixpkgs#direnv
+      # Pin to the same nixpkgs revision as devenv.lock to prevent lock file modifications
+      run: nix profile install github:NixOS/nixpkgs/e576e3c9cf9bad747afcddd9e34f51d18c855b4e#devenv github:NixOS/nixpkgs/e576e3c9cf9bad747afcddd9e34f51d18c855b4e#direnv
 
     - name: Activate devenv environment
       shell: bash
-      env:
-        # Allow builtins.getEnv for DEVENV_PYTHON_VERSION
-        DEVENV_NIX_FLAGS: "--impure --no-update-lock-file"
       run: |
         direnv allow .
         direnv export gha >> "$GITHUB_ENV"
+
+    - name: Restore devenv.lock if modified
+      shell: bash
+      run: git checkout -- devenv.lock
 
     - name: Install Python dependencies
       if: inputs.install-deps == 'true'
