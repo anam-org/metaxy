@@ -1,3 +1,3 @@
 # DuckLake
 
-View this example in [Metaxy docs](https://docs.metaxy.io/integrations/metadata-stores/databases/duckdb/).
+View this example in [Metaxy docs](https://docs.metaxy.io/main/examples/ducklake/).

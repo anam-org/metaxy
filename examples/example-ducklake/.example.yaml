@@ -1,0 +1,26 @@
+name: "DuckLake Example"
+description: "Configure a DuckLake-backed DuckDB metadata store and preview the setup SQL."
+package_name: "example_ducklake"
+auto_push_graph: false
+
+scenarios:
+  - name: "Preview DuckLake SQL setup"
+    description: "Run the demo script and capture setup SQL preview output"
+    steps:
+      - name: "run_demo"
+        type: "run_command"
+        command: "python src/example_ducklake/demo.py"
+        description: "Run DuckLake configuration preview"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify the output includes useful setup details"
+        returncode: 0
+        contains:
+          - "DuckLake store initialised"
+          - "Catalog backend: sqlite"
+          - "Storage backend: local"
+          - "Preview of DuckLake setup SQL:"
+          - "ATTACH IF NOT EXISTS"
+          - "SHOW ALL TABLES"

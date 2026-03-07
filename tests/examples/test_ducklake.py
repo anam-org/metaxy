@@ -1,28 +1,20 @@
-"""Tests for DuckLake example."""
+"""Test the DuckLake example using the runbook system."""
 
-import subprocess
-import sys
 from pathlib import Path
 
+from metaxy_testing import RunbookRunner
 
-def test_ducklake_demo_preview():
-    """Test that the DuckLake demo runs and previews attachment SQL."""
+
+def test_ducklake_runbook(tmp_path):
+    """Test DuckLake example output and setup SQL preview."""
     example_dir = Path("examples/example-ducklake")
-    from metaxy_testing import ExternalMetaxyProject
 
-    project = ExternalMetaxyProject(example_dir)
-
-    result = subprocess.run(
-        [sys.executable, "-m", f"{project.package_name}.demo"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        cwd=example_dir,
-    )
-
-    assert result.returncode == 0, f"Demo failed: {result.stderr}\nstdout: {result.stdout}"
-    print(result.stdout)
-
-    assert "DuckLake store initialised" in result.stdout
-    assert "Preview of DuckLake ATTACH SQL:" in result.stdout
-    assert "ATTACH" in result.stdout or "ducklake" in result.stdout.lower()
+    with RunbookRunner.runner_for_project(
+        example_dir=example_dir,
+        env_overrides={
+            "DUCKLAKE_DEMO_DB": str(tmp_path / "ducklake_demo.db"),
+            "DUCKLAKE_META_DB": str(tmp_path / "ducklake_meta.db"),
+            "DUCKLAKE_STORAGE_PATH": str(tmp_path / "ducklake_storage"),
+        },
+    ) as runner:
+        runner.run()

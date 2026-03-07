@@ -1,0 +1,19 @@
+{
+  "runbook_name": "DuckLake Example",
+  "package_name": "example_ducklake",
+  "description": "Configure a DuckLake-backed DuckDB metadata store and preview the setup SQL.",
+  "execution_state": {
+    "events": [
+      {
+        "type": "command_executed",
+        "command": "python src/example_ducklake/demo.py",
+        "returncode": 0,
+        "stdout": "DuckLake store initialised\n  Store class: DuckDBMetadataStore\n  Database: /tmp/ducklake_demo.db\n  Catalog backend: sqlite\n  Storage backend: local\n\nPreview of DuckLake setup SQL:\n  01. CREATE OR REPLACE SECRET metaxy_generated_dev_ducklake ( TYPE DUCKLAKE, METADATA_PATH '/tmp/ducklake_meta.db', DATA_PATH '/tmp/ducklake_storage' );\n  02. ATTACH IF NOT EXISTS 'ducklake:metaxy_generated_dev_ducklake' AS ducklake (OVERRIDE_DATA_PATH true);\n  03. USE ducklake;\n\nRunning SHOW ALL TABLES after opening the store:\n  Found 22 tables\n   - ducklake_column\n   - ducklake_column_mapping\n   - ducklake_column_tag\n   - ducklake_data_file\n   - ducklake_delete_file\n   - ducklake_file_column_stats\n   - ducklake_file_partition_value\n   - ducklake_files_scheduled_for_deletion\n   ... and 14 more\n",
+        "stderr": "",
+        "timestamp": "2026-03-07T07:11:25.801181",
+        "scenario_name": "Preview DuckLake SQL setup",
+        "step_name": "run_demo"
+      }
+    ]
+  }
+}
