@@ -1904,7 +1904,7 @@ class MetadataStore(ABC):
             how="inner",
         )
 
-        return rebased.with_columns(  # type: ignore[return-value]
+        return rebased.with_columns(
             nw.lit(to_feature_version).alias(METAXY_FEATURE_VERSION),
             nw.lit(target_project_version).alias(METAXY_PROJECT_VERSION),
         )

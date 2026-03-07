@@ -976,6 +976,19 @@
     ]),
   })
 # ---
+# name: test_example_snapshot[example-ducklake]
+  dict({
+    'events': list([
+      dict({
+        'command': 'python src/example_ducklake/demo.py',
+        'returncode': 0,
+        'scenario_name': 'Preview DuckLake SQL setup',
+        'step_name': 'run_demo',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
 # name: test_example_snapshot[example-expansion]
   dict({
     'events': list([

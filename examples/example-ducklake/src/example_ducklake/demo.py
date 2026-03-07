@@ -1,8 +1,7 @@
 """Demonstration of configuring the DuckLake metadata store.
 
-This example mirrors the Dagster DuckLake resource behaviour while staying
-Narwhals-compatible. No DuckLake installation is required to run this script;
-we preview the SQL statements that would be executed when attaching DuckLake.
+This script loads the store from `metaxy.toml` and prints the SQL statements
+that would be executed when attaching DuckLake.
 """
 
 import metaxy as mx
@@ -15,14 +14,44 @@ def preview_attachment_sql(store: DuckDBMetadataStore) -> list[str]:
 
 
 if __name__ == "__main__":
-    # Initialize metaxy and get config (searches for metaxy.toml)
+    # Initialize Metaxy and load config from metaxy.toml
     config = mx.init()
     ducklake_store = config.get_store()
     assert isinstance(ducklake_store, DuckDBMetadataStore), (
         "DuckLake example misconfigured: expected DuckDBMetadataStore."
     )
-    ducklake_store.ducklake_attachment
-    print("DuckLake store initialised. Extensions:", ducklake_store.extensions)
-    print("\nPreview of DuckLake ATTACH SQL:")
-    for line in preview_attachment_sql(ducklake_store):
-        print("  ", line)
+    ducklake_config = ducklake_store.ducklake_attachment_config
+
+    print("DuckLake store initialised")
+    print("  Store class:", ducklake_store.__class__.__name__)
+    print("  Database:", ducklake_store.database)
+    print("  Catalog backend:", ducklake_config.catalog.type)
+    storage_backend = (
+        ducklake_config.storage.type
+        if ducklake_config.storage is not None
+        else "motherduck-managed"
+    )
+    print("  Storage backend:", storage_backend)
+    print()
+    print("Preview of DuckLake setup SQL:")
+    for idx, line in enumerate(preview_attachment_sql(ducklake_store), start=1):
+        print(f"  {idx:02d}. {line}")
+
+    print()
+    print("Running SHOW ALL TABLES after opening the store:")
+    with ducklake_store.open("w"):
+        rows = (
+            ducklake_store._duckdb_raw_connection()
+            .execute("SHOW ALL TABLES")
+            .fetchall()
+        )
+
+    print(f"  Found {len(rows)} tables")
+    if rows:
+        # SHOW ALL TABLES returns rich metadata per table; print table names only.
+        table_names = [str(row[2]) for row in rows]
+        preview_count = min(8, len(table_names))
+        for table_name in table_names[:preview_count]:
+            print(f"   - {table_name}")
+        if len(table_names) > preview_count:
+            print(f"   ... and {len(table_names) - preview_count} more")
