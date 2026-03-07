@@ -3975,11 +3975,16 @@ Let's express this with Metaxy:</p>
 <p>Users can <a href="../../../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.</p>
 <h2 id="reusing-feature-definitions">Reusing Feature Definitions<a class="headerlink" href="#reusing-feature-definitions" title="Permanent link">&para;</a></h2>
-<p>It's often valuable to reuse the same base feature class across a few concrete feature definitions. To achieve this, set <code>spec</code> to <code>None</code>: this will instruct Metaxy to avoid attemptint to register this class on the feature graph. For example:</p>
+<p>It's often valuable to reuse the same base feature class across a few concrete feature definitions. To achieve this, set <code>spec</code> to <code>None</code>: Metaxy won't treat the class as a feature definition. For example:</p>
+<!-- skip next -->
 <div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeatureBase</span><span class="p">(</span><span class="n">mx</span><span class="o">.</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="o">...</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="o">...</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyDownstreamFeature</span><span class="p">(</span><span class="n">MyFeatureBase</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="o">...</span><span class="p">)):</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="o">...</span>
 </span></code></pre></div>
+<p>This allows taking advantage of inheritance patterns for feature definitions, sharing the same set of metadata columns across them, and so on.</p>
 
 
 
