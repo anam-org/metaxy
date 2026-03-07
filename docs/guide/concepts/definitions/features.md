@@ -124,10 +124,16 @@ This metadata does not influence graph topology or the versioning system.
 
 ## Reusing Feature Definitions
 
-It's often valuable to reuse the same base feature class across a few concrete feature definitions. To achieve this, set `spec` to `None`: this will instruct Metaxy to avoid attemptint to register this class on the feature graph. For example:
+It's often valuable to reuse the same base feature class across a few concrete feature definitions. To achieve this, set `spec` to `None`: Metaxy won't treat the class as a feature definition. For example:
 
+<!-- skip next -->
 ```py
 class MyFeatureBase(mx.BaseFeature, spec=None):
-    id: str
+    ...
+
+
+class MyDownstreamFeature(MyFeatureBase, spec=mx.FeatureSpec(...)):
     ...
 ```
+
+This allows taking advantage of inheritance patterns for feature definitions, sharing the same set of metadata columns across them, and so on.
