@@ -147,11 +147,18 @@ The Dagster integration provides a `delete` op:
 import dagster as dg
 import metaxy.ext.dagster as mxd
 
+store = mxd.MetaxyStoreFromConfigResource(name="default")
 
 # Define a job with the delete op
-@dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
+@dg.job
 def cleanup_job():
     mxd.delete()
+
+
+defs = dg.Definitions(
+    jobs=[cleanup_job],
+    resources={"metaxy_store": store},
+)
 ```
 
 `filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](/guide/concepts/filters.md) for supported syntax.
