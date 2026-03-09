@@ -3458,17 +3458,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy-graph-history" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy graph history
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#metaxy-graph-render" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3481,6 +3470,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy history
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4006,17 +4006,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy-graph-history" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        metaxy graph history
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#metaxy-graph-render" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4029,6 +4018,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metaxy history
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4216,10 +4216,10 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 </li>
 <li><a href="#metaxy-graph"><code>graph</code></a><ul>
-<li><a href="#metaxy-graph-history"><code>history</code></a></li>
 <li><a href="#metaxy-graph-render"><code>render</code></a></li>
 </ul>
 </li>
+<li><a href="#metaxy-history"><code>history</code></a></li>
 <li><a href="#metaxy-list"><code>list</code></a><ul>
 <li><a href="#metaxy-list-features"><code>features</code></a></li>
 <li><a href="#metaxy-list-stores"><code>stores</code></a></li>
@@ -4241,6 +4241,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy <a href="https://docs.metaxy.io/latest/reference/configuration/">configuration</a></li>
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
+<li><a href="#metaxy-history"><code>history</code></a>: Show history of recorded graph snapshots from the metadata store.</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
 <li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</li>
 <li><a href="#metaxy-mcp"><code>mcp</code></a>: <a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</li>
@@ -4336,19 +4337,8 @@ version, description, fields with their versions and dependencies.</p>
 <li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
-<h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy graph history [ARGS]</span>
-</span></code></pre></div>
-<p>Show history of recorded graph snapshots.</p>
-<p>Displays all recorded graph snapshots from the metadata store,
-showing project versions, when they were recorded, and feature counts.</p>
-<p><strong>Parameters</strong>:</p>
-<ul>
-<li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
-<li><code>LIMIT, --limit</code>: Limit number of snapshots to show (defaults to all)</li>
-</ul>
 <h3 id="metaxy-graph-render">metaxy graph render<a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h3>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Render feature graph visualization.</p>
 <p>Visualize the feature graph in different formats:
@@ -4379,6 +4369,23 @@ showing project versions, when they were recorded, and feature counts.</p>
 <li><code>--project</code>: Filter nodes by project (show only features from this project)</li>
 <li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: True]</em></li>
 <li><code>--title</code>: Custom title for the graph. Defaults to 'Feature Graph' or 'Feature Graph Changes' for diffs.</li>
+</ul>
+<h2 id="metaxy-history">metaxy history<a class="headerlink" href="#metaxy-history" title="Permanent link">&para;</a></h2>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="go">metaxy history [ARGS]</span>
+</span></code></pre></div>
+<p>Show history of recorded graph snapshots from the metadata store.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
+<li><code>LIMIT, --limit</code>: Limit number of snapshots to show (defaults to all)  <em>[env: METAXY_LIMIT]</em></li>
+</ul>
+<p><strong>Global</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: False]</em></li>
+<li><code>--sync, --no-sync</code>: Load <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store before executing the command.  <em>[env: METAXY_SYNC]</em>  <em>[default: False]</em></li>
+<li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-list">metaxy list<a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h2>
 <p>List Metaxy entities</p>
