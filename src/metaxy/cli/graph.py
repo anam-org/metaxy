@@ -3,7 +3,6 @@
 from typing import Annotated, Literal
 
 import cyclopts
-from rich.table import Table
 
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.graph import RenderConfig
@@ -15,78 +14,6 @@ app = cyclopts.App(
     console=console,
     error_console=error_console,
 )
-
-
-@app.command()
-def history(
-    store: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--store"],
-            help="Metadata store to use (defaults to configured default store)",
-        ),
-    ] = None,
-    limit: Annotated[
-        int | None,
-        cyclopts.Parameter(
-            name=["--limit"],
-            help="Limit number of snapshots to show (defaults to all)",
-        ),
-    ] = None,
-):
-    """Show history of recorded graph snapshots.
-
-    Displays all recorded graph snapshots from the metadata store,
-    showing project versions, when they were recorded, and feature counts.
-
-    Examples:
-        ```console
-        $ metaxy graph history
-        Graph Snapshot History
-        ┌──────────────┬─────────────────────┬───────────────┐
-        │ Project version   │ Recorded At    │ Feature Count │
-        ├──────────────┼─────────────────────┼───────────────┤
-        │ abc123...    │ 2025-01-15 10:30:00 │ 42            │
-        │ def456...    │ 2025-01-14 09:15:00 │ 40            │
-        └──────────────┴─────────────────────┴───────────────┘
-        ```
-    """
-    from metaxy.cli.context import AppContext
-
-    context = AppContext.get()
-    metadata_store = context.get_store(store)
-
-    from metaxy.metadata_store.system.storage import SystemTableStorage
-
-    with metadata_store:
-        # Read snapshot history
-        storage = SystemTableStorage(metadata_store)
-        snapshots_df = storage.read_graph_snapshots(project=context.project)
-
-        if snapshots_df.height == 0:
-            console.print("[yellow]No graph snapshots recorded yet[/yellow]")
-            return
-
-        # Limit results if requested
-        if limit is not None:
-            snapshots_df = snapshots_df.head(limit)
-
-        # Create table
-        table = Table(title="Graph Snapshot History")
-        table.add_column("Project version", style="cyan", no_wrap=False, overflow="fold")
-        table.add_column("Recorded At", style="green", no_wrap=False)
-        table.add_column("Feature Count", style="yellow", justify="right", no_wrap=False)
-
-        # Add rows
-        for row in snapshots_df.iter_rows(named=True):
-            project_version = row["metaxy_project_version"]
-            recorded_at = row["recorded_at"].strftime("%Y-%m-%d %H:%M:%S")
-            feature_count = str(row["feature_count"])
-
-            table.add_row(project_version, recorded_at, feature_count)
-
-        console.print(table)
-        console.print(f"\nTotal snapshots: {snapshots_df.height}")
 
 
 @app.command()

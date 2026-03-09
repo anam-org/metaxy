@@ -79,7 +79,7 @@ def test_graph_history_empty(metaxy_project: TempMetaxyProject, capsys: pytest.C
             pass
 
     with metaxy_project.with_features(features):
-        result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
+        result = metaxy_project.run_cli(["history"], capsys=capsys)
 
         assert result.returncode == 0
         assert "No graph snapshots recorded yet" in result.stderr
@@ -107,7 +107,7 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject, capsys:
         metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Check history
-        result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
+        result = metaxy_project.run_cli(["history"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Graph Snapshot History" in result.stderr
@@ -139,7 +139,7 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject, capsys: pyt
         metaxy_project.run_cli(["push"], capsys=capsys)
 
         # Check history with limit
-        result = metaxy_project.run_cli(["graph", "history", "--limit", "1"], capsys=capsys)
+        result = metaxy_project.run_cli(["history", "--limit", "1"], capsys=capsys)
 
         assert result.returncode == 0
         assert "Total snapshots: 1" in result.stderr
@@ -336,7 +336,7 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject, capsys: p
         assert project_version
 
         # Step 2: History should show the snapshot (table output goes to stderr)
-        history_result = metaxy_project.run_cli(["graph", "history"], capsys=capsys)
+        history_result = metaxy_project.run_cli(["history"], capsys=capsys)
         assert project_version[:13] in history_result.stderr
         assert "2" in history_result.stderr  # 2 features
 

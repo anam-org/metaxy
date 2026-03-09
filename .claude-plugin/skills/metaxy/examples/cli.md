@@ -24,7 +24,7 @@ mx push                    # Push feature graph to store
 ```bash
 mx graph render            # Visualize feature graph in terminal
 mx graph render --format mermaid -o graph.mmd  # Export as Mermaid
-mx graph history           # Show snapshot history
+mx history                 # Show snapshot history
 ```
 
 ### Metadata Operations
