@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "ruff format && ruff check --fix",
+            "command": "uv run ruff format && uv run ruff check --fix",
             "timeout": 30
           }
         ]
