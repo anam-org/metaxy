@@ -82,9 +82,13 @@ def launcher(
 
     logging.getLogger().setLevel(os.environ.get("METAXY_LOG_LEVEL", "INFO"))
 
-    # Load Metaxy configuration with parent directory search
-    # This handles TOML discovery, env vars, and entrypoint loading
-    config = init(config_file)
+    from metaxy.config import MetaxyConfig
+
+    # Load config, then init with it. The lock command needs entrypoint
+    # filtering to prevent non-dependency features from loading into the
+    # graph (they must remain external so they appear in the lock file).
+    loaded_config = MetaxyConfig.load(config_file=config_file, search_parents=True)
+    config = init(loaded_config, isolated=tokens is not None and tokens[0] == "lock")
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed

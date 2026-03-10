@@ -51,11 +51,10 @@ class AppContext:
         if _global_app_context is not None:
             raise RuntimeError("AppContext already initialized. It is not allowed to call AppContext.set() again.")
         else:
-            from metaxy import load_features, sync_external_features
+            from metaxy import sync_external_features
             from metaxy.config import MetaxyConfig
 
             MetaxyConfig.set(config)
-            load_features()
 
             # If --sync is enabled, sync external features from the store
             if sync:

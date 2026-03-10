@@ -118,6 +118,8 @@ def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
 def init(
     config: MetaxyConfig | Path | str | None = None,
     search_parents: bool = True,
+    *,
+    isolated: bool = False,
 ) -> MetaxyConfig:
     """Main user-facing initialization function for Metaxy. It loads feature definitions and the Metaxy [configuration][metaxy.MetaxyConfig].
 
@@ -131,6 +133,8 @@ def init(
                 `METAXY_CONFIG` environment variable can be used to set the config file path.
 
         search_parents: Whether to search parent directories for configuration files during config discovery.
+        isolated: Whether to only load distribution entry points from Python dependencies (including transitive) of this project.
+            Features from non-dependencies available in the same Python environment will be excluded from feature auto-discovery.
 
     Returns:
         The activated Metaxy configuration.
@@ -145,7 +149,7 @@ def init(
             search_parents=search_parents,
         )
     load_lock_file(config)
-    load_features(config.entrypoints)
+    load_features(config.entrypoints, filter_project=config.project)
     return config
 
 

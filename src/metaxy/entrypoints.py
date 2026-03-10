@@ -11,14 +11,18 @@ containing modules are imported (via the Feature metaclass).
 """
 
 import importlib
+import importlib.metadata
 import os
 from contextvars import ContextVar
 from typing import TYPE_CHECKING
 
+from packaging.requirements import Requirement
+from packaging.utils import NormalizedName, canonicalize_name
+
 if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
-from importlib.metadata import entry_points
+from importlib.metadata import EntryPoint, entry_points
 
 # Guard against re-entrant calls to load_features
 _loading_features: ContextVar[bool] = ContextVar("_loading_features", default=False)
@@ -104,10 +108,60 @@ def load_entrypoints(
         load_module_entrypoint(module_path, graph=target_graph)
 
 
+def _get_allowed_distributions(project: str) -> frozenset[NormalizedName] | None:
+    """Get the set of distribution names allowed to contribute entry points.
+
+    Returns the canonicalized names of the project and all its transitive
+    dependencies. Returns None if the project is not installed (no filtering).
+    """
+    canonical_project = canonicalize_name(project)
+
+    try:
+        importlib.metadata.requires(project)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+    allowed: set[NormalizedName] = set()
+    queue = [canonical_project]
+
+    while queue:
+        name = queue.pop()
+        if name in allowed:
+            continue
+        allowed.add(name)
+
+        try:
+            requires = importlib.metadata.requires(name)
+        except importlib.metadata.PackageNotFoundError:
+            continue
+
+        if requires is None:
+            continue
+
+        for req_str in requires:
+            req = Requirement(req_str)
+            if req.marker is not None and not req.marker.evaluate():
+                continue
+            dep_name = canonicalize_name(req.name)
+            if dep_name not in allowed:
+                queue.append(dep_name)
+
+    return frozenset(allowed)
+
+
+def _filter_entry_points_by_distribution(
+    eps: list[EntryPoint],
+    allowed: frozenset[NormalizedName],
+) -> list[EntryPoint]:
+    """Filter entry points to only those from allowed distributions."""
+    return [ep for ep in eps if ep.dist is None or canonicalize_name(ep.dist.name) in allowed]
+
+
 def load_package_entrypoints(
     group: str = DEFAULT_ENTRY_POINT_GROUP,
     *,
     graph: "FeatureGraph | None" = None,
+    filter_project: str | None = None,
 ) -> None:
     """Load entrypoints from installed packages using importlib.metadata.
 
@@ -128,6 +182,9 @@ def load_package_entrypoints(
     Args:
         group: Entry point group name (default: "metaxy.project")
         graph: Target graph. If None, uses FeatureGraph.get_active()
+        filter_project: If set, only load entry points from this project and
+            its Python dependencies (including transitive). Used by ``metaxy lock``
+            to exclude non-dependency packages from the feature graph.
 
     Raises:
         EntrypointLoadError: If any entrypoint fails to load
@@ -157,6 +214,14 @@ def load_package_entrypoints(
         eps = discovered.get(group, [])
 
     eps_list = list(eps)
+
+    if not eps_list:
+        return
+
+    if filter_project is not None:
+        allowed = _get_allowed_distributions(filter_project)
+        if allowed is not None:
+            eps_list = _filter_entry_points_by_distribution(eps_list, allowed)
 
     if not eps_list:
         return
@@ -230,6 +295,7 @@ def load_features(
     *,
     load_packages: bool = True,
     load_env: bool = True,
+    filter_project: str | None = None,
 ) -> "FeatureGraph":
     """Discover and load feature entrypoints from packages and environment.
 
@@ -267,7 +333,7 @@ def load_features(
 
         # Load package-based entrypoints
         if load_packages:
-            load_package_entrypoints(package_entrypoint_group)
+            load_package_entrypoints(package_entrypoint_group, filter_project=filter_project)
 
         # Load environment-based entrypoints
         if load_env:

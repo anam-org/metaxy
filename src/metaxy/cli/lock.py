@@ -12,7 +12,6 @@ from metaxy.cli.console import console, error_console
 # Lock subcommand app
 app = cyclopts.App(
     name="lock",
-    help="Generate `metaxy.lock` file with [external feature definitions](https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/) fetched from the metadata store.",
     console=console,
     error_console=error_console,
 )
@@ -36,10 +35,14 @@ def lock(
         ),
     ] = "",
 ):
-    """Fetch external feature definitions and serialize them to metaxy.lock.
+    """Generate `metaxy.lock` file with [external feature definitions](https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/) fetched from the metadata store.
 
     Analyzes the current feature graph to find external dependencies, then fetches
     those feature definitions (and their transitive dependencies) from the metadata store.
+
+    Distribution entry points are automatically filtered to only load features from
+    the current project and its Python dependencies (including transitive), preventing
+    unrelated packages from polluting the lock file.
 
     This functionality is currently experimental.
     """

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from metaxy_testing.models import SampleFeatureSpec
+from packaging.utils import canonicalize_name
 
 from metaxy import (
     BaseFeature,
@@ -18,6 +19,8 @@ from metaxy import (
 )
 from metaxy.entrypoints import (
     EntrypointLoadError,
+    _filter_entry_points_by_distribution,
+    _get_allowed_distributions,
     load_entrypoints,
     load_features,
     load_module_entrypoint,
@@ -652,3 +655,303 @@ def test_missing_dependency_raises_clear_error(graph: FeatureGraph) -> None:
     # But accessing the plan raises a clear error
     with pytest.raises(MetaxyMissingFeatureDependency, match="nonexistent/upstream"):
         graph.get_feature_plan(FeatureKey(["orphan", "feature"]))
+
+
+# ========== Tests for dependency-based filtering ==========
+
+
+class TestGetAllowedDistributions:
+    """Tests for _get_allowed_distributions."""
+
+    def test_returns_none_when_package_not_installed(self) -> None:
+        allowed = _get_allowed_distributions("nonexistent-package-xyz-12345")
+        assert allowed is None
+
+    def test_includes_project_itself(self) -> None:
+        def mock_requires(name: str) -> None:
+            return None
+
+        with patch("metaxy.entrypoints.importlib.metadata.requires", side_effect=mock_requires):
+            allowed = _get_allowed_distributions("my-project")
+            assert allowed is not None
+            assert "my-project" in allowed
+
+    def test_includes_direct_dependencies(self) -> None:
+        def mock_requires(name: str) -> list[str] | None:
+            if name == "my-project":
+                return ["dep-one>=1.0", "dep_two", "Dep-Three[extra]"]
+            return None
+
+        with patch("metaxy.entrypoints.importlib.metadata.requires", side_effect=mock_requires):
+            allowed = _get_allowed_distributions("my-project")
+            assert allowed is not None
+            assert "my-project" in allowed
+            assert "dep-one" in allowed
+            assert "dep-two" in allowed
+            assert "dep-three" in allowed
+
+    def test_includes_transitive_dependencies(self) -> None:
+        def mock_requires(name: str) -> list[str] | None:
+            return {
+                "my-project": ["core>=1.0"],
+                "core": ["utils"],
+            }.get(name)
+
+        with patch("metaxy.entrypoints.importlib.metadata.requires", side_effect=mock_requires):
+            allowed = _get_allowed_distributions("my-project")
+            assert allowed is not None
+            assert "my-project" in allowed
+            assert "core" in allowed
+            assert "utils" in allowed
+
+    def test_canonicalizes_project_name(self) -> None:
+        with patch("metaxy.entrypoints.importlib.metadata.requires", return_value=None):
+            allowed = _get_allowed_distributions("My_Project")
+            assert allowed is not None
+            assert "my-project" in allowed
+
+    def test_excludes_extras_only_dependencies(self) -> None:
+        """Dependencies gated behind extras are not included in the allowed set."""
+
+        def mock_requires(name: str) -> list[str] | None:
+            if name == "proj":
+                return [
+                    "unconditional-dep",
+                    'extras-only-dep ; extra == "dev"',
+                    'another-extras-dep ; extra == "test"',
+                ]
+            return None
+
+        with patch("metaxy.entrypoints.importlib.metadata.requires", side_effect=mock_requires):
+            allowed = _get_allowed_distributions("proj")
+            assert allowed is not None
+            assert "unconditional-dep" in allowed
+            assert "extras-only-dep" not in allowed
+            assert "another-extras-dep" not in allowed
+
+    def test_includes_deps_matching_current_environment(self) -> None:
+        """Dependencies with environment markers that match the current env are included."""
+        import sys
+
+        def mock_requires(name: str) -> list[str] | None:
+            if name == "proj":
+                return [
+                    f"env-dep ; python_version >= '{sys.version_info.major}.{sys.version_info.minor}'",
+                    "impossible-dep ; python_version < '2.0'",
+                ]
+            return None
+
+        with patch("metaxy.entrypoints.importlib.metadata.requires", side_effect=mock_requires):
+            allowed = _get_allowed_distributions("proj")
+            assert allowed is not None
+            assert "env-dep" in allowed
+            assert "impossible-dep" not in allowed
+
+
+class TestFilterEntryPointsByDistribution:
+    """Tests for _filter_entry_points_by_distribution."""
+
+    def _make_ep(self, dist_name: str | None) -> MagicMock:
+        ep = MagicMock(spec=["dist", "name", "value", "load"])
+        if dist_name is None:
+            ep.dist = None
+        else:
+            ep.dist = MagicMock()
+            ep.dist.name = dist_name
+        return ep
+
+    def test_filters_to_allowed(self) -> None:
+        ep_a = self._make_ep("package-a")
+        ep_b = self._make_ep("package-b")
+        ep_c = self._make_ep("package-c")
+
+        result = _filter_entry_points_by_distribution(
+            [ep_a, ep_b, ep_c],
+            frozenset({canonicalize_name("package-a"), canonicalize_name("package-c")}),
+        )
+        assert result == [ep_a, ep_c]
+
+    def test_includes_eps_with_no_dist(self) -> None:
+        ep_no_dist = self._make_ep(None)
+        ep_allowed = self._make_ep("allowed")
+
+        result = _filter_entry_points_by_distribution(
+            [ep_no_dist, ep_allowed],
+            frozenset({canonicalize_name("allowed")}),
+        )
+        assert result == [ep_no_dist, ep_allowed]
+
+    def test_canonicalizes_dist_names(self) -> None:
+        ep = self._make_ep("My_Package")
+        result = _filter_entry_points_by_distribution([ep], frozenset({canonicalize_name("my-package")}))
+        assert result == [ep]
+
+    def test_empty_input(self) -> None:
+        result = _filter_entry_points_by_distribution([], frozenset({canonicalize_name("any")}))
+        assert result == []
+
+
+class TestLoadPackageEntrypointsFiltering:
+    """Tests for filter_project parameter in load_package_entrypoints."""
+
+    def test_filters_by_project_dependencies(self, graph: FeatureGraph) -> None:
+        """Only entry points from project dependencies are loaded."""
+        allowed_ep = MagicMock()
+        allowed_ep.name = "dep_plugin"
+        allowed_ep.value = "dep_plugin.features"
+        allowed_ep.dist = MagicMock()
+        allowed_ep.dist.name = "my-dep"
+
+        def load_allowed():
+            class AllowedFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["allowed", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        allowed_ep.load = load_allowed
+
+        blocked_ep = MagicMock()
+        blocked_ep.name = "other_plugin"
+        blocked_ep.value = "other_plugin.features"
+        blocked_ep.dist = MagicMock()
+        blocked_ep.dist.name = "unrelated-pkg"
+
+        def load_blocked():
+            class BlockedFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["blocked", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        blocked_ep.load = load_blocked
+
+        with (
+            patch("metaxy.entrypoints.entry_points") as mock_entry_points,
+            patch(
+                "metaxy.entrypoints.importlib.metadata.requires",
+                return_value=["my-dep>=1.0"],
+            ),
+        ):
+            mock_eps = MagicMock()
+            mock_eps.select.return_value = [allowed_ep, blocked_ep]
+            mock_entry_points.return_value = mock_eps
+
+            load_package_entrypoints(graph=graph, filter_project="my-project")
+
+            assert FeatureKey(["allowed", "feature"]) in graph.feature_definitions_by_key
+            assert FeatureKey(["blocked", "feature"]) not in graph.feature_definitions_by_key
+
+    def test_no_filtering_without_filter_project(self, graph: FeatureGraph) -> None:
+        """All entry points loaded when filter_project is not set."""
+        ep = MagicMock()
+        ep.name = "any_plugin"
+        ep.value = "any.features"
+        ep.dist = MagicMock()
+        ep.dist.name = "any-package"
+
+        def mock_load():
+            class AnyFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["any", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        ep.load = mock_load
+
+        with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
+            mock_eps = MagicMock()
+            mock_eps.select.return_value = [ep]
+            mock_entry_points.return_value = mock_eps
+
+            load_package_entrypoints(graph=graph)
+
+            assert FeatureKey(["any", "feature"]) in graph.feature_definitions_by_key
+
+    def test_extras_deps_not_in_allowed_set(self, graph: FeatureGraph) -> None:
+        """Entry points from extras-only dependencies are filtered out."""
+        # ep_extras comes from a package that is only an extras dep of the project
+        ep_extras = MagicMock()
+        ep_extras.name = "extras_plugin"
+        ep_extras.value = "extras_plugin.features"
+        ep_extras.dist = MagicMock()
+        ep_extras.dist.name = "extras-only-pkg"
+
+        def load_extras():
+            class ExtrasFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["extras", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        ep_extras.load = load_extras
+
+        def mock_requires(name: str) -> list[str] | None:
+            if name == "my-project":
+                return [
+                    "real-dep>=1.0",
+                    'extras-only-pkg ; extra == "dev"',
+                ]
+            return None
+
+        with (
+            patch("metaxy.entrypoints.entry_points") as mock_entry_points,
+            patch(
+                "metaxy.entrypoints.importlib.metadata.requires",
+                side_effect=mock_requires,
+            ),
+        ):
+            mock_eps = MagicMock()
+            mock_eps.select.return_value = [ep_extras]
+            mock_entry_points.return_value = mock_eps
+
+            load_package_entrypoints(graph=graph, filter_project="my-project")
+
+            assert FeatureKey(["extras", "feature"]) not in graph.feature_definitions_by_key
+
+    def test_no_filtering_when_package_not_installed(self, graph: FeatureGraph) -> None:
+        """All entry points loaded when filter_project package is not installed."""
+        ep = MagicMock()
+        ep.name = "plugin"
+        ep.value = "plugin.features"
+        ep.dist = MagicMock()
+        ep.dist.name = "some-package"
+
+        def mock_load():
+            class SomeFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["some", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        ep.load = mock_load
+
+        with (
+            patch("metaxy.entrypoints.entry_points") as mock_entry_points,
+            patch(
+                "metaxy.entrypoints._get_allowed_distributions",
+                return_value=None,
+            ),
+        ):
+            mock_eps = MagicMock()
+            mock_eps.select.return_value = [ep]
+            mock_entry_points.return_value = mock_eps
+
+            load_package_entrypoints(graph=graph, filter_project="not-installed-pkg")
+
+            assert FeatureKey(["some", "feature"]) in graph.feature_definitions_by_key

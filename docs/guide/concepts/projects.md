@@ -100,3 +100,14 @@ my-key = "my_package.features"
 !!! note
 
     Currently the name of the key (`my-key` in the example above) is not used by Metaxy and is not important.
+
+#### Dependency Filtering
+
+The `metaxy lock` command automatically filters distribution entry points to only load features from the current project and its Python dependencies (including transitive). This ensures that features from non-dependency packages remain external and appear in the lock file.
+
+!!! example "Use case: `uv` workspaces"
+
+    This is useful when working with [`uv` workspaces](https://docs.astral.sh/uv/concepts/projects/workspaces/),
+    where all workspace members are installed in the same environment.
+    Without filtering, features from sibling packages that aren't dependencies
+    would be load into the feature graph and be missing from the `metaxy.lock` file.
