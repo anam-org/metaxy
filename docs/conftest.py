@@ -3,11 +3,12 @@
 Configures Sybil to parse and test markdown code blocks (```python and ```py)
 found in the docs/ directory.
 
-Code blocks using --8<-- snippet includes are automatically skipped since
-they are tested via their source files.
+Code blocks using --8<-- snippet includes are expanded before evaluation so
+docs execute the same example source that MkDocs renders.
 """
 
 import re
+from pathlib import Path
 
 from metaxy.models.feature import FeatureGraph
 from sybil import Sybil
@@ -21,6 +22,13 @@ from sybil.parsers.markdown.skip import SkipParser
 from sybil.typing import Evaluator
 
 import metaxy as mx
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SNIPPET_BASE_PATHS = (
+    REPO_ROOT / "examples",
+    REPO_ROOT / "docs" / "snippets",
+    REPO_ROOT / "docs",
+)
 
 
 # Workaround for pytest-cases compatibility issue
@@ -124,17 +132,138 @@ class CodeBlockWithAttributesParser(AbstractCodeBlockParser):
         )
 
 
-class SnippetSkippingEvaluator(PythonEvaluator):
-    """PythonEvaluator that skips code blocks containing --8<-- snippet includes."""
+class SnippetExpandingEvaluator(PythonEvaluator):
+    """PythonEvaluator that expands MkDocs snippet includes before execution."""
 
-    # Pattern to detect snippet includes
-    SNIPPET_PATTERN = re.compile(r'--8<--\s*"')
+    SNIPPET_PATTERN = re.compile(r'^(?P<indent>\s*)--8<--\s*"(?P<target>[^"]+)"\s*$')
+    SECTION_START_PATTERN = re.compile(r"#\s*--8<--\s*\[start:(?P<name>[^\]]+)\]\s*$")
+    SECTION_END_PATTERN = re.compile(r"#\s*--8<--\s*\[end:(?P<name>[^\]]+)\]\s*$")
+
+    def _resolve_snippet_path(self, target_path: str, *, document_path: Path) -> Path:
+        candidate_paths = []
+
+        if Path(target_path).is_absolute():
+            candidate_paths.append(Path(target_path))
+        else:
+            candidate_paths.append((document_path.parent / target_path).resolve())
+            candidate_paths.extend(
+                (base_path / target_path).resolve() for base_path in SNIPPET_BASE_PATHS
+            )
+
+        for candidate_path in candidate_paths:
+            if candidate_path.exists():
+                return candidate_path
+
+        searched = ", ".join(str(path) for path in candidate_paths)
+        raise FileNotFoundError(
+            f"Unable to resolve snippet path {target_path!r}; searched: {searched}"
+        )
+
+    def _extract_section(
+        self, source_lines: list[str], section_name: str, snippet_path: Path
+    ) -> list[str]:
+        start_index: int | None = None
+
+        for index, line in enumerate(source_lines):
+            start_match = self.SECTION_START_PATTERN.match(line)
+            if start_match and start_match.group("name") == section_name:
+                start_index = index + 1
+                break
+
+        if start_index is None:
+            raise ValueError(
+                f"Snippet section {section_name!r} not found in {snippet_path}"
+            )
+
+        for index in range(start_index, len(source_lines)):
+            end_match = self.SECTION_END_PATTERN.match(source_lines[index])
+            if end_match and end_match.group("name") == section_name:
+                return source_lines[start_index:index]
+
+        raise ValueError(
+            f"Snippet section {section_name!r} was not closed in {snippet_path}"
+        )
+
+    def _extract_range(
+        self,
+        source_lines: list[str],
+        start_line: int,
+        end_line: int,
+        snippet_path: Path,
+    ) -> list[str]:
+        if start_line < 1 or end_line < start_line:
+            raise ValueError(
+                f"Invalid snippet line range {start_line}:{end_line} in {snippet_path}"
+            )
+        if end_line > len(source_lines):
+            raise ValueError(
+                f"Snippet line range {start_line}:{end_line} exceeds {snippet_path} length {len(source_lines)}"
+            )
+        return source_lines[start_line - 1 : end_line]
+
+    def _read_snippet(self, target: str, *, document_path: Path) -> str:
+        line_range_match = re.fullmatch(
+            r"(?P<path>.+):(?P<start>\d+):(?P<end>\d+)", target
+        )
+
+        if line_range_match:
+            snippet_path = self._resolve_snippet_path(
+                line_range_match.group("path"), document_path=document_path
+            )
+            source_lines = snippet_path.read_text(encoding="utf-8").splitlines()
+            snippet_lines = self._extract_range(
+                source_lines,
+                int(line_range_match.group("start")),
+                int(line_range_match.group("end")),
+                snippet_path,
+            )
+            return "\n".join(snippet_lines)
+
+        path_part, separator, suffix = target.rpartition(":")
+
+        if separator and path_part:
+            snippet_path = self._resolve_snippet_path(
+                path_part, document_path=document_path
+            )
+            source_lines = snippet_path.read_text(encoding="utf-8").splitlines()
+            snippet_lines = self._extract_section(source_lines, suffix, snippet_path)
+            return "\n".join(snippet_lines)
+
+        snippet_path = self._resolve_snippet_path(target, document_path=document_path)
+        return snippet_path.read_text(encoding="utf-8")
+
+    def _expand_snippets(self, source: str, *, document_path: Path) -> str:
+        expanded_lines: list[str] = []
+
+        for line in source.splitlines():
+            match = self.SNIPPET_PATTERN.match(line)
+            if not match:
+                expanded_lines.append(line)
+                continue
+
+            indent = match.group("indent")
+            snippet_source = self._read_snippet(
+                match.group("target"), document_path=document_path
+            )
+            snippet_lines = snippet_source.splitlines()
+            expanded_lines.extend(
+                f"{indent}{snippet_line}" if snippet_line else ""
+                for snippet_line in snippet_lines
+            )
+
+        expanded_source = "\n".join(expanded_lines)
+        if source.endswith("\n"):
+            expanded_source += "\n"
+        return expanded_source
 
     def __call__(self, example):
-        # Skip code blocks that contain snippet includes
-        if self.SNIPPET_PATTERN.search(example.parsed):
-            return None  # Skip this example
-        # Delegate to parent for actual execution
+        example.parsed = type(example.parsed)(
+            self._expand_snippets(
+                str(example.parsed), document_path=Path(example.path)
+            ),
+            example.parsed.offset,
+            example.parsed.line_offset,
+        )
         return super().__call__(example)
 
 
@@ -155,6 +284,7 @@ def sybil_setup(namespace):
     banned in documentation examples.
     """
     import narwhals as nw
+    import polars as pl
     from metaxy.models import feature as feature_module
     from metaxy_testing.doctest_fixtures import (
         ChildFeature,
@@ -191,6 +321,9 @@ def sybil_setup(namespace):
     # Direct imports like `from metaxy import FeatureSpec` are banned in docs
     namespace["mx"] = mx
     namespace["nw"] = nw
+    namespace["pl"] = pl
+    namespace["__name__"] = "docs"
+    namespace["__package__"] = "docs"
     namespace["graph"] = isolated_graph
     namespace["MyFeature"] = MyFeature
     namespace["ParentFeature"] = ParentFeature
@@ -224,7 +357,7 @@ def sybil_teardown(namespace):
 # Create parsers for both ```python and ```py code blocks
 # SkipParser must come before other parsers to handle skip directives
 # Use CodeBlockWithAttributesParser to handle MkDocs-style attributes like {title="..."}
-python_evaluator = SnippetSkippingEvaluator()
+python_evaluator = SnippetExpandingEvaluator()
 parsers = [
     SkipParser(),
     CodeBlockWithAttributesParser(language="python", evaluator=python_evaluator),

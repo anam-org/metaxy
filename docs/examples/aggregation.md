@@ -42,7 +42,7 @@ Each audio recording has an `audio_id` (unique identifier) and a `speaker_id` (w
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_aggregation/features.py" hl_lines="6-11"
---8<-- "example-aggregation/src/example_aggregation/features.py:20:45"
+--8<-- "example-aggregation/src/example_aggregation/features.py:20:44"
 ```
 <!-- dprint-ignore-end -->
 
