@@ -8,8 +8,16 @@ authors = [
 ]
 requires-python = ">=3.10"
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 4 - Beta",
   "License :: OSI Approved :: Apache Software License",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Environment :: Console",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Libraries :: Python Modules",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -92,6 +100,7 @@ mx = "metaxy.cli.app:main"
 Documentation = "https://docs.metaxy.io"
 Repository = "https://github.com/anam-org/metaxy"
 Issues = "https://github.com/anam-org/metaxy/issues"
+Changelog = "https://docs.metaxy.io/latest/changelog"
 
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]
