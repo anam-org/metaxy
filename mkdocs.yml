@@ -260,6 +260,7 @@ nav:
         - Ibis: integrations/metadata-stores/databases/ibis.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
+        - Apache Iceberg: integrations/metadata-stores/storage/iceberg.md
         - Delta Lake: integrations/metadata-stores/storage/delta.md
         - DuckLake: integrations/metadata-stores/storage/ducklake.md
     - Compute:

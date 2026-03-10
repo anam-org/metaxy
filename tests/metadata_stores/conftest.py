@@ -19,6 +19,7 @@ from metaxy.config import MetaxyConfig
 from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.metadata_stores.iceberg import IcebergMetadataStore
 from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -124,6 +125,15 @@ class AllStoresCases:
     def case_clickhouse(self, request) -> MetadataStore:
         return ClickHouseMetadataStore(
             connection_string=require_fixture(request, "clickhouse_db"),
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.mark.iceberg
+    @pytest.mark.polars
+    def case_iceberg(self, tmp_path: Path) -> MetadataStore:
+        iceberg_path = tmp_path / "iceberg_store"
+        return IcebergMetadataStore(
+            warehouse=iceberg_path,
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
