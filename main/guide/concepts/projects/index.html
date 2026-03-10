@@ -1076,6 +1076,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Distribution Entry Points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependency-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Filtering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -3738,6 +3755,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Distribution Entry Points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependency-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Filtering
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -3911,6 +3945,15 @@ This can be achieved by setting <code>"metaxy.project"</code> <a href="https://p
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Currently the name of the key (<code>my-key</code> in the example above) is not used by Metaxy and is not important.</p>
+</div>
+<h4 id="dependency-filtering">Dependency Filtering<a class="headerlink" href="#dependency-filtering" title="Permanent link">&para;</a></h4>
+<p>The <code>metaxy lock</code> command automatically filters distribution entry points to only load features from the current project and its Python dependencies (including transitive). This ensures that features from non-dependency packages remain external and appear in the lock file.</p>
+<div class="admonition example">
+<p class="admonition-title">Use case: <code>uv</code> workspaces</p>
+<p>This is useful when working with <a href="https://docs.astral.sh/uv/concepts/projects/workspaces/"><code>uv</code> workspaces</a>,
+where all workspace members are installed in the same environment.
+Without filtering, features from sibling packages that aren't dependencies
+would be load into the feature graph and be missing from the <code>metaxy.lock</code> file.</p>
 </div>
 
 

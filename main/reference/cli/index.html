@@ -4529,6 +4529,12 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p>Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</p>
+<p>Analyzes the current feature graph to find external dependencies, then fetches
+those feature definitions (and their transitive dependencies) from the metadata store.</p>
+<p>Distribution entry points are automatically filtered to only load features from
+the current project and its Python dependencies (including transitive), preventing
+unrelated packages from polluting the lock file.</p>
+<p>This functionality is currently experimental.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)  <em>[env: METAXY_STORE]</em></li>
