@@ -6,10 +6,12 @@ Exposes Metaxy's feature graph and metadata store operations to AI assistants.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from textwrap import dedent
 from typing import TYPE_CHECKING, Any
 
 from fastmcp import FastMCP
 
+import metaxy as mx
 from metaxy import FeatureGraph, MetaxyConfig, coerce_to_feature_key, init
 
 if TYPE_CHECKING:
@@ -43,7 +45,17 @@ def create_server() -> FastMCP:
     Returns:
         Configured FastMCP server instance.
     """
-    server = FastMCP("metaxy")
+    server = FastMCP(
+        "metaxy",
+        instructions=dedent("""\
+            Start with `list_features` to discover features, then `get_feature` for details.
+            Use `list_stores` to find configured metadata stores and `get_config` to get the full config.
+
+            Feature keys use slash notation (e.g., `video/processing`).
+            Use `list_features(verbose=True)` for field-level dependency lineage."""),
+        version=mx.__version__,
+        website_url="https://docs.metaxy.io/",
+    )
     _register_tools(server)
     return server
 
