@@ -183,23 +183,32 @@ class DuckDBMetadataStore(IbisMetadataStore):
             existing_names = {ext.name for ext in self.extensions}
             if "ducklake" not in existing_names:
                 self.extensions.append(ExtensionSpec(name="ducklake"))
-            # hashfuncs must be loaded BEFORE motherduck (and before ATTACH md:) so that
-            # xxh32/xxh64 are available after MotherDuck switches the active database context.
-            if isinstance(ducklake.catalog, MotherDuckCatalogConfig):
-                if "hashfuncs" not in existing_names:
-                    self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))
-                if "motherduck" not in existing_names:
-                    self.extensions.append(
-                        ExtensionSpec(
-                            name="motherduck",
-                            init_sql=_motherduck_attach_sql(database_str),
-                        )
-                    )
             self._ducklake_config = ducklake
             self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
 
         if "hashfuncs" not in {ext.name for ext in self.extensions}:
             self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))
+
+        if is_motherduck:
+            # Community extensions cannot be loaded after duckdb.connect("md:...") because
+            # MotherDuck is already active at that point.  We connect to :memory: instead and
+            # ATTACH MotherDuck via init_sql AFTER all community extensions are loaded.
+            # Ensure motherduck extension is present with ATTACH init_sql, placed last so all
+            # community extensions (user-supplied + hashfuncs) are loaded before it.
+            existing_names = {ext.name for ext in self.extensions}
+            if "motherduck" not in existing_names:
+                self.extensions.append(
+                    ExtensionSpec(name="motherduck", init_sql=_motherduck_attach_sql(database_str))
+                )
+            else:
+                # User already added motherduck explicitly — move it to end and inject init_sql
+                # so it comes after all community extensions.
+                md_ext = next(e for e in self.extensions if e.name == "motherduck")
+                if not md_ext.init_sql:
+                    self.extensions.remove(md_ext)
+                    self.extensions.append(
+                        md_ext.model_copy(update={"init_sql": _motherduck_attach_sql(database_str)})
+                    )
 
         super().__init__(
             backend="duckdb",

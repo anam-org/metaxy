@@ -450,29 +450,35 @@ def test_duckdb_config_with_fallback_stores() -> None:
         assert dev_store._is_open
 
 
-def test_motherduck_ducklake_connects_via_memory_and_attaches() -> None:
-    """MotherDuck stores connect via :memory: and ATTACH md: to allow hashfuncs to load first.
+def test_motherduck_connects_via_memory_and_attaches() -> None:
+    """MotherDuck stores connect via :memory: and ATTACH md: so all community extensions load first.
 
     duckdb.connect("md:...") activates MotherDuck immediately, preventing community
-    extensions from being loaded.  Instead we connect to :memory:, load hashfuncs,
-    then ATTACH the MotherDuck database via init_sql on the motherduck extension.
+    extensions from being loaded.  Instead we connect to :memory:, load all community
+    extensions first, then ATTACH the MotherDuck database via init_sql on the motherduck
+    extension.  This applies to any community extension the user passes in, not just hashfuncs.
     """
-    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+    from metaxy.ext.metadata_stores.duckdb import ExtensionSpec
 
     store = DuckDBMetadataStore(
         "md:my_database?motherduck_token=fake_token",
-        ducklake=DuckLakeConfig.model_validate({"catalog": {"type": "motherduck", "database": "my_database"}}),
+        extensions=[ExtensionSpec(name="my_community_ext", repository="community")],
     )
 
     # Connection must go to :memory:, not md: directly
     assert store.connection_params["database"] == ":memory:"
 
     ext_names = [ext.name for ext in store.extensions]
-    assert "hashfuncs" in ext_names
     assert "motherduck" in ext_names
-    assert ext_names.index("hashfuncs") < ext_names.index("motherduck"), (
-        f"hashfuncs must come before motherduck, got order: {ext_names}"
-    )
+
+    # ALL community extensions must come before motherduck
+    md_idx = ext_names.index("motherduck")
+    community_exts = [e for e in store.extensions if e.repository == "community"]
+    assert community_exts, "expected at least one community extension"
+    for ce in community_exts:
+        assert ext_names.index(ce.name) < md_idx, (
+            f"community extension '{ce.name}' must come before motherduck, got order: {ext_names}"
+        )
 
     # motherduck init_sql must set the token and ATTACH md:
     md_ext = next(e for e in store.extensions if e.name == "motherduck")
