@@ -1,6 +1,6 @@
 """DuckDB metadata store - thin wrapper around IbisMetadataStore."""
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -68,7 +68,7 @@ class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
 
 
 def _normalise_extensions(
-    extensions: Iterable[str | ExtensionSpec],
+    extensions: Iterable[str | ExtensionSpec | Mapping[str, Any]],
 ) -> list[ExtensionSpec]:
     """Coerce extension inputs into ExtensionSpec instances."""
     normalised: list[ExtensionSpec] = []
@@ -77,6 +77,8 @@ def _normalise_extensions(
             normalised.append(ExtensionSpec(name=ext))
         elif isinstance(ext, ExtensionSpec):
             normalised.append(ext)
+        elif isinstance(ext, Mapping):
+            normalised.append(ExtensionSpec.model_validate(dict(ext)))
         else:
             raise TypeError(f"DuckDB extensions must be strings or ExtensionSpec instances, got {type(ext).__name__}.")
     return normalised
