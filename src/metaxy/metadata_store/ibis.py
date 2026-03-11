@@ -297,6 +297,14 @@ class IbisMetadataStore(MetadataStore, ABC):
             self._conn.disconnect()
         self._conn = None
 
+    def _collect_lazy_frame(self, frame: nw.LazyFrame[Any]) -> nw.DataFrame[Any]:
+        """Collect Ibis lazy frames through the active backend connection."""
+        if frame.implementation != nw.Implementation.IBIS:
+            return super()._collect_lazy_frame(frame)
+
+        native_expr = frame.to_native()
+        return nw.from_native(self.conn.to_pyarrow(native_expr))
+
     @property
     def sqlalchemy_url(self) -> str:
         """Get SQLAlchemy-compatible connection URL for tools like Alembic.

@@ -308,6 +308,10 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if self._ducklake_attachment is not None:
             self._ducklake_attachment._attached = False
             self._ducklake_attachment.configure(self._duckdb_raw_connection())
+            if self._uses_motherduck_ducklake():
+                # MotherDuck changes the active database via USE <db>; reload extensions
+                # afterward so extension-backed functions remain available in that context.
+                self._load_extensions()
 
     def _close(self) -> None:
         super()._close()
@@ -341,6 +345,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
             raise TypeError(f"Expected DuckDB backend 'con' to be DuckDBPyConnection, got {type(candidate).__name__}")
 
         return candidate
+
+    def _uses_motherduck_ducklake(self) -> bool:
+        """Return True when DuckLake is configured against a MotherDuck catalog."""
+        return bool(
+            self._ducklake_config is not None and isinstance(self._ducklake_config.catalog, MotherDuckCatalogConfig)
+        )
 
     @classmethod
     def from_config(cls, config: DuckDBMetadataStoreConfig, **kwargs: Any) -> Self:  # type: ignore[override]

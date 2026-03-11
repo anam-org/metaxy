@@ -585,9 +585,9 @@ class MetadataStore(ABC):
             )
         else:
             return Increment(
-                new=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                stale=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
-                orphaned=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
+                new=self._collect_lazy_frame(added) if isinstance(added, nw.LazyFrame) else added,
+                stale=self._collect_lazy_frame(changed) if isinstance(changed, nw.LazyFrame) else changed,
+                orphaned=self._collect_lazy_frame(removed) if isinstance(removed, nw.LazyFrame) else removed,
             )
 
     def compute_provenance(
@@ -1214,6 +1214,10 @@ class MetadataStore(ABC):
 
         with cm as engine:
             yield engine
+
+    def _collect_lazy_frame(self, frame: nw.LazyFrame[Any]) -> nw.DataFrame[Any]:
+        """Materialize a Narwhals lazy frame for eager metadata-store APIs."""
+        return frame.collect()
 
     def hash_struct_version_column(
         self,

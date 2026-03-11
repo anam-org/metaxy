@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any
 
+import ibis.expr.types as ir
 import polars as pl
 import pytest
 
@@ -184,6 +185,46 @@ def test_duckdb_in_memory_nested_write_from_read_mode(
 
         result = collect_to_polars(store.read(feature)).sort("sample_uid")
         assert result["sample_uid"].to_list() == ["in_memory_1", "in_memory_2"]
+
+
+def test_duckdb_resolve_update_collects_with_active_connection(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    test_graph,
+    test_features: dict[str, Any],
+) -> None:
+    """Eager resolve_update should not depend on Ibis default backend lookup."""
+    upstream = test_features["UpstreamFeatureA"]
+    downstream = test_features["DownstreamFeature"]
+    store = DuckDBMetadataStore(tmp_path / "resolve-update.duckdb", auto_create_tables=True)
+
+    upstream_metadata = pl.DataFrame(
+        {
+            "sample_uid": [1, 2, 3],
+            "metaxy_provenance_by_field": [
+                {"frames": "hash_f1", "audio": "hash_a1"},
+                {"frames": "hash_f2", "audio": "hash_a2"},
+                {"frames": "hash_f3", "audio": "hash_a3"},
+            ],
+        }
+    )
+
+    with store.open("w"):
+        store.write(upstream, upstream_metadata)
+
+        original_find_backend = ir.Expr._find_backend
+
+        def fail_default_backend_lookup(self, *, use_default=False):  # type: ignore[no-untyped-def]
+            if use_default:
+                raise AssertionError("resolve_update eager collection should use the active store backend")
+            return original_find_backend(self, use_default=use_default)
+
+        monkeypatch.setattr(ir.Expr, "_find_backend", fail_default_backend_lookup)
+
+        increment = store.resolve_update(downstream, lazy=False)
+
+    result = increment.new.to_polars().sort("sample_uid")
+    assert result["sample_uid"].to_list() == [1, 2, 3]
 
 
 @pytest.mark.parametrize(
@@ -381,3 +422,67 @@ def test_duckdb_config_with_fallback_stores() -> None:
 
     with dev_store.open("w"):
         assert dev_store._is_open
+
+
+def test_motherduck_ducklake_open_reloads_extensions_after_configure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MotherDuck DuckLake should reload extensions after USE switches database context."""
+    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+
+    events: list[str] = []
+
+    monkeypatch.setattr(IbisMetadataStore, "_open", lambda self, mode: None)
+    monkeypatch.setattr(DuckDBMetadataStore, "_duckdb_raw_connection", lambda self: object())
+    monkeypatch.setattr(DuckDBMetadataStore, "_load_extensions", lambda self: events.append("load_extensions"))
+
+    store = DuckDBMetadataStore(
+        database="md:?motherduck_token=dummy",
+        ducklake=DuckLakeConfig.model_validate(
+            {
+                "catalog": {"type": "motherduck", "database": "my_lake"},
+            }
+        ),
+    )
+
+    def fake_configure(conn) -> None:
+        events.append("configure")
+
+    monkeypatch.setattr(store.ducklake_attachment, "configure", fake_configure)
+
+    store._open("w")
+
+    assert events == ["load_extensions", "configure", "load_extensions"]
+
+
+def test_non_motherduck_ducklake_open_loads_extensions_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Self-managed DuckLake should keep the original single extension load."""
+    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+
+    events: list[str] = []
+
+    monkeypatch.setattr(IbisMetadataStore, "_open", lambda self, mode: None)
+    monkeypatch.setattr(DuckDBMetadataStore, "_duckdb_raw_connection", lambda self: object())
+    monkeypatch.setattr(DuckDBMetadataStore, "_load_extensions", lambda self: events.append("load_extensions"))
+
+    store = DuckDBMetadataStore(
+        database=":memory:",
+        ducklake=DuckLakeConfig.model_validate(
+            {
+                "catalog": {"type": "duckdb", "uri": str(tmp_path / "catalog.duckdb")},
+                "storage": {"type": "local", "path": str(tmp_path / "storage")},
+            }
+        ),
+    )
+
+    def fake_configure(conn) -> None:
+        events.append("configure")
+
+    monkeypatch.setattr(store.ducklake_attachment, "configure", fake_configure)
+
+    store._open("w")
+
+    assert events == ["load_extensions", "configure"]
