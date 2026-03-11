@@ -1,0 +1,26 @@
+name: "DuckLake Example"
+description: "Run a small Metaxy pipeline against a DuckLake-backed DuckDB metadata store."
+package_name: "example_ducklake"
+auto_push_graph: false
+
+scenarios:
+  - name: "DuckLake pipeline run"
+    description: "Run the pipeline and inspect the DuckLake tables created by Metaxy"
+    steps:
+      - name: "run_demo"
+        type: "run_command"
+        command: "python src/example_ducklake/pipeline.py"
+        description: "Run DuckLake pipeline"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify the output includes successful Metaxy writes and DuckLake tables"
+        returncode: 0
+        contains:
+          - "DuckLake pipeline"
+          - "Wrote 2 rows"
+          - "SHOW ALL TABLES after Metaxy wrote metadata:"
+          - "ducklake_column"
+          - "Created feature table: examples__ducklake_demo"
+          - "clip_001: s3://demo-bucket/processed/clip_001.parquet"

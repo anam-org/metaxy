@@ -10,29 +10,9 @@ description: "Example of configuring DuckLake as an open lakehouse format for th
 ::: metaxy-example source-link
     example: ducklake
 
-This example demonstrates how to configure [DuckLake](https://ducklake.select/) with the DuckDB metadata store.
+This example demonstrates how to run a small Metaxy pipeline against a [DuckLake](https://ducklake.select/) attachment on the DuckDB metadata store.
 DuckLake is an open lakehouse format that separates the metadata catalog (table definitions, schema evolution, and transaction history) from data file storage.
-This lets you choose independent backends for each layer, for example PostgreSQL for the catalog and S3 for data files.
-
-We will set up a DuckLake-backed store via `metaxy.toml` and preview the SQL statements that DuckLake would execute when attaching to a DuckDB connection.
-
-## Getting Started
-
-Install the example's dependencies:
-
-```shell
-uv sync
-```
-
-## Configuration
-
-DuckLake is configured in `metaxy.toml` with two parts: a **catalog backend** (where the catalog is stored) and a **storage backend** (where data files live).
-
-The active configuration below uses SQLite for the metadata catalog and the local filesystem for data storage. Commented-out sections show alternative backends.
-
-```toml title="metaxy.toml"
---8<-- "example-ducklake/metaxy.toml"
-```
+This lets you choose independent backends for each layer, for example PostgreSQL for the catalog and S3 for data files. The example keeps the Metaxy workflow minimal, then uses `SHOW ALL TABLES` to inspect what DuckLake created after a successful write.
 
 Available backend combinations:
 
@@ -49,23 +29,51 @@ Available backend combinations:
 
     MotherDuck supports a "Bring Your Own Bucket" (BYOB) mode where MotherDuck manages the DuckLake catalog while you provide your own S3-compatible storage. Storage secrets are created `IN MOTHERDUCK` so that MotherDuck compute can access your bucket.
 
-## Walkthrough
+## Getting Started
 
-The demo script initializes the store from configuration and previews the SQL statements that would be executed:
-
-```python title="src/example_ducklake/demo.py"
---8<-- "example-ducklake/src/example_ducklake/demo.py"
-```
-
-Run the demo:
+Install the example's dependencies:
 
 ```shell
-uv run python src/example_ducklake/demo.py
+uv sync
 ```
 
-The output shows the full sequence of SQL statements: creating secrets for the metadata and storage backends, and attaching the DuckLake database.
+For the full list of backend combinations and advanced options, see the [DuckLake integration reference](../integrations/metadata-stores/storage/ducklake.md).
+
+## Step 1: Configure DuckLake
+
+DuckLake is configured with two parts:
+
+1. **Catalog backend**: transaction log and metadata
+2. **Storage backend**: data files
+
+The example below is intentionally minimal and runnable out of the box.
+
+```toml title="metaxy.toml"
+--8<-- "example-ducklake/metaxy.toml"
+```
+
+## Step 2: Initial Run
+
+Let's prepare a small Metaxy pipeline using the configured DuckLake metadata store:
+
+```python title="src/example_ducklake/pipeline.py"
+--8<-- "example-ducklake/src/example_ducklake/pipeline.py"
+```
+
+## Step 3: Inspect DuckLake Tables
+
+::: metaxy-example output
+    example: ducklake
+    scenario: "DuckLake pipeline run"
+    step: "run_demo"
+
+You should see:
+
+1. A successful Metaxy write
+2. The DuckLake catalog tables from `SHOW ALL TABLES`
+3. The actual feature table Metaxy created for `examples/ducklake_demo`
 
 ## Related Materials
 
-- [DuckDB Metadata Store](../integrations/metadata-stores/databases/duckdb.md)
-- [`DuckLakeConfig`][metaxy.ext.metadata_stores.ducklake.DuckLakeConfig]
+- [DuckLake integration docs](../integrations/metadata-stores/storage/ducklake.md)
+- [DuckDB integration docs](../integrations/metadata-stores/databases/duckdb.md)

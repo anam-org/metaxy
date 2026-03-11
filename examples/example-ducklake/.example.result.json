@@ -1,0 +1,19 @@
+{
+  "runbook_name": "DuckLake Example",
+  "package_name": "example_ducklake",
+  "description": "Run a small Metaxy pipeline against a DuckLake-backed DuckDB metadata store.",
+  "execution_state": {
+    "events": [
+      {
+        "type": "command_executed",
+        "command": "python src/example_ducklake/pipeline.py",
+        "returncode": 0,
+        "stdout": "DuckLake pipeline\n  Store class: DuckDBMetadataStore\n  Database: /private/var/folders/s8/1bk6bx6d1l53q944ls244sdw0000gn/T/pytest-of-geoheil/pytest-672/test_example_snapshot_example_0/example-ducklake.db\n  Wrote 2 rows for examples/ducklake_demo\n\nSHOW ALL TABLES after Metaxy wrote metadata:\n  DuckLake attached 24 tables\n   - ducklake_column\n   - ducklake_column_mapping\n   - ducklake_column_tag\n   - ducklake_data_file\n   - ducklake_delete_file\n   - ducklake_file_column_stats\n   - ducklake_file_partition_value\n   - ducklake_files_scheduled_for_deletion\n   ... and 16 more\n\nCreated feature table: examples__ducklake_demo\n  clip_001: s3://demo-bucket/processed/clip_001.parquet\n  clip_001: s3://demo-bucket/processed/clip_001.parquet\n  clip_002: s3://demo-bucket/processed/clip_002.parquet\n  clip_002: s3://demo-bucket/processed/clip_002.parquet\n",
+        "stderr": "",
+        "timestamp": "2026-03-09T17:59:42.882221",
+        "scenario_name": "DuckLake pipeline run",
+        "step_name": "run_demo"
+      }
+    ]
+  }
+}
