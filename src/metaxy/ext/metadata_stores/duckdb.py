@@ -149,8 +149,14 @@ class DuckDBMetadataStore(IbisMetadataStore):
             existing_names = {ext.name for ext in self.extensions}
             if "ducklake" not in existing_names:
                 self.extensions.append(ExtensionSpec(name="ducklake"))
-            if isinstance(ducklake.catalog, MotherDuckCatalogConfig) and "motherduck" not in existing_names:
-                self.extensions.append(ExtensionSpec(name="motherduck"))
+            # hashfuncs must be loaded BEFORE motherduck so that xxh32/xxh64 are available
+            # after MotherDuck's USE <db> switches the active database context.
+            # Community extensions loaded after motherduck are not visible server-side.
+            if isinstance(ducklake.catalog, MotherDuckCatalogConfig):
+                if "hashfuncs" not in existing_names:
+                    self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))
+                if "motherduck" not in existing_names:
+                    self.extensions.append(ExtensionSpec(name="motherduck"))
             self._ducklake_config = ducklake
             self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
 
@@ -308,10 +314,6 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if self._ducklake_attachment is not None:
             self._ducklake_attachment._attached = False
             self._ducklake_attachment.configure(self._duckdb_raw_connection())
-            if self._uses_motherduck_ducklake():
-                # MotherDuck changes the active database via USE <db>; reload extensions
-                # afterward so extension-backed functions remain available in that context.
-                self._load_extensions()
 
     def _close(self) -> None:
         super()._close()
@@ -345,12 +347,6 @@ class DuckDBMetadataStore(IbisMetadataStore):
             raise TypeError(f"Expected DuckDB backend 'con' to be DuckDBPyConnection, got {type(candidate).__name__}")
 
         return candidate
-
-    def _uses_motherduck_ducklake(self) -> bool:
-        """Return True when DuckLake is configured against a MotherDuck catalog."""
-        return bool(
-            self._ducklake_config is not None and isinstance(self._ducklake_config.catalog, MotherDuckCatalogConfig)
-        )
 
     @classmethod
     def from_config(cls, config: DuckDBMetadataStoreConfig, **kwargs: Any) -> Self:  # type: ignore[override]

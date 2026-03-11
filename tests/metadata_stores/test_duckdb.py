@@ -424,10 +424,60 @@ def test_duckdb_config_with_fallback_stores() -> None:
         assert dev_store._is_open
 
 
-def test_motherduck_ducklake_open_reloads_extensions_after_configure(
+def test_motherduck_ducklake_loads_hashfuncs_before_motherduck() -> None:
+    """hashfuncs must be loaded before motherduck so xxh32/xxh64 survive USE <db>.
+
+    MotherDuck community extensions are only available via local DuckDB CLI context.
+    Loading hashfuncs before the motherduck extension ensures the functions remain
+    visible after MotherDuck's USE <db> switches the active database.
+    """
+    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+
+    store = DuckDBMetadataStore(
+        "md:my_database",
+        ducklake=DuckLakeConfig.model_validate({"catalog": {"type": "motherduck", "database": "my_database"}}),
+    )
+    ext_names = [ext.name for ext in store.extensions]
+    assert "hashfuncs" in ext_names
+    assert "motherduck" in ext_names
+    assert ext_names.index("hashfuncs") < ext_names.index("motherduck"), (
+        f"hashfuncs must come before motherduck, got order: {ext_names}"
+    )
+
+
+def test_xxh32_available_after_use_database(tmp_path: Path) -> None:
+    """xxh32 must remain callable after USE switches the active database.
+
+    Simulates what MotherDuck DuckLake does: load extensions, then execute
+    USE <db> to switch context.  hashfuncs loaded before the switch must still
+    be available for SELECT xxh32(...) queries afterward.
+    """
+    import duckdb
+
+    other_db = tmp_path / "other.db"
+    conn = duckdb.connect(":memory:")
+
+    # Simulate correct load order: hashfuncs BEFORE any USE
+    conn.install_extension("hashfuncs", repository="community")
+    conn.load_extension("hashfuncs")
+
+    # Simulate MotherDuck's USE <db> switching the active database context
+    conn.execute(f"ATTACH '{other_db}' AS otherdb")
+    conn.execute("USE otherdb")
+
+    result = conn.execute("SELECT xxh32('hello'::VARCHAR)").fetchone()
+    assert result is not None
+    assert isinstance(result[0], int), f"expected int hash, got {result[0]!r}"
+
+
+def test_motherduck_ducklake_open_loads_extensions_once_before_configure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """MotherDuck DuckLake should reload extensions after USE switches database context."""
+    """MotherDuck DuckLake loads extensions once, before configure() executes USE <db>.
+
+    hashfuncs is inserted before motherduck in the extension list so it is already
+    available in the switched database context — no second reload needed.
+    """
     from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 
     events: list[str] = []
@@ -452,7 +502,7 @@ def test_motherduck_ducklake_open_reloads_extensions_after_configure(
 
     store._open("w")
 
-    assert events == ["load_extensions", "configure", "load_extensions"]
+    assert events == ["load_extensions", "configure"]
 
 
 def test_non_motherduck_ducklake_open_loads_extensions_once(
