@@ -69,18 +69,11 @@ class metaxify:
 
     !!! example
         ```py  {hl_lines="8"}
-        import dagster as dg
-        import metaxy as mx
-        import metaxy.ext.dagster as mxd
-
-
         @mxd.metaxify()
-        @dg.asset(
-            metadata={"metaxy/feature": "my/feature/key"},
-        )
+        @dg.asset(metadata={"metaxy/feature": "my/feature"})
         def my_asset(store: mx.MetadataStore):
             with store:
-                increment = store.resolve_update("my/feature/key")
+                increment = store.resolve_update("my/feature")
             ...
         ```
 
@@ -94,8 +87,8 @@ class metaxify:
         @mxd.metaxify()
         @dg.multi_asset(
             specs=[
-                dg.AssetSpec("output_a", metadata={"metaxy/feature": "feature/a"}),
-                dg.AssetSpec("output_b", metadata={"metaxy/feature": "feature/b"}),
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "example/parent"}),
+                dg.AssetSpec("output_b", metadata={"metaxy/feature": "example/child"}),
             ]
         )
         def my_multi_asset(): ...
@@ -105,7 +98,7 @@ class metaxify:
         ```py
         asset_spec = dg.AssetSpec(
             key="my_asset",
-            metadata={"metaxy/feature": "my/feature/key"},
+            metadata={"metaxy/feature": "my/feature"},
         )
         asset_spec = mxd.metaxify()(asset_spec)
         ```
@@ -114,7 +107,7 @@ class metaxify:
         ```py
         @dg.asset(
             metadata={
-                "metaxy/feature": "my/feature/key",
+                "metaxy/feature": "my/feature",
                 "metaxy/partition": {"dataset": "a"},
             },
         )
@@ -123,7 +116,7 @@ class metaxify:
 
         @dg.asset(
             metadata={
-                "metaxy/feature": "my/feature/key",
+                "metaxy/feature": "my/feature",
                 "metaxy/partition": {"dataset": "b"},
             },
         )

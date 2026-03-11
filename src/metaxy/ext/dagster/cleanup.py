@@ -42,31 +42,36 @@ def delete(
 
     Example:
         ```python
-        import dagster as dg
         from metaxy.ext.dagster import delete
         from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 
+        store = MetaxyStoreFromConfigResource(name="dev")
+
 
         # Define a job with the delete op
-        @dg.job(resource_defs={"metaxy_store": MetaxyStoreFromConfigResource(name="dev")})
+        @dg.job
         def cleanup_job():
             delete()
 
 
-        # Execute with config to delete inactive customer segments
-        cleanup_job.execute_in_process(
-            run_config={
-                "ops": {
-                    "delete": {
-                        "config": {
-                            "feature_key": ["customer", "segment"],
-                            "filters": ["status = 'inactive'"],
-                            "soft": True,
-                        }
+        defs = dg.Definitions(
+            jobs=[cleanup_job],
+            resources={"metaxy_store": store},
+        )
+
+
+        # Example run config for deleting inactive customer segments
+        run_config = {
+            "ops": {
+                "delete": {
+                    "config": {
+                        "feature_key": ["customer", "segment"],
+                        "filters": ["status = 'inactive'"],
+                        "soft": True,
                     }
                 }
             }
-        )
+        }
         ```
     """
     from metaxy.models.filter_expression import parse_filter_string

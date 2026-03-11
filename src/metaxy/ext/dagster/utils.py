@@ -296,29 +296,37 @@ def generate_materialize_results(
     Example:
         Using with `@multi_asset`:
         ```python
+        from metaxy.ext.dagster.utils import generate_materialize_results
+
         specs = [
-            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
-            dg.AssetSpec("output_b", metadata={"metaxy/feature": "my/feature/b"}),
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "example/parent"}),
+            dg.AssetSpec("output_b", metadata={"metaxy/feature": "example/child"}),
         ]
 
 
-        @metaxify
+        @mxd.metaxify()
         @dg.multi_asset(specs=specs)
-        def my_multi_asset(context: dg.AssetExecutionContext, store: mx.MetadataStore):
-            # ... compute and write data ...
+        def my_multi_asset(
+            context: dg.AssetExecutionContext,
+            store: dg.ResourceParam[mx.MetadataStore],
+        ):
             yield from generate_materialize_results(context, store)
         ```
 
         Using with `@op`:
         ```python
+        from metaxy.ext.dagster.utils import generate_materialize_results
+
         specs = [
-            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature"}),
         ]
 
 
         @dg.op
-        def my_op(context: dg.OpExecutionContext, store: mx.MetadataStore):
-            # ... compute and write data ...
+        def my_op(
+            context: dg.OpExecutionContext,
+            store: dg.ResourceParam[mx.MetadataStore],
+        ):
             yield from generate_materialize_results(context, store, specs=specs)
         ```
     """
@@ -484,9 +492,19 @@ def build_runtime_feature_metadata(
         FeatureNotFoundError: If the feature is not found in the store.
 
     Example:
+        <!-- skip next -->
         ```python
+        from metaxy.ext.dagster.utils import build_runtime_feature_metadata
+
+        feature_key = mx.coerce_to_feature_key(MyFeature)
+
         with store:
-            metadata, stats = build_runtime_feature_metadata(feature_key, store, context, partition_col="date")
+            metadata, stats = build_runtime_feature_metadata(
+                feature_key,
+                store,
+                context,
+                partition_col="date",
+            )
             context.add_output_metadata(metadata)
         ```
     """
@@ -591,27 +609,37 @@ def generate_observe_results(
     Example:
         Using with `@multi_observable_source_asset`:
         ```python
+        from metaxy.ext.dagster.utils import generate_observe_results
+
         specs = [
-            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
-            dg.AssetSpec("output_b", metadata={"metaxy/feature": "my/feature/b"}),
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "example/parent"}),
+            dg.AssetSpec("output_b", metadata={"metaxy/feature": "example/child"}),
         ]
 
 
-        @metaxify
+        @mxd.metaxify()
         @dg.multi_observable_source_asset(specs=specs)
-        def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
+        def my_observable_assets(
+            context: dg.AssetExecutionContext,
+            store: dg.ResourceParam[mx.MetadataStore],
+        ):
             yield from generate_observe_results(context, store)
         ```
 
         Using with `@op`:
         ```python
+        from metaxy.ext.dagster.utils import generate_observe_results
+
         specs = [
-            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature/a"}),
+            dg.AssetSpec("output_a", metadata={"metaxy/feature": "my/feature"}),
         ]
 
 
         @dg.op
-        def my_op(context: dg.OpExecutionContext, store: mx.MetadataStore):
+        def my_op(
+            context: dg.OpExecutionContext,
+            store: dg.ResourceParam[mx.MetadataStore],
+        ):
             yield from generate_observe_results(context, store, specs=specs)
         ```
     """

@@ -39,9 +39,6 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         ??? example
 
             ```py
-            import dagster as dg
-
-
             @dg.asset(
                 metadata={
                     "metaxy/feature": "my/feature/key",
@@ -56,9 +53,6 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
 
         ??? example
             ```py
-            import dagster as dg
-
-
             @dg.asset(
                 metadata={
                     "metaxy/feature": "my/feature/key",

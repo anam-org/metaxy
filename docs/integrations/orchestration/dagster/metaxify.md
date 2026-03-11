@@ -32,8 +32,6 @@ Upstream Metaxy features are injected into `deps`.
 === "Code"
 
     ```py
-    import metaxy as mx
-
     class Chunk(mx.BaseFeature, spec=mx.FeatureSpec(key="chunk", id_columns=["id"])):
         id: str
 
@@ -63,8 +61,6 @@ The Metaxy feature class docstring is used if the asset spec doesn't have a desc
 === "Code"
 
     ```py
-    import metaxy as mx
-
     class AudioFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="audio/feature", id_columns=["id"])):
         """Scene chunk audio with optional waveform visualization."""
         id: str
@@ -97,7 +93,6 @@ columns take precedence for columns with the same name).
 === "Code"
 
     ```py
-    import metaxy as mx
     from pydantic import Field
 
     class AudioFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="audio/feature2", id_columns=["id"])):

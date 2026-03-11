@@ -11,6 +11,7 @@ Import style enforcement:
 
 from doctest import ELLIPSIS
 
+import dagster as dg
 from sybil import Sybil
 from sybil.document import PythonDocStringDocument
 from sybil.evaluators.python import PythonEvaluator
@@ -19,6 +20,7 @@ from sybil.parsers.markdown.skip import SkipParser
 from sybil.parsers.rest.doctest import DocTestParser
 
 import metaxy as mx
+import metaxy.ext.dagster as mxd
 
 
 # Workaround for pytest-cases compatibility issue with SybilItem.
@@ -86,7 +88,9 @@ def sybil_setup(namespace):
     Examples can define features and they'll be registered to this isolated graph.
 
     Pre-populated symbols:
+        - dg: The dagster module (import dagster as dg)
         - mx: The metaxy module (import metaxy as mx)
+        - mxd: The metaxy.ext.dagster module (import metaxy.ext.dagster as mxd)
         - graph: The active FeatureGraph instance for this document
         - MyFeature: A pre-defined feature class with key "my/feature"
         - store: An empty DeltaMetadataStore in a temporary directory
@@ -94,8 +98,10 @@ def sybil_setup(namespace):
         - config: A MetaxyConfig with "dev" and "prod" stores configured
     """
     from metaxy_testing.doctest_fixtures import (
+        ChildFeature,
         DocsStoreFixtures,
         MyFeature,
+        ParentFeature,
         register_doctest_fixtures,
     )
 
@@ -126,9 +132,13 @@ def sybil_setup(namespace):
     namespace["_store_fixtures"] = store_fixtures
 
     # Pre-populated symbols for examples
+    namespace["dg"] = dg
     namespace["mx"] = mx
+    namespace["mxd"] = mxd
     namespace["graph"] = isolated_graph
     namespace["MyFeature"] = MyFeature
+    namespace["ParentFeature"] = ParentFeature
+    namespace["ChildFeature"] = ChildFeature
     namespace["store"] = store_fixtures.store
     namespace["store_with_data"] = store_fixtures.store_with_data
     namespace["config"] = store_fixtures.config
@@ -176,8 +186,6 @@ pytest_collect_file = Sybil(
         "*/mcp/*",  # Deeper nested mcp files
         "_testing/*",  # Internal testing utilities - examples not meant to be executed
         "_testing/*/*",  # Nested _testing subdirectories (parametric, etc)
-        "ext/dagster/*",  # Dagster examples require dagster context
-        "*/dagster/*",  # Deeper nested dagster files
         "ext/ray/*",  # Ray examples require specific setup
         "*/ray/*",  # Deeper nested ray files
         "metadata_store/system/*",  # System storage examples need store setup

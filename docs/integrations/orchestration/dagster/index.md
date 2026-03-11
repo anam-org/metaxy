@@ -26,6 +26,7 @@ Unleash the full power of `@metaxify` on Dagster!
     import metaxy as mx
     import metaxy.ext.dagster as mxd
 
+
     class MyMetaxyFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="my/metaxy/feature", id_columns=["id"])):
         id: str
 
@@ -118,10 +119,8 @@ This is useful when Metaxy features are populated outside of Dagster (e.g., by e
 !!! example "Basic Observable Asset"
 
     ```python
-    import dagster as dg
     import narwhals as nw
-    import metaxy as mx
-    import metaxy.ext.dagster as mxd
+
 
     class ExternalFeature(mx.BaseFeature, spec=mx.FeatureSpec(key="external/feature", id_columns=["id"])):
         id: str
@@ -144,14 +143,18 @@ The observation automatically tracks:
 The Dagster integration provides a `delete` op:
 
 ```python
-import dagster as dg
-import metaxy.ext.dagster as mxd
-
+store = mxd.MetaxyStoreFromConfigResource(name="default")
 
 # Define a job with the delete op
-@dg.job(resource_defs={"metaxy_store": mxd.MetaxyStoreFromConfigResource(name="default")})
+@dg.job
 def cleanup_job():
     mxd.delete()
+
+
+defs = dg.Definitions(
+    jobs=[cleanup_job],
+    resources={"metaxy_store": store},
+)
 ```
 
 `filters` is a list of SQL WHERE clause strings (e.g., `["status = 'inactive'", "age > 18"]`) that are parsed into Narwhals expressions. Multiple filters are combined with AND logic. See the [filter expressions guide](/guide/concepts/filters.md) for supported syntax.

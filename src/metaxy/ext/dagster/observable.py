@@ -51,20 +51,19 @@ def observable_metaxy_asset(
 
     Example:
         ```python
-        import metaxy.ext.dagster as mxd
-        from myproject.features import ExternalFeature
+        import narwhals as nw
 
 
-        @mxd.observable_metaxy_asset(feature=ExternalFeature)
+        @mxd.observable_metaxy_asset(feature=MyFeature)
         def external_data(context, store, lazy_df):
             pass
 
 
         # With custom metadata - return a dict
-        @mxd.observable_metaxy_asset(feature=ExternalFeature)
+        @mxd.observable_metaxy_asset(feature=MyFeature)
         def external_data_with_metrics(context, store, lazy_df):
             # Run aggregations in the database
-            total = lazy_df.select(nw.col("value").sum()).collect().item(0, 0)
+            total = lazy_df.select(nw.col("quality").sum()).collect().item(0, 0)
             return {"custom/total": total}
         ```
 

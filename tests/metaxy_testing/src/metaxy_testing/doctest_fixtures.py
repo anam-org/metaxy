@@ -124,6 +124,7 @@ class DocsStoreFixtures:
 
         # Create a config with both stores pre-configured
         self._config = MetaxyConfig(
+            project="docs",
             store="dev",
             stores={
                 "dev": StoreConfig(

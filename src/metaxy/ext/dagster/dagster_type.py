@@ -98,16 +98,16 @@ def feature_to_dagster_type(
 
     Example:
         ```python
-        import dagster as dg
         import polars as pl
-        import metaxy.ext.dagster as mxd
-        from myproject.features import MyFeature  # Your Metaxy feature class
 
 
-        @mxd.metaxify(feature=MyFeature)
-        @dg.asset(dagster_type=mxd.feature_to_dagster_type(MyFeature))
+        @mxd.metaxify
+        @dg.asset(
+            metadata={"metaxy/feature": "my/feature"},
+            dagster_type=mxd.feature_to_dagster_type(MyFeature),
+        )
         def my_asset():
-            return pl.DataFrame({"id": [1, 2, 3], "value": ["a", "b", "c"]})
+            return pl.DataFrame({"id": ["1", "2", "3"], "quality": [0.91, 0.87, 0.95]})
         ```
 
     !!! info "See also"

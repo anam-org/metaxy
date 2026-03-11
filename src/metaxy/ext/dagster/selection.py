@@ -32,8 +32,6 @@ def select_metaxy_assets(
 
     Example: Select all Metaxy assets in current project
         ```python
-        import metaxy.ext.dagster as mxd
-
         all_metaxy = mxd.select_metaxy_assets()
         ```
 
@@ -44,7 +42,7 @@ def select_metaxy_assets(
 
     Example: Select a specific feature's assets
         ```python
-        feature_assets = mxd.select_metaxy_assets(feature="my/feature/key")
+        feature_assets = mxd.select_metaxy_assets(feature="my/feature")
         ```
 
     Example: Use with asset jobs
@@ -58,7 +56,7 @@ def select_metaxy_assets(
     Example: Combine with other selections
         ```python
         # All metaxy assets plus some other assets
-        combined = mxd.select_metaxy_assets() | dg.AssetSelection.keys("other_asset")
+        combined = mxd.select_metaxy_assets() | dg.AssetSelection.assets("other_asset")
 
         # Metaxy assets that are also in a specific group
         filtered = mxd.select_metaxy_assets() & dg.AssetSelection.groups("my_group")

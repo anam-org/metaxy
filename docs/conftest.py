@@ -9,6 +9,8 @@ they are tested via their source files.
 
 import re
 
+import dagster as dg
+import metaxy.ext.dagster as mxd
 from metaxy.models.feature import FeatureGraph
 from sybil import Sybil
 from sybil.evaluators.python import PythonEvaluator
@@ -142,7 +144,9 @@ def sybil_setup(namespace):
     """Set up an isolated FeatureGraph for each markdown document.
 
     Pre-populated symbols:
+        - dg: The dagster module
         - mx: The metaxy module (import metaxy as mx)
+        - mxd: The metaxy.ext.dagster module
         - nw: The narwhals module
         - graph: The active FeatureGraph instance for this document
         - store: A DeltaMetadataStore with sample MyFeature data
@@ -187,9 +191,11 @@ def sybil_setup(namespace):
     namespace["_store_fixtures"] = store_fixtures
 
     # Pre-populated symbols for examples
-    # Only `mx` and `nw` are allowed - examples must use `import metaxy as mx`
-    # Direct imports like `from metaxy import FeatureSpec` are banned in docs
+    # Direct imports like `from metaxy import FeatureSpec` are banned in docs.
+    # Common module aliases are injected to keep examples shorter.
+    namespace["dg"] = dg
     namespace["mx"] = mx
+    namespace["mxd"] = mxd
     namespace["nw"] = nw
     namespace["graph"] = isolated_graph
     namespace["MyFeature"] = MyFeature

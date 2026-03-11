@@ -80,17 +80,13 @@ def build_metaxy_multi_observation_job(
 
     Example:
         ```python
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-
-
         @mxd.metaxify()
-        @dg.asset(metadata={"metaxy/feature": "my/feature_a"})
+        @dg.asset(metadata={"metaxy/feature": "example/parent"})
         def feature_a(): ...
 
 
         @mxd.metaxify()
-        @dg.asset(metadata={"metaxy/feature": "my/feature_b"})
+        @dg.asset(metadata={"metaxy/feature": "example/child"})
         def feature_b(): ...
 
 
@@ -288,22 +284,18 @@ def build_metaxy_observation_job(
 
     Example:
         ```python
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-
-
         @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature"})
         def my_asset(): ...
 
 
         # Build the observation job - partitions_def is extracted automatically
-        observation_job = mxd.build_metaxy_observation_job(my_asset)
+        observation_jobs = mxd.build_metaxy_observation_job(my_asset)
 
         # Include in your Definitions
         defs = dg.Definitions(
-            jobs=[observation_job],
-            resources={"store": my_store_resource},
+            jobs=observation_jobs,
+            resources={"store": mxd.MetaxyStoreFromConfigResource(name="dev")},
         )
         ```
     """
