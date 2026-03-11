@@ -21,6 +21,21 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## 1.3.0
+
+### Added
+
+- `metaxy lock` now avoids loading feature definitions from metaxy.project entrypoints of Python packages that aren't dependencies (direct or transitive) of the current Python package when creating the lock file.
+
+### Changed
+
+- Renamed `metaxy graph history` CLI command to `metaxy history`
+
+### Docs
+
+- Added a section on inheritance with Metaxy features
+- Improved Dagster integration docs
+
 ## 1.2.0
 
 ### Added
