@@ -169,7 +169,11 @@ class DuckDBMetadataStore(IbisMetadataStore):
         # The only way to load them is to connect to :memory: first, load the extensions,
         # then ATTACH the MotherDuck database.  We therefore rewrite the connection
         # parameter to :memory: and add ATTACH as init_sql on the motherduck extension.
-        is_motherduck = database_str.startswith(("md:", "motherduck:"))
+        # Also treat stores with a MotherDuck DuckLake catalog as MotherDuck stores,
+        # even if the database string is ":memory:" (the motherduck extension is still needed).
+        is_motherduck_db = database_str.startswith(("md:", "motherduck:"))
+        is_motherduck_catalog = ducklake is not None and isinstance(ducklake.catalog, MotherDuckCatalogConfig)
+        is_motherduck = is_motherduck_db or is_motherduck_catalog
         connection_params = {"database": ":memory:" if is_motherduck else database_str}
         if config:
             connection_params.update(config)
@@ -193,18 +197,22 @@ class DuckDBMetadataStore(IbisMetadataStore):
             # Community extensions cannot be loaded after duckdb.connect("md:...") because
             # MotherDuck is already active at that point.  We connect to :memory: instead and
             # ATTACH MotherDuck via init_sql AFTER all community extensions are loaded.
-            # Ensure motherduck extension is present with ATTACH init_sql, placed last so all
-            # community extensions (user-supplied + hashfuncs) are loaded before it.
+            # Ensure motherduck extension is present, placed last so all community extensions
+            # (user-supplied + hashfuncs) are loaded before it.
+            # Only inject ATTACH init_sql when the database string is an md: URL;
+            # a MotherDuck DuckLake catalog with database=":memory:" still needs the extension
+            # but the DuckLakeAttachmentManager handles the ATTACH itself.
+            attach_sql = _motherduck_attach_sql(database_str) if is_motherduck_db else []
             existing_names = {ext.name for ext in self.extensions}
             if "motherduck" not in existing_names:
-                self.extensions.append(ExtensionSpec(name="motherduck", init_sql=_motherduck_attach_sql(database_str)))
+                self.extensions.append(ExtensionSpec(name="motherduck", init_sql=attach_sql))
             else:
                 # User already added motherduck explicitly — move it to end and inject init_sql
                 # so it comes after all community extensions.
                 md_ext = next(e for e in self.extensions if e.name == "motherduck")
                 if not md_ext.init_sql:
                     self.extensions.remove(md_ext)
-                    self.extensions.append(md_ext.model_copy(update={"init_sql": _motherduck_attach_sql(database_str)}))
+                    self.extensions.append(md_ext.model_copy(update={"init_sql": attach_sql}))
 
         super().__init__(
             backend="duckdb",
