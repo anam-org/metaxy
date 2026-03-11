@@ -368,6 +368,32 @@ def test_duckdb_config_with_extensions() -> None:
         assert store._is_open
 
 
+def test_duckdb_config_with_extension_specs() -> None:
+    """DuckDB store config should accept serialized ExtensionSpec mappings."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+
+    config = MetaxyConfig(
+        stores={
+            "duckdb_store": StoreConfig(
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                config={
+                    "database": ":memory:",
+                    "extensions": [
+                        {
+                            "name": "hashfuncs",
+                            "repository": "community",
+                        }
+                    ],
+                },
+            )
+        }
+    )
+
+    store = config.get_store("duckdb_store")
+    assert isinstance(store, DuckDBMetadataStore)
+    assert ("hashfuncs", "community") in [(ext.name, ext.repository) for ext in store.extensions]
+
+
 def test_duckdb_config_with_hash_algorithm() -> None:
     """Test DuckDB store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
