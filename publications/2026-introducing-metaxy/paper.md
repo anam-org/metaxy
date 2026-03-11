@@ -7,6 +7,8 @@ tags:
   - feature engineering
   - reproducibility
   - GPU
+  - AI
+  - Multimodal
 authors:
   - name: Daniel Gafni
     affiliation: "1"
@@ -68,11 +70,11 @@ The target audience includes ML engineers working with multimodal data, MLOps te
 
 # State of the Field
 
-Several tools address aspects of feature management, but none provide field-level dependency tracking at record granularity.
+Several tools address aspects of feature management, but none, to our knowledge, provide field-level dependency tracking at record granularity as a standalone metadata layer.
 DVC (@dvc) versions datasets at the file level, treating each file as an opaque artifact without tracking individual records or fields within it.
-Feast (@feast) serves precomputed feature values at inference time but does not model dependency graphs between features or detect which records need recomputation after upstream changes.
-Hamilton (@hamilton) traces column-level lineage through Python function composition, yet operates at table granularity and cannot identify which specific records within a column are affected by a change.
-DataChain (@datachain) bundles managed compute with metadata management, coupling storage and execution into a single system.
+Feast (@feast) focuses on feature definition, materialization, and online serving. Recent Feast releases include DAG-based feature computation, but Feast does not expose field-level provenance for propagating version changes and deciding which downstream records require recomputation after an upstream modification.
+Hamilton (@hamilton) builds dataflows from Python functions and can report lineage over the resulting DAG, typically at the level of nodes, columns, and dataframe outputs. It does not maintain per-record, per-field provenance for selective downstream invalidation.
+DataChain (@datachain) combines metadata management with a Python-native data processing framework and supports delta processing over new or changed records. However, its incremental model is tied to dataset processing within that framework rather than to a standalone field-level dependency graph that can drive recomputation across multiple compute backends.
 
 Metaxy fills the gap by separating metadata from compute: it tracks field-level dependencies at record granularity and propagates version changes topologically through the dependency graph.
 This separation allows teams to integrate Metaxy with any compute framework, such as Ray (@ray) or Dagster (@dagster), while retaining precise control over which records require reprocessing.
@@ -122,7 +124,9 @@ Documentation is available at [https://docs.metaxy.io](https://docs.metaxy.io).
 
 # AI Usage Disclosure
 
-Generative AI tools were used during development for code completion and documentation drafting. All AI-generated content was reviewed and refined by the authors. Most of the documentation was even written by hand.
+Generative AI tools were used during development for code completion and documentation drafting.
+All AI-generated content was reviewed and refined by the authors.
+Large parts of the documentation was written by hand.
 
 # Acknowledgements
 
