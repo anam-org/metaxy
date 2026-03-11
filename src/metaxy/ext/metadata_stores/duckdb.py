@@ -169,7 +169,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         # The only way to load them is to connect to :memory: first, load the extensions,
         # then ATTACH the MotherDuck database.  We therefore rewrite the connection
         # parameter to :memory: and add ATTACH as init_sql on the motherduck extension.
-        is_motherduck = database_str.startswith("md:")
+        is_motherduck = database_str.startswith(("md:", "motherduck:"))
         connection_params = {"database": ":memory:" if is_motherduck else database_str}
         if config:
             connection_params.update(config)
@@ -197,18 +197,14 @@ class DuckDBMetadataStore(IbisMetadataStore):
             # community extensions (user-supplied + hashfuncs) are loaded before it.
             existing_names = {ext.name for ext in self.extensions}
             if "motherduck" not in existing_names:
-                self.extensions.append(
-                    ExtensionSpec(name="motherduck", init_sql=_motherduck_attach_sql(database_str))
-                )
+                self.extensions.append(ExtensionSpec(name="motherduck", init_sql=_motherduck_attach_sql(database_str)))
             else:
                 # User already added motherduck explicitly — move it to end and inject init_sql
                 # so it comes after all community extensions.
                 md_ext = next(e for e in self.extensions if e.name == "motherduck")
                 if not md_ext.init_sql:
                     self.extensions.remove(md_ext)
-                    self.extensions.append(
-                        md_ext.model_copy(update={"init_sql": _motherduck_attach_sql(database_str)})
-                    )
+                    self.extensions.append(md_ext.model_copy(update={"init_sql": _motherduck_attach_sql(database_str)}))
 
         super().__init__(
             backend="duckdb",
@@ -341,11 +337,11 @@ class DuckDBMetadataStore(IbisMetadataStore):
     # ------------------------------------------------------------------ DuckLake
     def _open(self, mode: AccessMode) -> None:
         if mode == "r":
-            # Use self.database (the original value) for remote/local detection so that
-            # MotherDuck stores (whose connection_params["database"] is rewritten to
-            # ":memory:") are still correctly identified as remote.
+            # MotherDuck stores connect via :memory: locally; read-only semantics for
+            # MotherDuck are enforced by the MotherDuck service itself, not by DuckDB's
+            # local read_only flag (which cannot be set on :memory: connections).
             db = self.database
-            is_in_memory = db in {"", ":memory:"}
+            is_in_memory = db in {"", ":memory:"} or db.startswith(("md:", "motherduck:"))
             scheme = urlsplit(db).scheme if db else ""
             is_windows_drive_path = len(scheme) == 1 and bool(Path(db).drive)
             is_local_file = bool(db) and not is_in_memory and (scheme == "" or is_windows_drive_path)

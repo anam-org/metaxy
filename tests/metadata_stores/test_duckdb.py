@@ -233,8 +233,10 @@ def test_duckdb_resolve_update_collects_with_active_connection(
         (None, False, False),
         ("", False, False),
         (":memory:", False, False),
-        ("md:test_db", False, True),
-        ("motherduck:test_db", False, True),
+        # MotherDuck stores connect via :memory: locally; read_only cannot be set on
+        # :memory: connections — MotherDuck enforces access control server-side.
+        ("md:test_db", False, False),
+        ("motherduck:test_db", False, False),
         ("s3://bucket/test.duckdb", False, True),
         ("gcs://bucket/test.duckdb", False, True),
         ("azure://container/test.duckdb", False, True),
