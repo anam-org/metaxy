@@ -25,12 +25,6 @@ def build_demo_rows() -> pl.DataFrame:
     )
 
 
-def list_table_names(store: DuckDBMetadataStore) -> list[str]:
-    """Return attached DuckDB table names after Metaxy has written metadata."""
-    rows = store._duckdb_raw_connection().execute("SHOW ALL TABLES").fetchall()
-    return [str(row[2]) for row in rows]
-
-
 def load_feature_rows(store: DuckDBMetadataStore) -> list[tuple[str, str]]:
     """Read back a few rows through Metaxy's public read API."""
     feature_df = (
@@ -45,6 +39,12 @@ def load_feature_rows(store: DuckDBMetadataStore) -> list[tuple[str, str]]:
     ]
 
 
+def discover_feature_keys() -> list[str]:
+    """List feature keys discovered in the active Metaxy project."""
+    graph = mx.current_graph()
+    return sorted(feature_key.to_string() for feature_key in graph.list_features())
+
+
 if __name__ == "__main__":
     config = mx.init()
     store = config.get_store()
@@ -53,7 +53,6 @@ if __name__ == "__main__":
     )
     demo_rows = build_demo_rows()
     feature_table_name = store.get_table_name(DuckLakeDemoFeature.spec().key)
-    table_names: list[str] = []
     feature_rows: list[tuple[str, str]] = []
 
     print("DuckLake pipeline")
@@ -62,19 +61,15 @@ if __name__ == "__main__":
 
     with store.open("w"):
         store.write(DuckLakeDemoFeature, demo_rows)
-        table_names = list_table_names(store)
         feature_rows = load_feature_rows(store)
 
     print(f"  Wrote {len(demo_rows)} rows for {DuckLakeDemoFeature.spec().key}")
     print()
-    print("SHOW ALL TABLES after Metaxy wrote metadata:")
-    print(f"  DuckLake attached {len(table_names)} tables")
-    for table_name in table_names[:8]:
-        print(f"   - {table_name}")
-    if len(table_names) > 8:
-        print(f"   ... and {len(table_names) - 8} more")
-
+    print("Discovered Metaxy features:")
+    for feature_key in discover_feature_keys():
+        print(f"  {feature_key}")
     print()
     print(f"Created feature table: {feature_table_name}")
+    print("Files:")
     for sample_uid, path in feature_rows:
         print(f"  {sample_uid}: {path}")

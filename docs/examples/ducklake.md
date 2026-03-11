@@ -12,7 +12,7 @@ description: "Example of configuring DuckLake as an open lakehouse format for th
 
 This example demonstrates how to run a small Metaxy pipeline against a [DuckLake](https://ducklake.select/) attachment on the DuckDB metadata store.
 DuckLake is an open lakehouse format that separates the metadata catalog (table definitions, schema evolution, and transaction history) from data file storage.
-This lets you choose independent backends for each layer, for example PostgreSQL for the catalog and S3 for data files. The example keeps the Metaxy workflow minimal, then uses `SHOW ALL TABLES` to inspect what DuckLake created after a successful write.
+This lets you choose independent backends for each layer, for example PostgreSQL for the catalog and S3 for data files. The example keeps the workflow Metaxy-native by writing a small feature dataset and then reading it back through the public API.
 
 Available backend combinations:
 
@@ -60,7 +60,7 @@ Let's prepare a small Metaxy pipeline using the configured DuckLake metadata sto
 --8<-- "example-ducklake/src/example_ducklake/pipeline.py"
 ```
 
-## Step 3: Inspect DuckLake Tables
+## Step 3: Inspect Recorded Metadata
 
 ::: metaxy-example output
     example: ducklake
@@ -70,8 +70,8 @@ Let's prepare a small Metaxy pipeline using the configured DuckLake metadata sto
 You should see:
 
 1. A successful Metaxy write
-2. The DuckLake catalog tables from `SHOW ALL TABLES`
-3. The actual feature table Metaxy created for `examples/ducklake_demo`
+2. The physical DuckLake-backed feature table name Metaxy created
+3. The rows read back for `examples/ducklake_demo`
 
 ## Related Materials
 
