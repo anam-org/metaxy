@@ -27,8 +27,6 @@ from metaxy.metadata_store.exceptions import (
 from metaxy.metadata_store.system.keys import METAXY_SYSTEM_KEY_PREFIX
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import (
-    _suppress_feature_version_warning,
-    allow_feature_version_override,
     empty_frame_like,
 )
 from metaxy.metadata_store.warnings import (
@@ -956,8 +954,6 @@ class MetadataStore(ABC):
             - Fallback stores are never used for writes.
 
         """
-        from contextlib import nullcontext
-
         self._check_write_mode()
 
         feature_key = self._resolve_feature_key(feature)
@@ -981,13 +977,13 @@ class MetadataStore(ABC):
 
             raise MetadataSchemaError(f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column")
 
-        ctx = allow_feature_version_override() if preserve_feature_version else nullcontext()
-        with ctx:
-            # Add all required system columns
-            # warning: for dataframes that do not match the native MetadataStore implementation
-            # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
-            # while calculating the missing METAXY_DATA_VERSION column
-            df_nw = self._add_system_columns(df_nw, feature, materialization_id=materialization_id)
+        # Add all required system columns
+        # warning: for dataframes that do not match the native MetadataStore implementation
+        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
+        # while calculating the missing METAXY_DATA_VERSION column
+        df_nw = self._add_system_columns(
+            df_nw, feature, materialization_id=materialization_id, preserve_feature_version=preserve_feature_version
+        )
 
         self._validate_schema(df_nw)
         self._write_feature(feature_key, df_nw)
@@ -1482,6 +1478,7 @@ class MetadataStore(ABC):
         df: Frame,
         feature: CoercibleToFeatureKey,
         materialization_id: str | None = None,
+        preserve_feature_version: bool = False,
     ) -> Frame:
         """Add all required system columns to the DataFrame.
 
@@ -1503,8 +1500,8 @@ class MetadataStore(ABC):
         has_feature_version = METAXY_FEATURE_VERSION in columns
         has_project_version = METAXY_PROJECT_VERSION in columns
 
-        # In suppression mode (migrations), use existing values as-is
-        if _suppress_feature_version_warning.get() and has_feature_version and has_project_version:
+        # When preserving feature versions (e.g. rebases), use existing values as-is
+        if preserve_feature_version and has_feature_version and has_project_version:
             pass  # Use existing values for migrations
         else:
             # Drop any existing version columns (e.g., from SQLModel with null values)

@@ -1,6 +1,6 @@
 """Metadata store for feature pipeline management."""
 
-from metaxy.metadata_store.base import MetadataStore, allow_feature_version_override
+from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -25,6 +25,5 @@ __all__ = [
     "StoreNotOpenError",
     "HashAlgorithmNotSupportedError",
     "FEATURE_VERSIONS_KEY",
-    "allow_feature_version_override",
     "AccessMode",
 ]

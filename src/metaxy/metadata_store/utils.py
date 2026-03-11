@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
-from contextvars import ContextVar
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
@@ -15,35 +13,12 @@ from metaxy.utils.constants import TEMP_TABLE_NAME
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# Context variable for suppressing feature_version warning in migrations
-_suppress_feature_version_warning: ContextVar[bool] = ContextVar("_suppress_feature_version_warning", default=False)
-
 
 def is_local_path(path: str) -> bool:
     """Return True when the path points to the local filesystem."""
     if path.startswith(("file://", "local://")):
         return True
     return "://" not in path
-
-
-@contextmanager
-def allow_feature_version_override() -> Iterator[None]:
-    """Context manager to suppress warnings when writing metadata with pre-existing metaxy_feature_version.
-
-    This should only be used in migration code where writing historical feature versions
-    is intentional and necessary.
-
-    Example:
-        ```py
-        with allow_feature_version_override():
-            pass  # Warnings suppressed within this block
-        ```
-    """
-    token = _suppress_feature_version_warning.set(True)
-    try:
-        yield
-    finally:
-        _suppress_feature_version_warning.reset(token)
 
 
 # Helper to create empty DataFrame with correct schema and backend
