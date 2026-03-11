@@ -424,19 +424,23 @@ def test_duckdb_config_with_fallback_stores() -> None:
         assert dev_store._is_open
 
 
-def test_motherduck_ducklake_loads_hashfuncs_before_motherduck() -> None:
-    """hashfuncs must be loaded before motherduck so xxh32/xxh64 survive USE <db>.
+def test_motherduck_ducklake_connects_via_memory_and_attaches() -> None:
+    """MotherDuck stores connect via :memory: and ATTACH md: to allow hashfuncs to load first.
 
-    MotherDuck community extensions are only available via local DuckDB CLI context.
-    Loading hashfuncs before the motherduck extension ensures the functions remain
-    visible after MotherDuck's USE <db> switches the active database.
+    duckdb.connect("md:...") activates MotherDuck immediately, preventing community
+    extensions from being loaded.  Instead we connect to :memory:, load hashfuncs,
+    then ATTACH the MotherDuck database via init_sql on the motherduck extension.
     """
     from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 
     store = DuckDBMetadataStore(
-        "md:my_database",
+        "md:my_database?motherduck_token=fake_token",
         ducklake=DuckLakeConfig.model_validate({"catalog": {"type": "motherduck", "database": "my_database"}}),
     )
+
+    # Connection must go to :memory:, not md: directly
+    assert store.connection_params["database"] == ":memory:"
+
     ext_names = [ext.name for ext in store.extensions]
     assert "hashfuncs" in ext_names
     assert "motherduck" in ext_names
@@ -444,24 +448,29 @@ def test_motherduck_ducklake_loads_hashfuncs_before_motherduck() -> None:
         f"hashfuncs must come before motherduck, got order: {ext_names}"
     )
 
+    # motherduck init_sql must set the token and ATTACH md:
+    md_ext = next(e for e in store.extensions if e.name == "motherduck")
+    init_sql = list(md_ext.init_sql)
+    assert any("SET motherduck_token" in s for s in init_sql), f"expected SET motherduck_token in init_sql: {init_sql}"
+    assert any("ATTACH 'md:'" in s for s in init_sql), f"expected ATTACH 'md:' in init_sql: {init_sql}"
 
-def test_xxh32_available_after_use_database(tmp_path: Path) -> None:
-    """xxh32 must remain callable after USE switches the active database.
 
-    Simulates what MotherDuck DuckLake does: load extensions, then execute
-    USE <db> to switch context.  hashfuncs loaded before the switch must still
-    be available for SELECT xxh32(...) queries afterward.
+def test_xxh32_available_after_memory_attach_and_use(tmp_path: Path) -> None:
+    """xxh32 must work when hashfuncs is loaded before motherduck via :memory: + ATTACH.
+
+    Simulates the exact sequence metaxy uses: connect to :memory:, load hashfuncs,
+    load motherduck, ATTACH an external db, USE it — xxh32 must remain callable.
     """
     import duckdb
 
     other_db = tmp_path / "other.db"
     conn = duckdb.connect(":memory:")
 
-    # Simulate correct load order: hashfuncs BEFORE any USE
+    # Load hashfuncs BEFORE any external database is attached
     conn.install_extension("hashfuncs", repository="community")
     conn.load_extension("hashfuncs")
 
-    # Simulate MotherDuck's USE <db> switching the active database context
+    # Simulate ATTACH + USE (what MotherDuck init_sql + configure() does)
     conn.execute(f"ATTACH '{other_db}' AS otherdb")
     conn.execute("USE otherdb")
 

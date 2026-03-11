@@ -67,6 +67,32 @@ class DuckDBMetadataStoreConfig(IbisMetadataStoreConfig):
     )
 
 
+def _motherduck_attach_sql(database_str: str) -> list[str]:
+    """Build SQL statements to attach a MotherDuck database from a :memory: connection.
+
+    Connecting to :memory: and ATTACHing MotherDuck (rather than connecting to md: directly)
+    allows community extensions like hashfuncs to be loaded before MotherDuck becomes active,
+    making xxh32/xxh64 available for queries routed to the MotherDuck context.
+
+    Args:
+        database_str: The original md: connection string (e.g. "md:mydb?motherduck_token=...").
+
+    Returns:
+        List of SQL statements: optionally SET motherduck_token, then ATTACH 'md:'.
+    """
+    stmts: list[str] = []
+    # Extract token from query string if embedded (md:dbname?motherduck_token=TOKEN)
+    rest = database_str[3:]  # strip "md:" prefix
+    if "?" in rest:
+        _, query = rest.split("?", 1)
+        params = dict(p.split("=", 1) for p in query.split("&") if "=" in p)
+        token = params.get("motherduck_token", "")
+        if token:
+            stmts.append(f"SET motherduck_token='{token}'")
+    stmts.append("ATTACH 'md:'")
+    return stmts
+
+
 def _normalise_extensions(
     extensions: Iterable[str | ExtensionSpec],
 ) -> list[ExtensionSpec]:
@@ -136,7 +162,13 @@ class DuckDBMetadataStore(IbisMetadataStore):
         """
         database_str = str(database)
 
-        connection_params = {"database": database_str}
+        # MotherDuck community extensions (e.g. hashfuncs) cannot be loaded after
+        # duckdb.connect("md:...") because MotherDuck is already active at that point.
+        # The only way to load them is to connect to :memory: first, load the extensions,
+        # then ATTACH the MotherDuck database.  We therefore rewrite the connection
+        # parameter to :memory: and add ATTACH as init_sql on the motherduck extension.
+        is_motherduck = database_str.startswith("md:")
+        connection_params = {"database": ":memory:" if is_motherduck else database_str}
         if config:
             connection_params.update(config)
 
@@ -149,14 +181,18 @@ class DuckDBMetadataStore(IbisMetadataStore):
             existing_names = {ext.name for ext in self.extensions}
             if "ducklake" not in existing_names:
                 self.extensions.append(ExtensionSpec(name="ducklake"))
-            # hashfuncs must be loaded BEFORE motherduck so that xxh32/xxh64 are available
-            # after MotherDuck's USE <db> switches the active database context.
-            # Community extensions loaded after motherduck are not visible server-side.
+            # hashfuncs must be loaded BEFORE motherduck (and before ATTACH md:) so that
+            # xxh32/xxh64 are available after MotherDuck switches the active database context.
             if isinstance(ducklake.catalog, MotherDuckCatalogConfig):
                 if "hashfuncs" not in existing_names:
                     self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))
                 if "motherduck" not in existing_names:
-                    self.extensions.append(ExtensionSpec(name="motherduck"))
+                    self.extensions.append(
+                        ExtensionSpec(
+                            name="motherduck",
+                            init_sql=_motherduck_attach_sql(database_str),
+                        )
+                    )
             self._ducklake_config = ducklake
             self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
 
@@ -294,8 +330,10 @@ class DuckDBMetadataStore(IbisMetadataStore):
     # ------------------------------------------------------------------ DuckLake
     def _open(self, mode: AccessMode) -> None:
         if mode == "r":
-            db_param = self.connection_params.get("database")
-            db = str(db_param) if db_param is not None else ""
+            # Use self.database (the original value) for remote/local detection so that
+            # MotherDuck stores (whose connection_params["database"] is rewritten to
+            # ":memory:") are still correctly identified as remote.
+            db = self.database
             is_in_memory = db in {"", ":memory:"}
             scheme = urlsplit(db).scheme if db else ""
             is_windows_drive_path = len(scheme) == 1 and bool(Path(db).drive)
