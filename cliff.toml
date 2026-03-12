@@ -1,3 +1,27 @@
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_preprocessors = [
+  { pattern = '^\((\w+)\)!:', replace = "($1):" },
+]
+commit_parsers = [
+  { message = "^feat", group = "### :sparkles: Added" },
+  { message = "^fix", group = "### :bug: Fixes" },
+  { message = "^docs", group = "### :book: Docs" },
+  { message = "^refactor", group = "### :wrench: Changed" },
+  { message = "^perf", group = "### :zap: Performance" },
+  { message = "^chore", skip = true },
+  { message = "^ci", skip = true },
+  { message = "^build", skip = true },
+  { message = "^test", skip = true },
+  { message = "^style", skip = true },
+]
+tag_pattern = "v[0-9].*"
+sort_commits = "newest"
+
+[changelog]
+header = """
 <!-- --8<-- [start:header] -->
 # Changelog
 
@@ -20,14 +44,34 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
-
-## 1.4.0
+"""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}\
+{{ group | striptags | trim }}
+{% for commit in commits %}
+{%- if commit.body and commit.body is containing("## Changelog") -%}
+{%- set changelog_section = commit.body | split(pat="## Changelog") | last -%}
+{%- set lines = changelog_section | split(pat="\n") -%}
+{%- for line in lines -%}
+{%- set trimmed = line | trim -%}
+{%- if trimmed is starting_with("- ") or trimmed is starting_with("* ") %}
+{{ trimmed }}
+{%- endif -%}
+{%- endfor -%}
+{%- else %}
+- {{ commit.message | split(pat="\n") | first | trim }}
+{%- endif %}
+{%- endfor %}
+{% endfor %}\
+"""
+footer = """
+## 0.1.4
 
 ### :bug: Fixes
 
 - Fixed a bug with `metaxy push` not re-pushing feature definitions on changes reverting them to a previous version.
 
-## 1.3.0
+## 0.1.3
 
 ### :sparkles: Added
 
@@ -42,7 +86,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 - Added a section on inheritance with Metaxy features
 - Improved Dagster integration docs
 
-## 1.2.0
+## 0.1.2
 
 ### :sparkles: Added
 
@@ -50,7 +94,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 - `MetadataStore.write` now fills `metaxy_data_version` and `metaxy_data_version_by_field` values in place of `Null`s on per-row basis instead of checking whether the whole column presence.
 - Added [Rebases](/guide/concepts/metadata-stores.md#rebasing-metadata-versions) functionality which allows backfilling metadata from historical feature versions. It's available via [CLI](/reference/cli.md#metaxy-metadata-rebase) or as [`MetadataStore.rebase`][metaxy.MetadataStore.rebase].
 
-## 1.1.0
+## 0.1.1
 
 ### :sparkles: Added
 
@@ -77,10 +121,12 @@ This release should be considered an *alpha* release: it is ready for production
 - [MetadataStore API](/guide/concepts/metadata-stores.md)
 - Integrations: [DeltaLake](/integrations/metadata-stores/storage/delta.md), [Dagster](/integrations/orchestration/dagster/index.md), [Ray](/integrations/compute/ray.md), [ClickHouse](/integrations/metadata-stores/databases/clickhouse.md), [MCP](/integrations/ai/mcp.md), [Claude](/integrations/ai/claude.md)
 
-### :alembic: Experimental
+### Experimental
 
 - [CLI](/reference/cli.md)
 - [`metaxy.lock`-based workflow](/guide/concepts/definitions/external-features.md/#metaxylock-file) for multi-environment setups
 - Integrations: [DuckDB](/integrations/metadata-stores/databases/duckdb.md), [BigQuery](/integrations/metadata-stores/databases/bigquery.md), [LanceDB](/integrations/metadata-stores/databases/lancedb.md), [SQLAlchemy](/integrations/plugins/sqlalchemy.md), [SQLModel](/integrations/plugins/sqlmodel.md)
 
 <!-- --8<-- [end:releases] -->
+"""
+trim = true
