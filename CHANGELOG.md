@@ -23,28 +23,28 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 ## 1.4.0
 
-### Fixes
+### :bug: Fixes
 
 - Fixed a bug with `metaxy push` not re-pushing feature definitions on changes reverting them to a previous version.
 
 ## 1.3.0
 
-### Added
+### :sparkles: Added
 
 - `metaxy lock` now avoids loading feature definitions from metaxy.project entrypoints of Python packages that aren't dependencies (direct or transitive) of the current Python package when creating the lock file.
 
-### Changed
+### :wrench: Changed
 
 - Renamed `metaxy graph history` CLI command to `metaxy history`
 
-### Docs
+### :book: Docs
 
 - Added a section on inheritance with Metaxy features
 - Improved Dagster integration docs
 
 ## 1.2.0
 
-### Added
+### :sparkles: Added
 
 - A new `staleness_predicates` parameter has been added to [`resolve_update`][metaxy.MetadataStore.resolve_update]. It can be used to mark records as stale based on arbitrary Narwhals expressions, regardless of their Metaxy versions.
 - `MetadataStore.write` now fills `metaxy_data_version` and `metaxy_data_version_by_field` values in place of `Null`s on per-row basis instead of checking whether the whole column presence.
@@ -52,12 +52,12 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 ## 1.1.0
 
-### Added
+### :sparkles: Added
 
 - A new top-level [`extra_features`](/reference/configuration.md#metaxy.config.MetaxyConfig.extra_features) configuration option has been added. It can be used to register additional external feature definitions from the metadata store on the feature graph. Learn more [here](/guide/concepts/definitions/external-features.md/#loading-extra-features).
 - [DuckLake](/integrations/metadata-stores/storage/ducklake.md) integration has been revamped, tested, and documented. Thanks [@geoHeil](https://github.com/geoHeil)!
 
-### Fixes
+### :bug: Fixes
 
 - Fixed `DuckDBMetadataStore` assuming `"community"` extension repo instead of `"core"` when loading extensions with unspecified repos
 - Fixed `/metaxy` skill and `metaxy` MCP server not being properly installed by the Claude plugin
@@ -70,14 +70,14 @@ The first public Metaxy release :tada:!
 
 This release should be considered an *alpha* release: it is ready for production use and has been dogfooded internally at [Anam.ai](https://anam.ai), but we don't have any community feedback yet.
 
-### Added
+### :sparkles: Added
 
 - [Feature Definitions](/guide/concepts/definitions/features.md) and related models
 - Metaxy [versioning engine](/guide/concepts/versioning.md) and [storage layout](/reference/system-columns.md)
 - [MetadataStore API](/guide/concepts/metadata-stores.md)
 - Integrations: [DeltaLake](/integrations/metadata-stores/storage/delta.md), [Dagster](/integrations/orchestration/dagster/index.md), [Ray](/integrations/compute/ray.md), [ClickHouse](/integrations/metadata-stores/databases/clickhouse.md), [MCP](/integrations/ai/mcp.md), [Claude](/integrations/ai/claude.md)
 
-### Experimental
+### :alembic: Experimental
 
 - [CLI](/reference/cli.md)
 - [`metaxy.lock`-based workflow](/guide/concepts/definitions/external-features.md/#metaxylock-file) for multi-environment setups
