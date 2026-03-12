@@ -272,6 +272,122 @@ def test_postgresql_auto_cast_false_only_decodes_system_columns_on_read(
         ]
 
 
+def test_postgresql_auto_cast_false_roundtrip_with_pre_encoded_user_json(
+    clean_postgres_db: str, test_graph, test_features: dict
+) -> None:
+    """With auto_cast=False, manually encoded user JSONB should roundtrip as strings."""
+    import json
+
+    feature = test_features["UpstreamFeatureA"]
+
+    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=False).open(mode="w") as store:
+        table_name = store.get_table_name(feature.key)
+
+        store.conn.raw_sql(f"DROP TABLE IF EXISTS {table_name}")  # ty: ignore[unresolved-attribute]
+        store.conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid BIGINT,
+                user_struct JSONB,
+                {METAXY_PROVENANCE_BY_FIELD} JSONB,
+                metaxy_provenance TEXT,
+                metaxy_feature_version TEXT,
+                metaxy_project_version TEXT,
+                {METAXY_DATA_VERSION_BY_FIELD} JSONB,
+                metaxy_data_version TEXT,
+                metaxy_created_at TIMESTAMPTZ,
+                metaxy_updated_at TIMESTAMPTZ,
+                metaxy_deleted_at TIMESTAMPTZ,
+                metaxy_materialization_id TEXT
+            )
+            """
+        )
+
+        df = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "user_struct": [
+                    '{"model":"resnet","version":"1"}',
+                    '{"model":"vgg","version":"2"}',
+                ],
+                METAXY_PROVENANCE_BY_FIELD: [
+                    {"frames": "h1", "audio": "h2"},
+                    {"frames": "h3", "audio": "h4"},
+                ],
+            }
+        )
+        store.write(feature, df)
+
+        result = collect_to_polars(store.read(feature)).sort("sample_uid")
+        raw_types = store.conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"SELECT pg_typeof(user_struct)::text FROM {table_name} ORDER BY sample_uid"
+        ).fetchall()
+
+        assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
+        assert result.schema["user_struct"] == pl.Utf8
+        assert [type(value) for value in result["user_struct"].to_list()] == [str, str]
+        assert [json.loads(value) for value in result["user_struct"].to_list()] == [
+            {"model": "resnet", "version": "1"},
+            {"model": "vgg", "version": "2"},
+        ]
+        assert raw_types == [("jsonb",), ("jsonb",)]
+
+
+def test_postgresql_auto_cast_false_rejects_raw_user_struct_for_jsonb_columns(
+    clean_postgres_db: str, test_graph, test_features: dict
+) -> None:
+    """With auto_cast=False, raw user Struct values must be pre-encoded for JSONB targets."""
+    feature = test_features["UpstreamFeatureA"]
+
+    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=False).open(mode="w") as store:
+        table_name = store.get_table_name(feature.key)
+
+        store.conn.raw_sql(f"DROP TABLE IF EXISTS {table_name}")  # ty: ignore[unresolved-attribute]
+        store.conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid BIGINT,
+                user_struct JSONB,
+                {METAXY_PROVENANCE_BY_FIELD} JSONB,
+                metaxy_provenance TEXT,
+                metaxy_feature_version TEXT,
+                metaxy_project_version TEXT,
+                {METAXY_DATA_VERSION_BY_FIELD} JSONB,
+                metaxy_data_version TEXT,
+                metaxy_created_at TIMESTAMPTZ,
+                metaxy_updated_at TIMESTAMPTZ,
+                metaxy_deleted_at TIMESTAMPTZ,
+                metaxy_materialization_id TEXT
+            )
+            """
+        )
+
+        df = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "user_struct": pl.Series(
+                    name="user_struct",
+                    values=[{"model": "resnet", "version": "1"}],
+                    dtype=pl.Struct(
+                        [
+                            pl.Field("model", pl.Utf8),
+                            pl.Field("version", pl.Utf8),
+                        ]
+                    ),
+                ),
+                METAXY_PROVENANCE_BY_FIELD: [
+                    {"frames": "h1", "audio": "h2"},
+                ],
+            }
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="Column 'user_struct' is a Polars Struct but PostgreSQL target column is JSON/JSONB",
+        ):
+            store.write(feature, df)
+
+
 def test_postgresql_user_defined_jsonb_column(clean_postgres_db: str, test_graph, test_features: dict) -> None:
     """User-defined JSONB columns should decode back to Polars Struct on read."""
     feature = test_features["UpstreamFeatureA"]
