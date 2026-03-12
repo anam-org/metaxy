@@ -34,6 +34,9 @@ in
     clickhouse
     postgresql
 
+    # Changelog generation
+    git-cliff
+
     # Visualization
     graphviz
 

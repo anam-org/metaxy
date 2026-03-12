@@ -85,10 +85,21 @@ init-example name:
     uv add --project examples ./examples/{{name}}
     uv add --project ./examples/{{name}} . --editable
 
+# Preview unreleased changelog entries
+changelog-preview:
+    git fetch --tags
+    git cliff --unreleased --strip header
+
+# Generate full CHANGELOG.md
+changelog:
+    git fetch --tags
+    git cliff -o CHANGELOG.md
+
 # Bump version: dev, rc, stable, patch, minor, major
 release bump:
     uv version --bump {{bump}}
     echo "__version__ = \"$(uv version --short)\"" > src/metaxy/_version.py
+    git cliff -o CHANGELOG.md
 
 # Update snapshots for all examples or specific examples
 example-snapshot-update *EXAMPLES:
