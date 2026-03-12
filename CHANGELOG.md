@@ -21,6 +21,12 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## 1.4.0
+
+### Fixes
+
+- Fixed a bug with `metaxy push` not re-pushing feature definitions on changes reverting them to a previous version.
+
 ## 1.3.0
 
 ### Added
