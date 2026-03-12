@@ -6,7 +6,7 @@ auto_create_tables = true # Enable for development/examples
 type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
-database = "${DUCKLAKE_DEMO_DB:-ducklake_demo.db}"
+database = "${DUCKLAKE_DEMO_DB:-:memory:}"
 
 [stores.dev.config.ducklake]
 alias = "ducklake"
@@ -17,11 +17,11 @@ override_data_path = true
 # Local workflow used by this example:
 [stores.dev.config.ducklake.catalog]
 type = "sqlite"
-uri = "${DUCKLAKE_META_DB:-ducklake_meta.db}"
+uri = "${DUCKLAKE_META_DB:-/tmp/example_ducklake_meta.db}"
 
 [stores.dev.config.ducklake.storage]
 type = "local"
-path = "${DUCKLAKE_STORAGE_PATH:-ducklake_storage}"
+path = "${DUCKLAKE_STORAGE_PATH:-/tmp/example_ducklake_storage}"
 
 # Example for real deployments (Postgres catalog + S3 storage):
 # [stores.dev.config.ducklake.catalog]
