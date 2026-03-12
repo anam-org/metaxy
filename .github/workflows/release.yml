@@ -81,6 +81,26 @@ jobs:
             echo "stable=false" >> "$GITHUB_OUTPUT"
           fi
 
+  github-release:
+    runs-on: depot-ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: orhun/git-cliff-action@v4
+        id: cliff
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGES.md
+          tag_name: ${{ github.ref_name }}
+
   docs:
     needs: check-stable-release
     if: needs.check-stable-release.outputs.is-stable == 'true'
