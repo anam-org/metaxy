@@ -4037,38 +4037,38 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 </div>
 </div>
 <h2 id="140">1.4.0<a class="headerlink" href="#140" title="Permanent link">&para;</a></h2>
-<h3 id="fixes">Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
+<h3 id="fixes"><img alt="🐛" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f41b.svg" title=":bug:" /> Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Fixed a bug with <code>metaxy push</code> not re-pushing feature definitions on changes reverting them to a previous version.</li>
 </ul>
 <h2 id="130">1.3.0<a class="headerlink" href="#130" title="Permanent link">&para;</a></h2>
-<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<h3 id="added"><img alt="✨" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2728.svg" title=":sparkles:" /> Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>metaxy lock</code> now avoids loading feature definitions from metaxy.project entrypoints of Python packages that aren't dependencies (direct or transitive) of the current Python package when creating the lock file.</li>
 </ul>
-<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<h3 id="changed"><img alt="🔧" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f527.svg" title=":wrench:" /> Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Renamed <code>metaxy graph history</code> CLI command to <code>metaxy history</code></li>
 </ul>
-<h3 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
+<h3 id="docs"><img alt="📖" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f4d6.svg" title=":book:" /> Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Added a section on inheritance with Metaxy features</li>
 <li>Improved Dagster integration docs</li>
 </ul>
 <h2 id="120">1.2.0<a class="headerlink" href="#120" title="Permanent link">&para;</a></h2>
-<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<h3 id="added_1"><img alt="✨" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2728.svg" title=":sparkles:" /> Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>A new <code>staleness_predicates</code> parameter has been added to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>resolve_update</code></a>. It can be used to mark records as stale based on arbitrary Narwhals expressions, regardless of their Metaxy versions.</li>
 <li><code>MetadataStore.write</code> now fills <code>metaxy_data_version</code> and <code>metaxy_data_version_by_field</code> values in place of <code>Null</code>s on per-row basis instead of checking whether the whole column presence.</li>
 <li>Added <a href="../guide/concepts/metadata-stores/#rebasing-metadata-versions">Rebases</a> functionality which allows backfilling metadata from historical feature versions. It's available via <a href="../reference/cli/#metaxy-metadata-rebase">CLI</a> or as <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.rebase&lt;/span&gt;" href="../reference/api/metadata-stores/base/#metaxy.MetadataStore.rebase"><code>MetadataStore.rebase</code></a>.</li>
 </ul>
 <h2 id="110">1.1.0<a class="headerlink" href="#110" title="Permanent link">&para;</a></h2>
-<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
+<h3 id="added_2"><img alt="✨" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2728.svg" title=":sparkles:" /> Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>A new top-level <a href="../reference/configuration/#metaxy.config.MetaxyConfig.extra_features"><code>extra_features</code></a> configuration option has been added. It can be used to register additional <abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr> from the metadata store on the feature graph. Learn more <a href="../guide/concepts/definitions/external-features/#loading-extra-features">here</a>.</li>
 <li><a href="../integrations/metadata-stores/storage/ducklake/">DuckLake</a> integration has been revamped, tested, and documented. Thanks <a href="https://github.com/geoHeil">@geoHeil</a>!</li>
 </ul>
-<h3 id="fixes_1">Fixes<a class="headerlink" href="#fixes_1" title="Permanent link">&para;</a></h3>
+<h3 id="fixes_1"><img alt="🐛" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f41b.svg" title=":bug:" /> Fixes<a class="headerlink" href="#fixes_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Fixed <code>DuckDBMetadataStore</code> assuming <code>"community"</code> extension repo instead of <code>"core"</code> when loading extensions with unspecified repos</li>
 <li>Fixed <code>/metaxy</code> skill and <code>metaxy</code> MCP server not being properly installed by the Claude plugin</li>
@@ -4078,14 +4078,14 @@ A feature is considered <em>stable</em> if it's documented and doesn't have an <
 <h2 id="010">0.1.0<a class="headerlink" href="#010" title="Permanent link">&para;</a></h2>
 <p>The first public Metaxy release <img alt="🎉" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f389.svg" title=":tada:" />!</p>
 <p>This release should be considered an <em>alpha</em> release: it is ready for production use and has been dogfooded internally at <a href="https://anam.ai">Anam.ai</a>, but we don't have any community feedback yet.</p>
-<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
+<h3 id="added_3"><img alt="✨" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2728.svg" title=":sparkles:" /> Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li><a href="../guide/concepts/definitions/features/">Feature Definitions</a> and related models</li>
 <li>Metaxy <a href="../guide/concepts/versioning/">versioning engine</a> and <a href="../reference/system-columns/">storage layout</a></li>
 <li><a href="../guide/concepts/metadata-stores/">MetadataStore API</a></li>
 <li>Integrations: <a href="../integrations/metadata-stores/storage/delta/">DeltaLake</a>, <a href="../integrations/orchestration/dagster/">Dagster</a>, <a href="../integrations/compute/ray/">Ray</a>, <a href="../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a>, <a href="../integrations/ai/mcp/">MCP</a>, <a href="../integrations/ai/claude/">Claude</a></li>
 </ul>
-<h3 id="experimental">Experimental<a class="headerlink" href="#experimental" title="Permanent link">&para;</a></h3>
+<h3 id="experimental"><img alt="⚗" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/2697.svg" title=":alembic:" /> Experimental<a class="headerlink" href="#experimental" title="Permanent link">&para;</a></h3>
 <ul>
 <li><a href="../reference/cli/">CLI</a></li>
 <li><a href="../guide/concepts/definitions/external-features/#metaxylock-file"><code>metaxy.lock</code>-based workflow</a> for <abbr title="Metaxy codebases which have more than one distinct Python environment. | /guide/concepts/projects/#multi-environment-setups">multi-environment setups</abbr></li>
