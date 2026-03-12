@@ -838,3 +838,81 @@ def test_push_ignores_other_project_features_with_unresolved_deps(tmp_path: Path
             assert features_df.height == 1
             assert features_df["feature_key"][0] == "my_feature"
             assert features_df["project"][0] == "my_project"
+
+
+def test_record_snapshot_version_cycle(tmp_path: Path):
+    """Test that cycling back to a previous project version triggers a re-push.
+
+    Scenario: Push v2, then v1, then v2 again. The third push should NOT be
+    marked as already_pushed, because the latest push was v1, not v2.
+    """
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+
+    # Version 1: code_version="1"
+    def make_graph_v1() -> FeatureGraph:
+        graph = FeatureGraph()
+        with graph.use():
+
+            class MyFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["my_feature"]),
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        return graph
+
+    # Version 2: code_version="2"
+    def make_graph_v2() -> FeatureGraph:
+        graph = FeatureGraph()
+        with graph.use():
+
+            class MyFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["my_feature"]),
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="2")],
+                ),
+            ):
+                pass
+
+        return graph
+
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
+        # Push 1: v2
+        graph_v2a = make_graph_v2()
+        with graph_v2a.use():
+            project = graph_v2a.feature_definitions_by_key[FeatureKey(["my_feature"])].project
+            version_v2 = graph_v2a.get_project_version(project)
+            result1 = SystemTableStorage(store).push_graph_snapshot()
+            assert result1.already_pushed is False
+            assert result1.project_version == version_v2
+
+        # Push 2: v1 (different version)
+        graph_v1 = make_graph_v1()
+        with graph_v1.use():
+            version_v1 = graph_v1.get_project_version(project)
+            assert version_v1 != version_v2
+            result2 = SystemTableStorage(store).push_graph_snapshot()
+            assert result2.already_pushed is False
+            assert result2.project_version == version_v1
+
+        # Push 3: v2 again (cycle back)
+        graph_v2b = make_graph_v2()
+        with graph_v2b.use():
+            version_v2b = graph_v2b.get_project_version(project)
+            assert version_v2b == version_v2  # same hash as first push
+
+            result3 = SystemTableStorage(store).push_graph_snapshot()
+            # This is the key assertion: even though v2 was pushed before,
+            # the latest push was v1, so this should NOT be already_pushed
+            assert result3.already_pushed is False
+            assert result3.project_version == version_v2
+
+        # Verify all 3 pushes wrote rows (1 feature x 3 pushes = 3 rows)
+        versions_lazy = store._read_feature(FEATURE_VERSIONS_KEY)
+        assert versions_lazy is not None
+        versions_df = versions_lazy.collect().to_polars()
+        assert versions_df.height == 3

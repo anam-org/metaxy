@@ -584,8 +584,9 @@ class SystemTableStorage:
         # Compute project-scoped snapshot version (uses feature_definition_version, excludes external features)
         project_version = graph.get_project_version(project)
 
-        # Check if this exact snapshot already exists for this project
-        latest_pushed_snapshot = self._read_latest_snapshot_data(project_version, project)
+        # Check if the latest push for this project already matches the current version
+        latest_pushed_version = self._read_latest_project_version(project)
+        already_pushed = latest_pushed_version == project_version
 
         # Convert to DataFrame - need to serialize feature_spec dict to JSON string
         # and add metaxy_project_version and recorded_at columns
@@ -610,11 +611,11 @@ class SystemTableStorage:
             ]
         )
 
-        # Initialize to_push and already_pushed
+        # Initialize to_push
         to_push = current_snapshot  # Will be updated if snapshot already exists
-        already_pushed = len(latest_pushed_snapshot) != 0
 
         if already_pushed:
+            latest_pushed_snapshot = self._read_latest_snapshot_data(project_version, project)
             # let's identify features that have updated definitions since the last push
             # Join full current snapshot with latest pushed (keeping all columns)
             pushed_with_current = current_snapshot.join(
@@ -699,6 +700,25 @@ class SystemTableStorage:
         return (
             lazy.collect().to_polars().sort("recorded_at", descending=True).unique(subset=["feature_key"], keep="first")
         )
+
+    def _read_latest_project_version(self, project: str) -> str | None:
+        """Read the most recently pushed project_version for a given project.
+
+        Returns None if no push has ever been recorded for this project.
+        """
+        sys_meta = self._read_system_metadata(FEATURE_VERSIONS_KEY)
+
+        latest = (
+            sys_meta.filter(nw.col("project") == project)
+            .sort("recorded_at", descending=True)
+            .head(1)
+            .collect()
+            .to_polars()
+        )
+
+        if len(latest) == 0:
+            return None
+        return latest[METAXY_PROJECT_VERSION][0]
 
     def read_graph_snapshots(self, project: str | None = None) -> pl.DataFrame:
         """Read recorded graph snapshots from the feature_versions system table.
