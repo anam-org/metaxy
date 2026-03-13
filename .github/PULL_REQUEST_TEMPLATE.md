@@ -5,7 +5,7 @@
 ## Changelog
 
 <!--
-User-facing changelog entries (bullet points).
+User-facing changelog details, rendered below the commit title in CHANGELOG.md.
 Delete this section if there are no user-facing changes.
 -->
 

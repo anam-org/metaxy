@@ -1,3 +1,7 @@
+[remote.github]
+owner = "anam-org"
+repo = "metaxy"
+
 [git]
 conventional_commits = true
 filter_unconventional = true
@@ -49,17 +53,18 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}\
 {{ group | striptags | trim }}
 {% for commit in commits %}
+- {{ commit.message | split(pat="\n") | first | trim }}\
+    {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif %}\
+    {% if commit.remote.pr_number %} in [#{{ commit.remote.pr_number }}](https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}/pull/{{ commit.remote.pr_number }}){%- endif %}
 {%- if commit.body and commit.body is containing("## Changelog") -%}
 {%- set changelog_section = commit.body | split(pat="## Changelog") | last -%}
 {%- set lines = changelog_section | split(pat="\n") -%}
 {%- for line in lines -%}
 {%- set trimmed = line | trim -%}
-{%- if trimmed is starting_with("- ") or trimmed is starting_with("* ") %}
-{{ trimmed }}
+{%- if trimmed | length > 0 and not trimmed is starting_with("<!--") %}
+  {{ trimmed }}
 {%- endif -%}
 {%- endfor -%}
-{%- else %}
-- {{ commit.message | split(pat="\n") | first | trim }}
 {%- endif %}
 {%- endfor %}
 {% endfor %}\

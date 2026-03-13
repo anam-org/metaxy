@@ -87,12 +87,10 @@ init-example name:
 
 # Preview unreleased changelog entries
 changelog-preview:
-    git fetch --tags
     git cliff --unreleased --strip header
 
 # Generate full CHANGELOG.md
 changelog:
-    git fetch --tags
     git cliff -o CHANGELOG.md
 
 # Bump version: dev, rc, stable, patch, minor, major
