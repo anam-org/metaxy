@@ -18,7 +18,7 @@ on:
       python-versions:
         description: 'Python versions (JSON array)'
         type: string
-        default: '["3.10", "3.11", "3.12", "3.13"]'
+        default: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
       run-windows:
         description: 'Run Windows tests'
         type: boolean
@@ -36,7 +36,7 @@ jobs:
   qa:
     uses: ./.github/workflows/_qa.yml
     with:
-      python-versions: ${{ (github.event_name == 'workflow_dispatch' && inputs.python-versions) || (contains(github.event.pull_request.labels.*.name, 'tests:full') && '["3.10", "3.11", "3.12", "3.13"]') || '["3.10"]' }}
+      python-versions: ${{ (github.event_name == 'workflow_dispatch' && inputs.python-versions) || (contains(github.event.pull_request.labels.*.name, 'tests:full') && '["3.10", "3.11", "3.12", "3.13", "3.14"]') || '["3.10"]' }}
       run-windows: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-windows) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
       run-macos: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-macos) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}
       dependency-matrix: ${{ (github.event_name == 'workflow_dispatch' && inputs.dependency-matrix) || contains(github.event.pull_request.labels.*.name, 'tests:full') }}

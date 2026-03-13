@@ -9,6 +9,7 @@ let
     "3.11" = pkgs.python311;
     "3.12" = pkgs.python312;
     "3.13" = pkgs.python313;
+    "3.14" = pkgs.python314;
   };
   selectedPython = pythonPackages.${pythonVersion} or (throw "Unsupported Python version: ${pythonVersion}");
 in

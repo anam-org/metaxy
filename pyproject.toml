@@ -23,6 +23,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Typing :: Typed",
 ]
 dependencies = [
@@ -77,8 +78,8 @@ delta = [
   "ibis-framework>=11.0.0",
 ]
 dagster = [
-  "dagster>=1.12.3",
-  "dagster-shared>=1.12.0",
+  "dagster>=1.12.9",
+  "dagster-shared>=1.12.9",
 ]
 
 lancedb = [
@@ -89,7 +90,7 @@ mcp = [
   "fastmcp>=2.0.0",
 ]
 ray = [
-  "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
+  "ray>2.36.0; python_version < '3.14' and (sys_platform != 'win32' or python_version < '3.13')",
 ]
 
 [project.scripts]
@@ -130,12 +131,12 @@ dev = [
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
-  "dagster>=1.12.3",
+  "dagster>=1.12.9",
   "ty==0.0.22",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pandas>=2.3.3",
-  "ray>2.36.0; sys_platform != 'win32' or python_version < '3.13'",
+  "ray>2.36.0; python_version < '3.14' and (sys_platform != 'win32' or python_version < '3.13')",
   "numpy>=2.2.6",
   "sybil>=9.3.0",
   "deptry>=0.24.0",
