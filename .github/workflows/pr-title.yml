@@ -4,6 +4,9 @@ on:
   pull_request_target:
     types: [opened, edited, reopened]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 permissions:
   pull-requests: read
 
@@ -12,7 +15,7 @@ jobs:
     name: Conventional PR Title
     runs-on: depot-ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - uses: amannn/action-semantic-pull-request@v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

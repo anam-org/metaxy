@@ -15,6 +15,10 @@ on:
       - 'publications/2026-introducing-metaxy/paper.md'
       - 'publications/2026-introducing-metaxy/paper.bib'
       - 'publications/2026-introducing-metaxy/assets/**'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   paper:
     permissions:
@@ -24,14 +28,14 @@ jobs:
     name: Paper Draft
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
       - name: TeX and PDF
         uses: docker://openjournals/paperdraft:latest
         with:
           journal: joss
           args: '-k ./publications/2026-introducing-metaxy/paper.md'
       - name: Upload PDF to Artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: generated-paper
           path: ./publications/2026-introducing-metaxy/*.pdf
