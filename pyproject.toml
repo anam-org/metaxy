@@ -81,6 +81,9 @@ dagster = [
   "dagster-shared>=1.12.0",
 ]
 
+iceberg = [
+  "pyiceberg[sql-sqlite]>=0.9.0",
+]
 lancedb = [
   "lancedb>=0.15.0",
   "polars>=1.36.1",
@@ -128,6 +131,7 @@ dev = [
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
   "moto[s3,server]>=5.1.16",
+  "pyiceberg[sql-sqlite]>=0.9.0",
   "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
   "dagster>=1.12.3",
@@ -309,6 +313,7 @@ markers = [
   "native: Stores with native compute capabilities",
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
+  "iceberg: Apache Iceberg store tests",
   "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
 ]
 
