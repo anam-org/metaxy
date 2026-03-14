@@ -79,6 +79,10 @@ jobs:
           enable-cache: true
       - name: Run Ruff
         run: uv run --no-sync --with ruff ruff check
+      - name: Run Xenon
+        run: uv run --no-sync --with xenon==0.9.3 xenon --max-absolute B --max-modules B --max-average A src
+      - name: Run Vulture
+        run: uv run --no-sync --with vulture==2.15 vulture src --min-confidence 80
 
   format:
     runs-on: depot-ubuntu-latest

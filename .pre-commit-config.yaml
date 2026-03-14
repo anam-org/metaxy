@@ -11,6 +11,32 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
         exclude: '^uv\.lock|examples/example-dagster/uv\.lock$'
+  # Python complexity guardrails
+  - repo: https://github.com/rubik/xenon
+    rev: v0.9.3
+    hooks:
+      - id: xenon
+        # Add more ignored files by appending glob patterns to the --exclude CSV.
+        args:
+          [
+            "--max-absolute=B",
+            "--max-modules=B",
+            "--max-average=A",
+          ]
+        files: ^src/.*\.py$
+
+  # Python dead-code guardrails
+  - repo: https://github.com/jendrikseipp/vulture
+    rev: v2.15
+    hooks:
+      - id: vulture
+        args:
+          [
+            "src",
+            "--min-confidence",
+            "80",
+          ]
+        files: ^src/.*\.py$
   - repo: local
     hooks:
     - id: ruff-check
