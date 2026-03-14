@@ -9,9 +9,9 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
   "metaxy[delta]",
-  "dagster>=1.12.3",
-  "dagster-dg-cli>=1.12.3",
-  "dagster-webserver",
+  "dagster>=1.12.9",
+  "dagster-dg-cli>=1.12.9",
+  "dagster-webserver>=1.12.9",
 ]
 
 [tool.uv.sources]
