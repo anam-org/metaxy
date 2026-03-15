@@ -88,7 +88,7 @@ def launcher(
     # filtering to prevent non-dependency features from loading into the
     # graph (they must remain external so they appear in the lock file).
     loaded_config = MetaxyConfig.load(config_file=config_file, search_parents=True)
-    config = init(loaded_config, isolated=tokens is not None and tokens[0] == "lock")
+    config = init(loaded_config, isolated=bool(tokens) and tokens[0] == "lock")
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed
