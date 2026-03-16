@@ -80,6 +80,18 @@ jobs:
       - name: Run Ruff
         run: uv run --no-sync --with ruff ruff check
 
+  deadcode:
+    runs-on: depot-ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.5.0
+        with:
+          enable-cache: true
+      - name: Run Deadcode
+        run: uv run --no-sync --with deadcode deadcode src
+
   format:
     runs-on: depot-ubuntu-latest
     steps:
@@ -411,6 +423,7 @@ jobs:
       - test-windows
       - test-macos
       - lint
+      - deadcode
       - format
       - typecheck
       - docs
@@ -422,4 +435,4 @@ jobs:
         uses: re-actors/alls-green@v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs, claude-plugin
+          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs, claude-plugin, deadcode

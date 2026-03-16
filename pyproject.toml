@@ -121,7 +121,7 @@ dev = [
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
   "lancedb>=0.15.0",
-  "vulture>=2.14",
+  "deadcode>=2.4.1",
   "prek>=0.2.11",
   "pytest-env>=1.2.0",
   "pytest-cov>=7.0.0",
@@ -218,14 +218,6 @@ mkdocs-metaxy = { workspace = true }
 metaxy-testing = { workspace = true }
 griffe-pydantic = { git = "https://github.com/danielgafni/griffe-pydantic.git", branch = "feat/configurable-bases" }
 # cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "docstring-parser-skipped-sections" }
-
-[tool.vulture]
-exclude = [
-  "tests/metaxy_testing/",
-  "src/metaxy/cli/",
-  "examples/**/feature*.py",
-]
-min_confidence = 60
 
 [tool.coverage.run]
 source = ["src/metaxy"]

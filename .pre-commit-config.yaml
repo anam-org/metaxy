@@ -11,6 +11,7 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
         exclude: '^uv\.lock|examples/example-dagster/uv\.lock$'
+
   - repo: local
     hooks:
     - id: ruff-check
@@ -26,6 +27,11 @@ repos:
     - id: dprint-format
       name: Dprint Format
       entry: uv run dprint fmt
+      language: system
+      pass_filenames: false
+    - id: deadcode
+      name: Deadcode
+      entry: uv run deadcode src
       language: system
       pass_filenames: false
     - id: deptry

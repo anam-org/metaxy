@@ -1094,6 +1094,18 @@ wheels = [
 ]
 
 [[package]]
+name = "deadcode"
+version = "2.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tomli" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c8/ab/1122e6d6392f7860718f16e931b1976d5e579433486a84b09333811e3a6b/deadcode-2.4.1.tar.gz", hash = "sha256:1ba1e22425cf53c4b3f5ddd46e62a86d98479b47f2ac3430ae60910ac8cb318d", size = 37734, upload-time = "2024-08-09T18:12:58.58Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/cc/9c27bb3a1224a66740b25d8153cd41051240103fa9aaee119688362c32b6/deadcode-2.4.1-py3-none-any.whl", hash = "sha256:a16b28b601a82d5dc7ebfcab464a6f65e22a99d5684ec4c7907bdb75f8f64050", size = 44621, upload-time = "2024-08-09T18:12:56.433Z" },
+]
+
+[[package]]
 name = "decopatch"
 version = "1.4.10"
 source = { registry = "https://pypi.org/simple" }
@@ -2954,6 +2966,7 @@ dev = [
     { name = "boto3" },
     { name = "dagster" },
     { name = "datafusion" },
+    { name = "deadcode" },
     { name = "deltalake" },
     { name = "deptry" },
     { name = "dprint-py" },
@@ -2984,7 +2997,6 @@ dev = [
     { name = "sybil" },
     { name = "syrupy" },
     { name = "ty" },
-    { name = "vulture" },
 ]
 docs = [
     { name = "cyclopts", extra = ["mkdocs"] },
@@ -3058,6 +3070,7 @@ dev = [
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "dagster", specifier = ">=1.12.9" },
     { name = "datafusion", specifier = ">=51.0.0" },
+    { name = "deadcode", specifier = ">=2.4.1" },
     { name = "deltalake", specifier = ">=1.4.2" },
     { name = "deptry", specifier = ">=0.24.0" },
     { name = "dprint-py", specifier = ">=0.50.2.0" },
@@ -3086,7 +3099,6 @@ dev = [
     { name = "sybil", specifier = ">=9.3.0" },
     { name = "syrupy", specifier = ">=5.0.0" },
     { name = "ty", specifier = "==0.0.22" },
-    { name = "vulture", specifier = ">=2.14" },
 ]
 docs = [
     { name = "cyclopts", extras = ["mkdocs"] },
@@ -6238,18 +6250,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/aa/a3/4d310fa5f00863544e1d0f4de93bddec248499ccf97d4791bc3122c9d4f3/virtualenv-20.36.1.tar.gz", hash = "sha256:8befb5c81842c641f8ee658481e42641c68b5eab3521d8e092d18320902466ba", size = 6032239, upload-time = "2026-01-09T18:21:01.296Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/2a/dc2228b2888f51192c7dc766106cd475f1b768c10caaf9727659726f7391/virtualenv-20.36.1-py3-none-any.whl", hash = "sha256:575a8d6b124ef88f6f51d56d656132389f961062a9177016a50e4f507bbcc19f", size = 6008258, upload-time = "2026-01-09T18:20:59.425Z" },
-]
-
-[[package]]
-name = "vulture"
-version = "2.14"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "tomli", marker = "python_full_version < '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/8e/25/925f35db758a0f9199113aaf61d703de891676b082bd7cf73ea01d6000f7/vulture-2.14.tar.gz", hash = "sha256:cb8277902a1138deeab796ec5bef7076a6e0248ca3607a3f3dee0b6d9e9b8415", size = 58823, upload-time = "2024-12-08T17:39:43.319Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/56/0cc15b8ff2613c1d5c3dc1f3f576ede1c43868c1bc2e5ccaa2d4bcd7974d/vulture-2.14-py2.py3-none-any.whl", hash = "sha256:d9a90dba89607489548a49d557f8bac8112bd25d3cbc8aeef23e860811bd5ed9", size = 28915, upload-time = "2024-12-08T17:39:40.573Z" },
 ]
 
 [[package]]
