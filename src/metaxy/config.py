@@ -564,9 +564,9 @@ class MetaxyConfig(BaseSettings):
         toml_settings = TomlConfigSettingsSource(settings_cls)
         # Use our safe EnvSettingsSource to handle Python 3.10 pydantic-settings regression
         env_kwargs: dict[str, Any] = {
-            "case_sensitive": env_settings.case_sensitive,
-            "env_prefix": env_settings.env_prefix,
-            "env_nested_delimiter": env_settings.env_nested_delimiter,
+            "case_sensitive": getattr(env_settings, "case_sensitive", None),
+            "env_prefix": getattr(env_settings, "env_prefix", None),
+            "env_nested_delimiter": getattr(env_settings, "env_nested_delimiter", None),
         }
         # Copy optional attributes if they exist on the original source
         for attr in ["env_ignore_empty", "env_parse_none", "env_parse_none_str", "env_parse_enums"]:
