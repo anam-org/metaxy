@@ -15,8 +15,10 @@ import tomli
 import tomli_w
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
+from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
+    EnvSettingsSource,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
@@ -179,6 +181,37 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
     def __call__(self) -> dict[str, Any]:
         """Return all settings from TOML."""
         return self.toml_data
+
+
+class SafeEnvSettingsSource(EnvSettingsSource):
+    """EnvSettingsSource that handles AttributeError: annotation on Python 3.10.
+
+    This is a workaround for a regression in pydantic-settings 2.13.0+ where
+    resolving nested environment variables for dict[str, Any] fields can fail
+    on Python 3.10 because typing.Any lacks the .annotation attribute.
+
+    See: https://github.com/anam-org/metaxy/issues/952
+    """
+
+    def field_is_complex(self, field: FieldInfo) -> bool:
+        try:
+            return super().field_is_complex(field)
+        except AttributeError:
+            # On Python 3.10, typing.Any lacks .annotation, causing AttributeError.
+            # We treat it as complex to allow further processing of nested keys.
+            return True
+
+    def _field_is_complex(self, field: FieldInfo) -> tuple[bool, bool]:
+        try:
+            return super()._field_is_complex(field)
+        except AttributeError:
+            return True, True
+
+    def decode_complex_value(self, field_name: str, field: FieldInfo, value: Any) -> Any:
+        try:
+            return super().decode_complex_value(field_name, field, value)
+        except AttributeError:
+            return value
 
 
 MetadataStoreT: TypeAlias = type["MetadataStore"]
@@ -529,7 +562,19 @@ class MetaxyConfig(BaseSettings):
         3. TOML file
         """
         toml_settings = TomlConfigSettingsSource(settings_cls)
-        return (init_settings, env_settings, toml_settings)
+        # Use our safe EnvSettingsSource to handle Python 3.10 pydantic-settings regression
+        env_kwargs: dict[str, Any] = {
+            "case_sensitive": env_settings.case_sensitive,
+            "env_prefix": env_settings.env_prefix,
+            "env_nested_delimiter": env_settings.env_nested_delimiter,
+        }
+        # Copy optional attributes if they exist on the original source
+        for attr in ["env_ignore_empty", "env_parse_none", "env_parse_none_str", "env_parse_enums"]:
+            if hasattr(env_settings, attr):
+                env_kwargs[attr] = getattr(env_settings, attr)
+
+        safe_env_settings = SafeEnvSettingsSource(settings_cls, **env_kwargs)
+        return (init_settings, safe_env_settings, toml_settings)
 
     @classmethod
     def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":
