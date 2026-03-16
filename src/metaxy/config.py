@@ -368,6 +368,10 @@ class MetaxyConfig(BaseSettings):
 
         return data
 
+    extends: str | None = PydanticField(
+        default=None, description="A relative or absolute path to a Metaxy configuration file to inherit settings from."
+    )
+
     migrations_dir: str = PydanticField(
         default=".metaxy/migrations",
         description="Directory where migration files are stored",
@@ -633,30 +637,45 @@ class MetaxyConfig(BaseSettings):
             config = MetaxyConfig.load(auto_discovery_start=Path("/path/to/project"))
             ```
         """
-        # Search for config file if not explicitly provided
-
         if config_from_env := os.getenv("METAXY_CONFIG"):
             config_file = Path(config_from_env)
 
         if config_file is None and search_parents:
             config_file = cls._discover_config_with_parents(auto_discovery_start)
 
-        # For explicit file, temporarily patch the TomlConfigSettingsSource
-        # to use that file, then use normal instantiation
-        # This ensures env vars still work
+        config = cls._load(Path(config_file) if config_file else None)
 
-        if config_file:
-            # Create a custom settings source class for this file
-            toml_path = Path(config_file)
+        cls.set(config)
+
+        # Load plugins after config is set (plugins may access MetaxyConfig.get())
+        config._load_plugins()
+
+        return config
+
+    @classmethod
+    def _load(
+        cls,
+        config_file: Path | None,
+        *,
+        _seen=None,
+    ) -> "MetaxyConfig":
+        """Load config from file, resolving the inheritance chain.
+
+        Recursively loads parent configs referenced by ``extends``,
+        tracking visited paths in ``_seen`` to detect cycles.
+        """
+        if _seen is None:
+            _seen = set()
+
+        if config_file is not None:
+            toml_path = config_file
 
             class CustomTomlSource(TomlConfigSettingsSource):
                 def __init__(self, settings_cls: type[BaseSettings]):
-                    # Skip auto-discovery, use explicit file
                     super(TomlConfigSettingsSource, self).__init__(settings_cls)
                     self.toml_file = toml_path
                     self.toml_data = self._load_toml()
 
-            # Customize sources to use custom TOML file
             original_method = cls.settings_customise_sources
 
             @classmethod
@@ -668,29 +687,65 @@ class MetaxyConfig(BaseSettings):
                 dotenv_settings,
                 file_secret_settings,
             ):
-                toml_settings = CustomTomlSource(settings_cls)
-                return (init_settings, env_settings, toml_settings)
+                return (init_settings, env_settings, CustomTomlSource(settings_cls))
 
-            # Temporarily replace method
             cls.settings_customise_sources = custom_sources  # ty: ignore[invalid-assignment]
             try:
                 config = cls()
             finally:
                 cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
-            # Store the resolved config file path
+
             config._config_file = toml_path.resolve()
+            _seen.add(config._config_file)
         else:
-            # Use default sources (auto-discovery + env vars)
             config = cls()
-            # No config file used
             config._config_file = None
 
-        cls.set(config)
+        if config.extends is None:
+            return config
 
-        # Load plugins after config is set (plugins may access MetaxyConfig.get())
-        config._load_plugins()
+        # Resolve extends path relative to the child config file's directory
+        extends_path = Path(config.extends)
+        if not extends_path.is_absolute() and config._config_file is not None:
+            extends_path = (config._config_file.parent / extends_path).resolve()
+        else:
+            extends_path = extends_path.resolve()
 
-        return config
+        if not extends_path.exists():
+            raise InvalidConfigError(
+                f"Config file referenced by 'extends' does not exist: {extends_path}",
+                config_file=config._config_file,
+            )
+
+        if extends_path in _seen:
+            chain = " -> ".join(str(p) for p in _seen)
+            raise InvalidConfigError(
+                f"Circular config inheritance detected: {chain} -> {extends_path}",
+                config_file=config._config_file,
+            )
+
+        parent = cls._load(extends_path, _seen=_seen)
+        return cls._merge_configs(parent=parent, child=config)
+
+    @classmethod
+    def _merge_configs(cls, *, parent: "MetaxyConfig", child: "MetaxyConfig") -> "MetaxyConfig":
+        """Merge child config on top of parent.
+
+        Scalars and lists: child wins if explicitly set, otherwise parent value is kept.
+        Dicts (stores, ext): shallow-merged so parent-only keys are preserved.
+        """
+        child_update: dict[str, Any] = {}
+        for field_name in child.model_fields_set - {"extends"}:
+            child_value = getattr(child, field_name)
+            parent_value = getattr(parent, field_name)
+            if isinstance(child_value, dict) and isinstance(parent_value, dict):
+                child_update[field_name] = {**parent_value, **child_value}
+            else:
+                child_update[field_name] = child_value
+
+        merged = parent.model_copy(update=child_update, deep=True)
+        merged._config_file = child._config_file
+        return merged
 
     @staticmethod
     def _discover_config_with_parents(start_dir: Path | None = None) -> Path | None:

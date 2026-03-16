@@ -1400,3 +1400,141 @@ class TestToToml:
         assert reloaded.migrations_dir == original.migrations_dir
         assert reloaded.entrypoints == original.entrypoints
         assert set(reloaded.stores.keys()) == set(original.stores.keys())
+
+
+class TestConfigInheritance:
+    """Tests for config inheritance via the `extends` field."""
+
+    STORE_TYPE = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+
+    def test_child_overrides_parent(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text('project = "parent_proj"\nstore = "parent_store"\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\nproject = "child_proj"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.project == "child_proj"
+        assert config.store == "parent_store"
+
+    def test_parent_provides_defaults(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text('project = "base"\ntheme = "dark"\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.project == "base"
+        assert config.theme == "dark"
+
+    def test_stores_merged(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text(
+            f'[stores.shared]\ntype = "{self.STORE_TYPE}"\n'
+            f'[stores.shared.config]\nroot_path = "/shared"\n'
+            f'[stores.parent_only]\ntype = "{self.STORE_TYPE}"\n'
+            f'[stores.parent_only.config]\nroot_path = "/parent"\n'
+        )
+
+        child = tmp_path / "child.toml"
+        child.write_text(
+            f'extends = "parent.toml"\n'
+            f'[stores.shared]\ntype = "{self.STORE_TYPE}"\n'
+            f'[stores.shared.config]\nroot_path = "/child"\n'
+        )
+
+        config = MetaxyConfig.load(child)
+
+        assert "shared" in config.stores
+        assert "parent_only" in config.stores
+        assert config.stores["shared"].config["root_path"] == "/child"
+        assert config.stores["parent_only"].config["root_path"] == "/parent"
+
+    def test_entrypoints_replaced_when_set(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text('entrypoints = ["parent.module"]\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\nentrypoints = ["child.module"]\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.entrypoints == ["child.module"]
+
+    def test_entrypoints_inherited_when_unset(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text('entrypoints = ["parent.module"]\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\nproject = "child"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.entrypoints == ["parent.module"]
+
+    def test_config_file_points_to_child(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text('project = "base"\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.config_file == child.resolve()
+
+    def test_relative_path_resolution(self, tmp_path: Path) -> None:
+        sub = tmp_path / "sub"
+        sub.mkdir()
+        parent = tmp_path / "parent.toml"
+        parent.write_text('project = "base"\n')
+
+        child = sub / "child.toml"
+        child.write_text('extends = "../parent.toml"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.project == "base"
+        assert config.config_file == child.resolve()
+
+    def test_circular_inheritance(self, tmp_path: Path) -> None:
+        a = tmp_path / "a.toml"
+        b = tmp_path / "b.toml"
+        a.write_text('extends = "b.toml"\n')
+        b.write_text('extends = "a.toml"\n')
+
+        with pytest.raises(InvalidConfigError, match="Circular config inheritance"):
+            MetaxyConfig.load(a)
+
+    def test_multi_level_inheritance(self, tmp_path: Path) -> None:
+        grandparent = tmp_path / "grandparent.toml"
+        grandparent.write_text('project = "gp"\ntheme = "gp_theme"\nstore = "gp_store"\n')
+
+        parent = tmp_path / "parent.toml"
+        parent.write_text('extends = "grandparent.toml"\ntheme = "parent_theme"\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\nstore = "child_store"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.project == "gp"
+        assert config.theme == "parent_theme"
+        assert config.store == "child_store"
+
+    def test_extends_only(self, tmp_path: Path) -> None:
+        parent = tmp_path / "parent.toml"
+        parent.write_text('project = "inherited"\nstore = "prod"\nentrypoints = ["mod.a"]\n')
+
+        child = tmp_path / "child.toml"
+        child.write_text('extends = "parent.toml"\n')
+
+        config = MetaxyConfig.load(child)
+
+        assert config.project == "inherited"
+        assert config.store == "prod"
+        assert config.entrypoints == ["mod.a"]

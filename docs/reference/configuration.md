@@ -45,6 +45,21 @@ Metaxy supports templating environment variables in configuration files using th
     root_path = "s3://my-bucket/${BRANCH_NAME}"
     ```
 
+### Configuration Inheritance
+
+A configuration file can inherit settings from another file using the [`extends`](#metaxy.config.MetaxyConfig.extends) field. This is especially useful in monorepos.
+
+```toml title="metaxy.toml"
+project = "my_project"
+extends = "../base.toml"
+```
+
+!!! note
+
+    Top-level dictionary fields are merged, while all other fields are overridden.
+
+The `extends` path can be either relative to the file that contains it or an absolute path.
+
 ## Configuration Options
 
 ::: metaxy-config
