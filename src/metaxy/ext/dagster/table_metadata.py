@@ -330,7 +330,7 @@ def build_table_preview_metadata(
 
     Collects the last `n_rows` from the LazyFrame and converts them to
     Dagster TableRecord objects suitable for display in the Dagster UI.
-    Complex types (Struct, List, Array) are converted to JSON strings;
+    Complex types (Struct, List, Array) are json-encoded;
     primitive types (str, int, float, bool, None) are kept as-is.
 
     Args:

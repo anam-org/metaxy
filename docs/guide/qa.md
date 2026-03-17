@@ -12,7 +12,7 @@ description: "Answers to frequently asked questions."
 
 !!! question "Do you support PostgreSQL?"
 
-    Not at the moment, but we are working on it in [`anam-org/metaxy#223`](https://github.com/anam-org/metaxy/issues/223).
+    We kinda do, but PostgreSQL is a [really bad choice](/integrations/metadata-stores/databases/postgresql.md) for a metadata store backend.
 
 !!! question "What does the logo mean? Why does it look like [this](https://velvetshark.com/ai-company-logos-that-look-like-buttholes)?"
 

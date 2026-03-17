@@ -55,7 +55,7 @@ class PostgreSQLMetadataStoreConfig(IbisMetadataStoreConfig):
 
     auto_cast_struct_for_jsonb: bool = Field(
         default=True,
-        description="Auto-convert DataFrame Struct columns to JSON strings on write. Metaxy system columns are always converted.",
+        description="Whether to encode/decode Struct columns to/from JSON on writes/reads. Metaxy system columns are always converted.",
     )
 
 
