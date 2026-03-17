@@ -62,6 +62,10 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [start:releases] -->
 """
 body = """
+{% if message %}
+{{ message }}
+
+{% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
 {{ group | striptags | trim }}
 {% for commit in commits %}
