@@ -17,13 +17,15 @@ commit_preprocessors = [
   { pattern = '^:zap: ', replace = "perf: " },
   { pattern = '^:robot: ', replace = "ci: " },
   { pattern = '^:bomb: ', replace = "refactor!: " },
+  # Link PR references in commit messages
+  { pattern = '\(#(\d+)\)', replace = "([#$1](https://github.com/anam-org/metaxy/pull/$1))" },
 ]
 commit_parsers = [
-  { message = "^.*!:", group = "### :bomb: Breaking" },
-  { message = "^feat", group = "### :sparkles: Added" },
-  { message = "^fix", group = "### :bug: Fixes" },
-  { message = "^docs", group = "### :book: Docs" },
-  { message = "^perf", group = "### :zap: Performance" },
+  { message = "^.*!:", group = "<0>### :bomb: Breaking" },
+  { message = "^feat", group = "<1>### :sparkles: Added" },
+  { message = "^fix", group = "<2>### :bug: Fixes" },
+  { message = "^docs", group = "<3>### :book: Docs" },
+  { message = "^perf", group = "<4>### :zap: Performance" },
   { message = "^refactor", skip = true },
   { message = "^chore", skip = true },
   { message = "^ci", skip = true },
@@ -60,12 +62,11 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [start:releases] -->
 """
 body = """
-{% for group, commits in commits | group_by(attribute="group") %}\
+{% for group, commits in commits | group_by(attribute="group") %}
 {{ group | striptags | trim }}
 {% for commit in commits %}
 - {{ commit.message | split(pat="\n") | first | trim }}\
-    {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif %}\
-    {% if commit.remote.pr_number %} in [#{{ commit.remote.pr_number }}](https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}/pull/{{ commit.remote.pr_number }}){%- endif %}
+    {% if commit.remote.username %} by @{{ commit.remote.username }}{%- endif %}
 {%- if commit.body and commit.body is containing("## Changelog") -%}
 {%- set changelog_section = commit.body | split(pat="## Changelog") | last -%}
 {%- set lines = changelog_section | split(pat="\n") -%}
