@@ -47,18 +47,16 @@ Metaxy supports templating environment variables in configuration files using th
 
 ### Configuration Inheritance
 
-A configuration file can inherit settings from another file using the [`extends`](#metaxy.config.MetaxyConfig.extends) field. This is especially useful in monorepos.
+A configuration file can inherit settings from another file using the [`extends`](#metaxy.config.MetaxyConfig.extends) field. This is especially useful in monorepos: a shared `metaxy.toml` can define stores, plugins, and other common settings.
 
 ```toml title="metaxy.toml"
 project = "my_project"
 extends = "../base.toml"
 ```
 
-!!! note
-
-    Top-level dictionary fields are merged, while all other fields are overridden.
-
 The `extends` path can be either relative to the file that contains it or an absolute path.
+
+When a child config extends a parent, scalar fields are replaced, dictionary fields are shallow-merged, and array fields are extended.
 
 ## Configuration Options
 

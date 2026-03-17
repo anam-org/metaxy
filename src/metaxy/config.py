@@ -727,12 +727,15 @@ class MetaxyConfig(BaseSettings):
         parent = cls._load(extends_path, _seen=_seen)
         return cls._merge_configs(parent=parent, child=config)
 
+    # Fields that are shallow-merged (dicts) or appended (lists) during
+    # config inheritance instead of being replaced by the child value.
     @classmethod
     def _merge_configs(cls, *, parent: "MetaxyConfig", child: "MetaxyConfig") -> "MetaxyConfig":
         """Merge child config on top of parent.
 
-        Scalars and lists: child wins if explicitly set, otherwise parent value is kept.
-        Dicts (stores, ext): shallow-merged so parent-only keys are preserved.
+        Scalars: child replaces parent.
+        Dicts: shallow-merged (parent-only keys preserved, shared keys use child's value).
+        Lists: appended (parent entries + child entries).
         """
         child_update: dict[str, Any] = {}
         for field_name in child.model_fields_set - {"extends"}:
@@ -740,6 +743,8 @@ class MetaxyConfig(BaseSettings):
             parent_value = getattr(parent, field_name)
             if isinstance(child_value, dict) and isinstance(parent_value, dict):
                 child_update[field_name] = {**parent_value, **child_value}
+            elif isinstance(child_value, list) and isinstance(parent_value, list):
+                child_update[field_name] = parent_value + child_value
             else:
                 child_update[field_name] = child_value
 
