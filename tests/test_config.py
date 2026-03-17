@@ -1403,7 +1403,7 @@ class TestToToml:
 
 
 class TestConfigInheritance:
-    """Tests for config inheritance via the `extends` field."""
+    """Tests for config inheritance via the `extend` field."""
 
     STORE_TYPE = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 
@@ -1412,7 +1412,7 @@ class TestConfigInheritance:
         parent.write_text('project = "parent_proj"\nstore = "parent_store"\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\nproject = "child_proj"\n')
+        child.write_text('extend = "parent.toml"\nproject = "child_proj"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1424,7 +1424,7 @@ class TestConfigInheritance:
         parent.write_text('project = "base"\ntheme = "dark"\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\n')
+        child.write_text('extend = "parent.toml"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1442,7 +1442,7 @@ class TestConfigInheritance:
 
         child = tmp_path / "child.toml"
         child.write_text(
-            f'extends = "parent.toml"\n'
+            f'extend = "parent.toml"\n'
             f'[stores.shared]\ntype = "{self.STORE_TYPE}"\n'
             f'[stores.shared.config]\nroot_path = "/child"\n'
         )
@@ -1459,7 +1459,7 @@ class TestConfigInheritance:
         parent.write_text('entrypoints = ["parent.module"]\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\nentrypoints = ["child.module"]\n')
+        child.write_text('extend = "parent.toml"\nentrypoints = ["child.module"]\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1470,7 +1470,7 @@ class TestConfigInheritance:
         parent.write_text('entrypoints = ["parent.module"]\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\nproject = "child"\n')
+        child.write_text('extend = "parent.toml"\nproject = "child"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1481,7 +1481,7 @@ class TestConfigInheritance:
         parent.write_text('project = "base"\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\n')
+        child.write_text('extend = "parent.toml"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1494,7 +1494,7 @@ class TestConfigInheritance:
         parent.write_text('project = "base"\n')
 
         child = sub / "child.toml"
-        child.write_text('extends = "../parent.toml"\n')
+        child.write_text('extend = "../parent.toml"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1504,8 +1504,8 @@ class TestConfigInheritance:
     def test_circular_inheritance(self, tmp_path: Path) -> None:
         a = tmp_path / "a.toml"
         b = tmp_path / "b.toml"
-        a.write_text('extends = "b.toml"\n')
-        b.write_text('extends = "a.toml"\n')
+        a.write_text('extend = "b.toml"\n')
+        b.write_text('extend = "a.toml"\n')
 
         with pytest.raises(InvalidConfigError, match="Circular config inheritance"):
             MetaxyConfig.load(a)
@@ -1515,10 +1515,10 @@ class TestConfigInheritance:
         grandparent.write_text('project = "gp"\ntheme = "gp_theme"\nstore = "gp_store"\n')
 
         parent = tmp_path / "parent.toml"
-        parent.write_text('extends = "grandparent.toml"\ntheme = "parent_theme"\n')
+        parent.write_text('extend = "grandparent.toml"\ntheme = "parent_theme"\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\nstore = "child_store"\n')
+        child.write_text('extend = "parent.toml"\nstore = "child_store"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1526,12 +1526,12 @@ class TestConfigInheritance:
         assert config.theme == "parent_theme"
         assert config.store == "child_store"
 
-    def test_extends_only(self, tmp_path: Path) -> None:
+    def test_extend_only(self, tmp_path: Path) -> None:
         parent = tmp_path / "parent.toml"
         parent.write_text('project = "inherited"\nstore = "prod"\nentrypoints = ["mod.a"]\n')
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\n')
+        child.write_text('extend = "parent.toml"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1545,7 +1545,7 @@ class TestConfigInheritance:
         parent.write_text("[ext.sqlmodel]\nenable = true\ninject_primary_key = true\ninject_index = true\n")
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\nproject = "child"\n')
+        child.write_text('extend = "parent.toml"\nproject = "child"\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1561,7 +1561,7 @@ class TestConfigInheritance:
         parent.write_text("[ext.sqlmodel]\nenable = true\ninject_primary_key = true\ninject_index = true\n")
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\n[ext.sqlmodel]\ninject_primary_key = false\n')
+        child.write_text('extend = "parent.toml"\n[ext.sqlmodel]\ninject_primary_key = false\n')
 
         config = MetaxyConfig.load(child)
 
@@ -1575,7 +1575,7 @@ class TestConfigInheritance:
         parent.write_text("[ext.myplugin]\nenable = false\ncustom_setting = true\n")
 
         child = tmp_path / "child.toml"
-        child.write_text('extends = "parent.toml"\n[ext.otherplugin]\nenable = false\n')
+        child.write_text('extend = "parent.toml"\n[ext.otherplugin]\nenable = false\n')
 
         config = MetaxyConfig.load(child)
 

@@ -87,7 +87,7 @@ init-example name:
 
 # Preview unreleased changelog entries
 changelog-preview:
-    git cliff --unreleased --strip header
+    git cliff --unreleased --strip all
 
 # Generate full CHANGELOG.md
 changelog:

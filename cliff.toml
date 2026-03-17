@@ -8,13 +8,23 @@ filter_unconventional = true
 split_commits = false
 commit_preprocessors = [
   { pattern = '^\((\w+)\)!:', replace = "($1):" },
+  # Map legacy emoji-prefixed commits to conventional commits
+  { pattern = '^:sparkles: ', replace = "feat: " },
+  { pattern = '^:bug: ', replace = "fix: " },
+  { pattern = '^:book: ', replace = "docs: " },
+  { pattern = '^:art: ', replace = "refactor: " },
+  { pattern = '^:wrench: ', replace = "feat: " },
+  { pattern = '^:zap: ', replace = "perf: " },
+  { pattern = '^:robot: ', replace = "ci: " },
+  { pattern = '^:bomb: ', replace = "refactor!: " },
 ]
 commit_parsers = [
+  { message = "^.*!:", group = "### :bomb: Breaking" },
   { message = "^feat", group = "### :sparkles: Added" },
   { message = "^fix", group = "### :bug: Fixes" },
   { message = "^docs", group = "### :book: Docs" },
-  { message = "^refactor", group = "### :wrench: Changed" },
   { message = "^perf", group = "### :zap: Performance" },
+  { message = "^refactor", skip = true },
   { message = "^chore", skip = true },
   { message = "^ci", skip = true },
   { message = "^build", skip = true },

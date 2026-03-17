@@ -368,7 +368,7 @@ class MetaxyConfig(BaseSettings):
 
         return data
 
-    extends: str | None = PydanticField(
+    extend: str | None = PydanticField(
         default=None, description="A relative or absolute path to a Metaxy configuration file to inherit settings from."
     )
 
@@ -661,7 +661,7 @@ class MetaxyConfig(BaseSettings):
     ) -> "MetaxyConfig":
         """Load config from file, resolving the inheritance chain.
 
-        Recursively loads parent configs referenced by ``extends``,
+        Recursively loads parent configs referenced by ``extend``,
         tracking visited paths in ``_seen`` to detect cycles.
         """
         if _seen is None:
@@ -701,30 +701,30 @@ class MetaxyConfig(BaseSettings):
             config = cls()
             config._config_file = None
 
-        if config.extends is None:
+        if config.extend is None:
             return config
 
-        # Resolve extends path relative to the child config file's directory
-        extends_path = Path(config.extends)
-        if not extends_path.is_absolute() and config._config_file is not None:
-            extends_path = (config._config_file.parent / extends_path).resolve()
+        # Resolve extend path relative to the child config file's directory
+        extend_path = Path(config.extend)
+        if not extend_path.is_absolute() and config._config_file is not None:
+            extend_path = (config._config_file.parent / extend_path).resolve()
         else:
-            extends_path = extends_path.resolve()
+            extend_path = extend_path.resolve()
 
-        if not extends_path.exists():
+        if not extend_path.exists():
             raise InvalidConfigError(
-                f"Config file referenced by 'extends' does not exist: {extends_path}",
+                f"Config file referenced by 'extend' does not exist: {extend_path}",
                 config_file=config._config_file,
             )
 
-        if extends_path in _seen:
+        if extend_path in _seen:
             chain = " -> ".join(str(p) for p in _seen)
             raise InvalidConfigError(
-                f"Circular config inheritance detected: {chain} -> {extends_path}",
+                f"Circular config inheritance detected: {chain} -> {extend_path}",
                 config_file=config._config_file,
             )
 
-        parent = cls._load(extends_path, _seen=_seen)
+        parent = cls._load(extend_path, _seen=_seen)
         return cls._merge_configs(parent=parent, child=config)
 
     # Fields that are shallow-merged (dicts) or appended (lists) during
@@ -738,7 +738,7 @@ class MetaxyConfig(BaseSettings):
         Lists: appended (parent entries + child entries).
         """
         child_update: dict[str, Any] = {}
-        for field_name in child.model_fields_set - {"extends"}:
+        for field_name in child.model_fields_set - {"extend"}:
             child_value = getattr(child, field_name)
             parent_value = getattr(parent, field_name)
             if isinstance(child_value, dict) and isinstance(parent_value, dict):
