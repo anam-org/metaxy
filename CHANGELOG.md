@@ -21,6 +21,17 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## v0.1.6 (18-03-2026)
+
+### :bug: Bug Fixes
+
+- **sqlalchemy**: the `SQLAlchemy` integration configuration (`[ext.sqlalchemy]` in `metaxy.toml`) has been removed. Please use the code interface instead. ([#1075](https://github.com/anam-org/metaxy/pull/1075) by [@danielgafni](https://github.com/danielgafni))
+- **sqlmodel**: the `SQLModel` integration configuration (`[ext.sqlmodel]` in `metaxy.toml`) has been removed. Please use the code interface instead. ([#1074](https://github.com/anam-org/metaxy/pull/1074) by [@danielgafni](https://github.com/danielgafni))
+
+### :book: Docs
+
+- only display field name in configuration docs ([#1070](https://github.com/anam-org/metaxy/pull/1070) by [@danielgafni](https://github.com/danielgafni))
+
 ## v0.1.5 (18-03-2026)
 
 ### :sparkles: Features
