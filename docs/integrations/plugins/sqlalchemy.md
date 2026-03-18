@@ -182,12 +182,3 @@ To throw `SQLModel` into the mix, make sure to use the [SQLModel integration](sq
       members: false
       heading_level: 3
 <!-- dprint-ignore-end -->
-
-## Configuration
-
-<!-- dprint-ignore-start -->
-::: metaxy-config
-    class: metaxy.ext.sqlalchemy.SQLAlchemyConfig
-    path_prefix: ext.sqlalchemy
-    header_level: 2
-<!-- dprint-ignore-end -->

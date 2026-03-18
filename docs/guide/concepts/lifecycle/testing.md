@@ -45,18 +45,17 @@ The config object can be explicitly passed to `init`. This can be used to adjust
 Plugins can be configured via a dictionary where keys are plugin names and values are plugin-specific configuration objects:
 
 ```python
-from metaxy.config import MetaxyConfig
-from metaxy.ext.sqlalchemy import SQLAlchemyConfig
+from metaxy.config import MetaxyConfig, PluginConfig
 
 with MetaxyConfig(
     ext={
-        "sqlalchemy": SQLAlchemyConfig(
+        "myplugin": PluginConfig(
             enable=True,
         )
     }
 ).use() as cfg:
-    sqla_config = MetaxyConfig.get_plugin("sqlalchemy", SQLAlchemyConfig)
-    assert sqla_config.enable is True
+    plugin_config = MetaxyConfig.get_plugin("myplugin", PluginConfig)
+    assert plugin_config.enable is True
 ```
 
 ### Multi-Project Testing
