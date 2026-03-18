@@ -89,15 +89,25 @@ init-example name:
 changelog-preview:
     git cliff --unreleased --strip all
 
-# Generate full CHANGELOG.md
 changelog:
     git cliff -o CHANGELOG.md
 
-# Bump version: dev, rc, stable, patch, minor, major
-release bump:
-    uv version --bump {{bump}}
+# Create a release (version auto-detected from commits, or manually specified)
+release bump="" message="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "{{bump}}" ]; then
+        uv version --bump {{bump}}
+    else
+        uv version "$(git cliff --bumped-version | sed 's/^v//')"
+    fi
+    version="v$(uv version --short)"
     echo "__version__ = \"$(uv version --short)\"" > src/metaxy/_version.py
-    git cliff -o CHANGELOG.md
+    if [ -n "{{message}}" ]; then
+        git cliff --tag "$version" --with-tag-message "{{message}}" -o CHANGELOG.md
+    else
+        git cliff --tag "$version" -o CHANGELOG.md
+    fi
 
 # Update snapshots for all examples or specific examples
 example-snapshot-update *EXAMPLES:

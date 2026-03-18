@@ -16,7 +16,7 @@ Preview unreleased changelog entries:
 just changelog-preview
 ```
 
-Regenerate the full `CHANGELOG.md` from scratch:
+Regenerate the full `CHANGELOG.md`:
 
 ```bash
 just changelog
@@ -25,28 +25,19 @@ just changelog
 ## Creating a release
 
 ```bash
-just release rc      # pre-release
-just release stable  # stable release
+just release rc                                    # pre-release
+just release stable                                # stable release
+just release stable message="Adds PostgreSQL support."  # with a release summary
 ```
 
-The `release` recipe bumps the version, updates `_version.py`, and prepends the new release section to `CHANGELOG.md`.
-
-## Release summary
-
-To include a custom summary for a release, create an annotated tag:
-
-```bash
-git tag -a v0.2.0 -m "This release does X and Y."
-```
-
-The tag message appears above the commit groups in both `CHANGELOG.md` and the GitHub Release notes. With a lightweight tag, no summary is included.
+This bumps the version and generates the changelog. Commit and tag manually after reviewing the changes. The optional `message` parameter adds a release summary above the commit groups in both `CHANGELOG.md` and the GitHub Release notes.
 
 ## Publishing
 
 Push the tag to trigger the release workflow:
 
 ```bash
-git push origin v0.2.0
+git push origin --follow-tags
 ```
 
-Or create a Release from GitHub's UI. The GitHub Release body is automatically populated by CI using git-cliff.
+The CI pipeline runs QA, publishes to PyPI, creates a GitHub Release, and deploys docs (stable releases only).
