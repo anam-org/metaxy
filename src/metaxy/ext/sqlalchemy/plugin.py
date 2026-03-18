@@ -12,7 +12,6 @@ from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
 
 from metaxy._decorators import experimental, public
 from metaxy.config import MetaxyConfig
-from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
@@ -200,9 +199,9 @@ def _get_features_metadata(
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
         inject_primary_key: If True, inject composite primary key constraints.
-                           If False, do not inject. If None, uses config default.
+                           Defaults to False.
         inject_index: If True, inject composite index.
-                     If False, do not inject. If None, uses config default.
+                     Defaults to False.
 
     Returns:
         Filtered SQLAlchemy MetaData containing only project-scoped feature tables
@@ -214,12 +213,10 @@ def _get_features_metadata(
     if project is None:
         project = config.project
 
-    # Check plugin config for defaults
-    sqlalchemy_config = config.get_plugin("sqlalchemy", SQLAlchemyConfig)
     if inject_primary_key is None:
-        inject_primary_key = sqlalchemy_config.inject_primary_key
+        inject_primary_key = False
     if inject_index is None:
-        inject_index = sqlalchemy_config.inject_index
+        inject_index = False
 
     # Get the active feature graph
     graph = FeatureGraph.get_active()
@@ -313,9 +310,9 @@ def filter_feature_sqla_metadata(
         filter_by_project: If True, only include features for the specified project.
                           If False, include all features.
         inject_primary_key: If True, inject composite primary key constraints.
-                           If False, do not inject. If None, uses config default.
+                           Defaults to False.
         inject_index: If True, inject composite index.
-                     If False, do not inject. If None, uses config default.
+                     Defaults to False.
         protocol: Optional protocol to replace the existing one in the URL.
             Useful when Ibis uses a different protocol than SQLAlchemy requires.
         port: Optional port to replace the existing one in the URL.

@@ -25,28 +25,6 @@ The SQLModel integration requires the sqlmodel package:
 pip install 'metaxy[sqlmodel]'
 ```
 
-and has to be enabled explicitly:
-
-=== "metaxy.toml"
-
-    ```toml
-    [ext.sqlmodel]
-    enable = true
-    ```
-
-=== "pyproject.toml"
-
-    ```toml
-    [tool.metaxy.ext.sqlmodel]
-    enable = true
-    ```
-
-=== "Environment Variable"
-
-    ```bash
-    export METAXY_EXT__SQLMODEL_ENABLE=true
-    ```
-
 ## Usage
 
 The SQLModel integration provides [`BaseSQLModelFeature`][metaxy.ext.sqlmodel.BaseSQLModelFeature] which combines the functionality of a Metaxy feature and an SQLModel table.
@@ -81,7 +59,51 @@ class VideoFeature(
 
 !!! note "Automatic Table Naming"
 
-    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
+    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`.
+
+## Feature Configuration
+
+SQLModel features can be configured via [`SQLModelFeatureConfig`][metaxy.ext.sqlmodel.SQLModelFeatureConfig]:
+
+```python
+import metaxy as mx
+import metaxy.ext.sqlmodel as mxsql
+
+
+class VideoFeature(
+    mxsql.BaseSQLModelFeature,
+    table=True,
+    spec=mx.FeatureSpec(
+        key=mx.FeatureKey(["video"]),
+        id_columns=["video_id"],
+        fields=["frames", "duration"],
+    ),
+):
+    feature_config = mx.FeatureConfig(
+        ext={"sqlmodel": mxsql.SQLModelFeatureConfig(inject_primary_key=True)}
+    )
+
+    video_id: str
+    path: str
+    duration: float
+```
+
+Since `feature_config` is a class attribute, it is inherited. Define a shared base class to apply the same configuration to all features:
+
+```python
+class MyBase(mxsql.BaseSQLModelFeature):
+    feature_config = mx.FeatureConfig(
+        ext={"sqlmodel": mxsql.SQLModelFeatureConfig(inject_primary_key=True)}
+    )
+
+
+class VideoFeature(MyBase, table=True, spec=...):
+    ...  # inherits inject_primary_key=True
+
+
+class AudioFeature(MyBase, table=True, spec=...):
+    ...  # inherits inject_primary_key=True
+```
 
 ## Database Migrations
 
@@ -136,17 +158,13 @@ See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for co
       members: false
       heading_level: 3
 
+::: metaxy.ext.sqlmodel.SQLModelFeatureConfig
+    options:
+      members: false
+      heading_level: 3
+
 ::: metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata
     options:
       members: false
       heading_level: 3
-<!-- dprint-ignore-end -->
-
-## Configuration
-
-<!-- dprint-ignore-start -->
-::: metaxy-config
-    class: metaxy.ext.sqlmodel.SQLModelPluginConfig
-    path_prefix: ext.sqlmodel
-    header_level: 2
 <!-- dprint-ignore-end -->

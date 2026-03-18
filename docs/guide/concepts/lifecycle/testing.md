@@ -46,18 +46,17 @@ Plugins can be configured via a dictionary where keys are plugin names and value
 
 ```python
 from metaxy.config import MetaxyConfig
-from metaxy.ext.sqlmodel import SQLModelPluginConfig
+from metaxy.ext.sqlalchemy import SQLAlchemyConfig
 
 with MetaxyConfig(
     ext={
-        "sqlmodel": SQLModelPluginConfig(
+        "sqlalchemy": SQLAlchemyConfig(
             enable=True,
-            inject_primary_key=True,
         )
     }
 ).use() as cfg:
-    sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
-    assert sqlmodel_config.inject_primary_key is True
+    sqla_config = MetaxyConfig.get_plugin("sqlalchemy", SQLAlchemyConfig)
+    assert sqla_config.enable is True
 ```
 
 ### Multi-Project Testing

@@ -28,6 +28,7 @@ from metaxy.migrations import (
 )
 from metaxy.models.feature import (
     BaseFeature,
+    FeatureConfig,
     FeatureGraph,
     current_graph,
     graph,
@@ -156,6 +157,7 @@ def init(
 __all__ = [
     "BufferedMetadataWriter",
     "BaseFeature",
+    "FeatureConfig",
     "experimental",
     "FeatureDefinition",
     "FeatureSelection",

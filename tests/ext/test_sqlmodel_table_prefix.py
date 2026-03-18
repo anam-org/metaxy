@@ -7,7 +7,6 @@ from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.sqlmodel import (
     BaseSQLModelFeature,
-    SQLModelPluginConfig,
     filter_feature_sqlmodel_metadata,
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -37,7 +36,6 @@ def test_filter_feature_sqlmodel_metadata_applies_table_prefix():
             )
         },
         store="prefixed_store",
-        ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
     )
 
     with config.use():
@@ -82,7 +80,6 @@ def test_filter_feature_sqlmodel_metadata_no_prefix():
             )
         },
         store="no_prefix_store",
-        ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
     )
 
     with config.use():
@@ -132,7 +129,6 @@ def test_filter_feature_sqlmodel_metadata_different_prefixes():
             ),
         },
         store="store_a",
-        ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
     )
 
     with config.use():
@@ -186,7 +182,6 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
             )
         },
         store="prefixed_store",
-        ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
     )
 
     with config.use():
@@ -248,7 +243,6 @@ def test_custom_tablename_raises_error():
             )
         },
         store="default_store",
-        ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
     )
 
     with config.use():
@@ -284,7 +278,6 @@ class TestProtocolParameter:
                 )
             },
             store="test_store",
-            ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
         )
 
         with config.use():
@@ -327,7 +320,6 @@ class TestProtocolParameter:
                 )
             },
             store="test_store",
-            ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
         )
 
         with config.use():
@@ -362,7 +354,6 @@ class TestProtocolParameter:
                 )
             },
             store="prefixed_store",
-            ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
         )
 
         with config.use():

@@ -4,7 +4,7 @@ This module provides a combined metaclass that allows Metaxy Feature classes
 to also be SQLModel table classes, enabling seamless integration with SQLAlchemy/SQLModel ORMs.
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 from pydantic import AwareDatetime, BaseModel
 from sqlalchemy.types import JSON, DateTime
@@ -14,7 +14,6 @@ from sqlmodel.main import SQLModelMetaclass
 from metaxy import FeatureSpec
 from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
-from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_CREATED_AT,
@@ -48,6 +47,18 @@ class MetaxyTableInfo(BaseModel):
     feature_key: ValidatedFeatureKey
 
 
+@public
+class SQLModelFeatureConfig(TypedDict, total=False):
+    """SQLModel-specific feature configuration.
+
+    Pass via ``feature_config = FeatureConfig(ext={"sqlmodel": SQLModelFeatureConfig(...)})``
+    on your feature class or a shared base class.
+    """
+
+    inject_primary_key: bool
+    inject_index: bool
+
+
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
     def __new__(
         cls,
@@ -56,8 +67,6 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         namespace: dict[str, Any],
         *,
         spec: FeatureSpecWithIDColumns | None = None,
-        inject_primary_key: bool | None = None,
-        inject_index: bool | None = None,
         **kwargs: Any,
     ) -> type[Any]:
         """Create a new SQLModel + Metaxy Feature class.
@@ -67,10 +76,6 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
             bases: Base classes
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
-            inject_primary_key: If True, automatically create composite primary key
-                including (metaxy_feature_version, *id_columns, metaxy_updated_at).
-            inject_index: If True, automatically create composite index
-                including (metaxy_feature_version, *id_columns, metaxy_updated_at).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -82,12 +87,10 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
 
             namespace["model_config"] = ConfigDict(frozen=False)
 
-        # Check plugin config for defaults
-        sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
-        if inject_primary_key is None:
-            inject_primary_key = sqlmodel_config.inject_primary_key
-        if inject_index is None:
-            inject_index = sqlmodel_config.inject_index
+        # Resolve SQLModel feature config from feature_config class attribute (inherited via MRO)
+        sqlmodel_config = cls._resolve_sqlmodel_config(namespace, bases)
+        inject_primary_key = sqlmodel_config.get("inject_primary_key", False)
+        inject_index = sqlmodel_config.get("inject_index", False)
 
         # If this is a concrete table (table=True) with a spec
         if kwargs.get("table") and spec is not None:
@@ -130,6 +133,20 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         new_class = super().__new__(cls, cls_name, bases, namespace, spec=spec, **kwargs)
 
         return new_class
+
+    @staticmethod
+    def _resolve_sqlmodel_config(
+        namespace: dict[str, Any],
+        bases: tuple[type[Any], ...],
+    ) -> SQLModelFeatureConfig:
+        """Resolve SQLModel config from feature_config, checking namespace then MRO."""
+        feature_config: dict[str, Any] = namespace.get("feature_config", {})
+        if not feature_config:
+            for base in bases:
+                feature_config = getattr(base, "feature_config", {})
+                if feature_config:
+                    break
+        return feature_config.get("ext", {}).get("sqlmodel", {})
 
     @staticmethod
     def _inject_table_args(
@@ -405,9 +422,9 @@ def filter_feature_sqlmodel_metadata(
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
         inject_primary_key: If True, inject composite primary key constraints.
-                           If False, do not inject. If None, uses config default.
+                           Defaults to False.
         inject_index: If True, inject composite index.
-                     If False, do not inject. If None, uses config default.
+                     Defaults to False.
         protocol: Optional protocol to replace the existing one in the URL.
             Useful when Ibis uses a different protocol than SQLAlchemy requires.
         port: Optional port to replace the existing one in the URL.
@@ -455,12 +472,10 @@ def filter_feature_sqlmodel_metadata(
     if project is None:
         project = config.project
 
-    # Check plugin config for defaults
-    sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
     if inject_primary_key is None:
-        inject_primary_key = sqlmodel_config.inject_primary_key
+        inject_primary_key = False
     if inject_index is None:
-        inject_index = sqlmodel_config.inject_index
+        inject_index = False
 
     url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
 

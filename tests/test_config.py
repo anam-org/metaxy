@@ -1542,32 +1542,32 @@ class TestConfigInheritance:
     def test_ext_plugin_config_inherited(self, tmp_path: Path) -> None:
         """Parent's ext plugin config (including extra fields) is inherited."""
         parent = tmp_path / "parent.toml"
-        parent.write_text("[ext.sqlmodel]\nenable = true\ninject_primary_key = true\ninject_index = true\n")
+        parent.write_text("[ext.myplugin]\nenable = true\ncustom_a = true\ncustom_b = true\n")
 
         child = tmp_path / "child.toml"
         child.write_text('extend = "parent.toml"\nproject = "child"\n')
 
         config = MetaxyConfig.load(child)
 
-        assert "sqlmodel" in config.ext
-        assert config.ext["sqlmodel"].enable is True
-        assert config.ext["sqlmodel"].model_extra
-        assert config.ext["sqlmodel"].model_extra["inject_primary_key"] is True
-        assert config.ext["sqlmodel"].model_extra["inject_index"] is True
+        assert "myplugin" in config.ext
+        assert config.ext["myplugin"].enable is True
+        assert config.ext["myplugin"].model_extra
+        assert config.ext["myplugin"].model_extra["custom_a"] is True
+        assert config.ext["myplugin"].model_extra["custom_b"] is True
 
     def test_ext_plugin_config_shallow_merged(self, tmp_path: Path) -> None:
         """Child ext entry replaces parent's entry for the same key (shallow merge)."""
         parent = tmp_path / "parent.toml"
-        parent.write_text("[ext.sqlmodel]\nenable = true\ninject_primary_key = true\ninject_index = true\n")
+        parent.write_text("[ext.myplugin]\nenable = true\ncustom_a = true\ncustom_b = true\n")
 
         child = tmp_path / "child.toml"
-        child.write_text('extend = "parent.toml"\n[ext.sqlmodel]\ninject_primary_key = false\n')
+        child.write_text('extend = "parent.toml"\n[ext.myplugin]\ncustom_a = false\n')
 
         config = MetaxyConfig.load(child)
 
-        # Child's sqlmodel replaces parent's entirely — only child's fields are present
-        assert config.ext["sqlmodel"].enable is False  # default, not parent's True
-        assert config.ext["sqlmodel"].model_extra == {"inject_primary_key": False}
+        # Child's myplugin replaces parent's entirely — only child's fields are present
+        assert config.ext["myplugin"].enable is False  # default, not parent's True
+        assert config.ext["myplugin"].model_extra == {"custom_a": False}
 
     def test_ext_child_adds_new_plugin(self, tmp_path: Path) -> None:
         """Child can add new plugins while preserving parent's plugins."""

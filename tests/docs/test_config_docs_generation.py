@@ -25,11 +25,11 @@ def test_extract_field_info_metaxy_config() -> None:
     assert store_fields[0]["default"] == "dev"
 
 
-def test_extract_field_info_sqlmodel_config() -> None:
-    """Test extracting field info from SQLModelPluginConfig."""
-    from metaxy.ext.sqlmodel import SQLModelPluginConfig
+def test_extract_field_info_sqlalchemy_config() -> None:
+    """Test extracting field info from SQLAlchemyConfig."""
+    from metaxy.ext.sqlalchemy import SQLAlchemyConfig
 
-    fields = extract_field_info(SQLModelPluginConfig)
+    fields = extract_field_info(SQLAlchemyConfig)
 
     assert len(fields) > 0
 

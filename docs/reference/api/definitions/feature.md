@@ -17,3 +17,5 @@ Features are defined by extending it.
 ::: metaxy.get_feature_by_key
 
 ::: metaxy.FeatureDefinition
+
+::: metaxy.FeatureConfig

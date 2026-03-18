@@ -280,7 +280,6 @@ _config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_overri
 
 
 BUILTIN_PLUGINS = {
-    "sqlmodel": "metaxy.ext.sqlmodel",
     "alembic": "metaxy.ext.alembic",
 }
 

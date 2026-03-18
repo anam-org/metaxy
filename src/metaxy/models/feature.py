@@ -753,6 +753,16 @@ def current_graph() -> FeatureGraph:
 graph = FeatureGraph()
 
 
+@public
+class FeatureConfig(TypedDict, total=False):
+    """Feature-level configuration, analogous to Pydantic's ``model_config``.
+
+    Integrations add their own keys via the ``ext`` field.
+    """
+
+    ext: dict[str, Any]
+
+
 class MetaxyMeta(ModelMetaclass):
     def __new__(
         cls,
@@ -816,6 +826,7 @@ class _FeatureSpecDescriptor:
 @public
 class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
     _spec: ClassVar[FeatureSpec]
+    feature_config: ClassVar[FeatureConfig] = FeatureConfig()
 
     graph: ClassVar[FeatureGraph]
     __metaxy_project__: ClassVar[str]
