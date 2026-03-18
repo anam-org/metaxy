@@ -129,6 +129,7 @@ def _process_directive(content: str) -> str:
             f"    options:\n"
             f"        heading_level: {field_heading_level}\n"
             f"        show_root_heading: true\n"
+            f"        show_root_full_path: false\n"
             f"        show_source: false\n"
             f"\n"
         )
