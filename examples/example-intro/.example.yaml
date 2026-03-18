@@ -1,0 +1,64 @@
+name: "Introduction Example"
+description: "Beginner-friendly video/audio ML pipeline demonstrating Metaxy's core workflow"
+package_name: "example_intro"
+
+scenarios:
+  - name: "Initial pipeline run"
+    description: "First execution processes all videos through the full pipeline"
+    steps:
+      - name: "initial_run"
+        type: "run_command"
+        command: "python src/example_intro/pipeline.py"
+        description: "Run pipeline with initial feature definitions"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify all features were materialized"
+        returncode: 0
+        contains:
+          - "[Video] Wrote 3 samples"
+          - "[FaceDetection] Materialized 3 samples"
+          - "[AudioTranscription] Materialized 3 samples"
+          - "[Summary] Materialized 3 samples"
+          - "Pipeline complete!"
+
+  - name: "Idempotent rerun"
+    description: "Second execution should detect no changes"
+    steps:
+      - name: "idempotent_run"
+        type: "run_command"
+        command: "python src/example_intro/pipeline.py"
+        description: "Rerun pipeline without any changes"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify idempotence (no recomputation)"
+        returncode: 0
+        contains:
+          - "No changes detected (idempotent)"
+
+  - name: "Code evolution"
+    description: "Update AudioTranscription code_version to trigger selective recomputation"
+    steps:
+      - name: "update_transcription_version"
+        type: "apply_patch"
+        patch_path: "patches/01_update_transcription.patch"
+        description: "Change AudioTranscription transcript code_version from 1 to 2"
+
+      - name: "recompute_after_change"
+        type: "run_command"
+        command: "python src/example_intro/pipeline.py"
+        description: "Run pipeline with updated transcription version"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify selective recomputation: AudioTranscription and Summary recomputed, FaceDetection untouched"
+        returncode: 0
+        contains:
+          - "[FaceDetection] No new or changed samples"
+          - "[AudioTranscription] Materialized 3 samples"
+          - "[Summary] Materialized 3 samples"
+          - "Pipeline complete!"

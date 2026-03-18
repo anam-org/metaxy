@@ -12,6 +12,7 @@ dependencies = [
   "example-expansion",
   "example-dagster",
   "example-aggregation",
+  "example-intro",
 ]
 
 [tool.uv.sources]
@@ -24,3 +25,4 @@ example-ducklake = { workspace = true }
 example-expansion = { workspace = true }
 example-dagster = { workspace = true }
 example-aggregation = { workspace = true }
+example-intro = { workspace = true }

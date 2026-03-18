@@ -1607,6 +1607,701 @@
     ]),
   })
 # ---
+# name: test_example_snapshot[example-intro]
+  dict({
+    'events': list([
+      dict({
+        'graph': dict({
+          'video': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'description': 'Raw video metadata. Root feature with no dependencies.',
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'default',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'default': 'c675833f',
+            }),
+            'metaxy_feature_version': '4c78e5e2',
+          }),
+          'video/faces': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Face detection results extracted from video frames.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'faces',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/faces',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'faces': 'a936c4de',
+            }),
+            'metaxy_feature_version': '6b12a438',
+          }),
+          'video/summary': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video/transcription',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Summary generated from the audio transcription.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'summary',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/summary',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'summary': 'b9a82c86',
+            }),
+            'metaxy_feature_version': '1c43e1cf',
+          }),
+          'video/transcription': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': "Audio transcription extracted from the video's audio track.",
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'transcript',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/transcription',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'transcript': 'c942b26c',
+            }),
+            'metaxy_feature_version': 'fdda2d60',
+          }),
+        }),
+        'project_version': '42987644',
+        'scenario_name': 'Initial pipeline run',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python src/example_intro/pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python src/example_intro/pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'graph': dict({
+          'video': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'description': 'Raw video metadata. Root feature with no dependencies.',
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'default',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'default': 'c675833f',
+            }),
+            'metaxy_feature_version': '4c78e5e2',
+          }),
+          'video/faces': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Face detection results extracted from video frames.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'faces',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/faces',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'faces': 'a936c4de',
+            }),
+            'metaxy_feature_version': '6b12a438',
+          }),
+          'video/summary': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video/transcription',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Summary generated from the audio transcription.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'summary',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/summary',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'summary': '9a8e9c3d',
+            }),
+            'metaxy_feature_version': '51c64d8e',
+          }),
+          'video/transcription': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': "Audio transcription extracted from the video's audio track.",
+              'fields': list([
+                dict({
+                  'code_version': '2',
+                  'deps': list([
+                  ]),
+                  'key': 'transcript',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/transcription',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'transcript': '1e5610b7',
+            }),
+            'metaxy_feature_version': 'd88fe613',
+          }),
+        }),
+        'project_version': 'd6ac480f',
+        'scenario_name': 'Code evolution',
+        'step_name': 'update_transcription_version',
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'after_graph': dict({
+          'video': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'description': 'Raw video metadata. Root feature with no dependencies.',
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'default',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'default': 'c675833f',
+            }),
+            'metaxy_feature_version': '4c78e5e2',
+          }),
+          'video/faces': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Face detection results extracted from video frames.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'faces',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/faces',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'faces': 'a936c4de',
+            }),
+            'metaxy_feature_version': '6b12a438',
+          }),
+          'video/summary': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video/transcription',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Summary generated from the audio transcription.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'summary',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/summary',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'summary': '9a8e9c3d',
+            }),
+            'metaxy_feature_version': '51c64d8e',
+          }),
+          'video/transcription': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': "Audio transcription extracted from the video's audio track.",
+              'fields': list([
+                dict({
+                  'code_version': '2',
+                  'deps': list([
+                  ]),
+                  'key': 'transcript',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/transcription',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'transcript': '1e5610b7',
+            }),
+            'metaxy_feature_version': 'd88fe613',
+          }),
+        }),
+        'after_snapshot': 'd6ac480f',
+        'before_graph': dict({
+          'video': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'description': 'Raw video metadata. Root feature with no dependencies.',
+              'fields': list([
+                dict({
+                  'code_version': '__metaxy_initial__',
+                  'deps': list([
+                  ]),
+                  'key': 'default',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'default': 'c675833f',
+            }),
+            'metaxy_feature_version': '4c78e5e2',
+          }),
+          'video/faces': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Face detection results extracted from video frames.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'faces',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/faces',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'faces': 'a936c4de',
+            }),
+            'metaxy_feature_version': '6b12a438',
+          }),
+          'video/summary': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video/transcription',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Summary generated from the audio transcription.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'summary',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/summary',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'summary': 'b9a82c86',
+            }),
+            'metaxy_feature_version': '1c43e1cf',
+          }),
+          'video/transcription': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': "Audio transcription extracted from the video's audio track.",
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'transcript',
+                }),
+              ]),
+              'id_columns': list([
+                'video_id',
+              ]),
+              'key': 'video/transcription',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'transcript': 'c942b26c',
+            }),
+            'metaxy_feature_version': 'fdda2d60',
+          }),
+        }),
+        'before_snapshot': '42987644',
+        'patch_path': 'patches/01_update_transcription.patch',
+        'scenario_name': 'Code evolution',
+        'step_name': 'update_transcription_version',
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python src/example_intro/pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Code evolution',
+        'step_name': 'recompute_after_change',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
 # name: test_example_snapshot[example-overview]
   dict({
     'events': list([

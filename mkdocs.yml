@@ -274,6 +274,7 @@ nav:
       - MCP Server: integrations/ai/mcp.md
   - 💻 Examples:
     - examples/index.md
+    - Tutorial: examples/intro.md
     - Basic: examples/basic.md
     - Aggregation: examples/aggregation.md
     - Expansion: examples/expansion.md
