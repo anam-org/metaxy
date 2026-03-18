@@ -99,12 +99,14 @@ body = """
 {%- endif -%}
 {%- endfor -%}
 {%- endif -%}
+{%- set_global scope_prefix = "" -%}
+{%- if commit.scope -%}{%- set_global scope_prefix = "**" ~ commit.scope ~ "**: " -%}{%- endif -%}
 {%- if changelog_lines | length > 0 -%}
 {%- for line in changelog_lines | trim | split(pat="\n") %}
-- {{ line }}
+- {{ scope_prefix }}{{ line }}
 {%- endfor -%}
 {%- else %}
-- {{ commit.message | split(pat="\n") | first | trim }}
+- {{ scope_prefix }}{{ commit.message | split(pat="\n") | first | trim }}
 {%- endif %}
 {%- if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/anam-org/metaxy/pull/{{ commit.remote.pr_number }}){% if commit.remote.username %} by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}){% endif %})
 {%- elif commit.remote.username %} (by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}))
