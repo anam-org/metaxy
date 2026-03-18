@@ -8,7 +8,7 @@ description: "PostgreSQL as a metadata store backend."
 !!! warning "Experimental"
     This functionality is experimental.
 
-Metadata managed by Metaxy can be stored in [`PostgreSQLMetadataStore`][metaxy.metadata_store.postgresql.PostgreSQLMetadataStore].
+Metadata managed by Metaxy can be stored in [`PostgreSQLMetadataStore`][metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStore].
 It uses [PostgreSQL](https://www.postgresql.org/).
 This metadata store backend is limited in comparison to others, because PostgreSQL doesn't support map-like data types, and Metaxy's versioning engine can't run in the database.
 The local Polars versioning engine is used instead.
@@ -25,13 +25,13 @@ This behavior can be disabled with `auto_cast_struct_for_jsonb` configuration pa
 
 ## API Reference
 
-::: metaxy.metadata_store.postgresql
+::: metaxy.ext.metadata_stores.postgresql
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.metadata_store.postgresql.PostgreSQLMetadataStore
+::: metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStore
     options:
       inherited_members: false
       heading_level: 3
@@ -39,6 +39,6 @@ This behavior can be disabled with `auto_cast_struct_for_jsonb` configuration pa
 ## Configuration
 
 ::: metaxy-config
-    class: metaxy.metadata_store.postgresql.PostgreSQLMetadataStoreConfig
+    class: metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 3

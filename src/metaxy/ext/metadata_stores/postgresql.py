@@ -70,7 +70,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
     Example:
         <!-- skip next -->
         ```python
-        from metaxy.metadata_store.postgresql import PostgreSQLMetadataStore
+        from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
 
         store = PostgreSQLMetadataStore(connection_string="postgresql://user:pass@localhost:5432/metaxy")
 

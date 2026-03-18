@@ -22,8 +22,8 @@ import polars.testing
 import pytest
 
 from metaxy._utils import collect_to_polars
+from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
-from metaxy.metadata_store.postgresql import PostgreSQLMetadataStore
 from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import current_graph
 from metaxy.models.types import FeatureKey

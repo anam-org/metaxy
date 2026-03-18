@@ -22,11 +22,11 @@ from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
+from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
 )
-from metaxy.metadata_store.postgresql import PostgreSQLMetadataStore
 from tests.conftest import require_fixture
 
 # ============= POSTGRESQL FIXTURES =============
