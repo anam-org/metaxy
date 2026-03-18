@@ -1,0 +1,662 @@
+{
+  "runbook_name": "Introduction Example",
+  "package_name": "example_intro",
+  "description": "Beginner-friendly video/audio ML pipeline demonstrating Metaxy's core workflow",
+  "execution_state": {
+    "events": [
+      {
+        "type": "graph_pushed",
+        "project_version": "42987644",
+        "graph": {
+          "video": {
+            "metaxy_feature_version": "4c78e5e2",
+            "fields": {
+              "default": "c675833f"
+            },
+            "feature_spec": {
+              "key": "video",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Raw video metadata. Root feature with no dependencies."
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "6b12a438",
+            "fields": {
+              "faces": "a936c4de"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Face detection results extracted from video frames."
+            }
+          },
+          "video/transcription": {
+            "metaxy_feature_version": "fdda2d60",
+            "fields": {
+              "transcript": "c942b26c"
+            },
+            "feature_spec": {
+              "key": "video/transcription",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "transcript",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Audio transcription extracted from the video's audio track."
+            }
+          },
+          "video/summary": {
+            "metaxy_feature_version": "1c43e1cf",
+            "fields": {
+              "summary": "b9a82c86"
+            },
+            "feature_spec": {
+              "key": "video/summary",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/transcription",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "summary",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Summary generated from the audio transcription."
+            }
+          }
+        },
+        "timestamp": "2026-03-20T00:30:08.023189",
+        "scenario_name": "Initial pipeline run",
+        "step_name": null
+      },
+      {
+        "type": "command_executed",
+        "command": "python src/example_intro/pipeline.py",
+        "returncode": 0,
+        "stdout": "Intro Pipeline\n============================================================\n\n[Video] Wrote 3 new samples\n[FaceDetection] Materialized 3 samples\n[AudioTranscription] Materialized 3 samples\n[Summary] Materialized 3 samples\n\nPipeline complete!\n",
+        "stderr": "/private/var/folders/s8/1bk6bx6d1l53q944ls244sdw0000gn/T/tmp8s1gqfbg/example-intro/src/example_intro/pipeline.py:46: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  video_increment = store.resolve_update(Video, samples=video_samples)\nsys:1: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\nsys:1: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__faces'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\nsys:1: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__transcription'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\nsys:1: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__summary'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n",
+        "timestamp": "2026-03-20T00:30:09.657180",
+        "scenario_name": "Initial pipeline run",
+        "step_name": "initial_run"
+      },
+      {
+        "type": "command_executed",
+        "command": "python src/example_intro/pipeline.py",
+        "returncode": 0,
+        "stdout": "Intro Pipeline\n============================================================\n\n[Video] No new or changed samples\n[FaceDetection] No new or changed samples\n[AudioTranscription] No new or changed samples\n[Summary] No new or changed samples\n\nNo changes detected (idempotent)\n\nPipeline complete!\n",
+        "stderr": "/private/var/folders/s8/1bk6bx6d1l53q944ls244sdw0000gn/T/tmp8s1gqfbg/example-intro/src/example_intro/pipeline.py:46: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  video_increment = store.resolve_update(Video, samples=video_samples)\n",
+        "timestamp": "2026-03-20T00:30:11.277475",
+        "scenario_name": "Idempotent rerun",
+        "step_name": "idempotent_run"
+      },
+      {
+        "type": "graph_pushed",
+        "project_version": "d6ac480f",
+        "graph": {
+          "video": {
+            "metaxy_feature_version": "4c78e5e2",
+            "fields": {
+              "default": "c675833f"
+            },
+            "feature_spec": {
+              "key": "video",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Raw video metadata. Root feature with no dependencies."
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "6b12a438",
+            "fields": {
+              "faces": "a936c4de"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Face detection results extracted from video frames."
+            }
+          },
+          "video/transcription": {
+            "metaxy_feature_version": "d88fe613",
+            "fields": {
+              "transcript": "1e5610b7"
+            },
+            "feature_spec": {
+              "key": "video/transcription",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "transcript",
+                  "code_version": "2",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Audio transcription extracted from the video's audio track."
+            }
+          },
+          "video/summary": {
+            "metaxy_feature_version": "51c64d8e",
+            "fields": {
+              "summary": "9a8e9c3d"
+            },
+            "feature_spec": {
+              "key": "video/summary",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/transcription",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "summary",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Summary generated from the audio transcription."
+            }
+          }
+        },
+        "timestamp": "2026-03-20T00:30:12.621380",
+        "scenario_name": "Code evolution",
+        "step_name": "update_transcription_version"
+      },
+      {
+        "type": "patch_applied",
+        "patch_path": "patches/01_update_transcription.patch",
+        "before_snapshot": "42987644",
+        "after_snapshot": "d6ac480f",
+        "before_graph": {
+          "video": {
+            "metaxy_feature_version": "4c78e5e2",
+            "fields": {
+              "default": "c675833f"
+            },
+            "feature_spec": {
+              "key": "video",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Raw video metadata. Root feature with no dependencies."
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "6b12a438",
+            "fields": {
+              "faces": "a936c4de"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Face detection results extracted from video frames."
+            }
+          },
+          "video/transcription": {
+            "metaxy_feature_version": "fdda2d60",
+            "fields": {
+              "transcript": "c942b26c"
+            },
+            "feature_spec": {
+              "key": "video/transcription",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "transcript",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Audio transcription extracted from the video's audio track."
+            }
+          },
+          "video/summary": {
+            "metaxy_feature_version": "1c43e1cf",
+            "fields": {
+              "summary": "b9a82c86"
+            },
+            "feature_spec": {
+              "key": "video/summary",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/transcription",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "summary",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Summary generated from the audio transcription."
+            }
+          }
+        },
+        "after_graph": {
+          "video": {
+            "metaxy_feature_version": "4c78e5e2",
+            "fields": {
+              "default": "c675833f"
+            },
+            "feature_spec": {
+              "key": "video",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Raw video metadata. Root feature with no dependencies."
+            }
+          },
+          "video/faces": {
+            "metaxy_feature_version": "6b12a438",
+            "fields": {
+              "faces": "a936c4de"
+            },
+            "feature_spec": {
+              "key": "video/faces",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Face detection results extracted from video frames."
+            }
+          },
+          "video/transcription": {
+            "metaxy_feature_version": "d88fe613",
+            "fields": {
+              "transcript": "1e5610b7"
+            },
+            "feature_spec": {
+              "key": "video/transcription",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "transcript",
+                  "code_version": "2",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Audio transcription extracted from the video's audio track."
+            }
+          },
+          "video/summary": {
+            "metaxy_feature_version": "51c64d8e",
+            "fields": {
+              "summary": "9a8e9c3d"
+            },
+            "feature_spec": {
+              "key": "video/summary",
+              "id_columns": [
+                "video_id"
+              ],
+              "deps": [
+                {
+                  "feature": "video/transcription",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "summary",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Summary generated from the audio transcription."
+            }
+          }
+        },
+        "timestamp": "2026-03-20T00:30:12.632391",
+        "scenario_name": "Code evolution",
+        "step_name": "update_transcription_version"
+      },
+      {
+        "type": "command_executed",
+        "command": "python src/example_intro/pipeline.py",
+        "returncode": 0,
+        "stdout": "Intro Pipeline\n============================================================\n\n[Video] No new or changed samples\n[FaceDetection] No new or changed samples\n[AudioTranscription] Materialized 3 samples\n[Summary] Materialized 3 samples\n\nPipeline complete!\n",
+        "stderr": "/private/var/folders/s8/1bk6bx6d1l53q944ls244sdw0000gn/T/tmp8s1gqfbg/example-intro/src/example_intro/pipeline.py:46: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  video_increment = store.resolve_update(Video, samples=video_samples)\n",
+        "timestamp": "2026-03-20T00:30:14.365159",
+        "scenario_name": "Code evolution",
+        "step_name": "recompute_after_change"
+      }
+    ]
+  }
+}
