@@ -1,0 +1,49 @@
+{
+  "runbook_name": "Alembic Migration Example",
+  "package_name": "example_alembic",
+  "description": "Demonstrate Alembic-managed DDL migrations for Metaxy feature tables with DuckLake.",
+  "execution_state": {
+    "events": [
+      {
+        "type": "command_executed",
+        "command": "uv run alembic revision --autogenerate -m \"create feature tables\"",
+        "returncode": 0,
+        "stdout": "Generating <workdir>/alembic/versions/02bb2a26f1c2_create_feature_tables.py ...  done\n",
+        "stderr": "",
+        "timestamp": "2026-03-20T08:45:54.583090",
+        "scenario_name": "Alembic migration and pipeline run",
+        "step_name": "generate_migration"
+      },
+      {
+        "type": "command_executed",
+        "command": "uv run alembic upgrade head --sql",
+        "returncode": 0,
+        "stdout": "CREATE TABLE alembic_version (\n    version_num VARCHAR(32) NOT NULL\n);\n\n-- Running upgrade  -> 02bb2a26f1c2\n\nCREATE TABLE examples__alembic_demo (\n    metaxy_provenance_by_field VARIANT NOT NULL, \n    metaxy_provenance VARCHAR NOT NULL, \n    metaxy_feature_version VARCHAR NOT NULL, \n    metaxy_project_version VARCHAR NOT NULL, \n    metaxy_data_version_by_field VARIANT NOT NULL, \n    metaxy_data_version VARCHAR NOT NULL, \n    metaxy_created_at TIMESTAMP WITH TIME ZONE NOT NULL, \n    metaxy_materialization_id VARCHAR, \n    metaxy_updated_at TIMESTAMP WITH TIME ZONE NOT NULL, \n    metaxy_deleted_at TIMESTAMP WITH TIME ZONE, \n    sample_uid VARCHAR NOT NULL, \n    path VARCHAR NOT NULL\n);\n\nALTER TABLE examples__alembic_demo SET PARTITIONED BY (metaxy_feature_version);\n\nALTER TABLE examples__alembic_demo SET SORTED BY (metaxy_updated_at);\n\nINSERT INTO alembic_version (version_num) VALUES ('02bb2a26f1c2');\n\n",
+        "stderr": "",
+        "timestamp": "2026-03-20T08:45:55.622554",
+        "scenario_name": "Alembic migration and pipeline run",
+        "step_name": "preview_ddl"
+      },
+      {
+        "type": "command_executed",
+        "command": "uv run alembic upgrade head",
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "timestamp": "2026-03-20T08:45:57.075249",
+        "scenario_name": "Alembic migration and pipeline run",
+        "step_name": "apply_migration"
+      },
+      {
+        "type": "command_executed",
+        "command": "uv run python src/example_alembic/pipeline.py",
+        "returncode": 0,
+        "stdout": "Alembic + DuckLake pipeline\n  auto_create_tables: False\n  Wrote 2 rows for examples/alembic_demo\n  Feature table: examples__alembic_demo\n  Read back:\n    clip_001: s3://demo-bucket/processed/clip_001.parquet\n    clip_002: s3://demo-bucket/processed/clip_002.parquet\n",
+        "stderr": "",
+        "timestamp": "2026-03-20T08:46:01.670233",
+        "scenario_name": "Alembic migration and pipeline run",
+        "step_name": "run_pipeline"
+      }
+    ]
+  }
+}

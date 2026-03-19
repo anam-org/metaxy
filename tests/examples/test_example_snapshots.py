@@ -5,13 +5,19 @@ from pathlib import Path
 import pytest
 import tomli as tomllib
 
+# Examples excluded from this parameterized test because they need
+# an isolated venv (different dependency versions). They have their own
+# dedicated test files instead.
+_EXCLUDED_EXAMPLES = {"example-alembic"}
+
 
 def discover_examples() -> list[Path]:
     """Discover all example directories with .example.yaml files."""
     examples_dir = Path("examples")
     examples = []
     for yaml_file in examples_dir.glob("*/.example.yaml"):
-        examples.append(yaml_file.parent)
+        if yaml_file.parent.name not in _EXCLUDED_EXAMPLES:
+            examples.append(yaml_file.parent)
     return sorted(examples)
 
 
@@ -22,16 +28,38 @@ def get_store_config_override(example_dir: Path, tmp_path: Path) -> dict[str, st
         return {}
 
     config = tomllib.loads(metaxy_toml.read_text())
+    overrides: dict[str, str] = {}
+
+    # Respect explicit auto_create_tables setting from metaxy.toml,
+    # overriding the pytest-level METAXY_AUTO_CREATE_TABLES=1 env var
+    if "auto_create_tables" in config:
+        overrides["METAXY_AUTO_CREATE_TABLES"] = str(int(config["auto_create_tables"]))
+
     store_type = config.get("stores", {}).get("dev", {}).get("type", "")
 
     if "DuckDBMetadataStore" in store_type:
         test_db = tmp_path / f"{example_dir.name}.db"
-        return {"METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db)}
+        overrides["METAXY_STORES__DEV__CONFIG__DATABASE"] = str(test_db)
+
+        # If DuckLake is configured, override catalog and storage paths too
+        ducklake = config.get("stores", {}).get("dev", {}).get("config", {}).get("ducklake")
+        if ducklake:
+            catalog = ducklake.get("catalog", {})
+            if "uri" in catalog:
+                overrides["METAXY_STORES__DEV__CONFIG__DUCKLAKE__CATALOG__URI"] = str(
+                    tmp_path / f"{example_dir.name}_meta.db"
+                )
+            storage = ducklake.get("storage", {})
+            if "path" in storage:
+                overrides["METAXY_STORES__DEV__CONFIG__DUCKLAKE__STORAGE__PATH"] = str(
+                    tmp_path / f"{example_dir.name}_storage"
+                )
+
     elif "DeltaMetadataStore" in store_type:
         test_storage = tmp_path / example_dir.name
-        return {"METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_storage)}
+        overrides["METAXY_STORES__DEV__CONFIG__ROOT_PATH"] = str(test_storage)
 
-    return {}
+    return overrides
 
 
 @pytest.mark.parametrize("example_dir", discover_examples(), ids=lambda p: p.name)

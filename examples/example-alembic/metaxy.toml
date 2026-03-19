@@ -1,0 +1,23 @@
+project = "example_alembic"
+entrypoints = ["example_alembic.definitions"]
+auto_create_tables = false # Tables are managed by Alembic migrations
+
+[stores.dev]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "${ALEMBIC_DEMO_DB:-/tmp/example_alembic.db}"
+
+[stores.dev.config.ducklake]
+alias = "ducklake"
+
+[stores.dev.config.ducklake.attach_options]
+override_data_path = true
+
+[stores.dev.config.ducklake.catalog]
+type = "sqlite"
+uri = "${ALEMBIC_META_DB:-/tmp/example_alembic_meta.db}"
+
+[stores.dev.config.ducklake.storage]
+type = "local"
+path = "${ALEMBIC_STORAGE_PATH:-/tmp/example_alembic_storage}"
