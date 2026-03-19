@@ -76,6 +76,10 @@ class IcebergMetadataStoreConfig(MetadataStoreConfig):
         default=None,
         description="Properties passed to pyiceberg.catalog.load_catalog.",
     )
+    auto_create_namespace: bool = Field(
+        default=True,
+        description="Automatically create the namespace on open if it does not exist.",
+    )
 
 
 @public
@@ -112,6 +116,7 @@ class IcebergMetadataStore(MetadataStore):
         namespace: str = "metaxy",
         catalog_name: str = "metaxy",
         catalog_properties: dict[str, str] | None = None,
+        auto_create_namespace: bool = True,
         fallback_stores: list[MetadataStore] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -122,11 +127,13 @@ class IcebergMetadataStore(MetadataStore):
             namespace: Iceberg namespace for tables (Glue Database, SQL schema, etc.).
             catalog_name: Local identifier for the PyIceberg catalog instance.
             catalog_properties: Properties for [`pyiceberg.catalog.load_catalog`](https://py.iceberg.apache.org/api/#load-a-catalog).
+            auto_create_namespace: Create the namespace on open if it does not exist.
             fallback_stores: Ordered list of read-only fallback stores.
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][metaxy.metadata_store.base.MetadataStore].
         """
         self.namespace = namespace
         self.catalog_name = catalog_name
+        self.auto_create_namespace = auto_create_namespace
         self._catalog: Catalog | None = None
 
         warehouse_str = str(warehouse)
@@ -180,7 +187,8 @@ class IcebergMetadataStore(MetadataStore):
             self.catalog_name,
             **self._catalog_properties,
         )
-        self._catalog.create_namespace_if_not_exists(self.namespace)
+        if self.auto_create_namespace:
+            self._catalog.create_namespace_if_not_exists(self.namespace)
 
     def _close(self) -> None:
         if self._catalog is not None:
