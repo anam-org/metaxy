@@ -1,0 +1,9 @@
+project = "example_intro"
+entrypoints = ["example_intro.__entrypoint__"]
+auto_create_tables = true
+
+[stores.dev]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "/tmp/example_intro.duckdb"

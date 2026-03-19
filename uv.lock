@@ -16,6 +16,7 @@ members = [
     "example-dagster",
     "example-ducklake",
     "example-expansion",
+    "example-intro",
     "example-migration",
     "example-overview",
     "example-quickstart",
@@ -1410,6 +1411,17 @@ dependencies = [
 requires-dist = [{ name = "metaxy", extras = ["delta"], editable = "." }]
 
 [[package]]
+name = "example-intro"
+version = "0.1.0"
+source = { editable = "examples/example-intro" }
+dependencies = [
+    { name = "metaxy", extra = ["duckdb"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["duckdb"], editable = "." }]
+
+[[package]]
 name = "example-migration"
 version = "0.1.0"
 source = { editable = "examples/example-migration" }
@@ -1452,6 +1464,7 @@ dependencies = [
     { name = "example-dagster" },
     { name = "example-ducklake" },
     { name = "example-expansion" },
+    { name = "example-intro" },
     { name = "example-migration" },
     { name = "example-overview" },
 ]
@@ -1463,6 +1476,7 @@ requires-dist = [
     { name = "example-dagster", editable = "examples/example-dagster" },
     { name = "example-ducklake", editable = "examples/example-ducklake" },
     { name = "example-expansion", editable = "examples/example-expansion" },
+    { name = "example-intro", editable = "examples/example-intro" },
     { name = "example-migration", editable = "examples/example-migration" },
     { name = "example-overview", editable = "examples/example-overview" },
 ]

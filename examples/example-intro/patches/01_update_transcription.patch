@@ -1,0 +1,11 @@
+--- a/src/example_intro/features.py
++++ b/src/example_intro/features.py
+@@ -50,7 +50,7 @@
+         deps=[Video],
+         id_columns=["video_id"],
+         fields=[
+-            mx.FieldSpec(key="transcript", code_version="1"),
++            mx.FieldSpec(key="transcript", code_version="2"),
+         ],
+     ),
+ ):
