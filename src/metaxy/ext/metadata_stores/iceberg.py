@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, overload
 
 if TYPE_CHECKING:
     from pyiceberg.catalog import Catalog
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
+from packaging.version import Version
 from pydantic import Field
 
 from metaxy._decorators import public
@@ -24,6 +25,18 @@ from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
+
+
+def _strip_casts() -> Callable[[Any], Any]:
+    """Unwrap ``CAST(x AS type)`` → ``x`` so PyIceberg's row-filter parser sees plain literals."""
+    from sqlglot import exp
+
+    def _transform(node: exp.Expression) -> exp.Expression:
+        if isinstance(node, exp.Cast):
+            return node.this
+        return node
+
+    return _transform
 
 
 @public
@@ -59,10 +72,6 @@ class IcebergMetadataStoreConfig(MetadataStoreConfig):
         default=None,
         description="Properties passed to pyiceberg.catalog.load_catalog.",
     )
-    layout: Literal["flat", "nested"] = Field(
-        default="nested",
-        description="Table naming layout ('nested' or 'flat').",
-    )
 
 
 @public
@@ -70,7 +79,11 @@ class IcebergMetadataStore(MetadataStore):
     """Apache Iceberg metadata store backed by [PyIceberg](https://py.iceberg.apache.org/).
 
     Stores feature metadata in Iceberg tables managed by a PyIceberg catalog.
-    Uses the Polars versioning engine for provenance calculations.
+    It uses the Polars versioning engine for provenance calculations.
+
+    !!! tip
+        If Polars 1.39 or greater is installed, lazy Polars frames are sinked via
+        `LazyFrame.sink_iceberg`, avoiding unnecessary materialization.
 
     Example:
 
@@ -78,8 +91,9 @@ class IcebergMetadataStore(MetadataStore):
         from metaxy.ext.metadata_stores.iceberg import IcebergMetadataStore
 
         store = IcebergMetadataStore(
-            warehouse="/path/to/warehouse",
-            namespace="metaxy",
+            warehouse="s3://my-bucket/warehouse",
+            namespace="ml_features",
+            catalog_properties={"type": "glue"},
         )
         ```
     """
@@ -95,15 +109,20 @@ class IcebergMetadataStore(MetadataStore):
         catalog_name: str = "metaxy",
         catalog_properties: dict[str, str] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
-        layout: Literal["flat", "nested"] = "nested",
         **kwargs: Any,
     ) -> None:
-        if layout not in ("flat", "nested"):
-            raise ValueError(f"Invalid layout: {layout}. Must be 'flat' or 'nested'.")
+        """Initialize Apache Iceberg metadata store.
 
+        Args:
+            warehouse: Warehouse directory or URI for Iceberg data files.
+            namespace: Iceberg namespace for tables (Glue Database, SQL schema, etc.).
+            catalog_name: Local identifier for the PyIceberg catalog instance.
+            catalog_properties: Properties for [`pyiceberg.catalog.load_catalog`](https://py.iceberg.apache.org/api/#load-a-catalog).
+            fallback_stores: Ordered list of read-only fallback stores.
+            **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][metaxy.metadata_store.base.MetadataStore].
+        """
         self.namespace = namespace
         self.catalog_name = catalog_name
-        self.layout = layout
         self._catalog: Catalog | None = None
 
         warehouse_str = str(warehouse)
@@ -130,6 +149,23 @@ class IcebergMetadataStore(MetadataStore):
             **kwargs,
         )
 
+    # ===== MetadataStore abstract methods =====
+
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+        """Check if feature exists in Iceberg catalog."""
+        feature_key = self._resolve_feature_key(feature)
+        return self.catalog.table_exists(self._table_identifier(feature_key))
+
+    def _get_default_hash_algorithm(self) -> HashAlgorithm:
+        """Use XXHASH32 by default."""
+        return HashAlgorithm.XXHASH32
+
+    @contextmanager
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
+        """Create Polars versioning engine for Iceberg store."""
+        with self._create_polars_versioning_engine(plan) as engine:
+            yield engine
+
     def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
         from pyiceberg.catalog import load_catalog
 
@@ -143,7 +179,11 @@ class IcebergMetadataStore(MetadataStore):
         self._catalog.create_namespace_if_not_exists(self.namespace)
 
     def _close(self) -> None:
-        self._catalog = None
+        if self._catalog is not None:
+            self._catalog.close()
+            self._catalog = None
+
+    # ===== Internal helpers =====
 
     @property
     def catalog(self) -> Catalog:
@@ -151,32 +191,8 @@ class IcebergMetadataStore(MetadataStore):
             raise RuntimeError("IcebergMetadataStore is not open. Call open() first.")
         return self._catalog
 
-    def _table_identifier(self, feature_key: FeatureKey) -> tuple[str, ...]:
-        if self.layout == "nested":
-            return (self.namespace, *feature_key.parts)
+    def _table_identifier(self, feature_key: FeatureKey) -> tuple[str, str]:
         return (self.namespace, feature_key.table_name)
-
-    def _ensure_namespace_hierarchy(self, feature_key: FeatureKey) -> None:
-        """Ensure all namespace levels exist for nested layout."""
-        if self.layout != "nested" or len(feature_key.parts) <= 1:
-            return
-        # For nested layout with multi-part keys, intermediate parts become namespaces.
-        # e.g. ("metaxy", "test_stores", "upstream_a") needs namespace ("metaxy", "test_stores")
-        for i in range(1, len(feature_key.parts)):
-            ns = (self.namespace, *feature_key.parts[:i])
-            self.catalog.create_namespace_if_not_exists(ns)
-
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
-        feature_key = self._resolve_feature_key(feature)
-        return self.catalog.table_exists(self._table_identifier(feature_key))
-
-    def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        return HashAlgorithm.XXHASH32
-
-    @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
-        with self._create_polars_versioning_engine(plan) as engine:
-            yield engine
 
     @overload
     def _cast_enum_to_string(self, frame: pl.DataFrame) -> pl.DataFrame: ...
@@ -188,22 +204,56 @@ class IcebergMetadataStore(MetadataStore):
         """Cast Enum columns to String to avoid Arrow Utf8View incompatibility."""
         return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
 
+    def _ensure_table(self, identifier: tuple[str, str], arrow_schema: Any) -> Any:
+        """Create or evolve an Iceberg table to match the given Arrow schema."""
+        from pyiceberg.table import Table
+
+        table: Table = self.catalog.create_table_if_not_exists(identifier, schema=arrow_schema)
+        if table.schema().as_arrow() != arrow_schema:
+            with table.update_schema() as update:
+                update.union_by_name(arrow_schema)
+        return table
+
+    # ===== Storage operations =====
+
     def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
         **kwargs: Any,
     ) -> None:
-        df_polars = self._cast_enum_to_string(collect_to_polars(df))
-        arrow_table = df_polars.to_arrow()
+        """Append metadata to the Iceberg table for a feature.
+
+        Args:
+            feature_key: Feature key to write to
+            df: DataFrame with metadata
+            **kwargs: Backend-specific parameters.
+
+        !!! tip
+            If Polars 1.39 or greater is installed, lazy Polars frames are sinked via
+            `LazyFrame.sink_iceberg`, avoiding unnecessary materialization.
+        """
         identifier = self._table_identifier(feature_key)
 
-        self._ensure_namespace_hierarchy(feature_key)
-        iceberg_table = self.catalog.create_table_if_not_exists(identifier, schema=arrow_table.schema)
-        if iceberg_table.schema().as_arrow() != arrow_table.schema:
-            with iceberg_table.update_schema() as update:
-                update.union_by_name(arrow_table.schema)
-        iceberg_table.append(arrow_table)
+        can_sink = (
+            df.implementation == nw.Implementation.POLARS
+            and isinstance(df, nw.LazyFrame)
+            and Version(pl.__version__) >= Version("1.39.0")
+        )
+
+        if can_sink:
+            lf_native = df.to_native()
+            assert isinstance(lf_native, pl.LazyFrame)
+            sample_arrow = self._cast_enum_to_string(lf_native.head(0).collect()).to_arrow()
+            iceberg_table = self._ensure_table(identifier, sample_arrow.schema)
+            # sink_iceberg requires columns in the same order as the Iceberg table schema
+            schema_col_order = [f.name for f in iceberg_table.schema().as_arrow()]
+            self._cast_enum_to_string(lf_native).select(schema_col_order).sink_iceberg(iceberg_table, mode="append")
+        else:
+            df_polars = self._cast_enum_to_string(collect_to_polars(df))
+            arrow_table = df_polars.to_arrow()
+            iceberg_table = self._ensure_table(identifier, arrow_table.schema)
+            iceberg_table.append(arrow_table)
 
     def _read_feature(
         self,
@@ -213,6 +263,14 @@ class IcebergMetadataStore(MetadataStore):
         columns: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
+        """Read metadata stored in Iceberg for a single feature using lazy evaluation.
+
+        Args:
+            feature: Feature to read metadata for
+            filters: List of Narwhals filter expressions
+            columns: Subset of columns to return
+            **kwargs: Backend-specific parameters (currently unused)
+        """
         self._check_open()
 
         feature_key = self._resolve_feature_key(feature)
@@ -220,7 +278,7 @@ class IcebergMetadataStore(MetadataStore):
         if not self.catalog.table_exists(identifier):
             return None
 
-        nw_lazy = nw.from_native(self.catalog.load_table(identifier).to_polars())
+        nw_lazy = nw.from_native(pl.scan_iceberg(self.catalog.load_table(identifier)))
 
         if filters:
             nw_lazy = nw_lazy.filter(*filters)
@@ -231,6 +289,7 @@ class IcebergMetadataStore(MetadataStore):
         return nw_lazy
 
     def _drop_feature(self, feature_key: FeatureKey) -> None:
+        """Drop the Iceberg table for the specified feature from the catalog."""
         identifier = self._table_identifier(feature_key)
         if self.catalog.table_exists(identifier):
             self.catalog.drop_table(identifier)
@@ -242,6 +301,12 @@ class IcebergMetadataStore(MetadataStore):
         *,
         with_feature_history: bool,
     ) -> None:
+        """Delete rows from an Iceberg table using PyIceberg's native delete_filter.
+
+        Note:
+            This implementation relies on Ibis (ibis-framework) to generate SQL from Narwhals expressions.
+            The `ibis` package is included in the `iceberg` extras: `pip install metaxy[iceberg]`.
+        """
         identifier = self._table_identifier(feature_key)
         if not self.catalog.table_exists(identifier):
             return
@@ -252,12 +317,19 @@ class IcebergMetadataStore(MetadataStore):
             iceberg_table.delete()
             return
 
-        # Read all data, filter out matching rows, overwrite
-        nw_df = nw.from_native(iceberg_table.to_polars().collect())
-        kept = nw_df.filter(~nw.all_horizontal(*filters, ignore_nulls=False))
-        iceberg_table.overwrite(kept.to_native().to_arrow())
+        from metaxy.metadata_store.utils import narwhals_expr_to_sql_predicate
+
+        schema = self.read_feature_schema_from_store(feature_key)
+        predicate = narwhals_expr_to_sql_predicate(
+            filters,
+            schema,
+            dialect="postgres",
+            extra_transforms=_strip_casts(),
+        )
+        iceberg_table.delete(delete_filter=predicate)
 
     def display(self) -> str:
+        """Return human-readable representation of the store."""
         return f"IcebergMetadataStore(warehouse={self._warehouse_uri})"
 
     def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:

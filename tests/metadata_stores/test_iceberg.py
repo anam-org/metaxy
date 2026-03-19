@@ -2,54 +2,29 @@
 
 Most Iceberg store functionality is tested via parametrized tests in StoreCases.
 This module tests Iceberg-specific features:
-- Local warehouse path handling
-- Table identifier generation (flat vs nested layout)
+- Table identifier generation
 - Schema evolution
+- Custom namespace
+- LazyFrame sink_iceberg write path
 """
 
 from __future__ import annotations
 
 import polars as pl
+import pytest
+from packaging.version import Version
 
 from metaxy.ext.metadata_stores.iceberg import IcebergMetadataStore
 from metaxy.models.types import FeatureKey
 
 
-def test_iceberg_local_absolute_path(tmp_path, test_features) -> None:
-    """Verify IcebergMetadataStore works with local absolute paths."""
-    store_path = tmp_path / "iceberg_store"
-    feature_cls = test_features["UpstreamFeatureA"]
-
-    with IcebergMetadataStore(warehouse=store_path).open("w") as store:
-        metadata = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-            }
-        )
-        store.write(feature_cls, metadata)
-
-        result = store.read(feature_cls)
-        assert result is not None
-        assert result.collect().to_native().height == 1
-
-
-def test_iceberg_table_identifier_flat(tmp_path) -> None:
-    """Verify _table_identifier generates correct identifiers in flat layout."""
-    store = IcebergMetadataStore(warehouse=tmp_path / "iceberg", layout="flat")
+def test_iceberg_table_identifier(tmp_path) -> None:
+    """Verify _table_identifier maps feature keys to (namespace, table_name) tuples."""
+    store = IcebergMetadataStore(warehouse=tmp_path / "iceberg")
 
     assert store._table_identifier(FeatureKey("feature")) == ("metaxy", "feature")
     assert store._table_identifier(FeatureKey("a/b/c")) == ("metaxy", "a__b__c")
     assert store._table_identifier(FeatureKey("my_feature/v1")) == ("metaxy", "my_feature__v1")
-
-
-def test_iceberg_table_identifier_nested(tmp_path) -> None:
-    """Verify _table_identifier generates correct identifiers in nested layout."""
-    store = IcebergMetadataStore(warehouse=tmp_path / "iceberg", layout="nested")
-
-    assert store._table_identifier(FeatureKey("feature")) == ("metaxy", "feature")
-    assert store._table_identifier(FeatureKey("a/b/c")) == ("metaxy", "a", "b", "c")
-    assert store._table_identifier(FeatureKey("my_feature/v1")) == ("metaxy", "my_feature", "v1")
 
 
 def test_iceberg_schema_evolution(tmp_path, test_features) -> None:
@@ -58,7 +33,6 @@ def test_iceberg_schema_evolution(tmp_path, test_features) -> None:
     feature_cls = test_features["UpstreamFeatureA"]
 
     with IcebergMetadataStore(warehouse=store_path).open("w") as store:
-        # Write initial data
         store.write(
             feature_cls,
             pl.DataFrame(
@@ -69,7 +43,6 @@ def test_iceberg_schema_evolution(tmp_path, test_features) -> None:
             ),
         )
 
-        # Write with an extra column
         store.write(
             feature_cls,
             pl.DataFrame(
@@ -94,56 +67,41 @@ def test_iceberg_custom_namespace(tmp_path, test_features) -> None:
     feature_cls = test_features["UpstreamFeatureA"]
 
     with IcebergMetadataStore(warehouse=store_path, namespace="custom_ns").open("w") as store:
-        metadata = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-            }
+        store.write(
+            feature_cls,
+            pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                }
+            ),
         )
-        store.write(feature_cls, metadata)
 
         assert store.has_feature(feature_cls, check_fallback=False)
 
-        result = store.read(feature_cls)
-        assert result is not None
-        assert result.collect().to_native().height == 1
 
-
-def test_iceberg_drop_feature(tmp_path, test_features) -> None:
-    """Verify dropping a feature removes the table."""
+@pytest.mark.skipif(
+    Version(pl.__version__) < Version("1.39.0"),
+    reason="sink_iceberg requires Polars >= 1.39.0",
+)
+def test_iceberg_sink_lazyframe(tmp_path, test_features) -> None:
+    """Verify LazyFrame.sink_iceberg writes without eager materialization."""
     store_path = tmp_path / "iceberg_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with IcebergMetadataStore(warehouse=store_path).open("w") as store:
-        metadata = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-            }
-        )
-        store.write(feature_cls, metadata)
-        assert store.has_feature(feature_cls, check_fallback=False)
-
-        store.drop_feature_metadata(feature_cls)
-        assert not store.has_feature(feature_cls, check_fallback=False)
-
-
-def test_iceberg_multiple_appends(tmp_path, test_features) -> None:
-    """Verify multiple appends accumulate data."""
-    store_path = tmp_path / "iceberg_store"
-    feature_cls = test_features["UpstreamFeatureA"]
+    metadata_lazy = pl.LazyFrame(
+        {
+            "sample_uid": [1, 2, 3],
+            "metaxy_provenance_by_field": [
+                {"frames": "h1", "audio": "h1"},
+                {"frames": "h2", "audio": "h2"},
+                {"frames": "h3", "audio": "h3"},
+            ],
+        }
+    )
 
     with IcebergMetadataStore(warehouse=store_path).open("w") as store:
-        for i in range(3):
-            store.write(
-                feature_cls,
-                pl.DataFrame(
-                    {
-                        "sample_uid": [i],
-                        "metaxy_provenance_by_field": [{"frames": f"h{i}", "audio": f"h{i}"}],
-                    }
-                ),
-            )
+        store.write(feature_cls, metadata_lazy)
 
         result = store.read(feature_cls)
         assert result is not None
