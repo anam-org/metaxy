@@ -28,7 +28,11 @@ from metaxy.versioning.types import HashAlgorithm
 
 
 def _strip_casts() -> Callable[[Any], Any]:
-    """Unwrap ``CAST(x AS type)`` → ``x`` so PyIceberg's row-filter parser sees plain literals."""
+    """Unwrap ``CAST(x AS type)`` → ``x`` so PyIceberg's row-filter parser sees plain literals.
+
+    PyIceberg's pyparsing-based filter parser only accepts bare literals, not SQL casts.
+    Stripping CAST wrappers leaves clean ISO-8601 strings that PyIceberg can type-coerce.
+    """
     from sqlglot import exp
 
     def _transform(node: exp.Expression) -> exp.Expression:
