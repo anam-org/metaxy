@@ -25,8 +25,15 @@ def get_store_config_override(example_dir: Path, tmp_path: Path) -> dict[str, st
     store_type = config.get("stores", {}).get("dev", {}).get("type", "")
 
     if "DuckDBMetadataStore" in store_type:
-        test_db = tmp_path / f"{example_dir.name}.db"
-        return {"METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db)}
+        overrides: dict[str, str] = {
+            "METAXY_STORES__DEV__CONFIG__DATABASE": str(tmp_path / f"{example_dir.name}.db"),
+        }
+        ducklake_cfg = config.get("stores", {}).get("dev", {}).get("config", {}).get("ducklake", {})
+        if ducklake_cfg.get("catalog", {}).get("type") == "sqlite":
+            overrides["METAXY_STORES__DEV__CONFIG__DUCKLAKE__CATALOG__URI"] = str(tmp_path / "ducklake_meta.db")
+        if ducklake_cfg.get("storage", {}).get("type") == "local":
+            overrides["METAXY_STORES__DEV__CONFIG__DUCKLAKE__STORAGE__PATH"] = str(tmp_path / "ducklake_storage")
+        return overrides
     elif "DeltaMetadataStore" in store_type:
         test_storage = tmp_path / example_dir.name
         return {"METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_storage)}
