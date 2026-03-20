@@ -426,7 +426,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         except ibis.common.exceptions.TableNotFound:
             return None
 
-        table = self.transform_after_read(table, feature_key)
+        table = self.transform_after_read(table, feature_key, filters=filters)
 
         nw_frame = nw.from_native(table, eager_only=False)
         if not isinstance(nw_frame, nw.LazyFrame):
@@ -578,7 +578,13 @@ class IbisMetadataStore(MetadataStore, ABC):
             else:
                 raise
 
-    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
+    def transform_after_read(
+        self,
+        table: "ibis.Table",
+        feature_key: "FeatureKey",
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> "ibis.Table":
         """Transform Ibis table before wrapping with Narwhals.
 
         Override in subclasses to apply backend-specific transformations.
@@ -590,6 +596,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             table: Ibis table reference
             feature_key: The feature key being read (use to get field names)
+            filters: Narwhals filter expressions from the read query, available
+                for subclasses that need to scope auxiliary queries
 
         Returns:
             Transformed Ibis table (default: unchanged)

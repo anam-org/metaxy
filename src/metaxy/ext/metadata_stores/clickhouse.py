@@ -2,6 +2,7 @@
 
 It takes care of some ClickHouse-specific logic such as `nw.Struct` type conversion against ClickHouse types such as `Map(K,V)`."""
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
@@ -89,7 +90,7 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
 
     auto_cast_struct_for_map: bool = Field(
         default=True,
-        description="Auto-convert DataFrame Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.",
+        description="Auto-convert DataFrame Struct columns to/from Map format on read and write when the ClickHouse column is Map type. Metaxy system columns are always converted.",
     )
 
 
@@ -155,7 +156,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
             fallback_stores: Ordered list of read-only fallback stores.
 
-            auto_cast_struct_for_map: whether to auto-convert DataFrame user-defined Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.
+            auto_cast_struct_for_map: whether to auto-convert user-defined Struct/Map columns on both read and write. Metaxy system columns are always converted.
 
             **kwargs: Passed to [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore]`
 
@@ -171,6 +172,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # Cache for ClickHouse table schemas (cleared on close)
         self._ch_schema_cache: dict[str, IbisSchema] = {}
+
+        # Cache for Map column keys: (table_name, col_name) -> list of keys
+        self._map_keys_cache: dict[tuple[str, str], list[str]] = {}
 
         # Store auto_cast_struct_for_map setting
         self.auto_cast_struct_for_map = auto_cast_struct_for_map
@@ -268,22 +272,52 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             self._ch_schema_cache[table_name] = self.conn.table(table_name).schema()
         return self._ch_schema_cache[table_name]
 
-    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
+    def _get_cached_map_keys(
+        self,
+        table: "ibis.Table",
+        table_name: str,
+        col_name: str,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> list[str]:
+        """Get keys for a Map column by sampling one row from filtered data.
+
+        Applies the same read-path filters (e.g. feature_version) so that
+        key discovery reflects the current data, not historical rows.
+
+        Returns empty list for empty / fully-filtered tables.
+        """
+        cache_key = (table_name, col_name)
+        if cache_key not in self._map_keys_cache:
+            source: ibis.Table = table
+            if filters:
+                source = nw.from_native(table, eager_only=False).filter(*filters).to_native()  # ty: ignore[invalid-argument-type]
+            # Explode Map keys and get distinct values, all in the DB engine
+            keys_table = source.select(source[col_name].keys().unnest().name("key")).distinct().to_pyarrow()
+            if len(keys_table) > 0:
+                self._map_keys_cache[cache_key] = keys_table.column("key").to_pylist()
+            else:
+                self._map_keys_cache[cache_key] = []
+        return self._map_keys_cache[cache_key]
+
+    def transform_after_read(
+        self,
+        table: "ibis.Table",
+        feature_key: "FeatureKey",
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> "ibis.Table":
         """Transform ClickHouse-specific column types for PyArrow compatibility.
 
         Handles:
 
         - `JSON` columns: Cast to String (ClickHouse driver returns dict, PyArrow expects bytes)
 
-        - `Map(String, String)` metaxy columns: Convert to named Struct by extracting keys
+        - `Map(String, String)` metaxy columns: Convert to named Struct by extracting keys from feature spec
 
-        For metaxy Map columns (`metaxy_provenance_by_field`, `metaxy_data_version_by_field`),
-        we build a named Struct from map key accesses using known field names from the
-        feature spec.
-
-        User-defined Map columns are left as-is and will appear in e.g. Polars as
-        `List[Struct{key, value}]` (the standard Arrow Map representation).
+        - User-defined `Map` columns (when `auto_cast_struct_for_map=True`): Convert to named Struct
+          by discovering keys from the data
         """
+        import ibis
         import ibis.expr.datatypes as dt
 
         from metaxy.models.constants import (
@@ -303,9 +337,17 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 mutations[col_name] = table[col_name].cast("string")
 
             elif isinstance(dtype, dt.Map) and col_name in metaxy_map_columns:
-                # Only convert metaxy system Map(String, String) columns to Struct
-                # User-defined Map columns are left as-is
+                # Metaxy system Map columns: keys known from feature spec
                 mutations[col_name] = self._map_to_struct_expr(table, col_name, dtype, feature_key)
+
+            elif isinstance(dtype, dt.Map) and self.auto_cast_struct_for_map:
+                # User-defined Map columns: discover keys from filtered data
+                table_name = self.get_table_name(feature_key)
+                keys = self._get_cached_map_keys(table, table_name, col_name, filters)
+                if keys:
+                    map_col = table[col_name]
+                    struct_dict = {k: map_col.get(k, ibis.null()) for k in keys}
+                    mutations[col_name] = ibis.struct(struct_dict)
 
         if not mutations:
             return table

@@ -329,7 +329,13 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
                 json_columns.append(col_name)
         return json_columns
 
-    def transform_after_read(self, table: "ibis.Table", feature_key: FeatureKey) -> "ibis.Table":
+    def transform_after_read(
+        self,
+        table: "ibis.Table",
+        feature_key: FeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> "ibis.Table":
         """Cast JSONB columns to String so Polars can parse them back to Structs.
 
         PostgreSQL JSONB columns appear as JSON type in Ibis. We cast to String

@@ -707,20 +707,16 @@ def test_clickhouse_map_column_write_from_ibis_struct(
 def test_clickhouse_user_defined_map_column(
     clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Test that user-defined Map(String, T) columns are preserved (not transformed).
+    """Test that user-defined Map(String, T) columns are converted to Struct on read.
 
-    Users may define their own Map columns in ClickHouse tables. Unlike metaxy's
-    system columns (metaxy_provenance_by_field, metaxy_data_version_by_field),
-    user Map columns are NOT converted to Struct.
-
-    In Polars, ClickHouse Map columns appear as List[Struct{key, value}] because
-    that's how Arrow serializes Map types. This is different from metaxy columns
-    which are explicitly converted to named Struct for downstream compatibility.
+    When auto_cast_struct_for_map=True (default), user Map columns are converted
+    to named Struct by discovering keys from the data, enabling round-trip
+    compatibility (e.g., copy from ClickHouse to DeltaLake).
 
     This test verifies:
     1. User Map columns are readable (no Ibis/PyArrow errors)
-    2. User Map columns remain as List[Struct{key,value}] format (not dict)
-    3. Metaxy Map columns are converted to dict (Struct)
+    2. User Map columns are converted to dict (Struct) like metaxy columns
+    3. Metaxy Map columns are also converted to dict (Struct)
     """
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
@@ -776,7 +772,7 @@ def test_clickhouse_user_defined_map_column(
         # Read via _read_feature
         # This uses transform_after_read which should:
         # - Convert metaxy Map columns to Struct (dict)
-        # - Leave user_metadata Map column as-is (List[Struct{key,value}])
+        # - Convert user_metadata Map column to Struct (dict) too
         read_result = store._read_feature(feature_cls)
         assert read_result is not None
         result = collect_to_polars(read_result)
@@ -789,13 +785,10 @@ def test_clickhouse_user_defined_map_column(
         assert isinstance(provenance, dict), f"Expected dict, got {type(provenance)}"
         assert provenance["frames"] == "hash1"
 
-        # User Map column remains as List[Struct{key,value}] in Polars
-        # This is the Arrow Map representation - NOT converted to dict
+        # User Map column is also converted to Struct (dict) when auto_cast_struct_for_map=True
         user_meta = result["user_metadata"][0]
-        # In Polars, each row's Map value is a Series of struct{key, value}
-        assert isinstance(user_meta, pl.Series), f"Expected pl.Series, got {type(user_meta)}"
-        # Verify we can access the data
-        assert len(user_meta) == 2  # Two key-value pairs: source, quality
+        assert isinstance(user_meta, dict), f"Expected dict, got {type(user_meta)}"
+        assert "source" in user_meta
 
         # Clean up
         conn.drop_table(table_name)
@@ -868,13 +861,11 @@ def test_clickhouse_auto_cast_struct_for_map_true(
         assert len(result) == 2
         assert set(result["sample_uid"].to_list()) == {1, 2}
 
-        # Verify user_tags Map data is readable (as List[Struct{key,value}] in Polars)
+        # Verify user_tags Map data is converted to Struct (dict) on read
         user_tags = result["user_tags"][0]
-        assert isinstance(user_tags, pl.Series), f"Expected pl.Series, got {type(user_tags)}"
-        # Convert to dict for easier assertion
-        tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
-        assert tags_dict["env"] == "prod"
-        assert tags_dict["team"] == "ml"
+        assert isinstance(user_tags, dict), f"Expected dict, got {type(user_tags)}"
+        assert user_tags["env"] == "prod"
+        assert user_tags["team"] == "ml"
 
         # Clean up
         conn.drop_table(table_name)
@@ -1023,12 +1014,11 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
         assert len(result) == 2
         assert set(result["sample_uid"].to_list()) == {1, 2}
 
-        # Verify user_tags Map data is readable
+        # Verify user_tags Map data is converted to Struct (dict) on read
         user_tags = result["user_tags"][0]
-        assert isinstance(user_tags, pl.Series), f"Expected pl.Series, got {type(user_tags)}"
-        tags_dict = {row["key"]: row["value"] for row in user_tags.to_list()}
-        assert tags_dict["env"] == "prod"
-        assert tags_dict["team"] == "ml"
+        assert isinstance(user_tags, dict), f"Expected dict, got {type(user_tags)}"
+        assert user_tags["env"] == "prod"
+        assert user_tags["team"] == "ml"
 
         # Verify metaxy columns still work
         provenance = result["metaxy_provenance_by_field"][0]
@@ -1103,12 +1093,11 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
 
         assert len(result) == 2
 
-        # Verify field_counts Map data has correct integer values
+        # Verify field_counts Map data is converted to Struct (dict) on read
         field_counts = result["field_counts"][0]
-        assert isinstance(field_counts, pl.Series), f"Expected pl.Series, got {type(field_counts)}"
-        counts_dict = {row["key"]: row["value"] for row in field_counts.to_list()}
-        assert counts_dict["frames_count"] == 10
-        assert counts_dict["audio_count"] == 5
+        assert isinstance(field_counts, dict), f"Expected dict, got {type(field_counts)}"
+        assert field_counts["frames_count"] == 10
+        assert field_counts["audio_count"] == 5
 
         # Clean up
         conn.drop_table(table_name)
@@ -1272,18 +1261,16 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
         assert len(result) == 2
         assert set(result["sample_uid"].to_list()) == {1, 2}
 
-        # Verify the Map data - NULL entries should be filtered out
-        # Row 1: {'eyes_open_true': 38, 'head_pitch_min': 5} (eyes_open_false filtered)
-        # Row 2: {'eyes_open_false': 67} (eyes_open_true and head_pitch_min filtered)
+        # Verify the Map data - read back as Struct (dict) with all keys discovered.
+        # NULL entries were filtered on write, so missing keys get null on read.
         row1 = result.filter(pl.col("sample_uid") == 1)["selected_frame_indices"][0]
         row2 = result.filter(pl.col("sample_uid") == 2)["selected_frame_indices"][0]
 
-        # Convert list of {key, value} structs to dict for easier checking
-        row1_dict = {item["key"]: item["value"] for item in row1}
-        row2_dict = {item["key"]: item["value"] for item in row2}
-
-        assert row1_dict == {"eyes_open_true": 38, "head_pitch_min": 5}
-        assert row2_dict == {"eyes_open_false": 67}
+        assert isinstance(row1, dict), f"Expected dict, got {type(row1)}"
+        assert row1["eyes_open_true"] == 38
+        assert row1["head_pitch_min"] == 5
+        assert isinstance(row2, dict), f"Expected dict, got {type(row2)}"
+        assert row2["eyes_open_false"] == 67
 
         # Clean up
         conn.drop_table(table_name)
@@ -1315,3 +1302,142 @@ def test_clickhouse_ibis_type_to_polars_nested_map(ch_store: ClickHouseMetadataS
 def test_clickhouse_ibis_type_to_polars_delegates_non_map(ch_store: ClickHouseMetadataStore) -> None:
     assert ch_store.ibis_type_to_polars(dt.String()) == pl.String
     assert ch_store.ibis_type_to_polars(dt.UUID()) == pl.String
+
+
+def test_clickhouse_user_map_roundtrip(
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+) -> None:
+    """Test Struct→Map on write then Map→Struct on read round-trip for user columns.
+
+    This is the core scenario that was broken: writing a DataFrame with Struct
+    columns to ClickHouse (auto-cast to Map), then reading back should return
+    Struct (dict), not List[Struct{key,value}].
+    """
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec.key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with user Map column
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                user_tags Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_project_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Write with Struct columns (auto-cast to Map on write)
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "user_tags": [
+                    {"env": "prod", "team": "ml"},
+                    {"env": "staging", "team": "data"},
+                ],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash1", "audio": "hash2"},
+                    {"frames": "hash3", "audio": "hash4"},
+                ],
+            }
+        )
+        store.write(feature_cls, samples)
+
+        # Read back — should be Struct (dict), not List[Struct{key,value}]
+        read_result = store._read_feature(feature_cls)
+        assert read_result is not None
+        result = collect_to_polars(read_result)
+
+        assert len(result) == 2
+
+        # User Map column round-trips as Struct (dict)
+        user_tags = result["user_tags"][0]
+        assert isinstance(user_tags, dict), f"Expected dict from round-trip, got {type(user_tags)}"
+        assert user_tags["env"] == "prod"
+        assert user_tags["team"] == "ml"
+
+        # Metaxy columns also round-trip correctly
+        provenance = result["metaxy_provenance_by_field"][0]
+        assert isinstance(provenance, dict)
+        assert provenance["frames"] == "hash1"
+
+        # Clean up
+        conn.drop_table(table_name)
+
+
+def test_clickhouse_map_keys_cache_hit(
+    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+) -> None:
+    """Test that map key discovery is cached — second read doesn't re-query."""
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec.key
+
+    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+        conn = store.conn
+        table_name = store.get_table_name(feature_key)
+
+        # Clean up if exists
+        if table_name in conn.list_tables():
+            conn.drop_table(table_name)
+
+        # Create table with user Map column
+        conn.raw_sql(  # ty: ignore[unresolved-attribute]
+            f"""
+            CREATE TABLE {table_name} (
+                sample_uid Int64,
+                user_tags Map(String, String),
+                metaxy_provenance_by_field Map(String, String),
+                metaxy_provenance String,
+                metaxy_feature_version String,
+                metaxy_project_version String,
+                metaxy_data_version_by_field Map(String, String),
+                metaxy_data_version String,
+                metaxy_created_at DateTime64(6, 'UTC'),
+                metaxy_updated_at DateTime64(6, 'UTC'),
+                metaxy_deleted_at Nullable(DateTime64(6, 'UTC')),
+                metaxy_materialization_id String            ) ENGINE = MergeTree()
+            ORDER BY sample_uid
+        """
+        )
+
+        # Write data
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "user_tags": [{"env": "prod", "team": "ml"}],
+                "metaxy_provenance_by_field": [{"frames": "hash1", "audio": "hash2"}],
+            }
+        )
+        store.write(feature_cls, samples)
+
+        # Cache should be empty before first read
+        assert len(store._map_keys_cache) == 0
+
+        # First read populates the cache
+        store._read_feature(feature_cls)
+        cache_after_first = dict(store._map_keys_cache)
+        assert (table_name, "user_tags") in cache_after_first
+
+        # Second read uses the cache (same keys)
+        store._read_feature(feature_cls)
+        assert store._map_keys_cache == cache_after_first
+
+        # Clean up
+        conn.drop_table(table_name)
