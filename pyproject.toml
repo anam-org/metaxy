@@ -138,7 +138,7 @@ dev = [
   "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
   "dagster>=1.12.9",
-  "ty==0.0.22",
+  "ty==0.0.24",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pandas>=2.3.3",
