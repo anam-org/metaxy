@@ -18,6 +18,7 @@ from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig
+from metaxy.ext.metadata_stores.bigquery import BigQueryMetadataStore
 from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
@@ -215,7 +216,7 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
 
 
 class AllStoresCases:
-    """All store types (Delta, DuckDB, DuckDB+DuckLake, ClickHouse, LanceDB, PostgreSQL)."""
+    """All store types (Delta, DuckDB, DuckDB+DuckLake, ClickHouse, LanceDB, PostgreSQL, BigQuery)."""
 
     @pytest.mark.delta
     @pytest.mark.polars
@@ -279,6 +280,17 @@ class AllStoresCases:
         return PostgreSQLMetadataStore(
             connection_string=require_fixture(request, "postgresql_db"),
             hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.bigquery
+    def case_bigquery(self, request) -> MetadataStore:
+        return BigQueryMetadataStore(
+            project_id=require_fixture(request, "bigquery_project_id"),
+            dataset_id=require_fixture(request, "bigquery_dataset"),
+            hash_algorithm=HashAlgorithm.MD5,
+            auto_create_tables=True,
         )
 
 
@@ -436,3 +448,43 @@ def motherduck_ducklake_database(motherduck_token: str) -> Generator[str, None, 
     conn = duckdb.connect(f"md:?motherduck_token={motherduck_token}")
     conn.execute(f"DROP DATABASE IF EXISTS {db_name}")
     conn.close()
+
+
+# ---------------------------------------------------------------------------
+# BigQuery fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def bigquery_project_id() -> str:
+    """GCP project ID for BigQuery integration tests.
+
+    Reads BIGQUERY_TEST_PROJECT_ID. Skips when unset.
+    """
+    import warnings
+
+    project_id = os.environ.get("BIGQUERY_TEST_PROJECT_ID", "")
+    if not project_id:
+        warnings.warn("BIGQUERY_TEST_PROJECT_ID not set — skipping BigQuery tests", stacklevel=1)
+        pytest.skip("BIGQUERY_TEST_PROJECT_ID not set")
+    return project_id
+
+
+@pytest.fixture(scope="function")
+def bigquery_dataset(bigquery_project_id: str) -> Generator[str, None, None]:
+    """Create an ephemeral BigQuery dataset for a single test, then drop it.
+
+    Authentication uses Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS).
+    """
+    import ibis
+
+    dataset_id = f"metaxy_test_{uuid.uuid4().hex[:8]}"
+
+    conn = ibis.bigquery.connect(project_id=bigquery_project_id, dataset_id=dataset_id)
+    from google.cloud.bigquery import Dataset
+
+    conn.client.create_dataset(Dataset(f"{bigquery_project_id}.{dataset_id}"), exists_ok=True)
+
+    yield dataset_id
+
+    conn.client.delete_dataset(dataset_id, delete_contents=True, not_found_ok=True)

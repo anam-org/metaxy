@@ -39,6 +39,8 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+      BIGQUERY_TEST_PROJECT_ID: ${{ secrets.BIGQUERY_TEST_PROJECT_ID }}
+      BIGQUERY_TEST_CREDENTIALS_JSON: ${{ secrets.BIGQUERY_TEST_CREDENTIALS_JSON }}
 
   docs:
     needs: qa

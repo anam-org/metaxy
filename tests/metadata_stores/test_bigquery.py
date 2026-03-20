@@ -101,8 +101,14 @@ def test_bigquery_initialization_with_connection_params():
 
 def test_bigquery_initialization_missing_project():
     """Test that initialization fails without project_id."""
-    with pytest.raises(ValueError, match="Must provide either project_id"):
+    with pytest.raises(ValueError, match="Must provide project_id"):
         BigQueryMetadataStore(dataset_id="test_dataset")
+
+
+def test_bigquery_initialization_missing_dataset():
+    """Test that initialization fails without dataset_id."""
+    with pytest.raises(ValueError, match="Must provide dataset_id"):
+        BigQueryMetadataStore(project_id="test-project")
 
 
 def test_bigquery_hash_algorithms():

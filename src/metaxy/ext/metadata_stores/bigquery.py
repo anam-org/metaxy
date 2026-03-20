@@ -29,7 +29,7 @@ class BigQueryMetadataStoreConfig(IbisMetadataStoreConfig):
     """
 
     project_id: str | None = Field(default=None, description="Google Cloud project ID containing the dataset.")
-    dataset_id: str | None = Field(default=None, description="BigQuery dataset name for storing metadata tables.")
+    dataset_id: str = Field(description="BigQuery dataset name for storing metadata tables.")
     credentials_path: str | None = Field(default=None, description="Path to service account JSON file.")
     credentials: Any | None = Field(default=None, description="Google Cloud credentials object.")
     location: str | None = Field(
@@ -113,7 +113,6 @@ class BigQueryMetadataStore(IbisMetadataStore):
             project_id: Google Cloud project ID containing the dataset.
                 Can also be set via GOOGLE_CLOUD_PROJECT environment variable.
             dataset_id: BigQuery dataset name for storing metadata tables.
-                If not provided, uses the default dataset for the project.
             credentials_path: Path to service account JSON file.
                 Alternative to passing credentials object directly.
             credentials: Google Cloud credentials object.
@@ -127,7 +126,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
 
         Raises:
             ImportError: If ibis-bigquery not installed
-            ValueError: If neither project_id nor connection_params provided
+            ValueError: If project_id or dataset_id is missing
 
         Note:
             Authentication priority:
@@ -163,6 +162,22 @@ class BigQueryMetadataStore(IbisMetadataStore):
             )
             ```
         """
+        # Resolve from explicit args or connection_params
+        resolved_project_id = project_id or (connection_params or {}).get("project_id")
+        resolved_dataset_id = dataset_id or (connection_params or {}).get("dataset_id")
+
+        if not resolved_project_id:
+            raise ValueError(
+                "Must provide project_id or connection_params with project_id. Example: project_id='my-project'"
+            )
+        if not resolved_dataset_id:
+            raise ValueError(
+                "Must provide dataset_id or connection_params with dataset_id. Example: dataset_id='my_dataset'"
+            )
+
+        self.project_id = resolved_project_id
+        self.dataset_id = resolved_dataset_id
+
         # Build connection parameters if not provided
         if connection_params is None:
             connection_params = self._build_connection_params(
@@ -172,16 +187,6 @@ class BigQueryMetadataStore(IbisMetadataStore):
                 credentials=credentials,
                 location=location,
             )
-
-        # Validate we have minimum required parameters
-        if "project_id" not in connection_params and project_id is None:
-            raise ValueError(
-                "Must provide either project_id or connection_params with project_id. Example: project_id='my-project'"
-            )
-
-        # Store parameters for display
-        self.project_id = project_id or connection_params.get("project_id")
-        self.dataset_id = dataset_id or connection_params.get("dataset_id", "")
 
         # Initialize Ibis store with BigQuery backend
         super().__init__(
@@ -277,6 +282,11 @@ class BigQueryMetadataStore(IbisMetadataStore):
                 "Ensure it's a valid service account JSON key file."
             ) from e
 
+    @property
+    def sqlalchemy_url(self) -> str:
+        """SQLAlchemy URL for ``sqlalchemy-bigquery``."""
+        return f"bigquery://{self.project_id}/{self.dataset_id}"
+
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         # Should switch to FARM_FINGERPRINT64 once https://github.com/ion-elgreco/polars-hash/issues/49 is resolved
         return HashAlgorithm.MD5
@@ -341,8 +351,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
 
     def display(self) -> str:
         """Display string for this store."""
-        dataset_info = f"/{self.dataset_id}" if self.dataset_id else ""
-        return f"BigQueryMetadataStore(project={self.project_id}{dataset_info})"
+        return f"BigQueryMetadataStore(project={self.project_id}/{self.dataset_id})"
 
     @classmethod
     def config_model(cls) -> type[BigQueryMetadataStoreConfig]:
