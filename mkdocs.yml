@@ -278,6 +278,7 @@ nav:
     - Aggregation: examples/aggregation.md
     - Expansion: examples/expansion.md
     - DuckLake: examples/ducklake.md
+    - Ray: examples/ray.md
   - 📚 Reference:
     - reference/index.md
     - API:

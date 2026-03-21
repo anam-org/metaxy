@@ -19,6 +19,7 @@ members = [
     "example-migration",
     "example-overview",
     "example-quickstart",
+    "example-ray",
     "examples",
     "metaxy",
     "metaxy-testing",
@@ -1028,6 +1029,19 @@ wheels = [
 ]
 
 [[package]]
+name = "dagster-ray"
+version = "0.4.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dagster" },
+    { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d7/cf/1bf9fe24620e438764526c312afc4311001e07e916e487023924b5f14cf0/dagster_ray-0.4.3.tar.gz", hash = "sha256:a2bf3e52c321ab1b29a944ea7021f981d68adc86e7148a283f9c13c2d4d56211", size = 44596, upload-time = "2026-03-18T17:31:07.618Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/bc/2d43ac5b393dc3b39755daa1cbb65b27bd2d79cca628471635f5fa8a7508/dagster_ray-0.4.3-py3-none-any.whl", hash = "sha256:0ffbd09aab358d3c63f3680f92aaca5bede22ca2029ea0f7f7fbdc8e87ba7f34", size = 60264, upload-time = "2026-03-18T17:31:06.586Z" },
+]
+
+[[package]]
 name = "dagster-shared"
 version = "1.12.19"
 source = { registry = "https://pypi.org/simple" }
@@ -1441,6 +1455,29 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "metaxy", extras = ["delta"], editable = "." }]
+
+[[package]]
+name = "example-ray"
+version = "0.1.0"
+source = { editable = "examples/example-ray" }
+dependencies = [
+    { name = "dagster" },
+    { name = "dagster-dg-cli" },
+    { name = "dagster-ray" },
+    { name = "dagster-webserver" },
+    { name = "metaxy", extra = ["duckdb"] },
+    { name = "ray", extra = ["data"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dagster", specifier = ">=1.12.9" },
+    { name = "dagster-dg-cli", specifier = ">=1.12.9" },
+    { name = "dagster-ray" },
+    { name = "dagster-webserver", specifier = ">=1.12.9" },
+    { name = "metaxy", extras = ["duckdb"], editable = "." },
+    { name = "ray", extras = ["data"] },
+]
 
 [[package]]
 name = "examples"
@@ -5397,14 +5434,14 @@ name = "ray"
 version = "2.53.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click", marker = "python_full_version < '3.14'" },
-    { name = "filelock", marker = "python_full_version < '3.14'" },
-    { name = "jsonschema", marker = "python_full_version < '3.14'" },
-    { name = "msgpack", marker = "python_full_version < '3.14'" },
-    { name = "packaging", marker = "python_full_version < '3.14'" },
-    { name = "protobuf", marker = "python_full_version < '3.14'" },
-    { name = "pyyaml", marker = "python_full_version < '3.14'" },
-    { name = "requests", marker = "python_full_version < '3.14'" },
+    { name = "click" },
+    { name = "filelock" },
+    { name = "jsonschema" },
+    { name = "msgpack" },
+    { name = "packaging" },
+    { name = "protobuf" },
+    { name = "pyyaml" },
+    { name = "requests" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2f/99/21986c7f8135dafbf7c49229c52faaa9d2d365db7d86fffe978dde8ee967/ray-2.53.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:4db914a0a6dd608fa49c066929a1282745a2dbd73caee67d7b80fe684ca65bdd", size = 69473649, upload-time = "2025-12-20T16:05:40.58Z" },
@@ -5422,6 +5459,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3d/38/450cf9cf3c490fa4cc6d470597f819444da60f85579d2b34b95ee79fcb6f/ray-2.53.0-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:85b472ab6fb8f1189f8cef81913fd91b24dd69b3fa7dcca7e144827bd924f6c0", size = 69409819, upload-time = "2025-12-20T16:06:50.668Z" },
     { url = "https://files.pythonhosted.org/packages/71/5e/d452970b07174d5e4f8688abae889d01321b51ced827db1f1d1cb7d56d44/ray-2.53.0-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:7196e5358dfcc8211be864f45e6dfe4827202df294af3c7a76ff8fbc080e0522", size = 71409529, upload-time = "2025-12-20T16:06:56.2Z" },
     { url = "https://files.pythonhosted.org/packages/cb/84/50b317a125617a638a64694c12f56183edd5df01828a35fa4c55c7b13c66/ray-2.53.0-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:73dbbaa7962a7f5e38aa8cf9483e0e9817205e989aa3dc859c738c2af1ae01df", size = 72283961, upload-time = "2025-12-20T16:07:05.831Z" },
+]
+
+[package.optional-dependencies]
+data = [
+    { name = "fsspec" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "pyarrow" },
 ]
 
 [[package]]
@@ -6057,6 +6103,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ec/fe/802052aecb21e3797b8f7902564ab6ea0d60ff8ca23952079064155d1ae1/tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c", size = 81090, upload-time = "2022-10-06T17:21:48.54Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f", size = 35252, upload-time = "2022-10-06T17:21:44.262Z" },
+]
+
+[[package]]
+name = "tenacity"
+version = "9.1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697ee8a44d3d69222b344920433d3b6666ccd9b374630c/tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a", size = 49413, upload-time = "2026-02-07T10:45:33.841Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
 ]
 
 [[package]]

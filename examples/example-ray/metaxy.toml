@@ -1,0 +1,23 @@
+project = "example_ray"
+entrypoints = ["example_ray.__entrypoint__"]
+auto_create_tables = true # Enable for development/examples
+
+[stores.dev]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "${RAY_DEMO_DB:-:memory:}"
+
+[stores.dev.config.ducklake]
+alias = "ducklake"
+
+[stores.dev.config.ducklake.attach_options]
+override_data_path = true
+
+[stores.dev.config.ducklake.catalog]
+type = "sqlite"
+uri = "${RAY_META_DB:-/tmp/example_ray_meta.db}"
+
+[stores.dev.config.ducklake.storage]
+type = "local"
+path = "${RAY_STORAGE_PATH:-/tmp/example_ray_storage}"

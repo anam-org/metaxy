@@ -1,0 +1,35 @@
+[project]
+name = "example-ray"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+  { name = "danielgafni", email = "danielgafni16@gmail.com" },
+  { name = "georgheiler", email = "georg.kf.heiler@gmail.com" },
+]
+requires-python = ">=3.10"
+dependencies = [
+  "metaxy[duckdb]",
+  "dagster>=1.12.9",
+  "dagster-dg-cli>=1.12.9",
+  "dagster-ray",
+  "dagster-webserver>=1.12.9",
+  "ray[data]",
+]
+
+[tool.uv.sources]
+metaxy = { path = "../..", editable = true }
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "example_ray"
+
+[tool.dg.cli]
+suppress_warnings = [
+  "project_and_activated_venv_mismatch",
+]

@@ -2552,3 +2552,236 @@
     ]),
   })
 # ---
+# name: test_example_snapshot[example-ray]
+  dict({
+    'events': list([
+      dict({
+        'graph': dict({
+          'ray/crop': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'ray/video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Cropped video segments.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                    dict({
+                      'feature': 'ray/video',
+                      'fields': list([
+                        'audio',
+                      ]),
+                    }),
+                  ]),
+                  'key': 'audio',
+                }),
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                    dict({
+                      'feature': 'ray/video',
+                      'fields': list([
+                        'frames',
+                      ]),
+                    }),
+                  ]),
+                  'key': 'frames',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'ray/crop',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'audio': 'a8d261df',
+              'frames': '2a6bdca9',
+            }),
+            'metaxy_feature_version': '728feaea',
+          }),
+          'ray/face_detection': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'ray/crop',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Face detection results from cropped video frames.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                    dict({
+                      'feature': 'ray/crop',
+                      'fields': list([
+                        'frames',
+                      ]),
+                    }),
+                  ]),
+                  'key': 'faces',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'ray/face_detection',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'faces': '44139bc8',
+            }),
+            'metaxy_feature_version': '7eec4293',
+          }),
+          'ray/stt': dict({
+            'feature_spec': dict({
+              'deps': list([
+                dict({
+                  'feature': 'ray/video',
+                  'fields_mapping': dict({
+                    'mapping': dict({
+                      'exclude_fields': list([
+                      ]),
+                      'match_suffix': False,
+                      'type': 'default',
+                    }),
+                  }),
+                  'lineage': dict({
+                    'relationship': dict({
+                      'type': '1:1',
+                    }),
+                  }),
+                  'optional': False,
+                  'rename': None,
+                  'select': None,
+                  'sql_filters': None,
+                }),
+              ]),
+              'description': 'Speech-to-text transcription derived from video audio.',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                    dict({
+                      'feature': 'ray/video',
+                      'fields': list([
+                        'audio',
+                      ]),
+                    }),
+                  ]),
+                  'key': 'transcription',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'ray/stt',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'transcription': '6be18aab',
+            }),
+            'metaxy_feature_version': '53591580',
+          }),
+          'ray/video': dict({
+            'feature_spec': dict({
+              'deps': list([
+              ]),
+              'description': 'Video metadata feature (root).',
+              'fields': list([
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'audio',
+                }),
+                dict({
+                  'code_version': '1',
+                  'deps': list([
+                  ]),
+                  'key': 'frames',
+                }),
+              ]),
+              'id_columns': list([
+                'sample_uid',
+              ]),
+              'key': 'ray/video',
+              'metadata': dict({
+              }),
+            }),
+            'fields': dict({
+              'audio': 'eee894fc',
+              'frames': '5582a72a',
+            }),
+            'metaxy_feature_version': '92ec32a1',
+          }),
+        }),
+        'project_version': 'e59c426b',
+        'scenario_name': 'Setup video metadata',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python -m example_ray.basic_pipeline',
+        'returncode': 0,
+        'scenario_name': 'Setup video metadata',
+        'step_name': 'run_pipeline',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_ray.materialize_dagster',
+        'returncode': 0,
+        'scenario_name': 'Dagster assets',
+        'step_name': 'materialize_dagster',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_ray.materialize_production',
+        'returncode': 0,
+        'scenario_name': 'Production assets',
+        'step_name': 'materialize_production',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---

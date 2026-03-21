@@ -1,0 +1,236 @@
+{
+  "runbook_name": "Ray Example",
+  "package_name": "example_ray",
+  "description": "Distributed video processing with Ray Data, Dagster, and DuckLake.",
+  "execution_state": {
+    "events": [
+      {
+        "type": "graph_pushed",
+        "project_version": "e59c426b",
+        "graph": {
+          "ray/video": {
+            "metaxy_feature_version": "92ec32a1",
+            "fields": {
+              "audio": "eee894fc",
+              "frames": "5582a72a"
+            },
+            "feature_spec": {
+              "key": "ray/video",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "1",
+                  "deps": []
+                },
+                {
+                  "key": "frames",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {},
+              "description": "Video metadata feature (root)."
+            }
+          },
+          "ray/stt": {
+            "metaxy_feature_version": "53591580",
+            "fields": {
+              "transcription": "6be18aab"
+            },
+            "feature_spec": {
+              "key": "ray/stt",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "ray/video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "transcription",
+                  "code_version": "1",
+                  "deps": [
+                    {
+                      "feature": "ray/video",
+                      "fields": [
+                        "audio"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": "Speech-to-text transcription derived from video audio."
+            }
+          },
+          "ray/crop": {
+            "metaxy_feature_version": "728feaea",
+            "fields": {
+              "audio": "a8d261df",
+              "frames": "2a6bdca9"
+            },
+            "feature_spec": {
+              "key": "ray/crop",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "ray/video",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "audio",
+                  "code_version": "1",
+                  "deps": [
+                    {
+                      "feature": "ray/video",
+                      "fields": [
+                        "audio"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "key": "frames",
+                  "code_version": "1",
+                  "deps": [
+                    {
+                      "feature": "ray/video",
+                      "fields": [
+                        "frames"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": "Cropped video segments."
+            }
+          },
+          "ray/face_detection": {
+            "metaxy_feature_version": "7eec4293",
+            "fields": {
+              "faces": "44139bc8"
+            },
+            "feature_spec": {
+              "key": "ray/face_detection",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "ray/crop",
+                  "select": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "faces",
+                  "code_version": "1",
+                  "deps": [
+                    {
+                      "feature": "ray/crop",
+                      "fields": [
+                        "frames"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {},
+              "description": "Face detection results from cropped video frames."
+            }
+          }
+        },
+        "timestamp": "2026-03-21T19:29:37.736657",
+        "scenario_name": "Setup video metadata",
+        "step_name": null
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_ray.basic_pipeline",
+        "returncode": 0,
+        "stdout": "Step 1: Seed video metadata\n  Seeded 3 video samples\nStep 2: Push graph snapshot\nStep 3: Run STT pipeline (first run)\n  Processed 3 samples\nStep 4: Re-run STT pipeline (idempotent)\n  Nothing to process (idempotent)\n",
+        "stderr": "2026-03-21 19:29:40,077\tINFO worker.py:2007 -- Started a local Ray instance.\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/.venv/lib/python3.10/site-packages/ray/_private/worker.py:2046: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0\n  warnings.warn(\n/var/folders/s8/1bk6bx6d1l53q944ls244sdw0000gn/T/tmpcmblt66z/example-ray/src/example_ray/basic_pipeline.py:81: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'ray__video'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  seed_video_metadata(store)\n2026-03-21 19:29:42,035\tINFO logging.py:397 -- Registered dataset logger for dataset dataset_3_0\n2026-03-21 19:29:42,319\tINFO streaming_executor.py:178 -- Starting execution of Dataset dataset_3_0. Full logs are in /tmp/ray/session_2026-03-21_19-29-38_926459_4454/logs/ray-data\n2026-03-21 19:29:42,319\tINFO streaming_executor.py:179 -- Execution plan of Dataset dataset_3_0: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadMetaxy] -> TaskPoolMapOperator[Map(transcribe)->Write]\n2026-03-21 19:29:42,470\tINFO streaming_executor.py:686 -- [dataset]: A new progress UI is available. To enable, set `ray.data.DataContext.get_current().enable_rich_progress_bars = True` and `ray.data.DataContext.get_current().use_ray_tqdm = False`.\n2026-03-21 19:29:42,470\tINFO progress_bar.py:155 -- Progress bar disabled because stdout is a non-interactive terminal.\n2026-03-21 19:29:42,471\tWARNING resource_manager.py:136 -- ⚠️  Ray's object store is configured to use only 6.2% of available memory (2.0GiB out of 32.5GiB total). For optimal Ray Data performance, we recommend setting the object store to at least 50% of available memory. You can do this by setting the 'object_store_memory' parameter when calling ray.init() or by setting the RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION environment variable.\n2026-03-21 19:29:42,478\tINFO progress_bar.py:213 -- === Ray Data Progress {ReadMetaxy->SplitBlocks(200)} ===\n2026-03-21 19:29:42,478\tINFO progress_bar.py:215 -- ReadMetaxy->SplitBlocks(200): Tasks: 1 [backpressured:tasks]; Actors: 0; Queued blocks: 0 (0.0B); Resources: 1.0 CPU, 384.0MiB object store: Progress Completed 0 / ?\n2026-03-21 19:29:42,479\tINFO progress_bar.py:213 -- === Ray Data Progress {Map(transcribe)->Write} ===\n2026-03-21 19:29:42,479\tINFO progress_bar.py:215 -- Map(transcribe)->Write: Tasks: 0; Actors: 0; Queued blocks: 0 (0.0B); Resources: 0.0 CPU, 0.0B object store: Progress Completed 0 / ?\n2026-03-21 19:29:42,479\tINFO progress_bar.py:213 -- === Ray Data Progress {Running Dataset} ===\n2026-03-21 19:29:42,479\tINFO progress_bar.py:215 -- Running Dataset: dataset_3_0. Active & requested resources: 0/12 CPU, 0.0B/1.0GiB object store: Progress Completed 0 / ?\n\u001b[36m(Map(transcribe)->Write pid=4518)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/.venv/lib/python3.10/site-packages/ray/data/_internal/planner/plan_write_op.py:32: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'ray__stt'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n\u001b[36m(Map(transcribe)->Write pid=4518)\u001b[0m   ctx.kwargs[\"_datasink_write_return\"] = datasink_or_legacy_datasource.write(\n2026-03-21 19:29:44,732\tINFO streaming_executor.py:304 -- ✔️  Dataset dataset_3_0 execution finished in 2.41 seconds\n2026-03-21 19:29:44,773\tINFO dataset.py:5344 -- Data sink Metaxy finished. 3 rows and 306.0B data written.\n2026-03-21 19:29:45,006\tINFO logging.py:397 -- Registered dataset logger for dataset dataset_8_0\n2026-03-21 19:29:45,385\tINFO streaming_executor.py:178 -- Starting execution of Dataset dataset_8_0. Full logs are in /tmp/ray/session_2026-03-21_19-29-38_926459_4454/logs/ray-data\n2026-03-21 19:29:45,386\tINFO streaming_executor.py:179 -- Execution plan of Dataset dataset_8_0: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadMetaxy] -> TaskPoolMapOperator[Map(transcribe)->Write]\n2026-03-21 19:29:45,516\tINFO progress_bar.py:213 -- === Ray Data Progress {ReadMetaxy->SplitBlocks(200)} ===\n2026-03-21 19:29:45,516\tINFO progress_bar.py:215 -- ReadMetaxy->SplitBlocks(200): Tasks: 1 [backpressured:tasks]; Actors: 0; Queued blocks: 0 (0.0B); Resources: 1.0 CPU, 384.0MiB object store: Progress Completed 0 / ?\n2026-03-21 19:29:45,516\tINFO progress_bar.py:213 -- === Ray Data Progress {Map(transcribe)->Write} ===\n2026-03-21 19:29:45,516\tINFO progress_bar.py:215 -- Map(transcribe)->Write: Tasks: 0; Actors: 0; Queued blocks: 0 (0.0B); Resources: 0.0 CPU, 0.0B object store: Progress Completed 0 / ?\n2026-03-21 19:29:45,516\tINFO progress_bar.py:213 -- === Ray Data Progress {Running Dataset} ===\n2026-03-21 19:29:45,516\tINFO progress_bar.py:215 -- Running Dataset: dataset_8_0. Active & requested resources: 0/12 CPU, 0.0B/1.0GiB object store: Progress Completed 0 / ?\n2026-03-21 19:29:45,687\tINFO streaming_executor.py:304 -- ✔️  Dataset dataset_8_0 execution finished in 0.30 seconds\n2026-03-21 19:29:45,699\tINFO dataset.py:5344 -- Data sink Metaxy finished. 0 rows and 0.0B data written.\n",
+        "timestamp": "2026-03-21T19:29:47.518676",
+        "scenario_name": "Setup video metadata",
+        "step_name": "run_pipeline"
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_ray.materialize_dagster",
+        "returncode": 0,
+        "stdout": "Materializing Example 2 assets: video -> crop, stt -> face_detection\n  Materialized: AssetKey(['ray', 'video'])\n  Materialized: AssetKey(['ray', 'crop'])\n  Materialized: AssetKey(['ray', 'stt'])\n  Materialized: AssetKey(['ray', 'face_detection'])\n  Verified video: 4 rows\n  Verified crop: 4 rows\n  Verified stt: 4 rows\n  Verified face_detection: 4 rows\nExample 2: all assets materialized successfully\n",
+        "stderr": "/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - RUN_START - Started execution of run for \"__ephemeral_asset_job__\".\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - ENGINE_EVENT - Executing steps in process (pid: 4636)\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - RESOURCE_INIT_STARTED - Starting initialization of resources [io_manager, store].\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - RESOURCE_INIT_SUCCESS - Finished initialization of resources [io_manager, store].\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - LOGS_CAPTURED - Started capturing logs in process (pid: 4636).\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - video_metadata - STEP_START - Started execution of step \"video_metadata\".\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - video_metadata - STEP_OUTPUT - Yielded output \"result\" of type \"Nothing\". (Type check passed).\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - video_metadata - ASSET_MATERIALIZATION - Materialized value ray video.\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - video_metadata - STEP_SUCCESS - Finished execution of step \"video_metadata\" in 209ms.\n2026-03-21 19:29:49 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - crop_metadata - STEP_START - Started execution of step \"crop_metadata\".\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/.venv/lib/python3.10/site-packages/dagster/_core/execution/plan/compute_generator.py:115: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'ray__crop'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  return fn(context, **args_to_pass) if context_arg_provided else fn(**args_to_pass)\n2026-03-21 19:29:50 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - crop_metadata - STEP_OUTPUT - Yielded output \"result\" of type \"Nothing\". (Type check passed).\n2026-03-21 19:29:50 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - crop_metadata - ASSET_MATERIALIZATION - Materialized value ray crop.\n2026-03-21 19:29:50 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - crop_metadata - STEP_SUCCESS - Finished execution of step \"crop_metadata\" in 222ms.\n2026-03-21 19:29:50 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - speech_to_text - STEP_START - Started execution of step \"speech_to_text\".\n2026-03-21 19:29:51,159\tINFO worker.py:2007 -- Started a local Ray instance.\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/.venv/lib/python3.10/site-packages/ray/_private/worker.py:2046: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0\n  warnings.warn(\n2026-03-21 19:29:52,945\tINFO logging.py:397 -- Registered dataset logger for dataset dataset_1_0\n2026-03-21 19:29:53,274\tINFO streaming_executor.py:178 -- Starting execution of Dataset dataset_1_0. Full logs are in /tmp/ray/session_2026-03-21_19-29-50_103826_4636/logs/ray-data\n2026-03-21 19:29:53,274\tINFO streaming_executor.py:179 -- Execution plan of Dataset dataset_1_0: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadMetaxy] -> TaskPoolMapOperator[Map(transcribe)]\n2026-03-21 19:29:53,398\tINFO streaming_executor.py:686 -- [dataset]: A new progress UI is available. To enable, set `ray.data.DataContext.get_current().enable_rich_progress_bars = True` and `ray.data.DataContext.get_current().use_ray_tqdm = False`.\n2026-03-21 19:29:53,398\tINFO progress_bar.py:155 -- Progress bar disabled because stdout is a non-interactive terminal.\n2026-03-21 19:29:53,399\tWARNING resource_manager.py:136 -- ⚠️  Ray's object store is configured to use only 6.1% of available memory (2.0GiB out of 32.8GiB total). For optimal Ray Data performance, we recommend setting the object store to at least 50% of available memory. You can do this by setting the 'object_store_memory' parameter when calling ray.init() or by setting the RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION environment variable.\n2026-03-21 19:29:53,405\tINFO progress_bar.py:213 -- === Ray Data Progress {ReadMetaxy->SplitBlocks(200)} ===\n2026-03-21 19:29:53,405\tINFO progress_bar.py:215 -- ReadMetaxy->SplitBlocks(200): Tasks: 1 [backpressured:tasks]; Actors: 0; Queued blocks: 0 (0.0B); Resources: 1.0 CPU, 384.0MiB object store: Progress Completed 0 / ?\n2026-03-21 19:29:53,405\tINFO progress_bar.py:213 -- === Ray Data Progress {Map(transcribe)} ===\n2026-03-21 19:29:53,405\tINFO progress_bar.py:215 -- Map(transcribe): Tasks: 0; Actors: 0; Queued blocks: 0 (0.0B); Resources: 0.0 CPU, 0.0B object store: Progress Completed 0 / ?\n2026-03-21 19:29:53,405\tINFO progress_bar.py:213 -- === Ray Data Progress {Running Dataset} ===\n2026-03-21 19:29:53,405\tINFO progress_bar.py:215 -- Running Dataset: dataset_1_0. Active & requested resources: 0/12 CPU, 0.0B/1.0GiB object store: Progress Completed 0 / ?\n2026-03-21 19:29:54,796\tINFO streaming_executor.py:304 -- ✔️  Dataset dataset_1_0 execution finished in 1.52 seconds\n2026-03-21 19:29:55 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - speech_to_text - STEP_OUTPUT - Yielded output \"result\" of type \"Nothing\". (Type check passed).\n2026-03-21 19:29:55 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - speech_to_text - ASSET_MATERIALIZATION - Materialized value ray stt.\n2026-03-21 19:29:55 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - speech_to_text - STEP_SUCCESS - Finished execution of step \"speech_to_text\" in 5.03s.\n2026-03-21 19:29:55 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - face_detection - STEP_START - Started execution of step \"face_detection\".\n2026-03-21 19:29:55,333\tINFO logging.py:397 -- Registered dataset logger for dataset dataset_3_0\n2026-03-21 19:29:55,514\tINFO streaming_executor.py:178 -- Starting execution of Dataset dataset_3_0. Full logs are in /tmp/ray/session_2026-03-21_19-29-50_103826_4636/logs/ray-data\n2026-03-21 19:29:55,514\tINFO streaming_executor.py:179 -- Execution plan of Dataset dataset_3_0: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadMetaxy] -> TaskPoolMapOperator[Map(detect_faces)]\n2026-03-21 19:29:55,607\tINFO progress_bar.py:213 -- === Ray Data Progress {ReadMetaxy->SplitBlocks(200)} ===\n2026-03-21 19:29:55,607\tINFO progress_bar.py:215 -- ReadMetaxy->SplitBlocks(200): Tasks: 1 [backpressured:tasks]; Actors: 0; Queued blocks: 0 (0.0B); Resources: 1.0 CPU, 384.0MiB object store: Progress Completed 0 / ?\n2026-03-21 19:29:55,607\tINFO progress_bar.py:213 -- === Ray Data Progress {Map(detect_faces)} ===\n2026-03-21 19:29:55,607\tINFO progress_bar.py:215 -- Map(detect_faces): Tasks: 0; Actors: 0; Queued blocks: 0 (0.0B); Resources: 0.0 CPU, 0.0B object store: Progress Completed 0 / ?\n2026-03-21 19:29:55,607\tINFO progress_bar.py:213 -- === Ray Data Progress {Running Dataset} ===\n2026-03-21 19:29:55,607\tINFO progress_bar.py:215 -- Running Dataset: dataset_3_0. Active & requested resources: 0/12 CPU, 0.0B/1.0GiB object store: Progress Completed 0 / ?\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   return MetaxyConfig.get().hash_truncation_length\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   \"plugins\": mx.MetaxyConfig.get().plugins,\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   return MetaxyConfig.get().hash_truncation_length\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   \"plugins\": mx.MetaxyConfig.get().plugins,\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   return MetaxyConfig.get().hash_truncation_length\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   \"plugins\": mx.MetaxyConfig.get().plugins,\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   return MetaxyConfig.get().hash_truncation_length\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n\u001b[36m(Map(detect_faces) pid=4675)\u001b[0m   \"plugins\": mx.MetaxyConfig.get().plugins,\n2026-03-21 19:29:58,023\tINFO streaming_executor.py:304 -- ✔️  Dataset dataset_3_0 execution finished in 2.46 seconds\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/utils/batched_writer.py:342: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'ray__face_detection'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  self._store.write_multi(combined)\n2026-03-21 19:29:58 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - face_detection - STEP_OUTPUT - Yielded output \"result\" of type \"Nothing\". (Type check passed).\n2026-03-21 19:29:58 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - face_detection - ASSET_MATERIALIZATION - Materialized value ray face_detection.\n2026-03-21 19:29:58 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - face_detection - STEP_SUCCESS - Finished execution of step \"face_detection\" in 3.81s.\n2026-03-21 19:29:58 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - ENGINE_EVENT - Finished steps in process (pid: 4636) in 9.48s\n2026-03-21 19:29:58 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - 48b2f6e1-6526-4f42-b468-d3453c690375 - 4636 - RUN_SUCCESS - Finished execution of run for \"__ephemeral_asset_job__\".\n\u001b[36m(Map(detect_faces) pid=4682)\u001b[0m /Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\u001b[32m [repeated 8x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)\u001b[0m\n\u001b[36m(Map(detect_faces) pid=4682)\u001b[0m   return MetaxyConfig.get().hash_truncation_length\u001b[32m [repeated 4x across cluster]\u001b[0m\n\u001b[36m(Map(detect_faces) pid=4682)\u001b[0m   \"plugins\": mx.MetaxyConfig.get().plugins,\u001b[32m [repeated 4x across cluster]\u001b[0m\n",
+        "timestamp": "2026-03-21T19:30:01.003639",
+        "scenario_name": "Dagster assets",
+        "step_name": "materialize_dagster"
+      },
+      {
+        "type": "command_executed",
+        "command": "python -m example_ray.materialize_production",
+        "returncode": 0,
+        "stdout": "Materializing Example 3 assets: video -> video_processing (branching IO)\n  Materialized: AssetKey(['ray', 'video'])\n  Materialized: AssetKey(['ray', 'stt'])\n  Verified video: 4 rows\n  Verified stt: 4 rows\n  Verified crop: 4 rows\nExample 3: production assets materialized successfully\n",
+        "stderr": "/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/_hashing.py:58: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  return MetaxyConfig.get().hash_truncation_length\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/src/metaxy/ext/dagster/utils.py:443: UserWarning: Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved).\n  \"plugins\": mx.MetaxyConfig.get().plugins,\n2026-03-21 19:30:02 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - RUN_START - Started execution of run for \"__ephemeral_asset_job__\".\n2026-03-21 19:30:02 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - ENGINE_EVENT - Executing steps in process (pid: 4800)\n2026-03-21 19:30:02 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - RESOURCE_INIT_STARTED - Starting initialization of resources [io_manager, store].\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - RESOURCE_INIT_SUCCESS - Finished initialization of resources [io_manager, store].\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - LOGS_CAPTURED - Started capturing logs in process (pid: 4800).\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_metadata - STEP_START - Started execution of step \"video_metadata\".\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_metadata - STEP_OUTPUT - Yielded output \"result\" of type \"Nothing\". (Type check passed).\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_metadata - ASSET_MATERIALIZATION - Materialized value ray video.\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_metadata - STEP_SUCCESS - Finished execution of step \"video_metadata\" in 195ms.\n2026-03-21 19:30:03 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_processing - STEP_START - Started execution of step \"video_processing\".\n2026-03-21 19:30:04,354\tINFO worker.py:2007 -- Started a local Ray instance.\n/Users/geoheil/development/metaxy/worktrees/metaxy-gh-1080/.venv/lib/python3.10/site-packages/ray/_private/worker.py:2046: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0\n  warnings.warn(\n2026-03-21 19:30:05 +0100 - dagster - INFO - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - video_processing - No samples to process\n2026-03-21 19:30:05 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_processing - STEP_OUTPUT - Yielded output \"result\" of type \"Nothing\". (Type check passed).\n2026-03-21 19:30:05 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_processing - ASSET_MATERIALIZATION - Materialized value ray stt.\n2026-03-21 19:30:05 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - video_processing - STEP_SUCCESS - Finished execution of step \"video_processing\" in 2.29s.\n2026-03-21 19:30:05 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - ENGINE_EVENT - Finished steps in process (pid: 4800) in 2.69s\n2026-03-21 19:30:05 +0100 - dagster - DEBUG - __ephemeral_asset_job__ - ba471ccc-6292-4aec-8ce0-79e30e9fefbe - 4800 - RUN_SUCCESS - Finished execution of run for \"__ephemeral_asset_job__\".\n",
+        "timestamp": "2026-03-21T19:30:07.762105",
+        "scenario_name": "Production assets",
+        "step_name": "materialize_production"
+      }
+    ]
+  }
+}
