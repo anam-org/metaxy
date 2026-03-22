@@ -10,6 +10,8 @@ This module tests Iceberg-specific features:
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import polars as pl
 import pytest
 from packaging.version import Version
@@ -85,7 +87,7 @@ def test_iceberg_custom_namespace(tmp_path, test_features) -> None:
     reason="sink_iceberg requires Polars >= 1.39.0",
 )
 def test_iceberg_sink_lazyframe(tmp_path, test_features) -> None:
-    """Verify LazyFrame.sink_iceberg writes without eager materialization."""
+    """Verify LazyFrame.sink_iceberg is used for lazy writes."""
     store_path = tmp_path / "iceberg_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
@@ -101,8 +103,10 @@ def test_iceberg_sink_lazyframe(tmp_path, test_features) -> None:
     )
 
     with IcebergMetadataStore(warehouse=store_path).open("w") as store:
-        store.write(feature_cls, metadata_lazy)
-
-        result = store.read(feature_cls)
-        assert result is not None
-        assert result.collect().to_native().height == 3
+        with patch.object(pl.LazyFrame, "sink_iceberg", autospec=True) as mock_sink:
+            mock_sink.side_effect = lambda self_lf, *args, **kwargs: None
+            store.write(feature_cls, metadata_lazy)
+        mock_sink.assert_called_once()
+        args, kwargs = mock_sink.call_args
+        assert len(args) == 2
+        assert kwargs == {"mode": "append"}

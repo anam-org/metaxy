@@ -152,6 +152,7 @@ plugins:
             - https://docs.dagster.io/objects.inv
             - https://docs.ray.io/en/latest/objects.inv
             - https://delta-io.github.io/delta-rs/objects.inv
+            - https://py.iceberg.apache.org/objects.inv
 
 markdown_extensions:
   # Core extensions

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
+from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, NewType, overload
 
 if TYPE_CHECKING:
     from pyiceberg.catalog import Catalog
+    from pyiceberg.table import Table
 
 import narwhals as nw
 import polars as pl
@@ -26,12 +28,14 @@ from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
+TableIdentifier = NewType("TableIdentifier", tuple[str, str])
+"""A ``(namespace, table_name)`` pair used by PyIceberg to locate a table within a catalog."""
+
 
 def _strip_casts() -> Callable[[Any], Any]:
-    """Unwrap ``CAST(x AS type)`` → ``x`` so PyIceberg's row-filter parser sees plain literals.
-
-    PyIceberg's pyparsing-based filter parser only accepts bare literals, not SQL casts.
-    Stripping CAST wrappers leaves clean ISO-8601 strings that PyIceberg can type-coerce.
+    """Unwrap ``CAST(x AS type)`` → ``x`` to match PyIceberg's
+    `row filter syntax <https://py.iceberg.apache.org/row-filter-syntax/>`_
+    which accepts bare literals but not SQL casts.
     """
     from sqlglot import exp
 
@@ -78,7 +82,7 @@ class IcebergMetadataStoreConfig(MetadataStoreConfig):
     )
     auto_create_namespace: bool = Field(
         default=True,
-        description="Automatically create the namespace on open if it does not exist.",
+        description="Automatically create the namespace on first write if it does not exist.",
     )
 
 
@@ -126,15 +130,15 @@ class IcebergMetadataStore(MetadataStore):
             warehouse: Warehouse directory or URI for Iceberg data files.
             namespace: Iceberg namespace for tables (Glue Database, SQL schema, etc.).
             catalog_name: Local identifier for the PyIceberg catalog instance.
-            catalog_properties: Properties for [`pyiceberg.catalog.load_catalog`](https://py.iceberg.apache.org/api/#load-a-catalog).
-            auto_create_namespace: Create the namespace on open if it does not exist.
+            catalog_properties: Properties for [`pyiceberg.catalog.load_catalog`][pyiceberg.catalog.load_catalog].
+            auto_create_namespace: Create the namespace on first write if it does not exist.
             fallback_stores: Ordered list of read-only fallback stores.
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][metaxy.metadata_store.base.MetadataStore].
         """
         self.namespace = namespace
         self.catalog_name = catalog_name
         self.auto_create_namespace = auto_create_namespace
-        self._catalog: Catalog | None = None
+        self._catalog_exists = False
 
         warehouse_str = str(warehouse)
         self._is_remote = not is_local_path(warehouse_str)
@@ -178,33 +182,37 @@ class IcebergMetadataStore(MetadataStore):
             yield engine
 
     def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
-        from pyiceberg.catalog import load_catalog
-
         if not self._is_remote:
             Path(self._warehouse_uri).mkdir(parents=True, exist_ok=True)
-
-        self._catalog = load_catalog(
-            self.catalog_name,
-            **self._catalog_properties,
-        )
-        if self.auto_create_namespace:
-            self._catalog.create_namespace_if_not_exists(self.namespace)
+        _ = self.catalog
 
     def _close(self) -> None:
-        if self._catalog is not None:
-            self._catalog.close()
-            self._catalog = None
+        catalog = self.__dict__.pop("catalog", None)
+        if catalog is not None:
+            catalog.close()
+        self._catalog_exists = False
 
     # ===== Internal helpers =====
 
-    @property
+    @cached_property
     def catalog(self) -> Catalog:
-        if self._catalog is None:
-            raise RuntimeError("IcebergMetadataStore is not open. Call open() first.")
-        return self._catalog
+        """Load and return the PyIceberg catalog instance."""
+        from pyiceberg.catalog import load_catalog
 
-    def _table_identifier(self, feature_key: FeatureKey) -> tuple[str, str]:
-        return (self.namespace, feature_key.table_name)
+        return load_catalog(
+            self.catalog_name,
+            **self._catalog_properties,
+        )
+
+    def _table_identifier(self, feature_key: FeatureKey) -> TableIdentifier:
+        return TableIdentifier((self.namespace, feature_key.table_name))
+
+    def _ensure_namespace(self) -> None:
+        """Create the namespace if auto_create_namespace is enabled and not yet created."""
+        if self._catalog_exists or not self.auto_create_namespace:
+            return
+        self.catalog.create_namespace_if_not_exists(self.namespace)
+        self._catalog_exists = True
 
     @overload
     def _cast_enum_to_string(self, frame: pl.DataFrame) -> pl.DataFrame: ...
@@ -216,9 +224,8 @@ class IcebergMetadataStore(MetadataStore):
         """Cast Enum columns to String to avoid Arrow Utf8View incompatibility."""
         return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
 
-    def _ensure_table(self, identifier: tuple[str, str], arrow_schema: Any) -> Any:
+    def _ensure_table(self, identifier: TableIdentifier, arrow_schema: Any) -> Table:
         """Create or evolve an Iceberg table to match the given Arrow schema."""
-        from pyiceberg.table import Table
 
         table: Table = self.catalog.create_table_if_not_exists(identifier, schema=arrow_schema)
         if table.schema().as_arrow() != arrow_schema:
@@ -239,12 +246,13 @@ class IcebergMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata
-            **kwargs: Backend-specific parameters.
+            **kwargs: Forwarded to `sink_iceberg` or `Table.append`.
 
         !!! tip
             If Polars 1.39 or greater is installed, lazy Polars frames are sinked via
             `LazyFrame.sink_iceberg`, avoiding unnecessary materialization.
         """
+        self._ensure_namespace()
         identifier = self._table_identifier(feature_key)
 
         can_sink = (
@@ -256,16 +264,18 @@ class IcebergMetadataStore(MetadataStore):
         if can_sink:
             lf_native = df.to_native()
             assert isinstance(lf_native, pl.LazyFrame)
-            sample_arrow = self._cast_enum_to_string(lf_native.head(0).collect()).to_arrow()
-            iceberg_table = self._ensure_table(identifier, sample_arrow.schema)
+            arrow_schema = pl.DataFrame(schema=self._cast_enum_to_string(lf_native).collect_schema()).to_arrow().schema
+            iceberg_table = self._ensure_table(identifier, arrow_schema)
             # sink_iceberg requires columns in the same order as the Iceberg table schema
             schema_col_order = [f.name for f in iceberg_table.schema().as_arrow()]
-            self._cast_enum_to_string(lf_native).select(schema_col_order).sink_iceberg(iceberg_table, mode="append")
+            self._cast_enum_to_string(lf_native).select(schema_col_order).sink_iceberg(
+                iceberg_table, mode="append", **kwargs
+            )
         else:
             df_polars = self._cast_enum_to_string(collect_to_polars(df))
             arrow_table = df_polars.to_arrow()
             iceberg_table = self._ensure_table(identifier, arrow_table.schema)
-            iceberg_table.append(arrow_table)
+            iceberg_table.append(arrow_table, **kwargs)
 
     def _read_feature(
         self,
@@ -309,16 +319,12 @@ class IcebergMetadataStore(MetadataStore):
     def _delete_feature(
         self,
         feature_key: FeatureKey,
-        filters: Sequence[nw.Expr] | None = None,
+        filters: Sequence[nw.Expr] | None,
         *,
         with_feature_history: bool,
     ) -> None:
-        """Delete rows from an Iceberg table using PyIceberg's native delete_filter.
-
-        Note:
-            This implementation relies on Ibis (ibis-framework) to generate SQL from Narwhals expressions.
-            The `ibis` package is included in the `iceberg` extras: `pip install metaxy[iceberg]`.
-        """
+        """Delete rows from an Iceberg table using PyIceberg's `row filter syntax
+        <https://py.iceberg.apache.org/row-filter-syntax/>`_."""
         identifier = self._table_identifier(feature_key)
         if not self.catalog.table_exists(identifier):
             return
