@@ -51,6 +51,28 @@ type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 root_path = "s3://my-bucket/${BRANCH_NAME}/metadata"
 ```
 
+## Config Inheritance (for Monorepos)
+
+```toml
+# base.toml (shared store definitions)
+[stores.dev]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+[stores.dev.config]
+database = "${HOME}/.metaxy/shared.duckdb"
+```
+
+```toml
+# project_a/metaxy.toml
+project = "project_a"
+extend = "../base.toml"
+```
+
+```toml
+# project_b/metaxy.toml
+project = "project_b"
+extend = "../base.toml"
+```
+
 ## Initialize from Config
 
 ```python

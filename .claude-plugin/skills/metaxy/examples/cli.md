@@ -27,6 +27,17 @@ mx graph render --format mermaid -o graph.mmd  # Export as Mermaid
 mx history                 # Show snapshot history
 ```
 
+### Feature Locking (Multi-Environment)
+
+For multi-environment setups where projects can't be pip-installed into each other, push definitions to a shared store and lock them:
+
+```bash
+mx push              # Publish feature definitions to store
+mx lock              # Fetch external deps into metaxy.lock
+```
+
+Both commands accept a `--store` argument.
+
 ### Metadata Operations
 
 ```bash
