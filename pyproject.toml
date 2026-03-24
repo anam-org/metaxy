@@ -309,6 +309,7 @@ markers = [
   "polars: Stores using Polars for compute",
   "delta: Delta Lake store tests",
   "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
+  "bigquery: BigQuery live integration tests (requires BIGQUERY_TEST_PROJECT_ID and GCP credentials via ADC or GOOGLE_APPLICATION_CREDENTIALS)",
   "lancedb: LanceDB store tests",
   "postgresql: PostgreSQL store tests",
   "integration: Integration tests (require external services)",

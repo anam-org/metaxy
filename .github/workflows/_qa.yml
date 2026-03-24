@@ -34,6 +34,10 @@ on:
         required: false
       MOTHERDUCK_TOKEN:
         required: false
+      BIGQUERY_TEST_PROJECT_ID:
+        required: false
+      BIGQUERY_TEST_CREDENTIALS_JSON:
+        required: false
 
 jobs:
   filter:
@@ -138,6 +142,7 @@ jobs:
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
       MOTHERDUCK_REGION: eu-central-1
+      BIGQUERY_TEST_PROJECT_ID: ${{ (github.ref == 'refs/heads/main' || inputs.run-all-checks || github.event_name == 'workflow_dispatch') && secrets.BIGQUERY_TEST_PROJECT_ID || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -147,6 +152,15 @@ jobs:
         uses: actions/checkout@v6.0.2
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
+
+      - name: Write BigQuery credentials file
+        if: ${{ secrets.BIGQUERY_TEST_CREDENTIALS_JSON != '' }}
+        env:
+          BIGQUERY_SA_JSON: ${{ secrets.BIGQUERY_TEST_CREDENTIALS_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$BIGQUERY_SA_JSON" > /tmp/bigquery-sa.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/bigquery-sa.json" >> "$GITHUB_ENV"
 
       - name: Run Tests with Coverage
         id: pytest
