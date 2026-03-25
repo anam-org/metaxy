@@ -10,7 +10,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 !!! abstract
 
-    **_stable_** features are guaranteed to follow SemVer and won't receive breaking changes in between minor releases. Such changes will be announced with a deprecation warning.
+    **_stable_** features are guaranteed to follow SemVer and won't receive breaking changes in between patch releases. Such changes will be announced with a deprecation warning.
     A feature is considered *stable* if it's documented and doesn't have an `"Experimental"` badge.
 
     **_experimental_** features may be changed or removed at any time without deprecation warnings. They may be documented and in this case must display an `"Experimental"` warning badge:

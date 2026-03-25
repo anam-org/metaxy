@@ -35,7 +35,7 @@ from metaxy.models.types import ValidatedFeatureKey
 if TYPE_CHECKING:
     from sqlalchemy import MetaData
 
-    from metaxy.ext.ibis.metadata_store import IbisMetadataStore
+    from metaxy.metadata_store import MetadataStore
 
 RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
     set(ALL_SYSTEM_COLUMNS)
@@ -398,7 +398,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
 
 @public
 def filter_feature_sqlmodel_metadata(
-    store: "IbisMetadataStore",
+    store: "MetadataStore",
     source_metadata: "MetaData",
     project: str | None = None,
     filter_by_project: bool = True,
@@ -419,7 +419,7 @@ def filter_feature_sqlmodel_metadata(
     This function must be called after init() to ensure features are loaded.
 
     Args:
-        store: IbisMetadataStore instance (provides table_prefix and sqlalchemy_url)
+        store: MetadataStore instance (provides table_prefix and sqlalchemy_url)
         source_metadata: Source SQLAlchemy MetaData to filter (typically SQLModel.metadata).
                         Tables are looked up in this metadata by their unprefixed names.
         project: Project name to filter by. If None, uses MetaxyConfig.get().project

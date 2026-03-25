@@ -39,7 +39,7 @@ class UpstreamPreparer(Generic[FrameT]):
     5. Join all dependencies into a single DataFrame
     """
 
-    def __init__(self, plan: FeaturePlan, engine: VersioningEngine[FrameT]):
+    def __init__(self, plan: FeaturePlan, engine: VersioningEngine):
         self.plan = plan
         self.engine = engine
 

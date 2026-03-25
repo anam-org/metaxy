@@ -59,15 +59,6 @@ class TestClickHouse(
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.fixture
-    def named_store(self, request: pytest.FixtureRequest) -> MetadataStore:
-        connection_string = request.getfixturevalue("clickhouse_db")
-        return ClickHouseMetadataStore(
-            connection_string=connection_string,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="clickhouse-test",
-        )
-
 
 def test_clickhouse_table_naming(
     clickhouse_store: ClickHouseMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
@@ -193,7 +184,7 @@ def test_clickhouse_xxh3_hash_functions_build_native_expressions() -> None:
     with MetaxyConfig().use():
         store = ClickHouseMetadataStore("clickhouse://localhost/default")
 
-    hash_functions = store._create_hash_functions()
+    hash_functions = store._backcompat_ibis_engine._create_hash_functions()
     sample = ibis.literal("sample")
 
     assert str(hash_functions[HashAlgorithm.XXH3_64](sample))

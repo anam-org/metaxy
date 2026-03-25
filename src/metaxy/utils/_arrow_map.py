@@ -31,7 +31,7 @@ def convert_structs_to_maps(df: PolarsFrameT, columns: Sequence[str]) -> PolarsF
     """
     import polars_map  # noqa: F401  # registers .map accessor
 
-    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema  # ty: ignore[invalid-attribute-access]
     map_exprs: list[pl.Expr] = []
 
     for col_name in columns:
@@ -80,7 +80,7 @@ def convert_maps_to_structs(
     import polars_map  # noqa: F401  # registers the `.map` accessor
 
     df = convert_maps_to_polars_map(df, columns)
-    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema  # ty: ignore[invalid-attribute-access]
 
     struct_exprs: list[pl.Expr] = []
     for col_name in columns:
@@ -123,7 +123,7 @@ def convert_maps_to_polars_map(
         columns: Column names to convert. Only columns with List(Struct({key, value}))
             dtype are converted; others are silently skipped.
     """
-    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema  # ty: ignore[invalid-attribute-access]
     target_columns: list[str] = []
 
     for col_name, dtype in schema.items():
