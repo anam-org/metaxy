@@ -1,4 +1,4 @@
 - Always add or update tests when modifying features. Run `uv run pytest tests/path/to/test.py` to verify changes before considering work complete.
-- Never run the full test suite unless instructed. Only run relevant tests by filtering with `-k "pattern"`, specific files or specific tests `uv run pytest tests/test_migrations.py::test_migration_generation`
+- Never run the full test suite unless instructed. Only run relevant tests by filtering with `-k "pattern"`, specific files or specific tests `uv run pytest tests/test_migrations.py::test_migration_generation`, or `--sample <number>`.
 - Always use fixtures to setup data and common values. Always request fixtures with appropriate type annotations.
 - If tests fail due to snapshot mismatches after intentional changes, update with `uv run pytest --snapshot-update path/to/test.py`.

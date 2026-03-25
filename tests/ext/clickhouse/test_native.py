@@ -57,15 +57,6 @@ class TestClickHouse(
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.fixture
-    def named_store(self, request: pytest.FixtureRequest) -> MetadataStore:
-        connection_string = request.getfixturevalue("clickhouse_db")
-        return ClickHouseMetadataStore(
-            connection_string=connection_string,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="clickhouse-test",
-        )
-
 
 def test_clickhouse_table_naming(
     clickhouse_store: ClickHouseMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]

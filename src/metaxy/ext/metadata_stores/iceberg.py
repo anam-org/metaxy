@@ -166,7 +166,15 @@ class IcebergMetadataStore(MetadataStore):
             "warehouse": "file://" + self._warehouse_uri,
         }
 
+        from metaxy.metadata_store.compute_engine import PolarsComputeEngine
+        from metaxy.metadata_store.storage_config import StorageConfig
+
+        engine = PolarsComputeEngine()
+        storage = [StorageConfig(format="iceberg", location=self._warehouse_uri)]
+
         super().__init__(
+            engine=engine,
+            storage=storage,
             fallback_stores=fallback_stores,
             versioning_engine="polars",
             **kwargs,

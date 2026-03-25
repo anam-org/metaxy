@@ -165,36 +165,21 @@ class IbisMetadataStore(MetadataStore, ABC):
         self.backend = backend
         self.connection_params = connection_params or {}
         self._conn: SQLBackend | None = None
-        self._table_prefix = table_prefix or ""
+        self._ibis_table_prefix = table_prefix or ""
 
         super().__init__(
             **kwargs,
             versioning_engine=versioning_engine,
         )
 
+    @property  # type: ignore[override]
+    def _table_prefix(self) -> str:  # type: ignore[override]
+        return self._ibis_table_prefix
+
     def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
         feature_key = self._resolve_feature_key(feature)
         table_name = self.get_table_name(feature_key)
         return table_name in self.conn.list_tables()
-
-    def get_table_name(
-        self,
-        key: FeatureKey,
-    ) -> str:
-        """Generate the storage table name for a feature or system table.
-
-        Applies the configured table_prefix (if any) to the feature key's table name.
-        Subclasses can override this method to implement custom naming logic.
-
-        Args:
-            key: Feature key to convert to storage table name.
-
-        Returns:
-            Storage table name with optional prefix applied.
-        """
-        base_name = key.table_name
-
-        return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for Ibis stores.
