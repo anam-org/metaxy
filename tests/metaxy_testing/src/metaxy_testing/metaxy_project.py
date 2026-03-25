@@ -496,7 +496,7 @@ class ExternalMetaxyProject(MetaxyProject):
 
     Example:
         ```py
-        project = ExternalMetaxyProject(Path("examples/example-migration"))
+        project = ExternalMetaxyProject(Path("examples/example-basic"))
         result = project.run_cli(["push"], env={"STAGE": "1"}, subprocess=True)
         assert result.returncode == 0
         print(project.package_name)  # "example_migration"

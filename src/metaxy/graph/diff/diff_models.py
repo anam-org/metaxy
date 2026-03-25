@@ -1,6 +1,6 @@
-"""Graph diff models for migration system.
+"""Graph diff models.
 
-Provides GraphDiff with struct serialization for storage in migration tables.
+Provides GraphDiff with struct serialization for storage.
 """
 
 from typing import Any

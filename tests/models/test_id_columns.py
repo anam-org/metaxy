@@ -486,7 +486,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
     """Test that feature_version is different when id_columns change.
 
     Since id_columns affect how features join their upstream dependencies,
-    changing them changes the feature_version, which triggers migrations.
+    changing them changes the feature_version.
     This is the correct behavior - id_columns is part of the computational spec.
     """
 

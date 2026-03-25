@@ -52,7 +52,7 @@ This version is stored as `metaxy_feature_version` [system column](/reference/sy
 
 ??? "How is project version used?"
 
-    This value is used to uniquely encode versioned feature graph topology. `metaxy push` CLI can be used to keep track of previous versions of the feature graph, enabling features such as data version reconciliation migrations.
+    This value is used to uniquely encode versioned feature graph topology. `metaxy push` CLI can be used to keep track of previous versions of the feature graph.
 
 This version is stored as `metaxy_project_version` [system column](/reference/system-columns.md).
 

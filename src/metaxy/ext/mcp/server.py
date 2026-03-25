@@ -88,7 +88,7 @@ def _register_tools(server: FastMCP) -> None:
 
         Returns:
             The full Metaxy configuration serialized as JSON, including all
-            settings like project, store, entrypoints, stores, migrations_dir, etc.
+            settings like project, store, entrypoints, stores, etc.
         """
         metaxy_ctx = _get_metaxy_context()
         config = metaxy_ctx.config

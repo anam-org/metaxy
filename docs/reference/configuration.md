@@ -63,7 +63,7 @@ When a child config extends a parent, scalar fields are replaced, dictionary fie
 ::: metaxy-config
     class: metaxy.config.MetaxyConfig
     header_level: 3
-    exclude_fields: migrations_dir,theme
+    exclude_fields: theme
 
 ---
 

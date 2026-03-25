@@ -171,11 +171,6 @@ class MetaxyConfig(BaseSettings):
         default=None, description="A relative or absolute path to a Metaxy configuration file to inherit settings from."
     )
 
-    migrations_dir: str = PydanticField(
-        default=".metaxy/migrations",
-        description="Directory where migration files are stored",
-    )
-
     entrypoints: list[str] = PydanticField(
         default_factory=list,
         description="List of Python module paths to load for feature discovery",

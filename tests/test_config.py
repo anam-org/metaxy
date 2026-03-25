@@ -672,30 +672,6 @@ unset_with_default = "${{ANOTHER_UNSET:-my-default}}"
     assert config.stores["dev"].config["unset_with_default"] == "my-default"
 
 
-def test_env_var_expansion_unset_becomes_empty_string(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that ${VAR} without default becomes empty string when unset."""
-    monkeypatch.delenv("UNSET_VAR", raising=False)
-
-    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
-    dev_path = (tmp_path / "delta_dev").as_posix()
-
-    config_file = tmp_path / "metaxy.toml"
-    config_file.write_text(f"""
-store = "dev"
-migrations_dir = "prefix-${{UNSET_VAR}}-suffix"
-
-[stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
-
-[stores.dev.config]
-root_path = "{dev_path}"
-""")
-
-    config = MetaxyConfig.load(config_file)
-
-    assert config.migrations_dir == "prefix--suffix"
-
-
 def test_env_var_expansion_in_nested_structures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that env vars are expanded in nested dicts and lists."""
     monkeypatch.setenv("STORE_PATH", "/data/metadata")
@@ -1383,7 +1359,6 @@ class TestToToml:
         original = MetaxyConfig(
             store="staging",
             project="roundtrip_test",
-            migrations_dir=".custom/migrations",
             entrypoints=["my_features"],
             stores={
                 "staging": StoreConfig(
@@ -1408,7 +1383,6 @@ class TestToToml:
 
         assert reloaded.store == original.store
         assert reloaded.project == original.project
-        assert reloaded.migrations_dir == original.migrations_dir
         assert reloaded.entrypoints == original.entrypoints
         assert set(reloaded.stores.keys()) == set(original.stores.keys())
 
