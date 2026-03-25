@@ -1184,7 +1184,7 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject, ca
         assert "external/upstream" in result_no_sync.stdout
         assert "local/downstream" in result_no_sync.stdout
         # External feature should not show store source (not synced yet)
-        assert "DuckDBMetadataStore" not in result_no_sync.stdout
+        assert "DuckDBEngine" not in result_no_sync.stdout
 
         # WITH --sync: external feature should be loaded from store
         result_sync = metaxy_project.run_cli(["--all-projects", "--sync", "list", "features"], capsys=capsys)
@@ -1192,7 +1192,7 @@ def test_sync_flag_loads_external_features(metaxy_project: TempMetaxyProject, ca
         assert "external/upstream" in result_sync.stdout
         assert "local/downstream" in result_sync.stdout
         # External feature should show metadata store source after sync
-        assert "DuckDBMetadataStore" in result_sync.stdout
+        assert "DuckDBEngine" in result_sync.stdout
 
 
 def test_sync_flag_warns_on_version_mismatch(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):

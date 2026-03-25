@@ -1,0 +1,592 @@
+"""Ibis-based I/O adapter for SQL databases.
+
+Provides ``IbisTableAdapter`` (the compute engine) and ``IbisSQLHandler``
+(the native SQL storage handler).
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any
+
+import narwhals as nw
+from narwhals.typing import Frame
+
+from metaxy.ext.ibis.metadata_store import IbisMetadataStoreConfig
+from metaxy.ext.ibis.versioning import IbisVersioningEngine
+from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.compute_engine import ComputeEngine
+from metaxy.metadata_store.exceptions import (
+    FeatureNotFoundError,
+    HashAlgorithmNotSupportedError,
+    StoreNotOpenError,
+    TableNotFoundError,
+)
+from metaxy.metadata_store.io_handler import IOHandler
+from metaxy.metadata_store.storage_config import StorageConfig
+from metaxy.models.types import FeatureKey
+from metaxy.versioning.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    import ibis
+    import ibis.expr.types
+    from ibis.backends.sql import SQLBackend
+
+    from metaxy.metadata_store.types import AccessMode
+    from metaxy.models.plan import FeaturePlan
+
+from metaxy.metadata_store.table_ref import SQLTableIdentifier
+
+
+class IbisStorageConfig(StorageConfig):
+    """Storage configuration for Ibis-backed SQL databases."""
+
+    table_prefix: str = ""
+
+    def resolve(self, key: FeatureKey) -> SQLTableIdentifier:
+        from metaxy.metadata_store.table_ref import SQLTableIdentifier
+
+        return SQLTableIdentifier(
+            table_name=f"{self.table_prefix}{key.table_name}" if self.table_prefix else key.table_name
+        )
+
+
+class DuckLakeStorageConfig(IbisStorageConfig):
+    """Storage configuration for DuckLake-backed tables.
+
+    After the engine ATTACHes the DuckLake catalog, tables are accessed
+    via normal SQL — so IbisSQLHandler handles I/O unchanged.
+    """
+
+
+# ---------------------------------------------------------------------------
+# Storage handler: Ibis SQL tables
+# ---------------------------------------------------------------------------
+
+
+class IbisSQLHandler(IOHandler["SQLBackend", SQLTableIdentifier]):
+    """Reads and writes native SQL tables via an Ibis connection."""
+
+    # Subclasses can override to suppress auto_create_tables warning
+    _should_warn_auto_create_tables: bool = True
+
+    def __init__(self, *, auto_create_tables: bool = False) -> None:
+        self.auto_create_tables = auto_create_tables
+
+    # --- capability ----------------------------------------------------------
+
+    def can_handle(self, storage_config: StorageConfig) -> bool:
+        return isinstance(storage_config, IbisStorageConfig)
+
+    # --- helpers -------------------------------------------------------------
+
+    def _get_filtered_ibis_lazy(
+        self,
+        conn: SQLBackend,
+        table_name: str,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        import ibis.common.exceptions
+
+        try:
+            ibis_table = conn.table(table_name)
+        except ibis.common.exceptions.TableNotFound:
+            return None
+
+        ibis_table = self.transform_after_read(conn, ibis_table, table_name)
+
+        nw_frame = nw.from_native(ibis_table, eager_only=False)
+        if not isinstance(nw_frame, nw.LazyFrame):
+            raise TypeError(f"Expected narwhals LazyFrame from Ibis table, got {type(nw_frame)}")
+        nw_lazy: nw.LazyFrame[Any] = nw_frame
+
+        if filters:
+            nw_lazy = nw_lazy.filter(*filters)
+
+        return nw_lazy
+
+    # --- CRUD ----------------------------------------------------------------
+
+    def read(
+        self,
+        conn: SQLBackend,
+        table_id: SQLTableIdentifier,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        nw_lazy = self._get_filtered_ibis_lazy(conn, table_id.table_name, filters=filters)
+        if nw_lazy is None:
+            return None
+        if columns is not None:
+            nw_lazy = nw_lazy.select(columns)
+        return nw_lazy
+
+    def write(
+        self,
+        conn: SQLBackend,
+        table_id: SQLTableIdentifier,
+        df: Frame,
+        **kwargs: Any,
+    ) -> None:
+        table_name = table_id.table_name
+        df = self.transform_before_write(conn, df, table_name)
+
+        if df.implementation == nw.Implementation.IBIS:
+            df_to_insert = df.to_native()
+        else:
+            df_to_insert = (df.collect() if isinstance(df, nw.LazyFrame) else df).to_arrow()
+
+        try:
+            conn.insert(table_name, obj=df_to_insert)
+        except Exception as e:
+            import ibis.common.exceptions
+
+            if not isinstance(e, ibis.common.exceptions.TableNotFound):
+                raise
+            if self.auto_create_tables:
+                if self._should_warn_auto_create_tables:
+                    import warnings
+
+                    warnings.warn(
+                        f"AUTO_CREATE_TABLES is enabled - automatically creating table '{table_name}'. "
+                        "Do not use in production! "
+                        "Use proper database migration tools like Alembic for production deployments.",
+                        UserWarning,
+                        stacklevel=4,
+                    )
+                conn.create_table(table_name, obj=df_to_insert)
+            else:
+                raise TableNotFoundError(
+                    f"Table '{table_name}' does not exist. "
+                    f"Enable auto_create_tables=True to automatically create tables, "
+                    f"or use proper database migration tools like Alembic to create the table first."
+                ) from e
+
+    def has_feature(
+        self,
+        conn: SQLBackend,
+        table_id: SQLTableIdentifier,
+    ) -> bool:
+        return table_id.table_name in conn.list_tables()
+
+    def drop(
+        self,
+        conn: SQLBackend,
+        table_id: SQLTableIdentifier,
+    ) -> None:
+        if table_id.table_name in conn.list_tables():
+            conn.drop_table(table_id.table_name)
+
+    def delete(
+        self,
+        conn: SQLBackend,
+        table_id: SQLTableIdentifier,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        with_feature_history: bool,  # noqa: ARG002
+    ) -> None:
+        from metaxy.metadata_store.utils import (
+            _extract_where_expression,
+            _strip_table_qualifiers,
+        )
+
+        table_name = table_id.table_name
+        filter_list = list(filters or [])
+
+        if not filter_list:
+            if table_name not in conn.list_tables():
+                raise TableNotFoundError(f"Table '{table_name}' does not exist.")
+            conn.truncate_table(table_name)
+            return
+
+        nw_lazy = self._get_filtered_ibis_lazy(conn, table_name, filters=filter_list or None)
+        if nw_lazy is None:
+            raise FeatureNotFoundError(f"Table '{table_name}' not found in store")
+
+        import ibis
+
+        ibis_filtered = nw_lazy.to_native()
+        if not isinstance(ibis_filtered, ibis.expr.types.Table):
+            raise TypeError(f"Expected nw_lazy.to_native() to return an Ibis Table, got {type(ibis_filtered)!r}")
+        select_sql = str(ibis_filtered.compile())
+
+        dialect = conn.name
+        predicate = _extract_where_expression(select_sql, dialect=dialect)
+        if predicate is None:
+            raise ValueError(f"Cannot extract WHERE clause for DELETE on {self.__class__.__name__}")
+
+        predicate = predicate.transform(_strip_table_qualifiers())
+        where_clause = predicate.sql(dialect=dialect) if dialect else predicate.sql()
+
+        delete_stmt = f"DELETE FROM {table_name} WHERE {where_clause}"
+        conn.raw_sql(delete_stmt)  # ty: ignore[unresolved-attribute]
+
+    def get_store_metadata(
+        self,
+        table_id: SQLTableIdentifier,
+    ) -> dict[str, Any]:
+        return {"table_name": table_id.table_name}
+
+    # --- transform hooks (override in subclasses) ----------------------------
+
+    def transform_after_read(
+        self,
+        conn: SQLBackend,
+        table: ibis.Table,
+        table_name: str,
+    ) -> ibis.Table:
+        """Transform Ibis table after reading. Override in subclasses."""
+        return table
+
+    def transform_before_write(
+        self,
+        conn: SQLBackend,
+        df: Frame,
+        table_name: str,
+    ) -> Frame:
+        """Transform DataFrame before writing. Override in subclasses."""
+        return df
+
+    def ibis_type_to_polars(self, ibis_type: Any) -> Any:
+        """Convert an Ibis data type to the corresponding Polars data type."""
+        import ibis.expr.datatypes as dt
+        import polars as pl
+
+        try:
+            return ibis_type.to_polars()
+        except NotImplementedError:
+            if isinstance(ibis_type, dt.Float16):
+                return pl.Float32
+            elif isinstance(ibis_type, dt.UUID):
+                return pl.String
+            elif isinstance(ibis_type, dt.JSON):
+                return pl.String
+            elif isinstance(ibis_type, dt.MACADDR):
+                return pl.String
+            elif isinstance(ibis_type, dt.INET):
+                return pl.String
+            elif isinstance(ibis_type, dt.GeoSpatial):
+                return pl.Binary
+            else:
+                raise
+
+
+# ---------------------------------------------------------------------------
+# Backcompat stub base for Ibis store factories
+# ---------------------------------------------------------------------------
+
+
+def _backcompat_warn_attr(attr: str) -> None:
+    """Emit a warning for backcompat store attributes."""
+    import warnings
+
+    from metaxy.metadata_store.warnings import LegacyMetadataStoreAttributeWarning
+
+    warnings.warn(
+        f"Accessing '{attr}' on a store instance is deprecated and will be removed in Metaxy 0.2.0. "
+        f"Use 'store._engine.{attr}' instead.",
+        LegacyMetadataStoreAttributeWarning,
+        stacklevel=3,
+    )
+
+
+def _backcompat_warn_init(cls_name: str) -> None:
+    """Emit a warning when constructing a legacy store class directly."""
+    import warnings
+
+    from metaxy.metadata_store.warnings import LegacyMetadataStoreInstantiationWarning
+
+    warnings.warn(
+        f"{cls_name} is deprecated and will be removed in Metaxy 0.2.0. "
+        f"Use MetadataStore(engine=..., storage=[...]) directly.",
+        LegacyMetadataStoreInstantiationWarning,
+        stacklevel=3,
+    )
+
+
+class IbisStoreBackcompat(MetadataStore):
+    """Deprecated backcompat shim for Ibis-backed store factories.
+
+    Provides delegating properties so existing code that accesses
+    ``.conn``, ``.get_table_name()``, etc. directly on a store instance
+    keeps working.  All accessors emit ``DeprecationWarning``.
+
+    Will be removed in 0.2.0.
+    """
+
+    @property
+    def _ibis_engine(self) -> IbisComputeEngine:
+        assert isinstance(self._engine, IbisComputeEngine)
+        return self._engine
+
+    @property
+    def conn(self) -> SQLBackend:
+        _backcompat_warn_attr("conn")
+        return self._ibis_engine.conn
+
+    @property
+    def connection_params(self) -> dict[str, Any]:
+        _backcompat_warn_attr("connection_params")
+        return self._ibis_engine.connection_params
+
+    @property
+    def _sql_dialect(self) -> str | None:
+        return self._ibis_engine.conn.name
+
+    @property
+    def backend(self) -> str | None:
+        _backcompat_warn_attr("backend")
+        return self._ibis_engine.backend
+
+    def _find_ibis_sql_handler(self) -> IbisSQLHandler:
+        self._engine._ensure_defaults()
+        for handler in self._engine._handlers:
+            if isinstance(handler, IbisSQLHandler):
+                return handler
+        raise RuntimeError("No IbisSQLHandler found")
+
+    def ibis_type_to_polars(self, ibis_type: Any) -> Any:
+        _backcompat_warn_attr("ibis_type_to_polars")
+        return self._find_ibis_sql_handler().ibis_type_to_polars(ibis_type)
+
+    def _get_filtered_ibis_lazy(
+        self,
+        feature: Any,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        _backcompat_warn_attr("_get_filtered_ibis_lazy")
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        key = ValidatedFeatureKeyAdapter.validate_python(feature)
+        handler = self._find_ibis_sql_handler()
+        from metaxy.metadata_store.table_ref import SQLTableIdentifier
+
+        table_id = self._storage[0].resolve(key)
+        assert isinstance(table_id, SQLTableIdentifier)
+        table_name = table_id.table_name
+        return handler._get_filtered_ibis_lazy(self._ibis_engine.conn, table_name, filters=filters)
+
+
+# ---------------------------------------------------------------------------
+# Ibis compute engine
+# ---------------------------------------------------------------------------
+
+
+class IbisComputeEngine(ComputeEngine, ABC):
+    """Abstract compute engine for SQL backends using Ibis.
+
+    Concrete subclasses (DuckDB, ClickHouse, PostgreSQL, BigQuery) must
+    implement ``_create_hash_functions`` and may provide custom handlers.
+    """
+
+    versioning_engine_cls = IbisVersioningEngine
+
+    def __init__(
+        self,
+        *,
+        connection_string: str | None = None,
+        backend: str | None = None,
+        connection_params: dict[str, Any] | None = None,
+        auto_create_tables: bool = False,
+        handlers: Sequence[IOHandler[Any, Any]] | None = None,
+    ) -> None:
+        super().__init__(handlers=handlers)
+        self.connection_string = connection_string
+        self.backend = backend
+        self.connection_params = connection_params or {}
+        self._conn: SQLBackend | None = None
+        self._auto_create_tables = auto_create_tables
+
+    @property
+    def connection(self) -> SQLBackend:
+        if self._conn is None:
+            raise StoreNotOpenError("Ibis connection is not open. Store must be used as a context manager.")
+        return self._conn
+
+    # Keep the old name as an alias for backwards compat within this module
+    @property
+    def conn(self) -> SQLBackend:
+        return self.connection
+
+    # --- lifecycle -----------------------------------------------------------
+
+    def _create_default_handlers(self) -> list[IOHandler[Any, Any]]:
+        return []
+
+    def open(self, mode: AccessMode) -> None:  # noqa: ARG002
+        import ibis
+
+        if self.connection_string:
+            self._conn = ibis.connect(self.connection_string)  # ty: ignore[invalid-assignment]
+        else:
+            assert self.backend is not None, "backend must be set if connection_string is None"
+            backend_module = getattr(ibis, self.backend)
+            self._conn = backend_module.connect(**self.connection_params)
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.disconnect()
+        self._conn = None
+
+    # --- CRUD (with Map column handling) -------------------------------------
+
+    def write(
+        self,
+        key: FeatureKey,
+        df: Frame,
+        storage_config: StorageConfig,
+        **kwargs: Any,
+    ) -> None:
+        from metaxy.config import MetaxyConfig
+
+        if MetaxyConfig.get().enable_map_datatype:
+            from metaxy.metadata_store.table_ref import SQLTableIdentifier
+
+            table_id = storage_config.resolve(key)
+            assert isinstance(table_id, SQLTableIdentifier)
+            df = self._handle_map_columns(df, table_id.table_name)
+
+        super().write(key, df, storage_config, **kwargs)
+
+    # --- Map column handling -------------------------------------------------
+
+    def _handle_map_columns(self, df: Frame, table_name: str) -> Frame:
+        """Convert Struct columns to Map format for metaxy system columns.
+
+        For Ibis-backed frames, the conversion stays lazy using ibis.map() expressions.
+        For non-Ibis frames, converts through Arrow using polars-map utilities.
+        """
+        import ibis.expr.datatypes as dt
+
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+
+        map_columns: set[str] = {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}
+
+        # Also convert any user-defined Map columns if table already exists with Map schema
+        table_schema: dict[str, dt.DataType] = {}
+        if table_name in self.conn.list_tables():
+            schema = self.conn.table(table_name).schema()
+            table_schema = {name: dtype for name, dtype in schema.items() if isinstance(dtype, dt.Map)}
+            map_columns |= set(table_schema)
+
+        if df.implementation == nw.Implementation.IBIS:
+            return self._handle_ibis_map_columns(df, map_columns, table_schema)
+
+        return self._handle_polars_map_columns(df, map_columns)
+
+    @staticmethod
+    def _handle_ibis_map_columns(df: Frame, map_columns: set[str], table_schema: dict[str, Any]) -> Frame:
+        """Convert Ibis Struct columns to Map(String, value_type) expressions (stays lazy)."""
+        from typing import cast as typing_cast
+
+        import ibis
+        import ibis.expr.datatypes as dt
+
+        ibis_table = typing_cast("ibis.Table", df.to_native())
+        schema = ibis_table.schema()
+
+        mutations: dict[str, ibis.Expr] = {}
+        for col_name in map_columns:
+            if col_name not in schema:
+                continue
+            col_dtype = schema[col_name]
+            if not isinstance(col_dtype, dt.Struct):
+                continue
+
+            field_names = list(col_dtype.names)  # ty: ignore[invalid-argument-type]
+
+            if col_name in table_schema:
+                value_type = table_schema[col_name].value_type
+            else:
+                value_type = col_dtype.types[0] if col_dtype.types else dt.String()  # ty: ignore[not-subscriptable]
+
+            if not field_names:
+                mutations[col_name] = ibis.literal(
+                    {},
+                    type=dt.Map(dt.String(), value_type),  # ty: ignore[invalid-argument-type, missing-argument]
+                )
+                continue
+
+            keys = ibis.array([ibis.literal(name) for name in field_names])
+            values = ibis.array([ibis_table[col_name][name].cast(value_type) for name in field_names])
+            mutations[col_name] = ibis.map(keys, values)
+
+        if not mutations:
+            return df
+
+        return nw.from_native(ibis_table.mutate(**mutations), eager_only=False)  # ty: ignore[invalid-argument-type]
+
+    @staticmethod
+    def _handle_polars_map_columns(df: Frame, map_columns: set[str]) -> Frame:
+        """Convert Polars Struct columns to native Arrow Map columns."""
+        from metaxy.utils import collect_to_polars
+        from metaxy.versioning._arrow_map import convert_extension_maps_to_native, convert_structs_to_maps
+
+        polars_df = collect_to_polars(df)
+        polars_df = convert_structs_to_maps(polars_df, columns=list(map_columns))
+        return nw.from_native(convert_extension_maps_to_native(polars_df.to_arrow()), eager_only=False)
+
+    # --- properties ----------------------------------------------------------
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        if self.connection_string:
+            return self.connection_string
+        raise ValueError(
+            "SQLAlchemy URL not available. Store was initialized with backend + connection_params "
+            "instead of a connection string."
+        )
+
+    # --- hashing / versioning ------------------------------------------------
+
+    def get_default_hash_algorithm(self) -> HashAlgorithm:
+        return HashAlgorithm.MD5
+
+    def validate_hash_algorithm_support(self, algorithm: HashAlgorithm) -> None:
+        hash_functions = self._create_hash_functions()
+        if algorithm not in hash_functions:
+            supported = [algo.value for algo in hash_functions]
+            raise HashAlgorithmNotSupportedError(
+                f"Hash algorithm '{algorithm.value}' not supported. Supported algorithms: {', '.join(supported)}"
+            )
+
+    @abstractmethod
+    def _create_hash_functions(self) -> dict:
+        """Return a mapping of HashAlgorithm to Ibis hash function callables.
+
+        Must be implemented by each concrete backend.
+        """
+        ...
+
+    @contextmanager
+    def create_versioning_engine(self, plan: FeaturePlan) -> Iterator[IbisVersioningEngine]:
+        if self._conn is None:
+            raise RuntimeError("Cannot create versioning engine: adapter is not open.")
+
+        hash_functions = self._create_hash_functions()
+        engine = self.versioning_engine_cls(
+            plan=plan,
+            hash_functions=hash_functions,  # ty: ignore[unknown-argument]
+        )
+        try:
+            yield engine  # ty: ignore[invalid-yield]
+        finally:
+            pass
+
+    # --- display / config ----------------------------------------------------
+
+    def display(self) -> str:
+        from metaxy.metadata_store.utils import sanitize_uri
+
+        backend_info = self.connection_string or f"{self.backend}"
+        sanitized_info = sanitize_uri(backend_info)
+        return f"{self.__class__.__name__}(backend={sanitized_info})"
+
+    @classmethod
+    def config_model(cls) -> type[IbisMetadataStoreConfig]:
+        return IbisMetadataStoreConfig

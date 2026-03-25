@@ -21,7 +21,7 @@ from metaxy.models.constants import (
 from metaxy.models.feature_spec import FeatureSpec
 
 if TYPE_CHECKING:
-    from metaxy.ext.ibis.metadata_store import IbisMetadataStore
+    from metaxy.metadata_store import MetadataStore
 
 
 # System Tables
@@ -95,14 +95,14 @@ def create_system_tables(
 
 
 def _get_store_sqlalchemy_url(
-    store: IbisMetadataStore,
+    store: MetadataStore,
     protocol: str | None = None,
     port: int | None = None,
 ) -> str:
-    """Get SQLAlchemy URL from an IbisMetadataStore instance.
+    """Get SQLAlchemy URL from an MetadataStore instance.
 
     Args:
-        store: IbisMetadataStore instance
+        store: MetadataStore instance
         protocol: Optional protocol (drivername) to replace the existing one.
             Useful when Ibis uses a different protocol than SQLAlchemy requires.
         port: Optional port to replace the existing one. Useful when the
@@ -115,7 +115,7 @@ def _get_store_sqlalchemy_url(
         ValueError: If sqlalchemy_url is empty
     """
     if not store.sqlalchemy_url:
-        raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
+        raise ValueError("MetadataStore has an empty `sqlalchemy_url`.")
 
     base_url = store.sqlalchemy_url
 
@@ -151,7 +151,7 @@ def _get_system_metadata(
 @public
 @experimental
 def get_system_slqa_metadata(
-    store: IbisMetadataStore,
+    store: MetadataStore,
     protocol: str | None = None,
     port: int | None = None,
 ) -> tuple[str, MetaData]:
@@ -161,7 +161,7 @@ def get_system_slqa_metadata(
     for a store, with the store's `table_prefix` automatically applied to table names.
 
     Args:
-        store: IbisMetadataStore instance
+        store: MetadataStore instance
         protocol: Optional protocol (drivername) to replace the existing one in the URL.
             Useful when Ibis uses a different protocol than SQLAlchemy requires.
         port: Optional port to replace the existing one in the URL.
@@ -183,7 +183,7 @@ def get_system_slqa_metadata(
 
 def _get_features_metadata(
     source_metadata: MetaData,
-    store: IbisMetadataStore,
+    store: MetadataStore,
     project: str | None = None,
     filter_by_project: bool = True,
     inject_primary_key: bool | None = None,
@@ -195,7 +195,7 @@ def _get_features_metadata(
 
     Args:
         source_metadata: Source SQLAlchemy MetaData to filter (e.g., SQLModel.metadata)
-        store: IbisMetadataStore instance (used to get table_prefix)
+        store: MetadataStore instance (used to get table_prefix)
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
         inject_primary_key: If True, inject composite primary key constraints.
@@ -287,7 +287,7 @@ def _inject_constraints(
 @experimental
 @public
 def filter_feature_sqla_metadata(
-    store: IbisMetadataStore,
+    store: MetadataStore,
     source_metadata: MetaData,
     project: str | None = None,
     filter_by_project: bool = True,
@@ -304,7 +304,7 @@ def filter_feature_sqla_metadata(
     This function must be called after init() to ensure features are loaded.
 
     Args:
-        store: IbisMetadataStore instance
+        store: MetadataStore instance
         source_metadata: Source SQLAlchemy MetaData to filter.
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.

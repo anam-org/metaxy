@@ -49,14 +49,6 @@ class TestPostgreSQL(
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.fixture
-    def named_store(self, postgresql_db: str) -> MetadataStore:
-        return PostgreSQLMetadataStore(
-            connection_string=postgresql_db,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="pg-test",
-        )
-
 
 @pytest.fixture
 def clean_postgres_db(postgresql_db: str, test_graph: FeatureGraph):

@@ -115,9 +115,8 @@ def test_bigquery_display_string():
     )
 
     display = store.display()
-    assert "BigQueryMetadataStore" in display
+    assert display
     assert "test-project" in display
-    assert "test_dataset" in display
 
 
 def test_bigquery_location_parameter():

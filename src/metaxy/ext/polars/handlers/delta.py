@@ -96,64 +96,67 @@ class DeltaMetadataStore(MetadataStore):
     _should_warn_auto_create_tables = False
     versioning_engine_cls = PolarsVersioningEngine
 
+    storage_options: dict[str, Any]
+    layout: str
+    delta_write_options: dict[str, Any]
+    _root_uri: str
+    _is_remote: bool
+
     def __init__(
         self,
-        root_path: str | Path,
+        root_path: str | Path | None = None,
+        *,
+        storage_options: dict[str, Any] | None = None,  # noqa: ARG002
+        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
+        layout: Literal["flat", "nested"] = "nested",  # noqa: ARG002
+        delta_write_options: dict[str, Any] | None = None,  # noqa: ARG002
+        **kwargs: Any,  # noqa: ARG002
+    ) -> None:
+        pass  # __new__ already initialized via MetadataStore.__init__
+
+    def __new__(
+        cls,
+        root_path: str | Path | None = None,
         *,
         storage_options: dict[str, Any] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
         layout: Literal["flat", "nested"] = "nested",
         delta_write_options: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> None:
-        """
-        Initialize Delta Lake metadata store.
+    ) -> DeltaMetadataStore:
+        if root_path is None:
+            raise ValueError("root_path is required")
 
-        Args:
-            root_path: Base directory or URI where feature tables are stored.
-                Supports local paths (`/path/to/dir`), `s3://` URLs, and other object store URIs.
-            storage_options: Storage backend options passed to delta-rs.
-                Example: `{"AWS_REGION": "us-west-2", "AWS_ACCESS_KEY_ID": "...", ...}`
-                See https://delta-io.github.io/delta-rs/ for details on supported options.
-            fallback_stores: Ordered list of read-only fallback stores.
-            layout: Directory layout for feature tables. Options:
+        from metaxy.ext.polars.engine import PolarsComputeEngine
 
-                - `"nested"`: Feature tables stored in nested directories `{part1}/{part2}.delta`
-
-                - `"flat"`: Feature tables stored as `{part1}__{part2}.delta`
-
-            delta_write_options: Additional options passed to [`deltalake.write_deltalake`][deltalake.write_deltalake].
-                Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}
-            **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][metaxy.metadata_store.base.MetadataStore].
-        """
-        self.storage_options = storage_options or {}
         if layout not in ("flat", "nested"):
             raise ValueError(f"Invalid layout: {layout}. Must be 'flat' or 'nested'.")
-        self.layout = layout
-        self.delta_write_options = delta_write_options or {}
+
+        instance = MetadataStore.__new__(cls)
+        instance.storage_options = storage_options or {}
+        instance.layout = layout
+        instance.delta_write_options = delta_write_options or {}
 
         root_str = str(root_path)
-        self._is_remote = not is_local_path(root_str)
+        instance._is_remote = not is_local_path(root_str)
 
-        if self._is_remote:
-            # Remote path (S3, Azure, GCS, etc.)
-            self._root_uri = root_str.rstrip("/")
+        if instance._is_remote:
+            instance._root_uri = root_str.rstrip("/")
         else:
-            # Local path (including file:// and local:// URLs)
             if root_str.startswith("file://"):
-                # Strip file:// prefix
                 root_str = root_str[7:]
             elif root_str.startswith("local://"):
-                # Strip local:// prefix
                 root_str = root_str[8:]
-            local_path = Path(root_str).expanduser().resolve()
-            self._root_uri = str(local_path)
+            instance._root_uri = str(Path(root_str).expanduser().resolve())
 
-        super().__init__(
+        MetadataStore.__init__(
+            instance,
+            engine=PolarsComputeEngine(),
             fallback_stores=fallback_stores,
             versioning_engine="polars",
             **kwargs,
         )
+        return instance
 
     # ===== MetadataStore abstract methods =====
 

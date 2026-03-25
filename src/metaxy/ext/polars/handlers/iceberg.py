@@ -121,9 +121,30 @@ class IcebergMetadataStore(MetadataStore):
     _should_warn_auto_create_tables = False
     versioning_engine_cls = PolarsVersioningEngine
 
+    namespace: str
+    catalog_name: str
+    auto_create_namespace: bool
+    _catalog: Catalog | None
+    _is_remote: bool
+    _warehouse_uri: str
+    _catalog_properties: dict[str, str]
+
     def __init__(
         self,
-        warehouse: str | Path,
+        warehouse: str | Path | None = None,  # noqa: ARG002
+        *,
+        namespace: str = "metaxy",  # noqa: ARG002
+        catalog_name: str = "metaxy",  # noqa: ARG002
+        catalog_properties: dict[str, str] | None = None,  # noqa: ARG002
+        auto_create_namespace: bool = True,  # noqa: ARG002
+        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
+        **kwargs: Any,  # noqa: ARG002
+    ) -> None:
+        pass  # __new__ already initialized via MetadataStore.__init__
+
+    def __new__(
+        cls,
+        warehouse: str | Path | None = None,
         *,
         namespace: str = "metaxy",
         catalog_name: str = "metaxy",
@@ -131,46 +152,58 @@ class IcebergMetadataStore(MetadataStore):
         auto_create_namespace: bool = True,
         fallback_stores: list[MetadataStore] | None = None,
         **kwargs: Any,
-    ) -> None:
-        """Initialize Apache Iceberg metadata store.
+    ) -> IcebergMetadataStore:
+        if warehouse is None:
+            raise ValueError("warehouse is required")
 
-        Args:
-            warehouse: Warehouse directory or URI for Iceberg data files.
-            namespace: Iceberg namespace for tables (Glue Database, SQL schema, etc.).
-            catalog_name: Local identifier for the PyIceberg catalog instance.
-            catalog_properties: Properties for [`pyiceberg.catalog.load_catalog`][pyiceberg.catalog.load_catalog].
-            auto_create_namespace: Create the namespace on first write if it does not exist.
-            fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][metaxy.metadata_store.base.MetadataStore].
-        """
-        self.namespace = namespace
-        self.catalog_name = catalog_name
-        self.auto_create_namespace = auto_create_namespace
-        self._catalog: Catalog | None = None
+        from metaxy.ext.polars.engine import PolarsComputeEngine
+        from metaxy.metadata_store.storage_config import IcebergStorageConfig
+
+        instance = MetadataStore.__new__(cls)
+        instance.namespace = namespace
+        instance.catalog_name = catalog_name
+        instance.auto_create_namespace = auto_create_namespace
+        instance._catalog = None
 
         warehouse_str = str(warehouse)
-        self._is_remote = not is_local_path(warehouse_str)
+        instance._is_remote = not is_local_path(warehouse_str)
 
-        if self._is_remote:
-            self._warehouse_uri = warehouse_str.rstrip("/")
+        if instance._is_remote:
+            instance._warehouse_uri = warehouse_str.rstrip("/")
         else:
             if warehouse_str.startswith("file://"):
                 warehouse_str = warehouse_str[7:]
             elif warehouse_str.startswith("local://"):
                 warehouse_str = warehouse_str[8:]
-            self._warehouse_uri = Path(warehouse_str).expanduser().resolve().as_posix()
+            instance._warehouse_uri = Path(warehouse_str).expanduser().resolve().as_posix()
 
-        self._catalog_properties = catalog_properties or {
+        instance._catalog_properties = catalog_properties or {
             "type": "sql",
-            "uri": f"sqlite:///{self._warehouse_uri}/catalog.db",
-            "warehouse": "file://" + self._warehouse_uri,
+            "uri": f"sqlite:///{instance._warehouse_uri}/catalog.db",
+            "warehouse": "file://" + instance._warehouse_uri,
         }
 
-        super().__init__(
+        engine = PolarsComputeEngine()
+        storage = [
+            IcebergStorageConfig(
+                format="iceberg",
+                location=instance._warehouse_uri,
+                namespace=namespace,
+                catalog_name=catalog_name,
+                catalog_properties=instance._catalog_properties,
+                auto_create_namespace=auto_create_namespace,
+            )
+        ]
+
+        MetadataStore.__init__(
+            instance,
+            engine=engine,
+            storage=storage,
             fallback_stores=fallback_stores,
             versioning_engine="polars",
             **kwargs,
         )
+        return instance
 
     # ===== MetadataStore abstract methods =====
 

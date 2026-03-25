@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import tomli_w
 from pydantic import Field as PydanticField
@@ -34,7 +34,7 @@ BUILTIN_PLUGINS = {}
 
 
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
-StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
+
 
 # Global config visible to all threads, set via MetaxyConfig.set() / .load().
 # ContextVar overlay for per-context overrides via MetaxyConfig.use().
@@ -476,37 +476,15 @@ class MetaxyConfig(BaseSettings):
 
         return config
 
-    @overload
     def get_store(
         self,
         name: str | None = None,
-        *,
-        expected_type: Literal[None] = None,
         **kwargs: Any,
-    ) -> "MetadataStore": ...
-
-    @overload
-    def get_store(
-        self,
-        name: str | None = None,
-        *,
-        expected_type: type[StoreTypeT],
-        **kwargs: Any,
-    ) -> StoreTypeT: ...
-
-    def get_store(
-        self,
-        name: str | None = None,
-        *,
-        expected_type: type[StoreTypeT] | None = None,
-        **kwargs: Any,
-    ) -> "MetadataStore | StoreTypeT":
+    ) -> "MetadataStore":
         """Instantiate metadata store by name.
 
         Args:
             name: Store name (uses config.store if None)
-            expected_type: Expected type of the store.
-                If the actual store type does not match the expected type, a `TypeError` is raised.
             **kwargs: Additional keyword arguments to pass to the store constructor.
 
         Returns:
@@ -516,7 +494,6 @@ class MetaxyConfig(BaseSettings):
             ValueError: If store name not found in config, or if fallback stores
                 have different hash algorithms than the parent store
             ImportError: If store class cannot be imported
-            TypeError: If the actual store type does not match the expected type
 
         Example:
             ```py
@@ -552,12 +529,6 @@ class MetaxyConfig(BaseSettings):
                 self,
                 f"Failed to import store class '{store_config.type}' for store '{name}': {e}",
             ) from e
-
-        if expected_type is not None and not issubclass(store_class, expected_type):
-            raise InvalidConfigError.from_config(
-                self,
-                f"Store '{name}' is not of type '{expected_type.__name__}'",
-            )
 
         # Extract configuration and prepare for typed config model
         config_copy = store_config.config.copy()
@@ -626,12 +597,6 @@ class MetaxyConfig(BaseSettings):
                 f"hash_algorithm='{configured_hash_algorithm.value}' but is using "
                 f"'{store.hash_algorithm.value}'. The store class may have overridden "
                 f"the hash algorithm. All stores must use the same hash algorithm.",
-            )
-
-        if expected_type is not None and not isinstance(store, expected_type):
-            raise InvalidConfigError.from_config(
-                self,
-                f"Store '{name}' is not of type '{expected_type.__name__}'",
             )
 
         return store
