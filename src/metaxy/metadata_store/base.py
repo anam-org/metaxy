@@ -1,8 +1,7 @@
-"""Abstract base class for metadata storage backends."""
+"""Base class for metadata storage backends."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
@@ -17,12 +16,14 @@ from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
+from metaxy.metadata_store.compute_engine import ComputeEngine
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
     SystemDataNotFoundError,
     VersioningEngineMismatchError,
 )
+from metaxy.metadata_store.storage_config import StorageConfig
 from metaxy.metadata_store.system.keys import METAXY_SYSTEM_KEY_PREFIX
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import (
@@ -77,6 +78,13 @@ def _is_map_column(df: Frame, col_name: str) -> bool:
 
 # TypeVar for config types - used for typing from_config method
 MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
+
+
+def _unpickle_store(cls: type[MetadataStore], state: dict[str, Any]) -> MetadataStore:
+    """Reconstruct a MetadataStore from pickled state, bypassing __new__/__init__."""
+    obj = object.__new__(cls)
+    obj.__dict__.update(state)
+    return obj
 
 
 @public
@@ -161,20 +169,16 @@ def _cast_present_system_columns(
 
 
 @public
-class MetadataStore(ABC):
-    """
-    Abstract base class for metadata storage backends.
-    """
+class MetadataStore:
+    """Base class for metadata storage backends."""
 
     # Subclasses can override this to disable auto_create_tables warning
     # Set to False for stores where table creation is not applicable
     _should_warn_auto_create_tables: bool = True
 
-    # Subclasses must define the versioning engine class to use
-    versioning_engine_cls: type[VersioningEngine]
-
     def __init__(
         self,
+        engine: ComputeEngine,
         *,
         name: str | None = None,
         hash_algorithm: HashAlgorithm | None = None,
@@ -182,6 +186,7 @@ class MetadataStore(ABC):
         fallback_stores: Sequence[MetadataStore | str] | None = None,
         auto_create_tables: bool | None = None,
         materialization_id: str | None = None,
+        storage: Sequence[StorageConfig] | None = None,
     ):
         """
         Initialize the metadata store.
@@ -213,6 +218,10 @@ class MetadataStore(ABC):
             materialization_id: Optional external orchestration ID.
                 If provided, all metadata writes will include this ID in the `metaxy_materialization_id` column.
                 Can be overridden per [`MetadataStore.write`][metaxy.MetadataStore.write] call.
+            engine: Optional compute engine for delegation.
+                When set, I/O methods delegate to the engine.
+            storage: Optional sequence of storage configurations.
+                Used by the engine to locate feature data.
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
@@ -227,6 +236,9 @@ class MetadataStore(ABC):
         self._exit_stack: list[AbstractContextManager[Any]] = []
         self._transaction_timestamp: datetime | None = None
         self._soft_delete_in_progress: bool = False
+        self._engine: ComputeEngine = engine
+        self._storage: list[StorageConfig] = list(storage) if storage else []
+        self.versioning_engine_cls = engine.versioning_engine_cls
 
         if auto_create_tables is None:
             from metaxy.config import MetaxyConfig
@@ -236,7 +248,7 @@ class MetadataStore(ABC):
             self.auto_create_tables = auto_create_tables
 
         if hash_algorithm is None:
-            hash_algorithm = self._get_default_hash_algorithm()
+            hash_algorithm = engine.get_default_hash_algorithm()
         self.hash_algorithm = hash_algorithm
 
         from metaxy.metadata_store.fallback import FallbackStoreList
@@ -1084,21 +1096,9 @@ class MetadataStore(ABC):
             )
 
     @classmethod
-    @abstractmethod
     def config_model(cls) -> type[MetadataStoreConfig]:
-        """Return the configuration model class for this store type.
-
-        Subclasses must override this to return their specific config class.
-
-        Returns:
-            The config class type (e.g., DuckDBMetadataStoreConfig)
-
-        Note:
-            Subclasses override this with a more specific return type.
-            Type checkers may show a warning about incompatible override,
-            but this is intentional - each store returns its own config type.
-        """
-        ...
+        """Return the configuration model class for this store type."""
+        return MetadataStoreConfig
 
     @classmethod
     def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> Self:
@@ -1170,49 +1170,31 @@ class MetadataStore(ABC):
         cls = self.__class__
         return f"{cls.__module__}.{cls.__qualname__}"
 
+    @property
+    def engine_type(self) -> str:
+        """Fully qualified class name of the compute engine."""
+        cls = self._engine.__class__
+        return f"{cls.__module__}.{cls.__qualname__}"
+
     def _format_display_with_name(self, display_str: str) -> str:
         """Format display string with optional name prefix."""
         if self._name is not None:
             return f"[{self._name}] {display_str}"
         return display_str
 
-    @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Get the default hash algorithm for this store type.
-
-        Returns:
-            Default hash algorithm
-        """
-        pass
+        """Return the default hash algorithm for this store type."""
+        return self._engine.get_default_hash_algorithm()
 
     def native_implementation(self) -> nw.Implementation:
         """Get the native Narwhals implementation for this store's backend."""
         return self.versioning_engine_cls.implementation()
 
-    @abstractmethod
     @contextmanager
     def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[VersioningEngine]:
-        """Create provenance engine for this store as a context manager.
-
-        Args:
-            plan: Feature plan for the feature we're tracking provenance for
-
-        Yields:
-            VersioningEngine instance appropriate for this store's backend.
-            - For SQL stores (DuckDB, ClickHouse): Returns IbisVersioningEngine
-            - For in-memory/Polars stores: Returns PolarsVersioningEngine
-
-        Raises:
-            NotImplementedError: If provenance tracking not supported by this store
-
-        Example:
-            <!-- skip next -->
-            ```python
-            with self._create_versioning_engine(plan) as engine:
-                result = engine.resolve_update(...)
-            ```
-        """
-        ...
+        """Create a backend-specific versioning engine as a context manager."""
+        with self._engine.create_versioning_engine(plan) as ve:
+            yield ve
 
     @contextmanager
     def _create_polars_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
@@ -1300,19 +1282,13 @@ class MetadataStore(ABC):
                 self._close()
                 self._is_open = False
 
-    @abstractmethod
     def _open(self, mode: AccessMode) -> None:
-        """Open backend-specific connection/resources.
+        """Open backend-specific connection/resources."""
+        self._engine.open(mode)
 
-        Args:
-            mode: Access mode for this connection session.
-        """
-        ...
-
-    @abstractmethod
     def _close(self) -> None:
         """Close backend-specific connection/resources."""
-        ...
+        self._engine.close()
 
     def __enter__(self) -> Self:
         """Enter context manager - opens store in READ mode by default.
@@ -1410,18 +1386,24 @@ class MetadataStore(ABC):
                 fallback.validate_hash_algorithm(check_fallback_stores=False)
 
     def _validate_hash_algorithm_support(self) -> None:
-        """Validate that the configured hash algorithm is supported.
-
-        Default implementation does nothing (assumes all algorithms supported).
-        Subclasses can override to check algorithm support.
-
-        Raises:
-            Exception: If hash algorithm is not supported
-        """
-        # Default: no validation (assume all algorithms supported)
-        pass
+        """Validate that the configured hash algorithm is supported."""
+        self._engine.validate_hash_algorithm_support(self.hash_algorithm)
 
     # ========== Helper Methods ==========
+
+    def _find_readable_storage(self, key: FeatureKey) -> StorageConfig:
+        """Find the first storage config where the handler can read this key."""
+        for sc in self._storage:
+            if self._engine.handler.can_read(sc, key):
+                return sc
+        raise FeatureNotFoundError(f"No storage config can read feature {key.to_string()}")
+
+    def _find_writable_storage(self, key: FeatureKey) -> StorageConfig:
+        """Find the first storage config where the handler can write this key."""
+        for sc in self._storage:
+            if self._engine.handler.can_write(sc, key):
+                return sc
+        raise NotImplementedError(f"No storage config can write feature {key.to_string()}")
 
     def _is_system_table(self, feature_key: FeatureKey) -> bool:
         """Check if feature key is a system table."""
@@ -1482,26 +1464,14 @@ class MetadataStore(ABC):
                 self._transaction_timestamp = None
                 self._soft_delete_in_progress = False
 
-    @abstractmethod
     def _write_feature(
         self,
         feature_key: FeatureKey,
         df: Frame,
         **kwargs: Any,
     ) -> None:
-        """
-        Internal write implementation (backend-specific).
-
-        Backends may convert to their specific type if needed (e.g., Polars, Ibis).
-
-        Args:
-            feature_key: Feature key to write to
-            df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
-            **kwargs: Backend-specific parameters
-
-        Note: Subclasses implement this for their storage backend.
-        """
-        pass
+        """Write metadata for a feature to the backend."""
+        self._engine.write(feature_key, df, self._find_writable_storage(feature_key), **kwargs)
 
     def _add_system_columns(
         self,
@@ -1703,18 +1673,10 @@ class MetadataStore(ABC):
         # System tables don't need metaxy_provenance_by_field column
         pass
 
-    @abstractmethod
     def _drop_feature(self, feature_key: FeatureKey) -> None:
-        """Drop/delete all metadata for a feature.
+        """Drop all metadata for a feature."""
+        self._engine.drop(feature_key, self._find_writable_storage(feature_key))
 
-        Backend-specific implementation for dropping feature metadata.
-
-        Args:
-            feature_key: The feature key to drop metadata for
-        """
-        pass
-
-    @abstractmethod
     def _delete_feature(
         self,
         feature_key: FeatureKey,
@@ -1722,14 +1684,10 @@ class MetadataStore(ABC):
         *,
         with_feature_history: bool,
     ) -> None:
-        """Backend-specific hard delete implementation.
-
-        Args:
-            feature_key: Feature to delete from
-            filters: Optional Narwhals expressions to filter records; None or empty deletes all
-            with_feature_history: If True, delete across all feature versions. If False, only current version.
-        """
-        raise NotImplementedError(f"{self.__class__.__name__} does not yet support hard delete.")
+        """Hard-delete metadata matching filters."""
+        self._engine.delete(
+            feature_key, self._find_writable_storage(feature_key), filters, with_feature_history=with_feature_history
+        )
 
     def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
@@ -1938,7 +1896,6 @@ class MetadataStore(ABC):
             nw.lit(target_project_version).alias(METAXY_PROJECT_VERSION),
         )
 
-    @abstractmethod
     def _read_feature(
         self,
         feature: CoercibleToFeatureKey,
@@ -1947,19 +1904,12 @@ class MetadataStore(ABC):
         columns: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
-        """
-        Read metadata from THIS store only without using any fallbacks stores.
-
-        Args:
-            feature: Feature to read metadata for
-            filters: List of Narwhals filter expressions for this specific feature.
-            columns: Subset of columns to return
-            **kwargs: Backend-specific parameters
-
-        Returns:
-            Narwhals LazyFrame with metadata, or None if feature not found in the store
-        """
-        pass
+        """Read metadata from this store only, without fallback."""
+        feature_key = self._resolve_feature_key(feature)
+        for sc in self._storage:
+            if self._engine.handler.can_read(sc, feature_key):
+                return self._engine.read(feature_key, sc, filters=filters, columns=columns)
+        return None
 
     def read_feature_schema_from_store(
         self,
@@ -2015,32 +1965,49 @@ class MetadataStore(ABC):
 
         return False
 
-    @abstractmethod
     def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
-        """Implementation of _has_feature.
+        """Check whether a feature exists in any of the configured storages."""
+        feature_key = self._resolve_feature_key(feature)
+        return any(self._engine.has_feature(feature_key, sc) for sc in self._storage)
 
-        Args:
-            feature: Feature to check
+    @property
+    def sqlalchemy_url(self) -> str:
+        """Return the SQLAlchemy connection URL for this store.
 
-        Returns:
-            True if feature exists, False otherwise
+        Delegates to the compute engine. Raises ValueError if the engine
+        does not support SQLAlchemy URLs (e.g. Polars-only stores).
         """
-        pass
+        if hasattr(self._engine, "sqlalchemy_url"):
+            return str(self._engine.sqlalchemy_url)
+        raise ValueError(f"{self._engine.__class__.__name__} does not provide a sqlalchemy_url")
 
-    @abstractmethod
+    @property
+    def _table_prefix(self) -> str:
+        """Return the table prefix from the first storage config, if available."""
+        if self._storage:
+            return getattr(self._storage[0], "table_prefix", "")
+        return ""
+
+    def get_table_name(self, key: FeatureKey) -> str:
+        """Return the table name for a feature key, with table prefix applied."""
+        prefix = self._table_prefix
+        return f"{prefix}{key.table_name}" if prefix else key.table_name
+
     def display(self) -> str:
-        """Return a human-readable display string for this store.
+        """Return a human-readable display string for this store."""
+        from metaxy.metadata_store.utils import sanitize_uri
 
-        Used in warnings, logs, and CLI output to identify the store.
-
-        Returns:
-            Display string (e.g., "DuckDBMetadataStore(database=/path/to/db.duckdb)")
-        """
-        pass
+        engine_name = self._engine.__class__.__name__
+        storage_parts = [f"{sc.format}({sanitize_uri(sc.location)})" for sc in self._storage]
+        return f"{engine_name}({', '.join(storage_parts)})"
 
     def __repr__(self) -> str:
         """Return the display string with optional name prefix."""
         return self._format_display_with_name(self.display())
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Pickle support: bypass __new__/__init__ and restore from __dict__."""
+        return (_unpickle_store, (type(self), self.__dict__))
 
     def find_store_for_feature(
         self,
@@ -2105,17 +2072,9 @@ class MetadataStore(ABC):
         return result
 
     def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
-        """Implementation of get_store_metadata for this specific store type.
-
-        Override in subclasses to return store-specific metadata.
-
-        Args:
-            feature_key: Feature to get metadata for
-
-        Returns:
-            Dictionary with store-specific metadata
-        """
-        return {}
+        """Return store-specific metadata for a feature."""
+        resolved_key = self._resolve_feature_key(feature_key)
+        return self._engine.get_store_metadata(resolved_key, self._find_readable_storage(resolved_key))
 
     def get_store_info(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
         """Build a dictionary with store identification and feature-specific metadata.

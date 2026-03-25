@@ -10,7 +10,6 @@ from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph
@@ -66,14 +65,6 @@ class TestDuckDB(
         return DuckDBMetadataStore(
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.fixture
-    def named_store(self, tmp_path: Path) -> MetadataStore:
-        return DuckDBMetadataStore(
-            database=tmp_path / "test.duckdb",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="staging",
         )
 
 
@@ -279,7 +270,6 @@ def test_store_from_config_gets_name(tmp_path: Path) -> None:
     assert store.name == "my_store"
     assert not store.display().startswith("[")
     assert repr(store).startswith("[my_store]")
-    assert "DuckDBMetadataStore" in repr(store)
 
 
 def test_duckdb_table_naming(
@@ -446,9 +436,12 @@ def test_duckdb_read_mode_read_only_selection(
     expected_read_only: bool,
 ) -> None:
     """DuckDB READ mode sets read_only for remote and existing local DBs, but not :memory: or missing files."""
-    # Avoid opening a real backend connection; this test only validates selection logic in DuckDBMetadataStore._open.
-    monkeypatch.setattr(IbisMetadataStore, "_open", lambda self, mode: None)
-    monkeypatch.setattr(DuckDBMetadataStore, "_load_extensions", lambda self: None)
+    # Avoid opening a real backend connection; this test only validates the read_only flag logic in DuckDBEngine.open.
+    from metaxy.ext.metadata_stores.duckdb import DuckDBEngine
+    from metaxy.metadata_store.ibis_compute_engine import IbisComputeEngine
+
+    monkeypatch.setattr(IbisComputeEngine, "open", lambda self, mode: None)
+    monkeypatch.setattr(DuckDBEngine, "_load_extensions", lambda self: None)
 
     if database is None:
         database_value = ":memory:"

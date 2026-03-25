@@ -57,14 +57,6 @@ class TestIceberg(
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.fixture
-    def named_store(self, tmp_path: Path) -> MetadataStore:
-        return IcebergMetadataStore(
-            warehouse=tmp_path / "iceberg_store",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="ice",
-        )
-
 
 def test_iceberg_table_identifier(iceberg_store: IcebergMetadataStore) -> None:
     """Verify _table_identifier maps feature keys to (namespace, table_name) tuples."""
