@@ -94,6 +94,17 @@ def test_metaxy_config_default() -> None:
     assert config.stores == {}
 
 
+def test_bare_construction_does_not_auto_discover_toml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """MetaxyConfig() should not pick up a metaxy.toml from cwd."""
+    (tmp_path / "metaxy.toml").write_text('project = "should-not-load"\nstore = "sneaky"\n')
+    monkeypatch.chdir(tmp_path)
+
+    config = MetaxyConfig()
+
+    assert config.project is None
+    assert config.store == "dev"
+
+
 def test_metaxy_config_from_dict(tmp_path: Path) -> None:
     config = MetaxyConfig(
         store="staging",
@@ -1583,3 +1594,24 @@ class TestConfigInheritance:
         assert config.ext["myplugin"].model_extra
         assert config.ext["myplugin"].model_extra["custom_setting"] is True
         assert "otherplugin" in config.ext
+
+
+def test_env_var_store_config_merged_with_parent_via_extend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Env var providing store config fields should merge with parent's store type via extend."""
+    store_type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+    parent = tmp_path / "parent.toml"
+    parent.write_text(f'[stores.prod]\ntype = "{store_type}"\n[stores.prod.config]\nroot_path = "/default"\n')
+
+    child = tmp_path / "child.toml"
+    child.write_text('extend = "parent.toml"\nproject = "child"\n')
+
+    monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__ROOT_PATH", "/from-env")
+
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        config = MetaxyConfig.load(child)
+
+    assert config.stores["prod"].type == store_type
+    assert config.stores["prod"].config["root_path"] == "/from-env"
