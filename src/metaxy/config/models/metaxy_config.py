@@ -1,14 +1,10 @@
-"""Configuration system for Metaxy using pydantic-settings."""
-# pyright: reportImportCycles=false
-
 import os
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli_w
 from pydantic import Field as PydanticField
@@ -21,7 +17,10 @@ from pydantic_settings import (
 from typing_extensions import Self
 
 from metaxy._decorators import public
-from metaxy._toml_source import MetaxyTomlSource, discover_config_with_parents
+from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
+from metaxy.config.models.plugin_config import PluginConfig
+from metaxy.config.models.store_config import StoreConfig
+from metaxy.config.utils import _collect_dict_keys, _remove_none_values
 from metaxy.models.feature_selection import FeatureSelection
 
 if TYPE_CHECKING:
@@ -29,18 +28,22 @@ if TYPE_CHECKING:
         MetadataStore,
     )
 
-T = TypeVar("T")
+
+BUILTIN_PLUGINS = {}
 
 
-def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
-    """Recursively collect all keys from a nested dict as dot-separated paths."""
-    keys = []
-    for key, value in d.items():
-        full_key = f"{prefix}.{key}" if prefix else key
-        keys.append(full_key)
-        if isinstance(value, dict):
-            keys.extend(_collect_dict_keys(value, full_key))
-    return keys
+PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
+StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
+
+# Global config visible to all threads, set via MetaxyConfig.set() / .load().
+# ContextVar overlay for per-context overrides via MetaxyConfig.use().
+# get() checks the ContextVar first, falling back to the global.
+_global_config: "MetaxyConfig | None" = None
+_config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_override", default=None)
+
+# Used by load() to pass the config file path into settings_customise_sources
+# without monkey-patching the classmethod.
+_toml_file_override: ContextVar[Path | None] = ContextVar("_toml_file_override")
 
 
 @public
@@ -82,116 +85,6 @@ class InvalidConfigError(Exception):
             An InvalidConfigError with context from the config.
         """
         return cls(message, config_file=config._config_file)
-
-
-MetadataStoreT: TypeAlias = type["MetadataStore"]
-
-
-@public
-class StoreConfig(BaseSettings):
-    """Configuration options for metadata stores."""
-
-    model_config = SettingsConfigDict(
-        extra="forbid",  # Only type and config fields allowed
-        frozen=True,
-    )
-
-    # Store the import path as string (internal field)
-    # Uses alias="type" so TOML and constructor use "type"
-    # Annotated as str | type to allow passing class objects directly
-    type: str = PydanticField(
-        description='Full import path to metadata store class (e.g., `"metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"`)',
-    )
-
-    config: dict[str, Any] = PydanticField(
-        default_factory=dict,
-        description="Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.",
-    )
-
-    @field_validator("type", mode="before")
-    @classmethod
-    def _coerce_type_to_string(cls, v: Any) -> str:
-        """Accept both string import paths and class objects.
-
-        Converts class objects to their full import path string.
-        """
-        if isinstance(v, str):
-            return v
-        if isinstance(v, type):
-            # Convert class to import path string
-            return f"{v.__module__}.{v.__qualname__}"
-        raise ValueError(f"type must be a string or class, got {type(v).__name__}")
-
-    @cached_property
-    def type_cls(self) -> MetadataStoreT:
-        """Get the store class, importing lazily on first access.
-
-        Returns:
-            The metadata store class
-
-        Raises:
-            ImportError: If the store class cannot be imported
-        """
-        import importlib
-
-        from pydantic import TypeAdapter
-        from pydantic.types import ImportString
-
-        adapter: TypeAdapter[type[Any]] = TypeAdapter(ImportString[Any])
-        try:
-            return adapter.validate_python(self.type)
-        except Exception:
-            # Pydantic's ImportString swallows the underlying ImportError for other packages/modules,
-            # showing a potentially misleading message.
-            # Try a direct import to surface the real error (e.g., missing dependency).
-            module_path, _, _ = str(self.type).rpartition(".")
-            if module_path:
-                try:
-                    importlib.import_module(module_path)
-                except ImportError as import_err:
-                    raise ImportError(f"Cannot import '{self.type}': {import_err}") from import_err
-            raise
-
-    def to_toml(self) -> str:
-        """Serialize to TOML string.
-
-        Returns:
-            TOML representation of this store configuration.
-        """
-        data = self.model_dump(mode="json", by_alias=True)
-        return tomli_w.dumps(data)
-
-
-class PluginConfig(BaseSettings):
-    """Configuration for Metaxy plugins"""
-
-    model_config = SettingsConfigDict(frozen=True, extra="allow")
-
-    enable: bool = PydanticField(
-        default=False,
-        description="Whether to enable the plugin.",
-    )
-
-
-PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
-
-# Global config visible to all threads, set via MetaxyConfig.set() / .load().
-# ContextVar overlay for per-context overrides via MetaxyConfig.use().
-# get() checks the ContextVar first, falling back to the global.
-_global_config: "MetaxyConfig | None" = None
-_config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_override", default=None)
-
-# Used by load() to pass the config file path into settings_customise_sources
-# without monkey-patching the classmethod.
-_toml_file_override: ContextVar[Path | None] = ContextVar("_toml_file_override")
-
-
-BUILTIN_PLUGINS = {
-    "alembic": "metaxy.ext.alembic",
-}
-
-
-StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
 
 
 @public
@@ -743,12 +636,3 @@ class MetaxyConfig(BaseSettings):
         # Remove None values (TOML doesn't support them)
         data = _remove_none_values(data)
         return tomli_w.dumps(data)
-
-
-def _remove_none_values(obj: Any) -> Any:
-    """Recursively remove None values from a dict (TOML doesn't support None)."""
-    if isinstance(obj, dict):
-        return {k: _remove_none_values(v) for k, v in obj.items() if v is not None}
-    if isinstance(obj, list):
-        return [_remove_none_values(item) for item in obj if item is not None]
-    return obj

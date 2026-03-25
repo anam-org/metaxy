@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic_settings import BaseSettings
 
-from metaxy._toml_source import MetaxyTomlSource, _discover_config_in_dir
+from metaxy.config.metaxy_source import MetaxyTomlSource, _discover_config_in_dir
 
 
 class _DummySettings(BaseSettings):

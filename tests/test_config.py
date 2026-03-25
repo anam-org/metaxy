@@ -8,8 +8,8 @@ from metaxy.config import (
     InvalidConfigError,
     MetaxyConfig,
     StoreConfig,
-    _collect_dict_keys,
 )
+from metaxy.config.utils import _collect_dict_keys
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
