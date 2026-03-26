@@ -27,12 +27,12 @@ commit_parsers = [
   { message = "^fix", group = "<2>### :bug: Bug Fixes" },
   { message = "^docs", group = "<3>### :book: Docs" },
   { message = "^perf", group = "<4>### :zap: Performance" },
-  { message = "^refactor", skip = true },
-  { message = "^chore", skip = true },
-  { message = "^ci", skip = true },
-  { message = "^build", skip = true },
-  { message = "^test", skip = true },
-  { message = "^style", skip = true },
+  { message = "^refactor", group = "<5>### :hammer_and_wrench: Other Improvements" },
+  { message = "^chore", group = "<5>### :hammer_and_wrench: Other Improvements" },
+  { message = "^ci", group = "<5>### :hammer_and_wrench: Other Improvements" },
+  { message = "^build", group = "<5>### :hammer_and_wrench: Other Improvements" },
+  { message = "^test", group = "<5>### :hammer_and_wrench: Other Improvements" },
+  { message = "^style", group = "<5>### :hammer_and_wrench: Other Improvements" },
   { message = "^.*", skip = true },
 ]
 ignore_tags = "v0\\.0\\."

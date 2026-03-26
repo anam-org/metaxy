@@ -32,6 +32,12 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 - only display field name in configuration docs ([#1070](https://github.com/anam-org/metaxy/pull/1070) by [@danielgafni](https://github.com/danielgafni))
 
+### :hammer_and_wrench: Other Improvements
+
+- release 0.1.6 ([#1077](https://github.com/anam-org/metaxy/pull/1077) by [@danielgafni](https://github.com/danielgafni))
+- update changelog to include change scope ([#1076](https://github.com/anam-org/metaxy/pull/1076) by [@danielgafni](https://github.com/danielgafni))
+- move PostgreSQL metadata store to metaxy.ext ([#1069](https://github.com/anam-org/metaxy/pull/1069) by [@danielgafni](https://github.com/danielgafni))
+
 ## v0.1.5 (18-03-2026)
 
 ### :sparkles: Features
@@ -48,6 +54,21 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 - refine PostgreSQL docs ([#1066](https://github.com/anam-org/metaxy/pull/1066) by [@danielgafni](https://github.com/danielgafni))
 - fix ducklake example ([#1042](https://github.com/anam-org/metaxy/pull/1042) by [@geoHeil](https://github.com/geoHeil))
+
+### :hammer_and_wrench: Other Improvements
+
+- release 0.1.5 ([#1068](https://github.com/anam-org/metaxy/pull/1068) by [@danielgafni](https://github.com/danielgafni))
+- add tag message to changelog template ([#1067](https://github.com/anam-org/metaxy/pull/1067) by [@danielgafni](https://github.com/danielgafni))
+- tweak cliff.toml ([#1065](https://github.com/anam-org/metaxy/pull/1065) by [@danielgafni](https://github.com/danielgafni))
+- rename extends to extend ([#1064](https://github.com/anam-org/metaxy/pull/1064) by [@danielgafni](https://github.com/danielgafni))
+- extend array fields when merging configs ([#1063](https://github.com/anam-org/metaxy/pull/1063) by [@danielgafni](https://github.com/danielgafni))
+- adopt deadcode ([#1056](https://github.com/anam-org/metaxy/pull/1056) by [@geoHeil](https://github.com/geoHeil))
+- upgraded GHA actions ([#1057](https://github.com/anam-org/metaxy/pull/1057) by [@geoHeil](https://github.com/geoHeil))
+- improve git-cliff setup ([#1052](https://github.com/anam-org/metaxy/pull/1052) by [@danielgafni](https://github.com/danielgafni))
+- upgrade ty to 0.0.22 ([#1053](https://github.com/anam-org/metaxy/pull/1053) by [@danielgafni](https://github.com/danielgafni))
+- add AI policy ([#1051](https://github.com/anam-org/metaxy/pull/1051) by [@danielgafni](https://github.com/danielgafni))
+- adopt `git-cliff` ([#1049](https://github.com/anam-org/metaxy/pull/1049) by [@danielgafni](https://github.com/danielgafni))
+- adopt Conventional Commits ([#1050](https://github.com/anam-org/metaxy/pull/1050) by [@danielgafni](https://github.com/danielgafni))
 
 ### :heart: New Contributors
 
