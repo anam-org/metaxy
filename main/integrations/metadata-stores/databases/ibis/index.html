@@ -3940,7 +3940,7 @@
   <p>Backends without native struct support (e.g., SQLite) are NOT supported.</p>
 </details>        <p>Storage layout:
 - Each feature gets its own table: {feature}__{key}
-- System tables: metaxy__system__feature_versions, metaxy__system__migrations
+- System tables: metaxy__system__feature_versions, metaxy__system__events
 - Uses Ibis for cross-database compatibility</p>
 <p>Note: Uses MD5 hash by default for cross-database compatibility.
 DuckDBMetadataStore overrides this with dynamic algorithm detection.

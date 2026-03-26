@@ -4727,7 +4727,7 @@
 
 
 
-        <p>Inject Metaxy metadata into a Dagster <a class="autorefs autorefs-external" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetsDefinition"><code>AssetsDefinition</code></a> or <a class="autorefs autorefs-external" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec"><code>AssetSpec</code></a>.</p>
+        <p>Inject Metaxy metadata into a Dagster <a class="autorefs autorefs-external" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition"><code>AssetsDefinition</code></a> or <a class="autorefs autorefs-external" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec"><code>AssetSpec</code></a>.</p>
 <p>Affects assets with <code>metaxy/feature</code> metadata set.</p>
 <p>Learn more about <code>@metaxify</code> and see example screenshots <a href="../metaxify/">here</a>.</p>
 
@@ -5200,7 +5200,7 @@ dependencies from the feature spec are not propagated to the SourceAsset.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ConfigurableIOManager&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/io-managers/#dagster.ConfigurableIOManager">ConfigurableIOManager</a></code></p>
+              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ConfigurableIOManager&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/io-managers/#dagster.ConfigurableIOManager">ConfigurableIOManager</a></code></p>
 
 
 
@@ -5267,7 +5267,7 @@ It expects it to be set on the assets being loaded or materialized.</p>
 
 
 <a href="#metaxy.ext.dagster.MetaxyIOManager.load_input" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_input</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InputContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/io-managers/#dagster.InputContext">InputContext</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">load_input</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InputContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/io-managers/#dagster.InputContext">InputContext</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5282,7 +5282,7 @@ in <code>"partition_by"</code> metadata.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>context</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InputContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/io-managers/#dagster.InputContext">InputContext</a></code>)
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InputContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/io-managers/#dagster.InputContext">InputContext</a></code>)
           –
           <div class="doc-md-description">
             <p>Dagster input context containing asset metadata.</p>
@@ -5368,7 +5368,7 @@ in <code>"partition_by"</code> metadata.</p>
 
 <a href="#metaxy.ext.dagster.MetaxyIOManager.handle_output" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">handle_output</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OutputContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/io-managers/#dagster.OutputContext">OutputContext</a></span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.ext.dagster.MetaxyOutput&lt;/span&gt;
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OutputContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/io-managers/#dagster.OutputContext">OutputContext</a></span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.ext.dagster.MetaxyOutput&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
@@ -5390,7 +5390,7 @@ feature and store to Dagster's materialization events.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>context</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OutputContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/io-managers/#dagster.OutputContext">OutputContext</a></code>)
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OutputContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/io-managers/#dagster.OutputContext">OutputContext</a></code>)
           –
           <div class="doc-md-description">
             <p>Dagster output context containing asset metadata.</p>
@@ -5483,7 +5483,7 @@ feature and store to Dagster's materialization events.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">inject_column_schema</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">inject_column_lineage</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.DagsterType&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/types/#dagster.DagsterType">DagsterType</a></span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.DagsterType&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/types/#dagster.DagsterType">DagsterType</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5576,14 +5576,14 @@ The lineage is derived from feature dependencies.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.DagsterType&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/types/#dagster.DagsterType">DagsterType</a></code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.DagsterType&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/types/#dagster.DagsterType">DagsterType</a></code>
           –
           <div class="doc-md-description">
             <p>A DagsterType configured for the Metaxy feature with appropriate</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.DagsterType&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/types/#dagster.DagsterType">DagsterType</a></code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.DagsterType&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/types/#dagster.DagsterType">DagsterType</a></code>
           –
           <div class="doc-md-description">
             <p>type checking and metadata.</p>
@@ -5751,15 +5751,15 @@ The lineage is derived from feature dependencies.</p>
 
 <a href="#metaxy.ext.dagster.utils.generate_materialize_results" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">generate_materialize_results</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">specs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.MaterializeResult&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.MaterializeResult">MaterializeResult</a></span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">specs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.MaterializeResult&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.MaterializeResult">MaterializeResult</a></span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5774,7 +5774,7 @@ Each result includes the row count as <code>"dagster/row_count"</code> metadata.
     <ul>
         <li class="doc-section-item field-body">
             <b><code>context</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></code>)
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></code>)
           –
           <div class="doc-md-description">
             <p>The Dagster execution context.</p>
@@ -5795,7 +5795,7 @@ Each result includes the row count as <code>"dagster/row_count"</code> metadata.
         </li>
         <li class="doc-section-item field-body">
             <b><code>specs</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a>] | None</code>, default:
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -5810,7 +5810,7 @@ Optional for <code>AssetExecutionContext</code> (defaults to <code>context.asset
 <p><span class="doc-section-title">Yields:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.MaterializeResult&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.MaterializeResult">MaterializeResult</a>[None]</code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.MaterializeResult&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.MaterializeResult">MaterializeResult</a>[None]</code>
           –
           <div class="doc-md-description">
             <p>Materialization result for each asset in topological order.</p>
@@ -5981,15 +5981,15 @@ Optional for <code>AssetExecutionContext</code> (defaults to <code>context.asset
 
 <a href="#metaxy.ext.dagster.utils.generate_observe_results" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">generate_observe_results</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.dagster.MetaxyStoreFromConfigResource&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt; (&lt;code&gt;metaxy.ext.dagster.resources.MetaxyStoreFromConfigResource&lt;/code&gt;)" href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource">MetaxyStoreFromConfigResource</a></span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">specs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ObserveResult&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.ObserveResult">ObserveResult</a></span><span class="p">]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">specs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ObserveResult&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.ObserveResult">ObserveResult</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6004,7 +6004,7 @@ Each result includes the row count as <code>"dagster/row_count"</code> metadata.
     <ul>
         <li class="doc-section-item field-body">
             <b><code>context</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></code>)
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.AssetExecutionContext">AssetExecutionContext</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.OpExecutionContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/execution/#dagster.OpExecutionContext">OpExecutionContext</a></code>)
           –
           <div class="doc-md-description">
             <p>The Dagster execution context.</p>
@@ -6025,7 +6025,7 @@ Each result includes the row count as <code>"dagster/row_count"</code> metadata.
         </li>
         <li class="doc-section-item field-body">
             <b><code>specs</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a>] | None</code>, default:
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterable&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -6040,7 +6040,7 @@ Optional for <code>AssetExecutionContext</code> (defaults to <code>context.asset
 <p><span class="doc-section-title">Yields:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ObserveResult&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.ObserveResult">ObserveResult</a></code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ObserveResult&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.ObserveResult">ObserveResult</a></code>
           –
           <div class="doc-md-description">
             <p>Observation result for each asset in topological order.</p>
@@ -6377,16 +6377,16 @@ used as Dagster asset metadata under the <code>"metaxy/feature_info"</code> key.
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">build_metaxy_multi_observation_job</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">name</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">asset_selection</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">defs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.Definitions&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/definitions/#dagster.Definitions">Definitions</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">asset_selection</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">defs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.Definitions&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/definitions/#dagster.Definitions">Definitions</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">assets</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.SourceAsset&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.SourceAsset">SourceAsset</a></span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.SourceAsset&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.SourceAsset">SourceAsset</a></span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="p">]</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">store_resource_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">tags</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Mapping&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a></span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6425,7 +6425,7 @@ to run it periodically.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>asset_selection</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -6436,7 +6436,7 @@ Must be used together with <code>defs</code>.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>defs</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.Definitions&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/definitions/#dagster.Definitions">Definitions</a> | None</code>, default:
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.Definitions&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/definitions/#dagster.Definitions">Definitions</a> | None</code>, default:
                   <code>None</code>
 )
           –
@@ -6447,7 +6447,7 @@ Must be used together with <code>asset_selection</code>.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>assets</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.SourceAsset&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.SourceAsset">SourceAsset</a>] | None</code>, default:
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Sequence&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.SourceAsset&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.SourceAsset">SourceAsset</a>] | None</code>, default:
                   <code>None</code>
 )
           –
@@ -6494,7 +6494,7 @@ Cannot be used together with <code>asset_selection</code>/<code>defs</code>.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a></code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a></code>
           –
           <div class="doc-md-description">
             <p>A Dagster job definition that observes all matching Metaxy assets.</p>
@@ -6792,11 +6792,11 @@ are provided.</p>
 
 <a href="#metaxy.ext.dagster.observation_job.build_metaxy_observation_job" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">build_metaxy_observation_job</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">asset</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a></span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">asset</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">store_resource_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">=</span> <span class="s2">&quot;store&quot;</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">tags</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a></span><span class="p">]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6813,7 +6813,7 @@ Job names are always derived as <code>observe_&lt;FeatureKey.table_name()&gt;</c
     <ul>
         <li class="doc-section-item field-body">
             <b><code>asset</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a></code>)
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSpec&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec">AssetSpec</a> | <a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetsDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition">AssetsDefinition</a></code>)
           –
           <div class="doc-md-description">
             <p>Asset spec or asset definition to observe. Must have <code>metaxy/feature</code>
@@ -6846,7 +6846,7 @@ metadata on at least one spec.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a>]</code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;dagster.JobDefinition&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/jobs/#dagster.JobDefinition">JobDefinition</a>]</code>
           –
           <div class="doc-md-description">
             <p>List of Dagster job definitions, one per <code>metaxy/feature</code> spec.</p>
@@ -6991,7 +6991,7 @@ metadata on at least one spec.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ConfigurableResource&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/resources/#dagster.ConfigurableResource">ConfigurableResource</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a>]</code></p>
+              Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ConfigurableResource&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/resources/#dagster.ConfigurableResource">ConfigurableResource</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a>]</code></p>
 
         <p>This resource creates a <a href="https://docs.metaxy.io/latest/guide/concepts/metadata-stores/"><code>metaxy.MetadataStore</code></a> based on the current <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> (<code>metaxy.toml</code>).</p>
 <p>If <code>name</code> is not provided, the default store will be used.
@@ -7045,7 +7045,7 @@ The default store name can be set with <code>store = "my_name"</code> in <code>m
 
 <a href="#metaxy.ext.dagster.MetaxyStoreFromConfigResource.create_resource" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_resource</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InitResourceContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/resources/#dagster.InitResourceContext">InitResourceContext</a></span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InitResourceContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/resources/#dagster.InitResourceContext">InitResourceContext</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a></span>
 </span></code></pre></div>
 
@@ -7058,7 +7058,7 @@ The default store name can be set with <code>store = "my_name"</code> in <code>m
     <ul>
         <li class="doc-section-item field-body">
             <b><code>context</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InitResourceContext&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/resources/#dagster.InitResourceContext">InitResourceContext</a></code>)
+              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.InitResourceContext&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/resources/#dagster.InitResourceContext">InitResourceContext</a></code>)
           –
           <div class="doc-md-description">
             <p>Dagster resource initialization context.</p>
@@ -7175,7 +7175,7 @@ The default store name can be set with <code>store = "my_name"</code> in <code>m
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../../../reference/api/types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -7217,14 +7217,14 @@ The default store name can be set with <code>store = "my_name"</code> in <code>m
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></code>
           –
           <div class="doc-md-description">
             <p>An <code>AssetSelection</code> that can be used with <code>dg.define_asset_job</code>,</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/sections/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></code>
+              <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.AssetSelection&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSelection">AssetSelection</a></code>
           –
           <div class="doc-md-description">
             <p><code>dg.materialize</code>, or <code>AssetSelection</code> operations like <code>|</code> and <code>&amp;</code>.</p>
