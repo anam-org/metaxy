@@ -580,7 +580,7 @@ class IbisComputeEngine(ComputeEngine, ABC):
             hash_functions=hash_functions,  # ty: ignore[unknown-argument]
         )
         try:
-            yield engine  # ty:ignore[invalid-yield]
+            yield engine  # ty: ignore[invalid-yield]
         finally:
             pass
 
