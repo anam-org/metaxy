@@ -6,6 +6,10 @@ inputs:
     description: Whether to run uv sync
     required: false
     default: "true"
+  extras:
+    description: "Space-separated list of extras to install (empty means --all-extras)"
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -41,4 +45,13 @@ runs:
     - name: Install Python dependencies
       if: inputs.install-deps == 'true'
       shell: bash
-      run: uv sync --all-extras --all-groups
+      run: |
+        if [ -z "${{ inputs.extras }}" ]; then
+          uv sync --all-extras --all-groups
+        else
+          EXTRAS_ARGS=""
+          for extra in ${{ inputs.extras }}; do
+            EXTRAS_ARGS="$EXTRAS_ARGS --extra $extra"
+          done
+          uv sync --group dev $EXTRAS_ARGS
+        fi

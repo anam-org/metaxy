@@ -1,4 +1,7 @@
-"""Snapshot tests for all examples with .example.yaml files."""
+"""Snapshot tests for core examples with .example.yaml files.
+
+Integration-specific examples (e.g. DuckLake) are tested in tests/ext/<integration>/examples/.
+"""
 
 from pathlib import Path
 
@@ -6,12 +9,19 @@ import pytest
 import tomli as tomllib
 
 
-def discover_examples() -> list[Path]:
-    """Discover all example directories with .example.yaml files."""
+def discover_core_examples() -> list[Path]:
+    """Discover example directories using core-compatible stores (Delta)."""
     examples_dir = Path("examples")
     examples = []
     for yaml_file in examples_dir.glob("*/.example.yaml"):
-        examples.append(yaml_file.parent)
+        example_dir = yaml_file.parent
+        metaxy_toml = example_dir / "metaxy.toml"
+        if not metaxy_toml.exists():
+            continue
+        config = tomllib.loads(metaxy_toml.read_text())
+        store_type = config.get("stores", {}).get("dev", {}).get("type", "")
+        if "DeltaMetadataStore" in store_type:
+            examples.append(example_dir)
     return sorted(examples)
 
 
@@ -24,17 +34,14 @@ def get_store_config_override(example_dir: Path, tmp_path: Path) -> dict[str, st
     config = tomllib.loads(metaxy_toml.read_text())
     store_type = config.get("stores", {}).get("dev", {}).get("type", "")
 
-    if "DuckDBMetadataStore" in store_type:
-        test_db = tmp_path / f"{example_dir.name}.db"
-        return {"METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db)}
-    elif "DeltaMetadataStore" in store_type:
+    if "DeltaMetadataStore" in store_type:
         test_storage = tmp_path / example_dir.name
         return {"METAXY_STORES__DEV__CONFIG__ROOT_PATH": str(test_storage)}
 
     return {}
 
 
-@pytest.mark.parametrize("example_dir", discover_examples(), ids=lambda p: p.name)
+@pytest.mark.parametrize("example_dir", discover_core_examples(), ids=lambda p: p.name)
 def test_example_snapshot(example_dir: Path, tmp_path: Path, example_snapshot):
     """Execute runbook, save raw results, and verify snapshot matches."""
     from metaxy_testing.runbook import RunbookRunner

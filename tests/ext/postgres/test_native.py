@@ -18,7 +18,7 @@ from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
-from tests.ext.postgresql.conftest import _with_search_path
+from tests.ext.postgres.conftest import _with_search_path
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,

@@ -1,0 +1,3 @@
+- NEVER create git commits. Do not commit under any circumstances, even if explicitly requested.
+- Code must pass `just typecheck`. Fix type errors before submitting.
+- Fail fast with clean errors. Do not catch exceptions to handle them gracefully. Let errors propagate with clear messages. Avoid try/except blocks unless re-raising with additional context.

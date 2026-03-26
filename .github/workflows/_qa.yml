@@ -42,6 +42,19 @@ jobs:
       test: ${{ steps.filter.outputs.test }}
       docs: ${{ steps.filter.outputs.docs }}
       claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
+      core: ${{ steps.filter.outputs.core }}
+      duckdb: ${{ steps.filter.outputs.duckdb }}
+      clickhouse: ${{ steps.filter.outputs.clickhouse }}
+      postgres: ${{ steps.filter.outputs.postgres }}
+      delta: ${{ steps.filter.outputs.delta }}
+      iceberg: ${{ steps.filter.outputs.iceberg }}
+      lancedb: ${{ steps.filter.outputs.lancedb }}
+      bigquery: ${{ steps.filter.outputs.bigquery }}
+      dagster: ${{ steps.filter.outputs.dagster }}
+      ray: ${{ steps.filter.outputs.ray }}
+      sqlalchemy: ${{ steps.filter.outputs.sqlalchemy }}
+      sqlmodel: ${{ steps.filter.outputs.sqlmodel }}
+      mcp: ${{ steps.filter.outputs.mcp }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
@@ -67,6 +80,57 @@ jobs:
               - slides/2026-introducing-metaxy/package-lock.json
             claude-plugin:
               - '.claude-plugin/**'
+            core:
+              - 'src/metaxy/**'
+              - '!src/metaxy/ext/**'
+              - 'tests/metadata_stores/shared/**'
+              - 'tests/ext/conftest.py'
+              - 'tests/conftest.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/**'
+              - '.github/actions/**'
+              - .envrc
+              - devenv.nix
+              - devenv.lock
+              - devenv.yaml
+            duckdb:
+              - 'src/metaxy/ext/metadata_stores/duckdb.py'
+              - 'src/metaxy/ext/metadata_stores/ducklake.py'
+              - 'tests/ext/duckdb/**'
+            clickhouse:
+              - 'src/metaxy/ext/metadata_stores/clickhouse.py'
+              - 'tests/ext/clickhouse/**'
+            postgres:
+              - 'src/metaxy/ext/metadata_stores/postgresql.py'
+              - 'tests/ext/postgres/**'
+            delta:
+              - 'src/metaxy/ext/metadata_stores/delta.py'
+              - 'tests/ext/delta/**'
+            iceberg:
+              - 'src/metaxy/ext/metadata_stores/iceberg.py'
+              - 'tests/ext/iceberg/**'
+            lancedb:
+              - 'src/metaxy/ext/metadata_stores/lancedb.py'
+              - 'tests/ext/lancedb/**'
+            bigquery:
+              - 'src/metaxy/ext/metadata_stores/bigquery.py'
+              - 'tests/ext/bigquery/**'
+            dagster:
+              - 'src/metaxy/ext/dagster/**'
+              - 'tests/ext/dagster/**'
+            ray:
+              - 'src/metaxy/ext/ray/**'
+              - 'tests/ext/ray/**'
+            sqlalchemy:
+              - 'src/metaxy/ext/sqlalchemy/**'
+              - 'tests/ext/sqlalchemy/**'
+            sqlmodel:
+              - 'src/metaxy/ext/sqlmodel/**'
+              - 'tests/ext/sqlmodel/**'
+            mcp:
+              - 'src/metaxy/ext/mcp/**'
+              - 'tests/ext/mcp/**'
 
   lint:
     runs-on: depot-ubuntu-latest
@@ -125,7 +189,7 @@ jobs:
       - name: Run ty
         run: uv run ty check
 
-  test-linux:
+  test-core:
     needs: filter
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
     permissions:
@@ -136,8 +200,6 @@ jobs:
     runs-on: depot-ubuntu-latest
     env:
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
-      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-      MOTHERDUCK_REGION: eu-central-1
     strategy:
       fail-fast: false
       matrix:
@@ -147,38 +209,24 @@ jobs:
         uses: actions/checkout@v6.0.2
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
+        with:
+          extras: "duckdb delta"
 
       - name: Run Tests with Coverage
         id: pytest
         env:
-          # Enable subprocess coverage collection
           COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
           COVERAGE_FILE: ${{ github.workspace }}/.coverage
         run: |
-          # Install coverage subprocess support
           SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
-          echo "Installing coverage support to: $SITE_PACKAGES"
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
-
-          # Run tests
-          uv run pytest --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
+          uv run pytest --ignore=tests/ext --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
 
       - name: Combine Coverage Data
         if: always()
         run: |
           uv run coverage combine --keep || true
           uv run coverage xml -o coverage.xml
-          # uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY || true
-
-      # - name: Test Execution Summary
-      #   # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
-      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-      #   uses: EnricoMi/publish-unit-test-result-action@v2
-      #   with:
-      #     files: ./junit.xml
-      #     check_name: Test Results (Python ${{ matrix.python-version }})
-      #     comment_title: Test Results (Python ${{ matrix.python-version }})
-      #     fail_on: nothing
 
       - name: Upload Coverage to Codecov
         if: ${{ !cancelled() }}
@@ -186,15 +234,7 @@ jobs:
         with:
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: Python${{ matrix.python-version }}
-
-      # - name: Generate Test Timing Report
-      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-      #   id: timing
-      #   run: |
-      #     echo "report<<EOF" >> $GITHUB_OUTPUT
-      #     uv run mxtest-analyze-timings ./junit.xml -f markdown >> $GITHUB_OUTPUT
-      #     echo "EOF" >> $GITHUB_OUTPUT
+          flags: core-Python${{ matrix.python-version }}
 
       - name: Upload Test Results to Codecov
         if: ${{ !cancelled() }}
@@ -203,21 +243,84 @@ jobs:
           report_type: test_results
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: Python${{ matrix.python-version }}
+          flags: core-Python${{ matrix.python-version }}
 
-      # - name: Post Test Timing Comment
-      #   if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-      #   uses: marocchino/sticky-pull-request-comment@v2
-      #   with:
-      #     header: test-timing-report
-      #     message: ${{ steps.timing.outputs.report }}
+  test-integrations:
+    needs: [filter, generate-nox-matrix]
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
+    permissions:
+      contents: read
+    runs-on: depot-ubuntu-latest
+    env:
+      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+      MOTHERDUCK_REGION: eu-central-1
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        integration: ${{ fromJSON(needs.generate-nox-matrix.outputs.integrations) }}
+    steps:
+      - name: Check if integration should run
+        id: should-run
+        env:
+          INTEGRATION_CHANGED: ${{ needs.filter.outputs[format('{0}', matrix.integration)] }}
+          CORE_CHANGED: ${{ needs.filter.outputs.core }}
+          RUN_ALL: ${{ inputs.run-all-checks }}
+        run: |
+          if [[ "$RUN_ALL" == "true" || "$CORE_CHANGED" == "true" || "$INTEGRATION_CHANGED" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout code
+        if: steps.should-run.outputs.run == 'true'
+        uses: actions/checkout@v6.0.2
+      - name: Setup devenv
+        if: steps.should-run.outputs.run == 'true'
+        uses: ./.github/actions/setup-devenv
+        with:
+          extras: "duckdb ${{ matrix.integration }}"
+
+      - name: Run Tests with Coverage
+        if: steps.should-run.outputs.run == 'true'
+        env:
+          COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
+          COVERAGE_FILE: ${{ github.workspace }}/.coverage
+        run: |
+          SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
+          cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
+          uv run pytest tests/ext/${{ matrix.integration }}/ --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
+
+      - name: Combine Coverage Data
+        if: ${{ always() && steps.should-run.outputs.run == 'true' }}
+        run: |
+          uv run coverage combine --keep || true
+          uv run coverage xml -o coverage.xml
+
+      - name: Upload Coverage to Codecov
+        if: ${{ !cancelled() && steps.should-run.outputs.run == 'true' }}
+        uses: codecov/codecov-action@v5.5.2
+        with:
+          slug: anam-org/metaxy
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ${{ matrix.integration }}-Python${{ matrix.python-version }}
+
+      - name: Upload Test Results to Codecov
+        if: ${{ !cancelled() && steps.should-run.outputs.run == 'true' }}
+        uses: codecov/codecov-action@v5.5.2
+        with:
+          report_type: test_results
+          slug: anam-org/metaxy
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ${{ matrix.integration }}-Python${{ matrix.python-version }}
 
   generate-nox-matrix:
-    needs: filter
-    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
     runs-on: depot-ubuntu-latest
     outputs:
-      sessions: ${{ steps.sessions.outputs.sessions }}
+      integrations: ${{ steps.matrix.outputs.integrations }}
+      compat-sessions: ${{ steps.matrix.outputs.compat_sessions }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
@@ -225,11 +328,14 @@ jobs:
         uses: astral-sh/setup-uv@v7.5.0
         with:
           enable-cache: true
-      - name: Generate nox session matrix
-        id: sessions
-        run: echo "sessions=$(uvx --with nox_uv nox -l --json | jq -c '[.[].session]')" >> "$GITHUB_OUTPUT"
+      - name: Generate matrices from nox sessions
+        id: matrix
+        run: |
+          NOX_JSON=$(uvx --with nox_uv nox -l --json)
+          echo "integrations=$(echo "$NOX_JSON" | jq -c '[.[] | select(.tags | index("integration")) | .call_spec.integration]')" >> "$GITHUB_OUTPUT"
+          echo "compat_sessions=$(echo "$NOX_JSON" | jq -c '[.[] | select(.tags | index("compat")) | .session]')" >> "$GITHUB_OUTPUT"
 
-  text-nox:
+  test-nox-compat:
     needs: [filter, generate-nox-matrix]
     if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
     runs-on: depot-ubuntu-latest
@@ -238,7 +344,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        session: ${{ fromJSON(needs.generate-nox-matrix.outputs.sessions) }}
+        session: ${{ fromJSON(needs.generate-nox-matrix.outputs.compat-sessions) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
@@ -417,9 +523,10 @@ jobs:
     if: always()
     runs-on: depot-ubuntu-latest
     needs:
-      - test-linux
+      - test-core
+      - test-integrations
       - generate-nox-matrix
-      - text-nox
+      - test-nox-compat
       - test-windows
       - test-macos
       - lint
@@ -435,4 +542,4 @@ jobs:
         uses: re-actors/alls-green@v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-linux, generate-nox-matrix, text-nox, test-windows, test-macos, typecheck, docs, claude-plugin, deadcode
+          allowed-skips: test-core, test-integrations, generate-nox-matrix, test-nox-compat, test-windows, test-macos, typecheck, docs, claude-plugin, deadcode

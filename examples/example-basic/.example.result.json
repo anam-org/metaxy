@@ -73,7 +73,7 @@
             }
           }
         },
-        "timestamp": "2026-02-26T00:07:29.013803",
+        "timestamp": "2026-03-26T15:00:35.145043",
         "scenario_name": "Setup upstream data",
         "step_name": null
       },
@@ -83,7 +83,7 @@
         "returncode": 0,
         "stdout": "",
         "stderr": "",
-        "timestamp": "2026-02-26T00:07:29.055552",
+        "timestamp": "2026-03-26T15:00:35.187288",
         "scenario_name": "Setup upstream data",
         "step_name": "setup_data"
       },
@@ -91,9 +91,9 @@
         "type": "command_executed",
         "command": "python src/example_basic/pipeline.py",
         "returncode": 0,
-        "stdout": "Graph project_version: 490f2c18\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph project_version: 490f2c18\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n  sample_uid=3: {'predictions': '26963083'}\n\n\n✅ Pipeline complete!\n",
+        "stdout": "Graph project_version: 490f2c18\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph project_version: 490f2c18\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=3: {'predictions': '26963083'}\n  sample_uid=2: {'predictions': '24458329'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-26T00:07:30.115985",
+        "timestamp": "2026-03-26T15:00:36.563118",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -101,9 +101,9 @@
         "type": "command_executed",
         "command": "python src/example_basic/pipeline.py",
         "returncode": 0,
-        "stdout": "Graph project_version: 490f2c18\nMetadata already exists for feature examples/parent (feature_version: 7de0f5e8...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph project_version: 490f2c18\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n  sample_uid=3: {'predictions': '26963083'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
+        "stdout": "Graph project_version: 490f2c18\nMetadata already exists for feature examples/parent (feature_version: 7de0f5e8...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph project_version: 490f2c18\n\n📊 Computing examples/child...\n  feature_version: b10ea448\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=3: {'predictions': '26963083'}\n  sample_uid=2: {'predictions': '24458329'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-26T00:07:31.177702",
+        "timestamp": "2026-03-26T15:00:37.882674",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
@@ -176,7 +176,7 @@
             }
           }
         },
-        "timestamp": "2026-02-26T00:07:31.804266",
+        "timestamp": "2026-03-26T15:00:38.600574",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -317,7 +317,7 @@
             }
           }
         },
-        "timestamp": "2026-02-26T00:07:31.811693",
+        "timestamp": "2026-03-26T15:00:38.607146",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -325,9 +325,9 @@
         "type": "command_executed",
         "command": "python src/example_basic/pipeline.py",
         "returncode": 0,
-        "stdout": "Graph project_version: c423d51a\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph project_version: c423d51a\n\n📊 Computing examples/child...\n  feature_version: e5b92b18\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n  sample_uid=3: {'predictions': '26963083'}\n\n\n✅ Pipeline complete!\n",
+        "stdout": "Graph project_version: c423d51a\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph project_version: c423d51a\n\n📊 Computing examples/child...\n  feature_version: e5b92b18\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=3: {'predictions': '26963083'}\n  sample_uid=1: {'predictions': '24503967'}\n  sample_uid=2: {'predictions': '24458329'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-02-26T00:07:32.921385",
+        "timestamp": "2026-03-26T15:00:39.895541",
         "scenario_name": "Code evolution",
         "step_name": "recompute_after_change"
       }
