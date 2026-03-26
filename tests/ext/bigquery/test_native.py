@@ -4,19 +4,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import polars as pl
 import pytest
-
-# Skip all tests in this module if BigQuery not available
-pytest.importorskip("ibis")
-
-# We don't need the full ibis.backends.bigquery to run tests since we mock everything
-# Just need to be able to import our BigQueryMetadataStore class
-try:
-    from metaxy.ext.metadata_stores.bigquery import BigQueryMetadataStore
-except ImportError:
-    pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
-
 from metaxy_testing.models import SampleFeature
 
+from metaxy.ext.metadata_stores.bigquery import BigQueryMetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
 

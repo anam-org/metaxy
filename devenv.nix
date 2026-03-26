@@ -1,9 +1,16 @@
-{ pkgs, lib, config, inputs, ... }:
-
-let
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}: let
   # Map DEVENV_PYTHON_VERSION to nixpkgs packages (all pre-built)
   pythonVersionEnv = builtins.getEnv "DEVENV_PYTHON_VERSION";
-  pythonVersion = if pythonVersionEnv == "" then "3.10" else pythonVersionEnv;
+  pythonVersion =
+    if pythonVersionEnv == ""
+    then "3.10"
+    else pythonVersionEnv;
   pythonPackages = {
     "3.10" = pkgs.python310;
     "3.11" = pkgs.python311;
@@ -12,10 +19,52 @@ let
     "3.14" = pkgs.python314;
   };
   selectedPython = pythonPackages.${pythonVersion} or (throw "Unsupported Python version: ${pythonVersion}");
-in
-{
+
+  # Minimal packages needed by all shells
+  corePackages = with pkgs; [
+    stdenv.cc
+    git
+    uv
+  ];
+
+  # System packages per integration (only those needing native deps)
+  integrationPackages = with pkgs; {
+    duckdb = [duckdb];
+    clickhouse = [clickhouse];
+    postgres = [postgresql];
+    docs = [
+      nodejs_22
+      cairo
+      pango
+      gdk-pixbuf
+      gobject-introspection
+      freetype
+      libffi
+      libjpeg
+      libpng
+      zlib
+      harfbuzz
+      pngquant
+    ];
+  };
+
+  # LD_LIBRARY_PATH entries per integration
+  integrationLibPaths = with pkgs; {
+    duckdb = [stdenv.cc.cc.lib duckdb.lib];
+    clickhouse = [clickhouse];
+    docs = [cairo pango gdk-pixbuf harfbuzz];
+  };
+
+  # Build LD_LIBRARY_PATH from a list of integration names
+  makeLinuxLibPath = integrations:
+    lib.optionalString pkgs.stdenv.isLinux (lib.makeLibraryPath (
+      lib.concatMap (name: integrationLibPaths.${name} or []) integrations
+    ));
+
+  # All integration names
+  allIntegrations = builtins.attrNames integrationPackages;
+in {
   # https://devenv.sh/languages/
-  # Use nixpkgs' pre-built Python (faster CI, no compilation from source)
   languages.python = {
     enable = true;
     package = selectedPython;
@@ -23,62 +72,18 @@ in
 
   dotenv.enable = true;
 
-  # https://devenv.sh/packages/
-  packages = with pkgs; [
-    # Core development tools
-    stdenv.cc
-    git
-    uv
-
-    # Databases and query engines
-    duckdb
-    clickhouse
-    postgresql
-
-    # Changelog generation
-    git-cliff
-
-    # Visualization
-    graphviz
-
-    # Node.js for documentation tooling
-    nodejs_22
-
-    # Image processing libraries for mkdocs-material social cards
-    cairo
-    pango
-    gdk-pixbuf
-    gobject-introspection
-    freetype
-    libffi
-    libjpeg
-    libpng
-    zlib
-    harfbuzz
-    pngquant
-  ];
+  # Main shell: all system packages for local development
+  packages =
+    corePackages
+    ++ [pkgs.graphviz pkgs.git-cliff]
+    ++ lib.concatMap (name: integrationPackages.${name}) allIntegrations;
 
   # Environment variables
   env = {
-    # UV Python preference
     UV_PYTHON_PREFERENCE = "only-system";
-
-    # PostgreSQL binary path for pytest-postgresql
-    # This ensures fixtures use Nix-provided PostgreSQL consistently
     PG_BIN = "${pkgs.postgresql}/bin";
 
-    # Platform-specific library paths for DuckDB/ClickHouse and mkdocs image generation
-    # NOTE: We include stdenv.cc.cc.lib for libstdc++ (needed by DuckDB Python bindings)
-    # but avoid glibc to prevent "stack smashing detected" errors when spawning subprocesses
-    LD_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isLinux (lib.makeLibraryPath [
-      pkgs.stdenv.cc.cc.lib  # libstdc++.so.6
-      pkgs.duckdb.lib
-      pkgs.clickhouse
-      pkgs.cairo
-      pkgs.pango
-      pkgs.gdk-pixbuf
-      pkgs.harfbuzz
-    ]);
+    LD_LIBRARY_PATH = makeLinuxLibPath allIntegrations;
 
     DYLD_FALLBACK_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isDarwin (lib.makeLibraryPath [
       pkgs.cairo
@@ -94,23 +99,19 @@ in
     ]);
   };
 
-  # https://devenv.sh/basics/
   enterShell = ''
     echo "🚀 Metaxy development environment"
     echo "Python: $(python --version)"
   '';
 
-  # https://devenv.sh/tests/
   enterTest = ''
-    # Verify critical tools are available and work correctly
     echo "Testing Python..."
     python --version
 
     echo "Testing DuckDB..."
     duckdb --version
 
-    echo "Testing PostgreSQL binaries (critical for pytest-postgresql)..."
-    # Test that pg_ctl and initdb work without "stack smashing" errors
+    echo "Testing PostgreSQL binaries..."
     ${pkgs.postgresql}/bin/pg_ctl --version || { echo "ERROR: pg_ctl failed"; exit 1; }
     ${pkgs.postgresql}/bin/initdb --version || { echo "ERROR: initdb failed"; exit 1; }
 

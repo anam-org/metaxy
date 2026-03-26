@@ -3,11 +3,15 @@ description: Install Nix, devenv, direnv and activate the development environmen
 
 inputs:
   install-deps:
-    description: Whether to run uv sync
+    description: >
+      How to install Python dependencies:
+      "all" - sync all extras and groups (for typecheck, docs)
+      "minimal" - sync dev group only, no extras (for nox-managed jobs)
+      "false" - skip entirely
     required: false
-    default: "true"
+    default: "all"
   extras:
-    description: "Space-separated list of extras to install (empty means --all-extras)"
+    description: "Space-separated list of extras to install (only used when install-deps is not 'all' or 'false')"
     required: false
     default: ""
 
@@ -34,6 +38,8 @@ runs:
 
     - name: Activate devenv environment
       shell: bash
+      env:
+        SKIP_UV_SYNC: "1"
       run: |
         direnv allow .
         direnv export gha >> "$GITHUB_ENV"
@@ -43,15 +49,17 @@ runs:
       run: git checkout -- devenv.lock
 
     - name: Install Python dependencies
-      if: inputs.install-deps == 'true'
+      if: inputs.install-deps != 'false'
       shell: bash
       run: |
-        if [ -z "${{ inputs.extras }}" ]; then
-          uv sync --all-extras --all-groups
-        else
+        if [ "${{ inputs.install-deps }}" = "minimal" ]; then
+          uv sync --group dev
+        elif [ -n "${{ inputs.extras }}" ]; then
           EXTRAS_ARGS=""
           for extra in ${{ inputs.extras }}; do
             EXTRAS_ARGS="$EXTRAS_ARGS --extra $extra"
           done
           uv sync --group dev $EXTRAS_ARGS
+        else
+          uv sync --all-extras --all-groups
         fi

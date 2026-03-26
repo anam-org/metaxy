@@ -2,20 +2,15 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import polars as pl
 import pytest
+import ray  # noqa: F401
 from metaxy_testing import RAY_FEATURES_MODULE
 
 import metaxy as mx
 from metaxy.config import StoreConfig
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
-
-if TYPE_CHECKING:
-    import ray
-else:
-    ray = pytest.importorskip("ray")
 
 # NOTE: Do NOT import RayTestFeature at module level!
 # It must be imported AFTER init() to pick up the correct project.
@@ -54,7 +49,6 @@ def ray_context():
     Ray creates deeply nested paths for Unix sockets that can exceed the 107
     byte AF_UNIX path limit.
     """
-    import ray
 
     if ray.is_initialized():
         ray.shutdown()

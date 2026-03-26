@@ -33,7 +33,7 @@ IBIS_VERSIONS = ["11", "12"]
 def integration(session: nox.Session, integration: str) -> None:
     """Run tests for a single integration."""
     session.install(f".[{integration}]")
-    session.run("pytest", f"tests/ext/{integration}/", "--durations=10")
+    session.run("pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
 
 
 @nox_uv.session(
