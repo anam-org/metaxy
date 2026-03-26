@@ -14,6 +14,10 @@ inputs:
     description: "Space-separated list of extras to install (only used when install-deps is not 'all' or 'false')"
     required: false
     default: ""
+  profile:
+    description: "Devenv profile to activate (e.g., ci, ci-duckdb). Empty means full default shell."
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -33,13 +37,13 @@ runs:
 
     - name: Install devenv
       shell: bash
-      # Pin to the same nixpkgs revision as devenv.lock to prevent lock file modifications
-      run: nix profile install github:NixOS/nixpkgs/e576e3c9cf9bad747afcddd9e34f51d18c855b4e#devenv github:NixOS/nixpkgs/e576e3c9cf9bad747afcddd9e34f51d18c855b4e#direnv
+      run: nix profile install github:cachix/devenv/f8ca2c061ec2feceee1cf1c5e52c92f58b6aec9c#devenv github:NixOS/nixpkgs/e576e3c9cf9bad747afcddd9e34f51d18c855b4e#direnv
 
     - name: Activate devenv environment
       shell: bash
       env:
         SKIP_UV_SYNC: "1"
+        DEVENV_PROFILE: ${{ inputs.profile }}
       run: |
         direnv allow .
         direnv export gha >> "$GITHUB_ENV"

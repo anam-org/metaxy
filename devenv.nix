@@ -27,42 +27,87 @@
     uv
   ];
 
-  # System packages per integration (only those needing native deps)
-  integrationPackages = with pkgs; {
-    duckdb = [duckdb];
-    clickhouse = [clickhouse];
-    postgres = [postgresql];
-    docs = [
-      nodejs_22
-      cairo
-      pango
-      gdk-pixbuf
-      gobject-introspection
-      freetype
-      libffi
-      libjpeg
-      libpng
-      zlib
-      harfbuzz
-      pngquant
-    ];
+  # Declarative config per integration: packages, library paths, and env vars.
+  # Omitted fields default to empty.
+  integrations = {
+    duckdb = {
+      packages = [pkgs.duckdb];
+      libPaths = [pkgs.stdenv.cc.cc.lib pkgs.duckdb.lib];
+    };
+    clickhouse = {
+      packages = [pkgs.clickhouse];
+      libPaths = [pkgs.clickhouse];
+    };
+    postgres = {
+      packages = [pkgs.postgresql];
+      env.PG_BIN = "${pkgs.postgresql}/bin";
+    };
+    delta = {};
+    iceberg = {};
+    lancedb = {};
+    bigquery = {};
+    dagster = {};
+    ray = {};
+    sqlalchemy = {};
+    sqlmodel = {};
+    mcp = {};
+    docs = {
+      packages = with pkgs; [
+        nodejs_22
+        cairo
+        pango
+        gdk-pixbuf
+        gobject-introspection
+        freetype
+        libffi
+        libjpeg
+        libpng
+        zlib
+        harfbuzz
+        pngquant
+      ];
+      libPaths = with pkgs; [cairo pango gdk-pixbuf harfbuzz];
+    };
   };
 
-  # LD_LIBRARY_PATH entries per integration
-  integrationLibPaths = with pkgs; {
-    duckdb = [stdenv.cc.cc.lib duckdb.lib];
-    clickhouse = [clickhouse];
-    docs = [cairo pango gdk-pixbuf harfbuzz];
+  # Normalize: fill in missing fields with defaults
+  normalize = cfg: {
+    packages = cfg.packages or [];
+    libPaths = cfg.libPaths or [];
+    env = cfg.env or {};
   };
+  configs = builtins.mapAttrs (_: normalize) integrations;
 
-  # Build LD_LIBRARY_PATH from a list of integration names
-  makeLinuxLibPath = integrations:
-    lib.optionalString pkgs.stdenv.isLinux (lib.makeLibraryPath (
-      lib.concatMap (name: integrationLibPaths.${name} or []) integrations
-    ));
+  # Collect all values across integrations
+  allPackages = lib.concatLists (lib.mapAttrsToList (_: cfg: cfg.packages) configs);
+  allLibPaths = lib.concatLists (lib.mapAttrsToList (_: cfg: cfg.libPaths) configs);
+  allEnvs = lib.foldlAttrs (acc: _: cfg: acc // cfg.env) {} configs;
 
-  # All integration names
-  allIntegrations = builtins.attrNames integrationPackages;
+  makeLinuxLibPath = paths:
+    lib.optionalString pkgs.stdenv.isLinux (lib.makeLibraryPath paths);
+
+  # CI profiles: core + duckdb (all tests depend on it) + integration-specific deps
+  duckdbCfg = configs.duckdb;
+
+  makeCiProfile = name: let
+    cfg = configs.${name};
+    profilePackages = duckdbCfg.packages ++ cfg.packages;
+    profileLibPaths = duckdbCfg.libPaths ++ cfg.libPaths;
+    profileEnv = duckdbCfg.env // cfg.env;
+    # Force-clear env vars from other integrations that aren't in this profile
+    allEnvKeys = builtins.attrNames allEnvs;
+    clearedEnvs = lib.genAttrs
+      (builtins.filter (k: !(profileEnv ? ${k})) allEnvKeys)
+      (_: lib.mkForce "");
+  in {
+    packages = lib.mkForce (corePackages ++ profilePackages);
+    env = {
+      LD_LIBRARY_PATH = lib.mkForce (makeLinuxLibPath profileLibPaths);
+      DYLD_FALLBACK_LIBRARY_PATH = lib.mkForce "";
+    } // (builtins.mapAttrs (_: lib.mkForce) profileEnv) // clearedEnvs;
+    enterShell = lib.mkForce "true";
+    enterTest = lib.mkForce "true";
+  };
 in {
   # https://devenv.sh/languages/
   languages.python = {
@@ -76,14 +121,12 @@ in {
   packages =
     corePackages
     ++ [pkgs.graphviz pkgs.git-cliff]
-    ++ lib.concatMap (name: integrationPackages.${name}) allIntegrations;
+    ++ allPackages;
 
   # Environment variables
   env = {
     UV_PYTHON_PREFERENCE = "only-system";
-    PG_BIN = "${pkgs.postgresql}/bin";
-
-    LD_LIBRARY_PATH = makeLinuxLibPath allIntegrations;
+    LD_LIBRARY_PATH = makeLinuxLibPath allLibPaths;
 
     DYLD_FALLBACK_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isDarwin (lib.makeLibraryPath [
       pkgs.cairo
@@ -97,7 +140,7 @@ in {
       pkgs.zlib
       pkgs.harfbuzz
     ]);
-  };
+  } // allEnvs;
 
   enterShell = ''
     echo "🚀 Metaxy development environment"
@@ -117,4 +160,10 @@ in {
 
     echo "All tools verified successfully!"
   '';
+
+  # CI profiles: one per integration + docs
+  profiles = lib.listToAttrs (map (name: {
+    name = "ci-${name}";
+    value.module = makeCiProfile name;
+  }) (builtins.attrNames integrations));
 }
