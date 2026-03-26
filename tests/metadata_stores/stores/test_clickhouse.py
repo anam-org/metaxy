@@ -1,4 +1,4 @@
-"""ClickHouse-specific tests that don't apply to other stores."""
+"""ClickHouse metadata store tests."""
 
 import ibis.expr.datatypes as dt
 import polars as pl
@@ -12,9 +12,49 @@ try:
 except ImportError:
     pytest.skip("ibis-clickhouse not installed", allow_module_level=True)
 
-from metaxy import FeatureDefinition
+from metaxy import FeatureDefinition, HashAlgorithm
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
+from metaxy.metadata_store import MetadataStore
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.ibis
+@pytest.mark.native
+@pytest.mark.clickhouse
+class TestClickHouse(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, request) -> MetadataStore:
+        connection_string = request.getfixturevalue("clickhouse_db")
+        return ClickHouseMetadataStore(
+            connection_string=connection_string,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.fixture
+    def named_store(self, request) -> MetadataStore:
+        connection_string = request.getfixturevalue("clickhouse_db")
+        return ClickHouseMetadataStore(
+            connection_string=connection_string,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            name="clickhouse-test",
+        )
 
 
 def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]) -> None:

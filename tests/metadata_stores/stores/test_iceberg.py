@@ -1,23 +1,54 @@
-"""Apache Iceberg-specific tests.
-
-Most Iceberg store functionality is tested via parametrized tests in StoreCases.
-This module tests Iceberg-specific features:
-- Table identifier generation
-- Schema evolution
-- Custom namespace
-- LazyFrame sink_iceberg write path
-"""
+"""Apache Iceberg metadata store tests."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 import polars as pl
 import pytest
 from packaging.version import Version
 
+from metaxy import HashAlgorithm
 from metaxy.ext.metadata_stores.iceberg import IcebergMetadataStore
+from metaxy.metadata_store import MetadataStore
 from metaxy.models.types import FeatureKey
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.iceberg
+@pytest.mark.polars
+class TestIceberg(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return IcebergMetadataStore(
+            warehouse=tmp_path / "iceberg_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.fixture
+    def named_store(self, tmp_path: Path) -> MetadataStore:
+        return IcebergMetadataStore(
+            warehouse=tmp_path / "iceberg_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            name="ice",
+        )
 
 
 def test_iceberg_table_identifier(tmp_path) -> None:

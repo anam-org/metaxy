@@ -1,16 +1,52 @@
-"""Delta Lake-specific tests.
-
-Most Delta store functionality is tested via parametrized tests in StoreCases.
-This module tests Delta-specific features:
-- Object storage integration (S3) with storage_options
-- Local absolute path handling
-"""
+"""Delta metadata store tests."""
 
 from __future__ import annotations
 
-import polars as pl
+from pathlib import Path
 
+import polars as pl
+import pytest
+
+from metaxy import HashAlgorithm
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.metadata_store import MetadataStore
+from metaxy.models.types import FeatureKey
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.delta
+@pytest.mark.polars
+class TestDelta(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return DeltaMetadataStore(
+            root_path=tmp_path / "delta_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.fixture
+    def named_store(self, tmp_path: Path) -> MetadataStore:
+        return DeltaMetadataStore(
+            root_path=tmp_path / "delta_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            name="prod",
+        )
 
 
 def test_delta_local_absolute_path(tmp_path, test_features) -> None:
@@ -45,8 +81,6 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
 
 def test_delta_feature_uri_generation(tmp_path) -> None:
     """Verify _feature_uri generates correct URIs for valid feature keys."""
-    from metaxy.models.types import FeatureKey
-
     store_path = tmp_path / "delta_store"
     store = DeltaMetadataStore(store_path)
 
@@ -71,10 +105,6 @@ def test_delta_feature_key_validation_rejects_empty_parts(tmp_path) -> None:
     Leading slashes like '/feature' would create empty parts ('', 'feature')
     which are now rejected at validation time to prevent path bugs.
     """
-    import pytest
-
-    from metaxy.models.types import FeatureKey
-
     # Keys with leading slashes or empty parts should be rejected
     invalid_keys = [
         "/feature",  # Leading slash creates empty first part

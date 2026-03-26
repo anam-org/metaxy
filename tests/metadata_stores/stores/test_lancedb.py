@@ -1,13 +1,4 @@
-"""LanceDB-specific tests.
-
-Most LanceDB store functionality is tested via parametrized tests in AllStoreCases.
-This module tests LanceDB-specific features:
-- Connection property enforcement
-- Path type detection (local vs remote)
-- URI handling (mkdir behavior for local vs remote)
-- Credential sanitization in display()
-- Object storage integration (S3) with storage_options
-"""
+"""LanceDB metadata store tests."""
 
 from __future__ import annotations
 
@@ -17,11 +8,47 @@ from unittest.mock import MagicMock, Mock
 import polars as pl
 import pytest
 
-from metaxy import FeatureKey
+from metaxy import FeatureKey, HashAlgorithm
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
-from metaxy.metadata_store import StoreNotOpenError
+from metaxy.metadata_store import MetadataStore, StoreNotOpenError
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.lancedb
+@pytest.mark.polars
+class TestLanceDB(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return LanceDBMetadataStore(
+            uri=tmp_path / "lancedb_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.fixture
+    def named_store(self, tmp_path: Path) -> MetadataStore:
+        return LanceDBMetadataStore(
+            uri=tmp_path / "lancedb_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            name="dev",
+        )
 
 
 @pytest.fixture(autouse=True)
@@ -185,8 +212,6 @@ def test_lancedb_sanitize_path() -> None:
 
 def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
     """Test that display() masks credentials in URIs."""
-    from unittest.mock import Mock
-
     # Mock lancedb.connect to avoid actual connection
     mock_lancedb = Mock()
     mock_conn = Mock()

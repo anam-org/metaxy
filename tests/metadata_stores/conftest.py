@@ -18,17 +18,8 @@ from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig
-from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
-from metaxy.ext.metadata_stores.iceberg import IcebergMetadataStore
-from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
-from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
-from metaxy.metadata_store import (
-    HashAlgorithmNotSupportedError,
-    MetadataStore,
-)
-from tests.conftest import require_fixture
+from metaxy.metadata_store import MetadataStore
 
 # ============= POSTGRESQL FIXTURES =============
 
@@ -81,7 +72,7 @@ if _pg_available:
 
     # Session-scoped process, function-scoped database for test isolation
     @pytest.fixture(scope="function")
-    def postgresql_db(postgresql_proc) -> Generator[str]:  # type: ignore[no-untyped-def]
+    def postgresql_db(postgresql_proc) -> Generator[str]:
         """PostgreSQL database connection string fixture.
 
         Returns connection string for a test PostgreSQL instance.
@@ -191,19 +182,6 @@ def persistent_store(
     return store_type(**config)
 
 
-# ============= FIXTURES FOR NON-HASH TESTS =============
-
-
-@pytest.fixture
-def default_store(tmp_path: Path) -> DeltaMetadataStore:
-    """Default store (Delta, xxhash64)."""
-    delta_path = tmp_path / "default_delta_store"
-    return DeltaMetadataStore(
-        root_path=delta_path,
-        hash_algorithm=HashAlgorithm.XXHASH64,
-    )
-
-
 @pytest.fixture
 def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
     """Ibis store (DuckDB, xxhash64)."""
@@ -213,90 +191,6 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
         database=tmp_path / "test.duckdb",
         hash_algorithm=HashAlgorithm.XXHASH64,
     )
-
-
-class AllStoresCases:
-    """All store types (Delta, DuckDB, DuckDB+DuckLake, ClickHouse, LanceDB, PostgreSQL)."""
-
-    @pytest.mark.delta
-    @pytest.mark.polars
-    def case_delta(self, tmp_path: Path) -> MetadataStore:
-        delta_path = tmp_path / "delta_store"
-        return DeltaMetadataStore(
-            root_path=delta_path,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.ibis
-    @pytest.mark.native
-    @pytest.mark.duckdb
-    def case_duckdb(self, tmp_path: Path) -> MetadataStore:
-        return DuckDBMetadataStore(
-            database=tmp_path / "test.duckdb",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.ibis
-    @pytest.mark.native
-    @pytest.mark.duckdb
-    @pytest.mark.ducklake
-    def case_duckdb_ducklake(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
-
-        return DuckDBMetadataStore(
-            database=tmp_path / "test_ducklake.duckdb",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            ducklake=DuckLakeConfig.model_validate(
-                {
-                    "alias": "integration_lake",
-                    "catalog": {"type": "duckdb", "uri": str(tmp_path / "ducklake_catalog.duckdb")},
-                    "storage": {"type": "local", "path": str(tmp_path / "ducklake_storage")},
-                }
-            ),
-        )
-
-    @pytest.mark.ibis
-    @pytest.mark.native
-    @pytest.mark.clickhouse
-    def case_clickhouse(self, request) -> MetadataStore:
-        return ClickHouseMetadataStore(
-            connection_string=require_fixture(request, "clickhouse_db"),
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.iceberg
-    @pytest.mark.polars
-    def case_iceberg(self, tmp_path: Path) -> MetadataStore:
-        iceberg_path = tmp_path / "iceberg_store"
-        return IcebergMetadataStore(
-            warehouse=iceberg_path,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.lancedb
-    @pytest.mark.polars
-    def case_lancedb(self, tmp_path: Path) -> MetadataStore:
-        lancedb_path = tmp_path / "lancedb_store"
-        return LanceDBMetadataStore(
-            uri=lancedb_path,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-    @pytest.mark.ibis
-    @pytest.mark.polars
-    @pytest.mark.postgresql
-    def case_postgresql(self, request) -> MetadataStore:
-        return PostgreSQLMetadataStore(
-            connection_string=require_fixture(request, "postgresql_db"),
-            hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-
-@fixture
-@parametrize_with_cases("store", cases=AllStoresCases)
-def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (all backends)."""
-    return store
 
 
 @pytest.fixture
@@ -317,22 +211,6 @@ def hash_algorithm(algo):
     This creates the Cartesian product with store fixtures that use it.
     """
     return algo
-
-
-@fixture
-def store_with_hash_algo_native(any_store: MetadataStore, hash_algorithm: HashAlgorithm) -> MetadataStore:
-    """Parametrized store with parametrized hash algorithm.
-
-    Use with @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    to test all stores with all hash algorithms.
-    """
-    any_store._versioning_engine = "native"
-    any_store.hash_algorithm = hash_algorithm
-    try:
-        any_store.validate_hash_algorithm()
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}")
-    return any_store
 
 
 @pytest.fixture

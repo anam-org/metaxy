@@ -13,7 +13,6 @@ from metaxy import (
     FeatureGraph,
     FieldsMapping,
 )
-from metaxy.metadata_store import MetadataStore
 
 
 def test_feature_dep_filters_basic() -> None:
@@ -112,90 +111,3 @@ def test_feature_dep_filters_sql_strings() -> None:
     # Verify filters were parsed (lazy evaluation via @cached_property)
     assert dep.filters is not None
     assert len(dep.filters) == 2
-
-
-def test_feature_dep_filters_integration(any_store: MetadataStore) -> None:
-    """Test that filters are applied when reading upstream dependencies through the store.
-
-    This is a proper integration test that:
-    1. Writes upstream feature metadata to the store
-    2. Resolves a downstream feature with filters on the dependency
-    3. Verifies the FeatureDepTransformer applies filters correctly
-    """
-    import polars as pl
-
-    store = any_store
-
-    with FeatureGraph().use() as graph:
-        # Define upstream feature with age and status fields
-        class UpstreamFeature(
-            SampleFeature,
-            spec=SampleFeatureSpec(
-                key="upstream",
-                fields=["age", "status"],
-            ),
-        ):
-            pass
-
-        # Define downstream feature with filters on the dependency
-        class DownstreamFeature(
-            SampleFeature,
-            spec=SampleFeatureSpec(
-                key="downstream",
-                deps=[
-                    FeatureDep(
-                        feature=UpstreamFeature,
-                        filters=["age >= 25"],  # Only include samples with age >= 25
-                        fields_mapping=FieldsMapping.all(),
-                    )
-                ],
-                fields=["result"],
-            ),
-        ):
-            pass
-
-        # Create sample upstream data with some rows that should be filtered out
-        upstream_data = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3", "s4"],
-                "age": [20, 25, 30, 22],  # s1 and s4 should be filtered out
-                "status": ["active", "active", "inactive", "active"],
-                "metaxy_provenance_by_field": [
-                    {"age": "h1", "status": "h1"},
-                    {"age": "h2", "status": "h2"},
-                    {"age": "h3", "status": "h3"},
-                    {"age": "h4", "status": "h4"},
-                ],
-            }
-        )
-
-        # Write upstream metadata to store
-        with store.open("w"):
-            from metaxy.metadata_store import HashAlgorithmNotSupportedError
-
-            try:
-                store.write(UpstreamFeature, upstream_data)
-
-                # Resolve downstream feature - this should trigger FeatureDepTransformer
-                # which will read upstream data and apply filters
-                increment = store.resolve_update(
-                    DownstreamFeature,
-                    target_version=DownstreamFeature.feature_version(),
-                    project_version=graph.project_version,
-                )
-            except HashAlgorithmNotSupportedError:
-                import pytest
-
-                pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
-
-            # Get the result
-            result_df = increment.new.lazy().collect().to_polars()
-
-            # Verify only samples with age >= 25 are present
-            # (s2 with age=25 and s3 with age=30)
-            assert len(result_df) == 2
-            assert set(result_df["sample_uid"].to_list()) == {"s2", "s3"}
-
-            # Verify the age values are correct
-            ages = result_df.sort("sample_uid")["age"].to_list()
-            assert ages == [25, 30]

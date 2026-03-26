@@ -1,16 +1,4 @@
-"""PostgreSQL-specific tests that don't apply to other stores.
-
-These tests focus on PostgreSQL-specific functionality like connection handling,
-struct ↔ JSONB serialization, and hash algorithms.
-
-Main provenance and integration tests run automatically via test_provenance_golden_reference.py
-when PostgreSQL is included in the `any_store` fixture.
-
-Requirements:
-    - pytest-postgresql installed (preferred for automatic test database setup)
-    - OR set POSTGRES_TEST_URL environment variable
-    - OR set PG_BIN environment variable to point to PostgreSQL bin directory
-"""
+"""PostgreSQL metadata store tests."""
 
 from urllib.parse import parse_qsl, urlparse
 
@@ -23,6 +11,7 @@ import pytest
 
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
+from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import current_graph
@@ -30,6 +19,43 @@ from metaxy.models.types import FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 from tests.metadata_stores.conftest import _with_search_path
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.ibis
+@pytest.mark.polars
+@pytest.mark.postgresql
+class TestPostgreSQL(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, postgresql_db: str) -> MetadataStore:
+        return PostgreSQLMetadataStore(
+            connection_string=postgresql_db,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.fixture
+    def named_store(self, postgresql_db: str) -> MetadataStore:
+        return PostgreSQLMetadataStore(
+            connection_string=postgresql_db,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            name="pg-test",
+        )
 
 
 @pytest.fixture

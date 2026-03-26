@@ -1,4 +1,4 @@
-"""DuckDB-specific tests that don't apply to other stores."""
+"""DuckDB metadata store tests."""
 
 from pathlib import Path
 from typing import Any
@@ -6,16 +6,71 @@ from typing import Any
 import polars as pl
 import pytest
 
-# Skip all tests in this module if DuckDB not available
-
 pytest.importorskip("pyarrow")
 
+from metaxy import HashAlgorithm
 from metaxy._utils import collect_to_polars
+from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.types import FeatureKey
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.ibis
+@pytest.mark.native
+@pytest.mark.duckdb
+class TestDuckDB(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return DuckDBMetadataStore(
+            database=tmp_path / "test.duckdb",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.fixture
+    def named_store(self, tmp_path: Path) -> MetadataStore:
+        return DuckDBMetadataStore(
+            database=tmp_path / "test.duckdb",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            name="staging",
+        )
+
+    def test_store_from_config_gets_name(self, tmp_path: Path):
+        """Test that stores created via MetaxyConfig.get_store() receive the config key as name."""
+        config = MetaxyConfig(
+            stores={
+                "my_store": StoreConfig(
+                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                    config={"database": str(tmp_path / "test.duckdb")},
+                )
+            }
+        )
+        with config.use():
+            store = config.get_store("my_store")
+        assert store.name == "my_store"
+        assert not store.display().startswith("[")
+        assert repr(store).startswith("[my_store]")
+        assert "DuckDBMetadataStore" in repr(store)
 
 
 def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
@@ -28,8 +83,6 @@ def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str
     db_path = tmp_path / "test.duckdb"
 
     with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
-        import polars as pl
-
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -311,8 +364,6 @@ def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: 
 
 def test_duckdb_config_instantiation() -> None:
     """Test instantiating DuckDB store via MetaxyConfig."""
-    from metaxy.config import MetaxyConfig, StoreConfig
-
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
@@ -339,8 +390,6 @@ def test_duckdb_config_instantiation() -> None:
 
 def test_duckdb_config_with_extensions() -> None:
     """Test DuckDB store config with extensions."""
-    from metaxy.config import MetaxyConfig, StoreConfig
-
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
@@ -365,7 +414,6 @@ def test_duckdb_config_with_extensions() -> None:
 
 def test_duckdb_config_with_hash_algorithm() -> None:
     """Test DuckDB store config with specific hash algorithm."""
-    from metaxy.config import MetaxyConfig, StoreConfig
     from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
@@ -390,8 +438,6 @@ def test_duckdb_config_with_hash_algorithm() -> None:
 
 def test_duckdb_config_with_fallback_stores() -> None:
     """Test DuckDB store config with fallback stores."""
-    from metaxy.config import MetaxyConfig, StoreConfig
-
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(

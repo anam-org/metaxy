@@ -12,8 +12,6 @@ hash_algorithm × store_type × truncation in other test files.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import polars as pl
 import polars.testing as pl_testing
 import pytest
@@ -27,10 +25,6 @@ from pytest_cases import parametrize_with_cases
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.versioning.types import HashAlgorithm
-
-if TYPE_CHECKING:
-    from metaxy.metadata_store import MetadataStore
-
 
 # ============= TEST: HASH ALGORITHM CORRECTNESS =============
 
@@ -290,71 +284,3 @@ def test_field_level_provenance_structure(
         # Verify all field hashes are non-null
         for field in expected_fields:
             assert unnested[field].null_count() == 0, f"Field {field} has null provenance hashes"
-
-
-# ============= TEST: HASH TRUNCATION ACROSS ALL STORES =============
-
-
-@pytest.mark.parametrize("truncation_length", [16])
-def test_hash_truncation_any_store(config_with_truncation, any_store: MetadataStore, graph: FeatureGraph):
-    """Test that hash truncation is applied correctly across store types."""
-
-    class ParentFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="parent",
-            fields=["value"],
-        ),
-    ):
-        pass
-
-    class ChildFeature(
-        BaseFeature,
-        spec=SampleFeatureSpec(
-            key="child",
-            deps=[FeatureDep(feature=ParentFeature)],
-            fields=["result"],
-        ),
-    ):
-        pass
-
-    child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    feature_versions = {
-        "parent": ParentFeature.feature_version(),
-        "child": ChildFeature.feature_version(),
-    }
-
-    # Config is already set by fixture to truncation_length=16
-    truncation_length = config_with_truncation.hash_truncation_length
-
-    # Generate test data
-    upstream_data, _ = downstream_metadata_strategy(
-        child_plan,
-        feature_versions=feature_versions,
-        project_version=graph.project_version,
-        hash_algorithm=any_store.hash_algorithm,
-        min_rows=5,
-        max_rows=10,
-    ).example()
-
-    parent_df = upstream_data["parent"]
-
-    with any_store.open("w"), graph.use():
-        # Write parent metadata
-        any_store.write(ParentFeature, parent_df)
-
-        # Compute child metadata
-        increment = any_store.resolve_update(
-            ChildFeature,
-            target_version=ChildFeature.feature_version(),
-            project_version=graph.project_version,
-        )
-
-        result = increment.new.lazy().collect().to_polars()
-
-        # Verify all hashes are exactly 16 characters
-        hash_col = result["metaxy_provenance"]
-        for hash_val in hash_col:
-            assert len(hash_val) == truncation_length, (
-                f"Expected hash length {truncation_length}, got {len(hash_val)} in {type(any_store).__name__}"
-            )
