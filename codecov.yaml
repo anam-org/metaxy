@@ -5,8 +5,8 @@ coverage:
   status:
     project:
       default:
-        target: auto    # use the coverage of the base commit
-        threshold: 1%   # allow 1% drop before failing
+        target: auto
+        threshold: 1%
     patch:
       default:
         target: 80%
@@ -14,3 +14,71 @@ coverage:
 comment:
   layout: "condensed_header, condensed_files, condensed_footer"
   require_changes: true
+
+flags:
+  core:
+    paths:
+      - src/metaxy/
+      - "!src/metaxy/ext/"
+    carryforward: true
+
+  duckdb:
+    paths:
+      - src/metaxy/ext/metadata_stores/duckdb.py
+      - src/metaxy/ext/metadata_stores/ducklake.py
+    carryforward: true
+
+  clickhouse:
+    paths:
+      - src/metaxy/ext/metadata_stores/clickhouse.py
+    carryforward: true
+
+  postgres:
+    paths:
+      - src/metaxy/ext/metadata_stores/postgresql.py
+    carryforward: true
+
+  delta:
+    paths:
+      - src/metaxy/ext/metadata_stores/delta.py
+    carryforward: true
+
+  iceberg:
+    paths:
+      - src/metaxy/ext/metadata_stores/iceberg.py
+    carryforward: true
+
+  lancedb:
+    paths:
+      - src/metaxy/ext/metadata_stores/lancedb.py
+    carryforward: true
+
+  bigquery:
+    paths:
+      - src/metaxy/ext/metadata_stores/bigquery.py
+    carryforward: true
+
+  dagster:
+    paths:
+      - src/metaxy/ext/dagster/
+    carryforward: true
+
+  ray:
+    paths:
+      - src/metaxy/ext/ray/
+    carryforward: true
+
+  sqlalchemy:
+    paths:
+      - src/metaxy/ext/sqlalchemy/
+    carryforward: true
+
+  sqlmodel:
+    paths:
+      - src/metaxy/ext/sqlmodel/
+    carryforward: true
+
+  mcp:
+    paths:
+      - src/metaxy/ext/mcp/
+    carryforward: true

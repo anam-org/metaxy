@@ -3,21 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import polars as pl
 import pytest
+import ray
+from metaxy_testing import RAY_FEATURES_MODULE
 
 import metaxy as mx
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
-
-if TYPE_CHECKING:
-    import ray
-else:
-    ray = pytest.importorskip("ray")
-
-
-from metaxy_testing import RAY_FEATURES_MODULE
 
 from .conftest import FEATURE_KEY, make_test_data
 

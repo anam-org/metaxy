@@ -6,8 +6,6 @@ from typing import Any
 import polars as pl
 import pytest
 
-pytest.importorskip("pyarrow")
-
 from metaxy import HashAlgorithm
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig, StoreConfig

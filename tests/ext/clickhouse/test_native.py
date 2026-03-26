@@ -1,16 +1,9 @@
 """ClickHouse metadata store tests."""
 
+import ibis.backends.clickhouse  # noqa: F401
 import ibis.expr.datatypes as dt
 import polars as pl
 import pytest
-
-# Skip all tests in this module if ClickHouse not available
-pytest.importorskip("ibis")
-
-try:
-    import ibis.backends.clickhouse  # noqa: F401
-except ImportError:
-    pytest.skip("ibis-clickhouse not installed", allow_module_level=True)
 
 from metaxy import FeatureDefinition, HashAlgorithm
 from metaxy._utils import collect_to_polars

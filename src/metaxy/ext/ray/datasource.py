@@ -165,7 +165,9 @@ class MetaxyDatasource(Datasource):
         with self.store:
             return self._read_lazy().select(nw.len()).collect().item()
 
-    def get_read_tasks(self, parallelism: int, per_task_row_limit: int | None = None) -> list[ReadTask]:
+    def get_read_tasks(
+        self, parallelism: int, per_task_row_limit: int | None = None, **kwargs: object
+    ) -> list[ReadTask]:
         """Return read tasks for the feature metadata.
 
         Args:
