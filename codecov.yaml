@@ -15,70 +15,76 @@ comment:
   layout: "condensed_header, condensed_files, condensed_footer"
   require_changes: true
 
-flags:
-  core:
-    paths:
-      - src/metaxy/
-      - "!src/metaxy/ext/"
-    carryforward: true
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
 
-  duckdb:
-    paths:
-      - src/metaxy/ext/metadata_stores/duckdb.py
-      - src/metaxy/ext/metadata_stores/ducklake.py
-    carryforward: true
+  individual_components:
+    - component_id: core
+      name: Core
+      paths:
+        - src/metaxy/**
+        - "!src/metaxy/ext/**"
 
-  clickhouse:
-    paths:
-      - src/metaxy/ext/metadata_stores/clickhouse.py
-    carryforward: true
+    - component_id: duckdb
+      name: DuckDB
+      paths:
+        - src/metaxy/ext/metadata_stores/duckdb.py
+        - src/metaxy/ext/metadata_stores/ducklake.py
 
-  postgres:
-    paths:
-      - src/metaxy/ext/metadata_stores/postgresql.py
-    carryforward: true
+    - component_id: clickhouse
+      name: ClickHouse
+      paths:
+        - src/metaxy/ext/metadata_stores/clickhouse.py
 
-  delta:
-    paths:
-      - src/metaxy/ext/metadata_stores/delta.py
-    carryforward: true
+    - component_id: postgres
+      name: PostgreSQL
+      paths:
+        - src/metaxy/ext/metadata_stores/postgresql.py
 
-  iceberg:
-    paths:
-      - src/metaxy/ext/metadata_stores/iceberg.py
-    carryforward: true
+    - component_id: delta
+      name: Delta Lake
+      paths:
+        - src/metaxy/ext/metadata_stores/delta.py
 
-  lancedb:
-    paths:
-      - src/metaxy/ext/metadata_stores/lancedb.py
-    carryforward: true
+    - component_id: iceberg
+      name: Iceberg
+      paths:
+        - src/metaxy/ext/metadata_stores/iceberg.py
 
-  bigquery:
-    paths:
-      - src/metaxy/ext/metadata_stores/bigquery.py
-    carryforward: true
+    - component_id: lancedb
+      name: LanceDB
+      paths:
+        - src/metaxy/ext/metadata_stores/lancedb.py
 
-  dagster:
-    paths:
-      - src/metaxy/ext/dagster/
-    carryforward: true
+    - component_id: bigquery
+      name: BigQuery
+      paths:
+        - src/metaxy/ext/metadata_stores/bigquery.py
 
-  ray:
-    paths:
-      - src/metaxy/ext/ray/
-    carryforward: true
+    - component_id: dagster
+      name: Dagster
+      paths:
+        - src/metaxy/ext/dagster/**
 
-  sqlalchemy:
-    paths:
-      - src/metaxy/ext/sqlalchemy/
-    carryforward: true
+    - component_id: ray
+      name: Ray
+      paths:
+        - src/metaxy/ext/ray/**
 
-  sqlmodel:
-    paths:
-      - src/metaxy/ext/sqlmodel/
-    carryforward: true
+    - component_id: sqlalchemy
+      name: SQLAlchemy
+      paths:
+        - src/metaxy/ext/sqlalchemy/**
 
-  mcp:
-    paths:
-      - src/metaxy/ext/mcp/
-    carryforward: true
+    - component_id: sqlmodel
+      name: SQLModel
+      paths:
+        - src/metaxy/ext/sqlmodel/**
+
+    - component_id: mcp
+      name: MCP
+      paths:
+        - src/metaxy/ext/mcp/**

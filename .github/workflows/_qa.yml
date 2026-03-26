@@ -234,7 +234,7 @@ jobs:
         with:
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: core-Python${{ matrix.python-version }}
+          flags: Python${{ matrix.python-version }}
 
       - name: Upload Test Results to Codecov
         if: ${{ !cancelled() }}
@@ -243,7 +243,7 @@ jobs:
           report_type: test_results
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: core-Python${{ matrix.python-version }}
+          flags: Python${{ matrix.python-version }}
 
   test-integrations:
     needs: [filter, generate-nox-matrix]
@@ -276,19 +276,13 @@ jobs:
           uv run nox -s "integration(integration='${{ matrix.integration }}')"
           -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
 
-      - name: Combine Coverage Data
-        if: always()
-        run: |
-          uv run coverage combine --keep || true
-          uv run coverage xml -o coverage.xml
-
       - name: Upload Coverage to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5.5.2
         with:
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: ${{ matrix.integration }}-Python${{ matrix.python-version }}
+          flags: Python${{ matrix.python-version }}
 
       - name: Upload Test Results to Codecov
         if: ${{ !cancelled() }}
@@ -297,7 +291,7 @@ jobs:
           report_type: test_results
           slug: anam-org/metaxy
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: ${{ matrix.integration }}-Python${{ matrix.python-version }}
+          flags: Python${{ matrix.python-version }}
 
   generate-nox-matrix:
     needs: filter
