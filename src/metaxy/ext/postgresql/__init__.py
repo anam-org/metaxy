@@ -1,8 +1,6 @@
-"""Backwards-compatibility shim. Import from metaxy.ext.postgresql instead."""
-
 from metaxy.ext.postgresql.config import PostgreSQLMetadataStoreConfig
 from metaxy.ext.postgresql.engine import PostgreSQLEngine
-from metaxy.ext.postgresql.handlers.native import _METAXY_STRUCT_COLUMNS, PostgreSQLSQLHandler
+from metaxy.ext.postgresql.handlers.native import PostgreSQLSQLHandler
 from metaxy.ext.postgresql.legacy_store import PostgreSQLMetadataStore
 
 __all__ = [
@@ -10,5 +8,4 @@ __all__ = [
     "PostgreSQLMetadataStore",
     "PostgreSQLMetadataStoreConfig",
     "PostgreSQLSQLHandler",
-    "_METAXY_STRUCT_COLUMNS",
 ]

@@ -158,54 +158,17 @@ class ComputeEngine(ABC):
         ...
 
 
-class PolarsComputeEngine(ComputeEngine):
-    """Compute engine for backends that use Polars for versioning (e.g. Delta, Lance).
+def __getattr__(name: str):  # type: ignore[no-untyped-def]
+    if name == "PolarsComputeEngine":
+        import warnings
 
-    Has no persistent connection — handlers receive ``None`` and manage their own I/O.
-    """
+        from metaxy.metadata_store.polars.engine import PolarsComputeEngine
 
-    def __init__(self) -> None:
-        from metaxy.versioning.polars import PolarsVersioningEngine
-
-        self.versioning_engine_cls = PolarsVersioningEngine
-
-    @property
-    def handler(self) -> StorageHandler[None]:
-        raise NotImplementedError("PolarsComputeEngine has no default handler")
-
-    @property
-    def connection(self) -> None:
-        return None
-
-    def open(self, mode: AccessMode) -> None:  # noqa: ARG002
-        pass
-
-    def close(self) -> None:
-        pass
-
-    def get_default_hash_algorithm(self) -> HashAlgorithm:
-        return HashAlgorithm.XXHASH32
-
-    def validate_hash_algorithm_support(self, algorithm: HashAlgorithm) -> None:
-        from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
-        from metaxy.versioning.polars import PolarsVersioningEngine
-
-        supported = PolarsVersioningEngine.supported_hash_algorithms()
-        if algorithm not in supported:
-            raise HashAlgorithmNotSupportedError(
-                f"Hash algorithm '{algorithm.value}' not supported. "
-                f"Supported algorithms: {', '.join(a.value for a in sorted(supported, key=lambda a: a.value))}"
-            )
-
-    @contextmanager
-    def create_versioning_engine(self, plan: FeaturePlan) -> Iterator[VersioningEngine]:
-        from metaxy.versioning.polars import PolarsVersioningEngine
-
-        yield PolarsVersioningEngine(plan=plan)
-
-    def display(self) -> str:
-        return "PolarsComputeEngine()"
-
-    @classmethod
-    def config_model(cls) -> type[MetadataStoreConfig]:
-        return MetadataStoreConfig
+        warnings.warn(
+            "Importing PolarsComputeEngine from metaxy.metadata_store.compute_engine is deprecated. "
+            "Import from metaxy.metadata_store.polars instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return PolarsComputeEngine
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

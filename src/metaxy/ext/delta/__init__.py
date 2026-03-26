@@ -1,5 +1,3 @@
-"""Backwards-compatibility shim. Import from metaxy.ext.polars.delta instead."""
-
 from metaxy.ext.delta.config import DeltaMetadataStoreConfig
 from metaxy.ext.delta.legacy_store import DeltaMetadataStore
 
