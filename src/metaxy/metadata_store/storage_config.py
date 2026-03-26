@@ -26,3 +26,29 @@ class StorageConfig(BaseModel):
     format: str
     location: str
     schema_: str | None = Field(default=None, alias="schema")
+
+
+class IcebergStorageConfig(StorageConfig):
+    """Storage configuration for Apache Iceberg tables.
+
+    Attributes:
+        namespace: Iceberg namespace for feature tables.
+        catalog_name: Name of the PyIceberg catalog instance.
+        catalog_properties: Properties passed to `pyiceberg.catalog.load_catalog`.
+        auto_create_namespace: Create the namespace on first write if missing.
+    """
+
+    namespace: str = "metaxy"
+    catalog_name: str = "metaxy"
+    catalog_properties: dict[str, str] | None = None
+    auto_create_namespace: bool = True
+
+
+class LanceStorageConfig(StorageConfig):
+    """Storage configuration for Lance tables.
+
+    Attributes:
+        connect_kwargs: Extra keyword arguments passed to `lancedb.connect`.
+    """
+
+    connect_kwargs: dict[str, object] = Field(default_factory=dict)
