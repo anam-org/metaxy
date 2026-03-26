@@ -149,12 +149,12 @@ class IcebergMetadataStore(MetadataStore):
                 warehouse_str = warehouse_str[7:]
             elif warehouse_str.startswith("local://"):
                 warehouse_str = warehouse_str[8:]
-            self._warehouse_uri = str(Path(warehouse_str).expanduser().resolve())
+            self._warehouse_uri = Path(warehouse_str).expanduser().resolve().as_posix()
 
         self._catalog_properties = catalog_properties or {
             "type": "sql",
             "uri": f"sqlite:///{self._warehouse_uri}/catalog.db",
-            "warehouse": self._warehouse_uri,
+            "warehouse": "file://" + self._warehouse_uri,
         }
 
         super().__init__(
