@@ -131,7 +131,7 @@ class TestListFeatures:
 
         for feature in result["features"]:
             assert "import_path" in feature
-            assert "test_mcp" in feature["import_path"]
+            assert "test_native" in feature["import_path"]
 
     async def test_features_have_version_and_metadata(self, mcp_client: Client) -> None:
         _create_test_features()
