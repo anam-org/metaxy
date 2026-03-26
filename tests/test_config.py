@@ -8,8 +8,8 @@ from metaxy.config import (
     InvalidConfigError,
     MetaxyConfig,
     StoreConfig,
-    _collect_dict_keys,
 )
+from metaxy.config.utils import _collect_dict_keys
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
@@ -92,6 +92,17 @@ def test_metaxy_config_default() -> None:
 
     assert config.store == "dev"
     assert config.stores == {}
+
+
+def test_bare_construction_does_not_auto_discover_toml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """MetaxyConfig() should not pick up a metaxy.toml from cwd."""
+    (tmp_path / "metaxy.toml").write_text('project = "should-not-load"\nstore = "sneaky"\n')
+    monkeypatch.chdir(tmp_path)
+
+    config = MetaxyConfig()
+
+    assert config.project is None
+    assert config.store == "dev"
 
 
 def test_metaxy_config_from_dict(tmp_path: Path) -> None:
@@ -659,30 +670,6 @@ unset_with_default = "${{ANOTHER_UNSET:-my-default}}"
     assert config.project == "default-project"
     assert config.stores["dev"].config["value_with_default"] == "actual-value"
     assert config.stores["dev"].config["unset_with_default"] == "my-default"
-
-
-def test_env_var_expansion_unset_becomes_empty_string(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that ${VAR} without default becomes empty string when unset."""
-    monkeypatch.delenv("UNSET_VAR", raising=False)
-
-    # Use as_posix() to ensure forward slashes on Windows (TOML-safe)
-    dev_path = (tmp_path / "delta_dev").as_posix()
-
-    config_file = tmp_path / "metaxy.toml"
-    config_file.write_text(f"""
-store = "dev"
-migrations_dir = "prefix-${{UNSET_VAR}}-suffix"
-
-[stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
-
-[stores.dev.config]
-root_path = "{dev_path}"
-""")
-
-    config = MetaxyConfig.load(config_file)
-
-    assert config.migrations_dir == "prefix--suffix"
 
 
 def test_env_var_expansion_in_nested_structures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1372,7 +1359,6 @@ class TestToToml:
         original = MetaxyConfig(
             store="staging",
             project="roundtrip_test",
-            migrations_dir=".custom/migrations",
             entrypoints=["my_features"],
             stores={
                 "staging": StoreConfig(
@@ -1397,7 +1383,6 @@ class TestToToml:
 
         assert reloaded.store == original.store
         assert reloaded.project == original.project
-        assert reloaded.migrations_dir == original.migrations_dir
         assert reloaded.entrypoints == original.entrypoints
         assert set(reloaded.stores.keys()) == set(original.stores.keys())
 
@@ -1583,3 +1568,24 @@ class TestConfigInheritance:
         assert config.ext["myplugin"].model_extra
         assert config.ext["myplugin"].model_extra["custom_setting"] is True
         assert "otherplugin" in config.ext
+
+
+def test_env_var_store_config_merged_with_parent_via_extend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Env var providing store config fields should merge with parent's store type via extend."""
+    store_type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+    parent = tmp_path / "parent.toml"
+    parent.write_text(f'[stores.prod]\ntype = "{store_type}"\n[stores.prod.config]\nroot_path = "/default"\n')
+
+    child = tmp_path / "child.toml"
+    child.write_text('extend = "parent.toml"\nproject = "child"\n')
+
+    monkeypatch.setenv("METAXY_STORES__PROD__CONFIG__ROOT_PATH", "/from-env")
+
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        config = MetaxyConfig.load(child)
+
+    assert config.stores["prod"].type == store_type
+    assert config.stores["prod"].config["root_path"] == "/from-env"

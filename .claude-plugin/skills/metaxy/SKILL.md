@@ -1,6 +1,6 @@
 ---
 name: metaxy
-description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, or testing patterns.
+description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", "metaxy lock", "lock features", "external features", "multi-environment", "multi-project setup", "monorepo features", "cross-project dependencies", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, testing patterns, feature locking, or multi-environment configuration.
 ---
 
 # Metaxy
@@ -84,6 +84,12 @@ mx metadata status --all-features  # Check metadata freshness (expensive!)
 mx mcp                         # Start MCP server for AI assistants
 ```
 
+## Multi-Environment & Feature Locking
+
+Cross-project dependencies typically resolve automatically via Python packages — if project B depends on project A as a Python dependency, its features are discovered at import time. Feature locking (`mx lock`) is needed for multi-environment setups where projects cannot be installed into each other (e.g., separate deployment environments). In that case, use `mx push` to publish definitions to a shared store, and `mx lock` to fetch them into a `metaxy.lock` file. Set `locked = true` (or `METAXY_LOCKED=1`) in production to enforce version consistency.
+
+For configuration patterns and CLI usage, see `examples/configuration.md` and `examples/cli.md`.
+
 ## Testing
 
 To test features in isolation, use context managers to avoid polluting the global registry:
@@ -125,5 +131,7 @@ Key pages:
 - **Feature Definitions**: https://docs.metaxy.io/latest/guide/concepts/definitions/features/
 - **Data Versioning**: https://docs.metaxy.io/latest/guide/concepts/versioning/
 - **Metadata Stores**: https://docs.metaxy.io/latest/guide/concepts/metadata-stores/
+- **Projects**: https://docs.metaxy.io/latest/guide/concepts/projects/
+- **External Features**: https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/
 - **CLI Reference**: https://docs.metaxy.io/latest/reference/cli/
 - **API Reference**: https://docs.metaxy.io/latest/reference/api/

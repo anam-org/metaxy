@@ -1502,7 +1502,7 @@ class MetadataStore(ABC):
 
         # When preserving feature versions (e.g. rebases), use existing values as-is
         if preserve_feature_version and has_feature_version and has_project_version:
-            pass  # Use existing values for migrations
+            pass  # Use existing values (e.g. rebases)
         else:
             # Drop any existing version columns (e.g., from SQLModel with null values)
             # and add current versions

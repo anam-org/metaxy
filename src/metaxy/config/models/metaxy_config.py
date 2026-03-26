@@ -1,17 +1,11 @@
-"""Configuration system for Metaxy using pydantic-settings."""
-# pyright: reportImportCycles=false
-
 import os
-import re
 import warnings
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
-import tomli
 import tomli_w
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
@@ -23,6 +17,10 @@ from pydantic_settings import (
 from typing_extensions import Self
 
 from metaxy._decorators import public
+from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
+from metaxy.config.models.plugin_config import PluginConfig
+from metaxy.config.models.store_config import StoreConfig
+from metaxy.config.utils import _collect_dict_keys, _remove_none_values
 from metaxy.models.feature_selection import FeatureSelection
 
 if TYPE_CHECKING:
@@ -30,21 +28,22 @@ if TYPE_CHECKING:
         MetadataStore,
     )
 
-T = TypeVar("T")
 
-# Pattern for ${VAR} or ${VAR:-default} syntax
-_ENV_VAR_PATTERN = re.compile(r"\$\{([^}:]+)(?::-([^}]*))?\}")
+BUILTIN_PLUGINS = {}
 
 
-def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
-    """Recursively collect all keys from a nested dict as dot-separated paths."""
-    keys = []
-    for key, value in d.items():
-        full_key = f"{prefix}.{key}" if prefix else key
-        keys.append(full_key)
-        if isinstance(value, dict):
-            keys.extend(_collect_dict_keys(value, full_key))
-    return keys
+PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
+StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
+
+# Global config visible to all threads, set via MetaxyConfig.set() / .load().
+# ContextVar overlay for per-context overrides via MetaxyConfig.use().
+# get() checks the ContextVar first, falling back to the global.
+_global_config: "MetaxyConfig | None" = None
+_config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_override", default=None)
+
+# Used by load() to pass the config file path into settings_customise_sources
+# without monkey-patching the classmethod.
+_toml_file_override: ContextVar[Path | None] = ContextVar("_toml_file_override")
 
 
 @public
@@ -86,205 +85,6 @@ class InvalidConfigError(Exception):
             An InvalidConfigError with context from the config.
         """
         return cls(message, config_file=config._config_file)
-
-
-def _expand_env_vars(value: Any) -> Any:
-    """Recursively expand environment variables in config values.
-
-    Supports:
-    - ${VAR} - substitutes with environment variable value, empty string if not set
-    - ${VAR:-default} - substitutes with environment variable value, or default if not set
-
-    Args:
-        value: The value to expand (can be string, dict, list, or other)
-
-    Returns:
-        The value with environment variables expanded
-    """
-    if isinstance(value, str):
-
-        def replace_match(match: re.Match[str]) -> str:
-            var_name = match.group(1)
-            default = match.group(2)  # None if no default specified
-            env_value = os.environ.get(var_name)
-            if env_value is not None:
-                return env_value
-            elif default is not None:
-                return default
-            else:
-                return ""
-
-        return _ENV_VAR_PATTERN.sub(replace_match, value)
-    elif isinstance(value, Mapping):
-        return {k: _expand_env_vars(v) for k, v in value.items()}
-    elif isinstance(value, Sequence):
-        return [_expand_env_vars(item) for item in value]
-    else:
-        return value
-
-
-class TomlConfigSettingsSource(PydanticBaseSettingsSource):
-    """Custom settings source for TOML configuration files.
-
-    Auto-discovers configuration in this order:
-    1. Explicit file path if provided
-    2. metaxy.toml in current directory (preferred)
-    3. pyproject.toml [tool.metaxy] section (fallback)
-    4. No config (returns empty dict)
-    """
-
-    def __init__(self, settings_cls: type[BaseSettings], toml_file: Path | None = None):
-        super().__init__(settings_cls)
-        self.toml_file = toml_file or self._discover_config_file()
-        self.toml_data = self._load_toml()
-
-    def _discover_config_file(self) -> Path | None:
-        """Auto-discover config file."""
-        # Prefer metaxy.toml
-        if Path("metaxy.toml").exists():
-            return Path("metaxy.toml")
-
-        # Fallback to pyproject.toml
-        if Path("pyproject.toml").exists():
-            return Path("pyproject.toml")
-
-        return None
-
-    def _load_toml(self) -> dict[str, Any]:
-        """Load TOML file and extract metaxy config.
-
-        Environment variables in the format ${VAR} or ${VAR:-default} are
-        expanded in string values.
-        """
-        if self.toml_file is None:
-            return {}
-
-        with open(self.toml_file, "rb") as f:
-            data = tomli.load(f)
-
-        # Extract [tool.metaxy] from pyproject.toml or root from metaxy.toml
-        if self.toml_file.name == "pyproject.toml":
-            config = data.get("tool", {}).get("metaxy", {})
-        else:
-            config = data
-
-        # Expand environment variables in config values
-        return _expand_env_vars(config)
-
-    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
-        """Get field value from TOML data."""
-        field_value = self.toml_data.get(field_name)
-        return field_value, field_name, False
-
-    def __call__(self) -> dict[str, Any]:
-        """Return all settings from TOML."""
-        return self.toml_data
-
-
-MetadataStoreT: TypeAlias = type["MetadataStore"]
-
-
-@public
-class StoreConfig(BaseSettings):
-    """Configuration options for metadata stores."""
-
-    model_config = SettingsConfigDict(
-        extra="forbid",  # Only type and config fields allowed
-        frozen=True,
-    )
-
-    # Store the import path as string (internal field)
-    # Uses alias="type" so TOML and constructor use "type"
-    # Annotated as str | type to allow passing class objects directly
-    type: str = PydanticField(
-        description='Full import path to metadata store class (e.g., `"metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"`)',
-    )
-
-    config: dict[str, Any] = PydanticField(
-        default_factory=dict,
-        description="Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.",
-    )
-
-    @field_validator("type", mode="before")
-    @classmethod
-    def _coerce_type_to_string(cls, v: Any) -> str:
-        """Accept both string import paths and class objects.
-
-        Converts class objects to their full import path string.
-        """
-        if isinstance(v, str):
-            return v
-        if isinstance(v, type):
-            # Convert class to import path string
-            return f"{v.__module__}.{v.__qualname__}"
-        raise ValueError(f"type must be a string or class, got {type(v).__name__}")
-
-    @cached_property
-    def type_cls(self) -> MetadataStoreT:
-        """Get the store class, importing lazily on first access.
-
-        Returns:
-            The metadata store class
-
-        Raises:
-            ImportError: If the store class cannot be imported
-        """
-        import importlib
-
-        from pydantic import TypeAdapter
-        from pydantic.types import ImportString
-
-        adapter: TypeAdapter[type[Any]] = TypeAdapter(ImportString[Any])
-        try:
-            return adapter.validate_python(self.type)
-        except Exception:
-            # Pydantic's ImportString swallows the underlying ImportError for other packages/modules,
-            # showing a potentially misleading message.
-            # Try a direct import to surface the real error (e.g., missing dependency).
-            module_path, _, _ = str(self.type).rpartition(".")
-            if module_path:
-                try:
-                    importlib.import_module(module_path)
-                except ImportError as import_err:
-                    raise ImportError(f"Cannot import '{self.type}': {import_err}") from import_err
-            raise
-
-    def to_toml(self) -> str:
-        """Serialize to TOML string.
-
-        Returns:
-            TOML representation of this store configuration.
-        """
-        data = self.model_dump(mode="json", by_alias=True)
-        return tomli_w.dumps(data)
-
-
-class PluginConfig(BaseSettings):
-    """Configuration for Metaxy plugins"""
-
-    model_config = SettingsConfigDict(frozen=True, extra="allow")
-
-    enable: bool = PydanticField(
-        default=False,
-        description="Whether to enable the plugin.",
-    )
-
-
-PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
-
-# Global config visible to all threads, set via MetaxyConfig.set() / .load().
-# ContextVar overlay for per-context overrides via MetaxyConfig.use().
-# get() checks the ContextVar first, falling back to the global.
-_global_config: "MetaxyConfig | None" = None
-_config_override: ContextVar["MetaxyConfig | None"] = ContextVar("_config_override", default=None)
-
-
-BUILTIN_PLUGINS = {
-    "alembic": "metaxy.ext.alembic",
-}
-
-
-StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
 
 
 @public
@@ -369,11 +169,6 @@ class MetaxyConfig(BaseSettings):
 
     extend: str | None = PydanticField(
         default=None, description="A relative or absolute path to a Metaxy configuration file to inherit settings from."
-    )
-
-    migrations_dir: str = PydanticField(
-        default=".metaxy/migrations",
-        description="Directory where migration files are stored",
     )
 
     entrypoints: list[str] = PydanticField(
@@ -529,9 +324,15 @@ class MetaxyConfig(BaseSettings):
         Priority (first wins):
         1. Init arguments
         2. Environment variables
-        3. TOML file
+        3. TOML file (with ``extend`` inheritance fully resolved)
         """
-        toml_settings = TomlConfigSettingsSource(settings_cls)
+        # load() sets _toml_file_override before calling cls().
+        # Bare MetaxyConfig() has no override → no TOML file.
+        try:
+            config_file = _toml_file_override.get()
+        except LookupError:
+            config_file = None
+        toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
@@ -640,9 +441,18 @@ class MetaxyConfig(BaseSettings):
             config_file = Path(config_from_env)
 
         if config_file is None and search_parents:
-            config_file = cls._discover_config_with_parents(auto_discovery_start)
+            config_file = discover_config_with_parents(auto_discovery_start)
 
-        config = cls._load(Path(config_file) if config_file else None)
+        resolved: Path | None = Path(config_file) if config_file else None
+
+        # Pass config file path to settings_customise_sources via ContextVar
+        token = _toml_file_override.set(resolved)
+        try:
+            config = cls()
+        finally:
+            _toml_file_override.reset(token)
+
+        config._config_file = resolved.resolve() if resolved else None
 
         cls.set(config)
 
@@ -650,141 +460,6 @@ class MetaxyConfig(BaseSettings):
         config._load_plugins()
 
         return config
-
-    @classmethod
-    def _load(
-        cls,
-        config_file: Path | None,
-        *,
-        _seen=None,
-    ) -> "MetaxyConfig":
-        """Load config from file, resolving the inheritance chain.
-
-        Recursively loads parent configs referenced by ``extend``,
-        tracking visited paths in ``_seen`` to detect cycles.
-        """
-        if _seen is None:
-            _seen = set()
-
-        if config_file is not None:
-            toml_path = config_file
-
-            class CustomTomlSource(TomlConfigSettingsSource):
-                def __init__(self, settings_cls: type[BaseSettings]):
-                    super(TomlConfigSettingsSource, self).__init__(settings_cls)
-                    self.toml_file = toml_path
-                    self.toml_data = self._load_toml()
-
-            original_method = cls.settings_customise_sources
-
-            @classmethod
-            def custom_sources(
-                cls_inner,
-                settings_cls,
-                init_settings,
-                env_settings,
-                dotenv_settings,
-                file_secret_settings,
-            ):
-                return (init_settings, env_settings, CustomTomlSource(settings_cls))
-
-            cls.settings_customise_sources = custom_sources  # ty: ignore[invalid-assignment]
-            try:
-                config = cls()
-            finally:
-                cls.settings_customise_sources = original_method  # ty: ignore[invalid-assignment]
-
-            config._config_file = toml_path.resolve()
-            _seen.add(config._config_file)
-        else:
-            config = cls()
-            config._config_file = None
-
-        if config.extend is None:
-            return config
-
-        # Resolve extend path relative to the child config file's directory
-        extend_path = Path(config.extend)
-        if not extend_path.is_absolute() and config._config_file is not None:
-            extend_path = (config._config_file.parent / extend_path).resolve()
-        else:
-            extend_path = extend_path.resolve()
-
-        if not extend_path.exists():
-            raise InvalidConfigError(
-                f"Config file referenced by 'extend' does not exist: {extend_path}",
-                config_file=config._config_file,
-            )
-
-        if extend_path in _seen:
-            chain = " -> ".join(str(p) for p in _seen)
-            raise InvalidConfigError(
-                f"Circular config inheritance detected: {chain} -> {extend_path}",
-                config_file=config._config_file,
-            )
-
-        parent = cls._load(extend_path, _seen=_seen)
-        return cls._merge_configs(parent=parent, child=config)
-
-    # Fields that are shallow-merged (dicts) or appended (lists) during
-    # config inheritance instead of being replaced by the child value.
-    @classmethod
-    def _merge_configs(cls, *, parent: "MetaxyConfig", child: "MetaxyConfig") -> "MetaxyConfig":
-        """Merge child config on top of parent.
-
-        Scalars: child replaces parent.
-        Dicts: shallow-merged (parent-only keys preserved, shared keys use child's value).
-        Lists: appended (parent entries + child entries).
-        """
-        child_update: dict[str, Any] = {}
-        for field_name in child.model_fields_set - {"extend"}:
-            child_value = getattr(child, field_name)
-            parent_value = getattr(parent, field_name)
-            if isinstance(child_value, dict) and isinstance(parent_value, dict):
-                child_update[field_name] = {**parent_value, **child_value}
-            elif isinstance(child_value, list) and isinstance(parent_value, list):
-                child_update[field_name] = parent_value + child_value
-            else:
-                child_update[field_name] = child_value
-
-        merged = parent.model_copy(update=child_update, deep=True)
-        merged._config_file = child._config_file
-        return merged
-
-    @staticmethod
-    def _discover_config_with_parents(start_dir: Path | None = None) -> Path | None:
-        """Discover config file by searching current and parent directories.
-
-        Searches for metaxy.toml or pyproject.toml in start directory,
-        then iteratively searches parent directories.
-
-        Args:
-            start_dir: Directory to start search from (defaults to cwd)
-
-        Returns:
-            Path to config file if found, None otherwise
-        """
-        current = start_dir or Path.cwd()
-
-        while True:
-            # Check for metaxy.toml (preferred)
-            metaxy_toml = current / "metaxy.toml"
-            if metaxy_toml.exists():
-                return metaxy_toml
-
-            # Check for pyproject.toml
-            pyproject_toml = current / "pyproject.toml"
-            if pyproject_toml.exists():
-                return pyproject_toml
-
-            # Move to parent
-            parent = current.parent
-            if parent == current:
-                # Reached roothash_tru
-                break
-            current = parent
-
-        return None
 
     @overload
     def get_store(
@@ -956,12 +631,3 @@ class MetaxyConfig(BaseSettings):
         # Remove None values (TOML doesn't support them)
         data = _remove_none_values(data)
         return tomli_w.dumps(data)
-
-
-def _remove_none_values(obj: Any) -> Any:
-    """Recursively remove None values from a dict (TOML doesn't support None)."""
-    if isinstance(obj, dict):
-        return {k: _remove_none_values(v) for k, v in obj.items() if v is not None}
-    if isinstance(obj, list):
-        return [_remove_none_values(item) for item in obj if item is not None]
-    return obj

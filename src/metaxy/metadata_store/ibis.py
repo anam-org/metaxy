@@ -89,7 +89,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     Storage layout:
     - Each feature gets its own table: {feature}__{key}
-    - System tables: metaxy__system__feature_versions, metaxy__system__migrations
+    - System tables: metaxy__system__feature_versions, metaxy__system__events
     - Uses Ibis for cross-database compatibility
 
     Note: Uses MD5 hash by default for cross-database compatibility.

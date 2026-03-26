@@ -2,7 +2,7 @@
 
 This module tests the new metadata-only change detection feature in
 push_graph_snapshot() that enables graph snapshot pushes
-without triggering migrations.
+for metadata-only changes.
 """
 
 from __future__ import annotations

@@ -424,10 +424,10 @@ class MetaxyProject:
         with chdir(self.project_dir), pythonpath_override(paths_to_add), env_override(env_overrides):
             load_dotenv(dotenv_path=self.project_dir / ".env")
 
-            from metaxy import config as config_module
             from metaxy.cli import app as app_module
             from metaxy.cli import console as console_module
             from metaxy.cli import context as context_module
+            from metaxy.config.models import metaxy_config as config_module
             from metaxy.models.feature import FeatureGraph
 
             try:
@@ -496,7 +496,7 @@ class ExternalMetaxyProject(MetaxyProject):
 
     Example:
         ```py
-        project = ExternalMetaxyProject(Path("examples/example-migration"))
+        project = ExternalMetaxyProject(Path("examples/example-basic"))
         result = project.run_cli(["push"], env={"STAGE": "1"}, subprocess=True)
         assert result.returncode == 0
         print(project.package_name)  # "example_migration"

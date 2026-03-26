@@ -1,6 +1,5 @@
 """Tests for global hash truncation feature."""
 
-import hashlib
 from contextvars import copy_context
 from pathlib import Path
 
@@ -457,73 +456,6 @@ class TestMetadataStoreTruncation:
                 for row in result_pl.iter_rows(named=True):
                     provenance_by_field = row["metaxy_provenance_by_field"]
                     assert len(provenance_by_field["field1"]) == 16
-
-
-class TestMigrationCompatibility:
-    """Test migration detection with hash truncation."""
-
-    def test_migration_with_truncation(self, graph, tmp_path: Path):
-        """Test that migration detection works with truncated hashes."""
-        from metaxy.migrations.detector import detect_diff_migration
-
-        # Enable truncation (preserve project from test setup)
-        config = MetaxyConfig(project="test", hash_truncation_length=12)
-        with config.use():
-
-            class TestFeature(
-                SampleFeature,
-                spec=SampleFeatureSpec(
-                    key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
-                ),
-            ):
-                pass
-
-            # Record snapshot
-            with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
-                result = SystemTableStorage(store).push_graph_snapshot()
-
-                snapshot_v1 = result.project_version
-
-                assert len(snapshot_v1) == 12  # Truncated
-
-                # Modify feature to trigger migration
-                graph.remove_feature(FeatureKey(["test", "feature"]))
-
-                class TestFeature(  # noqa: F811
-                    SampleFeature,
-                    spec=SampleFeatureSpec(
-                        key=FeatureKey(["test", "feature"]),
-                        fields=[FieldSpec(key=FieldKey(["field1"]), code_version="2")],  # Changed
-                    ),
-                ):
-                    pass
-
-                # Detect migration - should work with truncated versions
-                migration = detect_diff_migration(
-                    store,
-                    project="test",  # Use the same project as in config
-                    ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
-                )
-                assert migration is not None
-                assert len(migration.from_project_version) == 12
-                assert len(migration.to_project_version) == 12
-
-    def test_hash_compatibility_in_migration(self):
-        """Test hash compatibility checking in migrations."""
-        from metaxy._hashing import ensure_hash_compatibility
-
-        # Full hashes
-        hash1 = hashlib.sha256(b"test1").hexdigest()
-        hash2 = hashlib.sha256(b"test2").hexdigest()
-
-        # Not compatible when different
-        assert not ensure_hash_compatibility(hash1, hash2)
-
-        # Compatible when one is truncation of the other
-        truncated = hash1[:16]
-        assert ensure_hash_compatibility(hash1, truncated)
-        assert ensure_hash_compatibility(truncated, hash1)
 
 
 class TestEndToEnd:

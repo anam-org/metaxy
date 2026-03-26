@@ -9,7 +9,7 @@ def test_feature_spec_version_vs_feature_version() -> None:
     """Test that feature_spec_version and feature_version serve different purposes.
 
     feature_spec_version: Hashes ALL properties of the specification (complete audit trail)
-    feature_version: Only hashes computational properties (for migration triggering)
+    feature_version: Only hashes computational properties (for change detection)
     """
 
     class TestFeature(

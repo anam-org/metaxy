@@ -14,18 +14,7 @@ from metaxy.entrypoints import (
     load_package_entrypoints,
 )
 from metaxy.metadata_store import AccessMode, MetadataStore
-from metaxy.migrations import (
-    BaseOperation,
-    DataVersionReconciliation,
-    DiffMigration,
-    FullGraphMigration,
-    MetadataBackfill,
-    Migration,
-    MigrationExecutor,
-    MigrationResult,
-    SystemTableStorage,
-    detect_diff_migration,
-)
+from metaxy.metadata_store.system.storage import SystemTableStorage
 from metaxy.models.feature import (
     BaseFeature,
     FeatureConfig,
@@ -189,16 +178,7 @@ __all__ = [
     "load_features",
     "load_module_entrypoint",
     "load_package_entrypoints",
-    "Migration",
-    "DiffMigration",
-    "FullGraphMigration",
-    "MigrationResult",
-    "MigrationExecutor",
     "SystemTableStorage",
-    "BaseOperation",
-    "DataVersionReconciliation",
-    "MetadataBackfill",
-    "detect_diff_migration",
     "MetaxyConfig",
     "StoreConfig",
     "init",

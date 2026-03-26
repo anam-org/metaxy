@@ -214,12 +214,11 @@ class GraphDiffer:
             fields1 = feature1.get("fields", {})
             fields2 = feature2.get("fields", {})
 
-            # Get tracking versions for migration detection
-            # Use tracking version if available (new system), otherwise fall back to feature_version
+            # Use tracking version if available, otherwise fall back to feature_version
             tracking_version1 = feature1.get("metaxy_definition_version", version1)
             tracking_version2 = feature2.get("metaxy_definition_version", version2)
 
-            # Check if feature tracking version changed (indicates migration needed)
+            # Check if feature tracking version changed
             if tracking_version1 != tracking_version2:
                 # Compute field changes
                 field_changes = self._compute_field_changes(fields1, fields2)

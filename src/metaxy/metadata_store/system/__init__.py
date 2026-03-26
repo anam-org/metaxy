@@ -1,7 +1,7 @@
 """System table components for metadata store.
 
 This package provides system table functionality for Metaxy:
-- events: Migration event types with builder pattern
+- events: Event types with builder pattern
 - keys: System table keys and constants
 - models: Pydantic models and schemas for system tables
 - storage: Storage layer for system tables
@@ -16,7 +16,6 @@ from metaxy.metadata_store.system.events import (
     COL_TIMESTAMP,
     Event,
     EventType,
-    MigrationStatus,
     PayloadType,
 )
 from metaxy.metadata_store.system.keys import (
@@ -36,7 +35,6 @@ __all__ = [
     # Events
     "Event",
     "EventType",
-    "MigrationStatus",
     "PayloadType",
     # Column names
     "COL_PROJECT",

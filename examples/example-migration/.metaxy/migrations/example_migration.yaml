@@ -1,9 +1,0 @@
-migration_type: metaxy.migrations.models.DiffMigration
-migration_id: 20250101_000000_example_migration
-created_at: '2025-01-01T00:00:00+00:00'
-parent: initial
-from_project_version: 93521a97
-to_project_version: fedee5f4
-ops:
-- type: metaxy.migrations.ops.DataVersionReconciliation
-  features: ["examples/child"]

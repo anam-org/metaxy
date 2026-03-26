@@ -78,7 +78,6 @@ class TestReportGeneration:
 
     def test_category_detection(self, report: TimingReport) -> None:
         assert "metadata_stores" in report.by_category
-        assert "migrations" in report.by_category
 
     def test_technology_detection(self, report: TimingReport) -> None:
         assert "dagster" in report.by_technology

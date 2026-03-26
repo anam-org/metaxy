@@ -7,6 +7,6 @@ description: "API reference for FeatureGraph."
 
 `FeatureGraph` is a global "God" object that holds all the features loaded by Metaxy via the [feature discovery](/guide/concepts/projects.md#feature-discovery) mechanism.
 
-Users may interact with `FeatureGraph` when writing custom migrations, otherwise they are not exposed to it.
+`FeatureGraph` is primarily used internally but can be accessed for advanced use cases.
 
 ::: metaxy.FeatureGraph
