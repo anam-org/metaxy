@@ -28,7 +28,7 @@ class FakePackageFactory:
         """
         module = ModuleType(package_name)
         if project_name is not None:
-            module.__metaxy_project__ = project_name  # type: ignore[attr-defined]
+            module.__metaxy_project__ = project_name  # ty: ignore[unresolved-attribute]
         sys.modules[package_name] = module
         self._created_modules.append(package_name)
         return module

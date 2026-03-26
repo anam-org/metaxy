@@ -35,7 +35,7 @@ class TestValidation:
 
     def test_extra_fields_forbidden(self):
         with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
-            FeatureSelection(projects=["x"], tags=["v1"])  # type: ignore[call-arg]
+            FeatureSelection(projects=["x"], tags=["v1"])  # ty: ignore[unknown-argument]
 
     def test_frozen(self):
         sel = FeatureSelection(projects=["x"])

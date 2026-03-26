@@ -89,6 +89,6 @@ def test_collect_to_polars_fallback_collect_returns_polars_dataframe() -> None:
     df = pl.DataFrame({"id": [1], "name": ["x"]})
     frame = _FakeFrame(df)
 
-    result = collect_to_polars(frame)  # type: ignore[arg-type]
+    result = collect_to_polars(frame)  # ty: ignore[invalid-argument-type]
 
     assert result.equals(df)

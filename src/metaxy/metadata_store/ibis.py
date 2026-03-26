@@ -233,7 +233,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         )
 
         try:
-            yield engine
+            yield engine  # ty: ignore[invalid-yield]
         finally:
             # No cleanup needed for Ibis engine
             pass

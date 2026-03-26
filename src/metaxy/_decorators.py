@@ -45,7 +45,7 @@ def public(obj: _T) -> _T:
             pass
         ```
     """
-    obj.__metaxy_public__ = True  # type: ignore[attr-defined]
+    obj.__metaxy_public__ = True  # ty: ignore[unresolved-attribute]
     return obj
 
 
@@ -73,5 +73,5 @@ def experimental(obj: _T) -> _T:
             pass
         ```
     """
-    obj.__metaxy_experimental__ = True  # type: ignore[attr-defined]
+    obj.__metaxy_experimental__ = True  # ty: ignore[unresolved-attribute]
     return obj

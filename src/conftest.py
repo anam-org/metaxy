@@ -51,7 +51,7 @@ def _patch_pytest_cases():
 
         return original_getfixtureclosure(fm, fixturenames, parentnode, ignore_args)
 
-    pc_plugin._getfixtureclosure = patched_getfixtureclosure  # type: ignore[invalid-assignment]
+    pc_plugin._getfixtureclosure = patched_getfixtureclosure  # ty: ignore[invalid-assignment]
 
     # Also patch the wrapper if it exists
     if pc_plugin.PYTEST8_OR_GREATER:
@@ -61,7 +61,7 @@ def _patch_pytest_cases():
                 fm, fixturenames=initialnames, parentnode=parentnode, ignore_args=ignore_args
             )
 
-        pc_plugin.getfixtureclosure = patched_wrapper  # type: ignore[invalid-assignment]
+        pc_plugin.getfixtureclosure = patched_wrapper  # ty: ignore[invalid-assignment]
 
 
 _patch_pytest_cases()

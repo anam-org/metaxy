@@ -47,7 +47,7 @@ class TestDetectProjectFromPackage:
     def test_raises_for_non_string_metaxy_project(self, fake_package_factory: FakePackageFactory) -> None:
         """Raises TypeError if __metaxy_project__ is not a string."""
         fake_package = fake_package_factory.create("fake_test_package")
-        fake_package.__metaxy_project__ = 123  # type: ignore[attr-defined]
+        fake_package.__metaxy_project__ = 123  # ty: ignore[unresolved-attribute]
         with pytest.raises(TypeError, match="must be a string"):
             detect_project_from_package("fake_test_package.features")
 

@@ -81,7 +81,7 @@ if _pg_available:
 
     # Session-scoped process, function-scoped database for test isolation
     @pytest.fixture(scope="function")
-    def postgresql_db(postgresql_proc) -> str:  # type: ignore[no-untyped-def]
+    def postgresql_db(postgresql_proc) -> Generator[str]:  # type: ignore[no-untyped-def]
         """PostgreSQL database connection string fixture.
 
         Returns connection string for a test PostgreSQL instance.

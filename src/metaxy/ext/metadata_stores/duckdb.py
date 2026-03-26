@@ -343,7 +343,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return candidate
 
     @classmethod
-    def from_config(cls, config: DuckDBMetadataStoreConfig, **kwargs: Any) -> Self:  # type: ignore[override]
+    def from_config(cls, config: DuckDBMetadataStoreConfig, **kwargs: Any) -> Self:  # ty: ignore[invalid-method-override]
         from metaxy.config import MetaxyConfig
         from metaxy.metadata_store.fallback import FallbackStoreList
 

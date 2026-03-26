@@ -133,7 +133,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
 
         PostgreSQLMetadataStore always uses PolarsVersioningEngine.
         """
-        yield self.versioning_engine_cls(plan=plan)
+        yield self.versioning_engine_cls(plan=plan)  # ty: ignore[invalid-yield]
 
     def _create_hash_functions(self):
         """Not needed — hashing is handled by PolarsVersioningEngine."""
