@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
-from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NewType, overload
 
@@ -138,7 +137,7 @@ class IcebergMetadataStore(MetadataStore):
         self.namespace = namespace
         self.catalog_name = catalog_name
         self.auto_create_namespace = auto_create_namespace
-        self._catalog_exists = False
+        self._catalog: Catalog | None = None
 
         warehouse_str = str(warehouse)
         self._is_remote = not is_local_path(warehouse_str)
@@ -184,35 +183,32 @@ class IcebergMetadataStore(MetadataStore):
     def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
         if not self._is_remote:
             Path(self._warehouse_uri).mkdir(parents=True, exist_ok=True)
-        _ = self.catalog
+        from pyiceberg.catalog import load_catalog
+
+        self._catalog = load_catalog(self.catalog_name, **self._catalog_properties)
 
     def _close(self) -> None:
-        catalog = self.__dict__.pop("catalog", None)
-        if catalog is not None:
-            catalog.close()
-        self._catalog_exists = False
+        if self._catalog is not None:
+            self._catalog.close()
+            self._catalog = None
 
     # ===== Internal helpers =====
 
-    @cached_property
+    @property
     def catalog(self) -> Catalog:
-        """Load and return the PyIceberg catalog instance."""
-        from pyiceberg.catalog import load_catalog
-
-        return load_catalog(
-            self.catalog_name,
-            **self._catalog_properties,
-        )
+        """Return the PyIceberg catalog instance. Raises if the store is not open."""
+        if self._catalog is None:
+            msg = "IcebergMetadataStore is not open. Call open() first."
+            raise RuntimeError(msg)
+        return self._catalog
 
     def _table_identifier(self, feature_key: FeatureKey) -> TableIdentifier:
         return TableIdentifier((self.namespace, feature_key.table_name))
 
     def _ensure_namespace(self) -> None:
-        """Create the namespace if auto_create_namespace is enabled and not yet created."""
-        if self._catalog_exists or not self.auto_create_namespace:
-            return
-        self.catalog.create_namespace_if_not_exists(self.namespace)
-        self._catalog_exists = True
+        """Create the namespace if auto_create_namespace is enabled."""
+        if self.auto_create_namespace:
+            self.catalog.create_namespace_if_not_exists(self.namespace)
 
     @overload
     def _cast_enum_to_string(self, frame: pl.DataFrame) -> pl.DataFrame: ...

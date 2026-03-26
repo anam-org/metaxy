@@ -80,6 +80,8 @@ def test_iceberg_custom_namespace(tmp_path, test_features) -> None:
         )
 
         assert store.has_feature(feature_cls, check_fallback=False)
+        assert store.catalog.list_tables("custom_ns")
+        assert ("metaxy",) not in store.catalog.list_namespaces()
 
 
 @pytest.mark.skipif(
