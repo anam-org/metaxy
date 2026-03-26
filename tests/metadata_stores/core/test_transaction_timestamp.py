@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
@@ -10,7 +11,7 @@ from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 
 
 @pytest.fixture
-def store(tmp_path) -> DuckDBMetadataStore:
+def store(tmp_path: Path) -> DuckDBMetadataStore:
     """Create a DuckDB store for testing."""
     return DuckDBMetadataStore(database=str(tmp_path / "test.db"))
 

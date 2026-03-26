@@ -194,7 +194,7 @@ def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
 
 
 @pytest.fixture
-def default_hash_algorithm():
+def default_hash_algorithm() -> HashAlgorithm:
     """Single default hash algorithm for non-hash tests (xxhash64).
 
     Use this fixture when you need a hash algorithm but aren't testing
@@ -205,7 +205,7 @@ def default_hash_algorithm():
 
 @fixture
 @parametrize_with_cases("algo", cases=HashAlgorithmCases)
-def hash_algorithm(algo):
+def hash_algorithm(algo: HashAlgorithm) -> HashAlgorithm:
     """Parametrized hash algorithm fixture for hash algorithm tests.
 
     This creates the Cartesian product with store fixtures that use it.
@@ -214,7 +214,7 @@ def hash_algorithm(algo):
 
 
 @pytest.fixture
-def config_with_truncation(truncation_length):
+def config_with_truncation(truncation_length: int | None) -> Generator[MetaxyConfig, None, None]:
     """Fixture that sets MetaxyConfig with hash_truncation_length.
 
     The test must be parametrized on truncation_length for this fixture to work.

@@ -13,6 +13,7 @@ from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.exceptions import StoreNotOpenError
 from metaxy.metadata_store.system import SystemTableStorage
+from metaxy.models.feature import FeatureGraph
 
 
 def test_explicit_read_mode(tmp_path: Path) -> None:
@@ -41,7 +42,7 @@ def test_explicit_write_mode(tmp_path: Path) -> None:
         assert store._is_open
 
 
-def test_write_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_write_in_write_mode(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Test that write works when opened in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
     store = DuckDBMetadataStore(db_path, auto_create_tables=True)
@@ -64,7 +65,7 @@ def test_write_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str
         assert result.height == 1
 
 
-def test_read_in_read_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_read_in_read_mode(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Test that read operations work in READ mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -101,7 +102,7 @@ def _read_from_store(db_path: Path, result_queue: Any) -> None:
     sys.platform != "linux",
     reason="DuckDB concurrent read access only works on Linux (uses range locks); macOS/Windows use exclusive file locks",
 )
-def test_concurrent_read_access_duckdb(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_concurrent_read_access_duckdb(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Test that multiple processes can read concurrently in READ mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -184,7 +185,9 @@ def _write_to_store(db_path: Path, sample_id: str, result_queue: Any) -> None:
         result_queue.put(("error", str(e)))
 
 
-def test_write_mode_exclusive_lock_duckdb(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_write_mode_exclusive_lock_duckdb(
+    tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that WRITE mode prevents concurrent writes (exclusive lock).
 
     Note: This is a simplified test that just verifies WRITE mode opens successfully.
@@ -236,7 +239,7 @@ def test_mode_parameter_passed_to_open(tmp_path: Path) -> None:
         assert "read_only" not in store2.connection_params or store2.connection_params.get("read_only") is False
 
 
-def test_delta_store_modes(test_graph, test_features: dict[str, Any], tmp_path: Path) -> None:
+def test_store_modes(test_graph: FeatureGraph, test_features: dict[str, Any], tmp_path: Path) -> None:
     """Test that DeltaMetadataStore works with explicit modes."""
     store_read = DeltaMetadataStore(root_path=tmp_path / "delta_read")
     store_write = DeltaMetadataStore(root_path=tmp_path / "delta_write")
@@ -283,7 +286,7 @@ def test_mode_reset_between_opens(tmp_path: Path) -> None:
     assert not store._is_open
 
 
-def test_record_feature_graph_snapshot_uses_write_mode(tmp_path: Path, test_graph) -> None:
+def test_record_feature_graph_snapshot_uses_write_mode(tmp_path: Path, test_graph: FeatureGraph) -> None:
     """Test that push_graph_snapshot works in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -295,7 +298,9 @@ def test_record_feature_graph_snapshot_uses_write_mode(tmp_path: Path, test_grap
         assert result.project_version is not None
 
 
-def test_drop_feature_metadata_in_write_mode(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_drop_feature_metadata_in_write_mode(
+    tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that drop_feature_metadata works in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -338,7 +343,7 @@ def test_with_store_pattern_works(tmp_path: Path) -> None:
     assert not store2._is_open
 
 
-def test_write_in_read_mode_raises(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_write_in_read_mode_raises(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Write operations raise StoreNotOpenError when store is in read mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -358,7 +363,7 @@ def test_write_in_read_mode_raises(tmp_path: Path, test_graph, test_features: di
             store.write(test_features["UpstreamFeatureA"], metadata)
 
 
-def test_drop_in_read_mode_raises(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_drop_in_read_mode_raises(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """drop_feature_metadata raises StoreNotOpenError when store is in read mode."""
     db_path = tmp_path / "test.duckdb"
 
@@ -378,13 +383,13 @@ def test_drop_in_read_mode_raises(tmp_path: Path, test_graph, test_features: dic
             store.drop_feature_metadata(test_features["UpstreamFeatureA"])
 
 
-def test_nested_write_mode_escalates(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_nested_write_mode_escalates(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Nested open("w") inside open("r") allows writes in the inner block.
 
     Uses DeltaMetadataStore because Delta has no physical read-only connection
     constraint (unlike DuckDB which locks the connection mode at open time).
     """
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
     with store:
         assert store._access_mode == "r"
 
@@ -399,13 +404,13 @@ def test_nested_write_mode_escalates(tmp_path: Path, test_graph, test_features: 
             store.write(test_features["UpstreamFeatureA"], metadata)
 
 
-def test_nested_write_mode_restores(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_nested_write_mode_restores(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """After nested open("w") exits, mode reverts to "r".
 
     Uses DeltaMetadataStore because Delta has no physical read-only connection
     constraint (unlike DuckDB which locks the connection mode at open time).
     """
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
     with store:
         assert store._access_mode == "r"
 
@@ -429,7 +434,7 @@ def test_nested_write_mode_restores(tmp_path: Path, test_graph, test_features: d
 
 def test_nested_with_store_read_read(tmp_path: Path) -> None:
     """Nested `with store:` inside `with store:` keeps store open after inner exit."""
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
     with store:
         assert store._is_open
         assert len(store._mode_stack) == 1
@@ -448,9 +453,9 @@ def test_nested_with_store_read_read(tmp_path: Path) -> None:
     assert len(store._mode_stack) == 0
 
 
-def test_nested_with_store_write_read(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_nested_with_store_write_read(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Nested `with store:` (read) inside `with store.open("w"):` preserves write mode after inner exit."""
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
     with store.open("w"):
         assert store._is_open
         assert store._access_mode == "w"
@@ -479,7 +484,7 @@ def test_nested_with_store_write_read(tmp_path: Path, test_graph, test_features:
 
 def test_nested_three_levels_deep(tmp_path: Path) -> None:
     """Three levels of nesting unwind correctly."""
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
     with store:
         assert len(store._mode_stack) == 1
 
@@ -502,7 +507,7 @@ def test_nested_three_levels_deep(tmp_path: Path) -> None:
 
 def test_nested_with_store_exit_stack_cleanup(tmp_path: Path) -> None:
     """Exit stack is empty after all contexts exit."""
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
     assert len(store._exit_stack) == 0
 
     with store:
@@ -518,7 +523,7 @@ def test_nested_with_store_exit_stack_cleanup(tmp_path: Path) -> None:
 
 def test_nested_with_store_exception_in_inner(tmp_path: Path) -> None:
     """Inner exception properly unwinds both nesting levels."""
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", auto_create_tables=True)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", auto_create_tables=True)
 
     with pytest.raises(ValueError, match="test error"):
         with store:

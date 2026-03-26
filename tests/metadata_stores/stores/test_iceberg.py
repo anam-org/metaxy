@@ -12,6 +12,7 @@ from packaging.version import Version
 from metaxy import HashAlgorithm
 from metaxy.ext.metadata_stores.iceberg import IcebergMetadataStore
 from metaxy.metadata_store import MetadataStore
+from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
 from tests.metadata_stores.shared import (
     CRUDTests,
@@ -22,6 +23,18 @@ from tests.metadata_stores.shared import (
     VersioningTests,
     WriteTests,
 )
+
+
+@pytest.fixture
+def iceberg_store(tmp_path: Path) -> IcebergMetadataStore:
+    """Default Iceberg store with warehouse at tmp_path/iceberg_store."""
+    return IcebergMetadataStore(warehouse=tmp_path / "iceberg_store")
+
+
+@pytest.fixture
+def iceberg_custom_ns_store(tmp_path: Path) -> IcebergMetadataStore:
+    """Iceberg store with a custom namespace."""
+    return IcebergMetadataStore(warehouse=tmp_path / "iceberg_store", namespace="custom_ns")
 
 
 @pytest.mark.iceberg
@@ -51,21 +64,20 @@ class TestIceberg(
         )
 
 
-def test_iceberg_table_identifier(tmp_path) -> None:
+def test_iceberg_table_identifier(iceberg_store: IcebergMetadataStore) -> None:
     """Verify _table_identifier maps feature keys to (namespace, table_name) tuples."""
-    store = IcebergMetadataStore(warehouse=tmp_path / "iceberg")
-
-    assert store._table_identifier(FeatureKey("feature")) == ("metaxy", "feature")
-    assert store._table_identifier(FeatureKey("a/b/c")) == ("metaxy", "a__b__c")
-    assert store._table_identifier(FeatureKey("my_feature/v1")) == ("metaxy", "my_feature__v1")
+    assert iceberg_store._table_identifier(FeatureKey("feature")) == ("metaxy", "feature")
+    assert iceberg_store._table_identifier(FeatureKey("a/b/c")) == ("metaxy", "a__b__c")
+    assert iceberg_store._table_identifier(FeatureKey("my_feature/v1")) == ("metaxy", "my_feature__v1")
 
 
-def test_iceberg_schema_evolution(tmp_path, test_features) -> None:
+def test_iceberg_schema_evolution(
+    iceberg_store: IcebergMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify schema evolution when writing with new columns."""
-    store_path = tmp_path / "iceberg_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with IcebergMetadataStore(warehouse=store_path).open("w") as store:
+    with iceberg_store.open("w") as store:
         store.write(
             feature_cls,
             pl.DataFrame(
@@ -94,12 +106,13 @@ def test_iceberg_schema_evolution(tmp_path, test_features) -> None:
         assert "extra_col" in collected.columns
 
 
-def test_iceberg_custom_namespace(tmp_path, test_features) -> None:
+def test_iceberg_custom_namespace(
+    iceberg_custom_ns_store: IcebergMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify custom namespace is used for table identifiers."""
-    store_path = tmp_path / "iceberg_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with IcebergMetadataStore(warehouse=store_path, namespace="custom_ns").open("w") as store:
+    with iceberg_custom_ns_store.open("w") as store:
         store.write(
             feature_cls,
             pl.DataFrame(
@@ -119,9 +132,10 @@ def test_iceberg_custom_namespace(tmp_path, test_features) -> None:
     Version(pl.__version__) < Version("1.39.0"),
     reason="sink_iceberg requires Polars >= 1.39.0",
 )
-def test_iceberg_sink_lazyframe(tmp_path, test_features) -> None:
+def test_iceberg_sink_lazyframe(
+    iceberg_store: IcebergMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify LazyFrame.sink_iceberg is used for lazy writes."""
-    store_path = tmp_path / "iceberg_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
     metadata_lazy = pl.LazyFrame(
@@ -135,7 +149,7 @@ def test_iceberg_sink_lazyframe(tmp_path, test_features) -> None:
         }
     )
 
-    with IcebergMetadataStore(warehouse=store_path).open("w") as store:
+    with iceberg_store.open("w") as store:
         with patch.object(pl.LazyFrame, "sink_iceberg", autospec=True) as mock_sink:
             mock_sink.side_effect = lambda self_lf, *args, **kwargs: None
             store.write(feature_cls, metadata_lazy)

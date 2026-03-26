@@ -34,7 +34,7 @@ class WriteTests:
     # --- Fixtures for proper dataframe write tests ---
 
     @pytest.fixture
-    def features(self, graph: FeatureGraph):
+    def features(self, graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
         """Define test features: a root feature and a downstream feature."""
 
         class RootFeature(
@@ -82,16 +82,18 @@ class WriteTests:
         }
 
     @pytest.fixture
-    def RootFeature(self, features: dict[str, type[BaseFeature]]):
+    def RootFeature(self, features: dict[str, type[BaseFeature]]) -> type[BaseFeature]:
         return features["RootFeature"]
 
     @pytest.fixture
-    def DownstreamFeature(self, features: dict[str, type[BaseFeature]]):
+    def DownstreamFeature(self, features: dict[str, type[BaseFeature]]) -> type[BaseFeature]:
         return features["DownstreamFeature"]
 
     # --- Proper dataframe write tests ---
 
-    def test_root_feature_with_provenance_by_field_only(self, store: MetadataStore, RootFeature):
+    def test_root_feature_with_provenance_by_field_only(
+        self, store: MetadataStore, RootFeature: type[BaseFeature]
+    ) -> None:
         """Root features should only require metaxy_provenance_by_field.
 
         When writing a root feature (no dependencies) with only
@@ -125,7 +127,9 @@ class WriteTests:
                 f"Unexpected MetaxyColumnMissingWarning: {[str(warning.message) for warning in metaxy_warnings]}"
             )
 
-    def test_non_root_feature_with_both_provenance_columns(self, store: MetadataStore, RootFeature, DownstreamFeature):
+    def test_non_root_feature_with_both_provenance_columns(
+        self, store: MetadataStore, RootFeature: type[BaseFeature], DownstreamFeature: type[BaseFeature]
+    ) -> None:
         """Non-root features require both metaxy_provenance_by_field AND metaxy_provenance.
 
         When writing a non-root feature (has dependencies) with both
@@ -177,7 +181,7 @@ class WriteTests:
 
     # --- Materialization ID tests ---
 
-    def test_store_level_materialization_id(self, store: MetadataStore):
+    def test_store_level_materialization_id(self, store: MetadataStore) -> None:
         """Test that store-level materialization_id is applied to all writes."""
         # Set the materialization_id on the existing store
         store._materialization_id = "test-run-123"
@@ -204,7 +208,7 @@ class WriteTests:
             assert METAXY_MATERIALIZATION_ID in df_collected.columns
             assert df_collected[METAXY_MATERIALIZATION_ID][0] == "test-run-123"
 
-    def test_write_level_materialization_id_override(self, store: MetadataStore):
+    def test_write_level_materialization_id_override(self, store: MetadataStore) -> None:
         """Test that write-level materialization_id overrides store default."""
         # Set a default materialization_id on the store
         store._materialization_id = "default-run-123"
@@ -231,7 +235,7 @@ class WriteTests:
             df_collected = df.collect()
             assert df_collected[METAXY_MATERIALIZATION_ID][0] == "override-run-456"
 
-    def test_nullable_materialization_id(self, store: MetadataStore):
+    def test_nullable_materialization_id(self, store: MetadataStore) -> None:
         """Test that materialization_id can be null when not provided."""
         key = FeatureKey(["test_nullable"])
 
@@ -255,7 +259,7 @@ class WriteTests:
             assert METAXY_MATERIALIZATION_ID in df_collected.columns
             assert df_collected[METAXY_MATERIALIZATION_ID][0] is None
 
-    def test_filter_by_materialization_id(self, store: MetadataStore):
+    def test_filter_by_materialization_id(self, store: MetadataStore) -> None:
         """Test filtering reads by materialization_id."""
         key = FeatureKey(["test_filter"])
 
@@ -299,7 +303,7 @@ class WriteTests:
             assert len(df_collected) == 1
             assert df_collected["id"][0] == "2"
 
-    def test_materialization_id_multiple_writes(self, store: MetadataStore):
+    def test_materialization_id_multiple_writes(self, store: MetadataStore) -> None:
         """Test that different writes can have different materialization_ids."""
         key = FeatureKey(["test_multiple"])
 
@@ -340,7 +344,7 @@ class WriteTests:
 
     # --- Write override tests ---
 
-    def test_subsequent_writes_override_previous(self, store: MetadataStore):
+    def test_subsequent_writes_override_previous(self, store: MetadataStore) -> None:
         """Test that subsequent writes override previous values without explicit action.
 
         Performs 5 writes to the same row, incrementing a value column each time.
@@ -382,7 +386,7 @@ class WriteTests:
             all_versions = store.read(key, with_sample_history=True).collect().to_polars()
             assert all_versions.shape[0] == 5, f"Expected 5 versions, got {all_versions.shape[0]}"
 
-    def test_read_returns_latest_timestamp_among_many_rows(self, store: MetadataStore):
+    def test_read_returns_latest_timestamp_among_many_rows(self, store: MetadataStore) -> None:
         """Test that read returns the row with the latest timestamp.
 
         Writes 100 rows with controlled metaxy_updated_at timestamps using
@@ -498,7 +502,7 @@ class WriteTests:
             assert result[METAXY_UPDATED_AT][0] == latest_time
             assert result[METAXY_UPDATED_AT][0] == max_ts
 
-    def test_write_overwrites_user_provided_timestamp(self, store: MetadataStore):
+    def test_write_overwrites_user_provided_timestamp(self, store: MetadataStore) -> None:
         """Verify that write overwrites user-provided metaxy_updated_at.
 
         Users should not be able to set arbitrary timestamps via write.
@@ -548,7 +552,7 @@ class WriteTests:
                 f"but got {actual_ts} which is {time_diff.total_seconds()}s ago"
             )
 
-    def test_multiple_ids_each_get_latest_value(self, store: MetadataStore):
+    def test_multiple_ids_each_get_latest_value(self, store: MetadataStore) -> None:
         """Test that multiple different IDs each get their latest value independently.
 
         Writes multiple versions for multiple IDs and verifies each ID gets its own latest.

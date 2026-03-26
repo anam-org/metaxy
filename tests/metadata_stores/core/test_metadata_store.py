@@ -1,6 +1,7 @@
 """Tests for metadata store."""
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from pathlib import Path
 from typing import Any
 
 import narwhals as nw
@@ -27,7 +28,7 @@ from metaxy.metadata_store import (
 
 
 @pytest.fixture
-def features(graph: FeatureGraph):
+def features(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
     class UpstreamFeatureA(
         BaseFeature,
         spec=SampleFeatureSpec(
@@ -82,7 +83,7 @@ def features(graph: FeatureGraph):
 
 
 @pytest.fixture
-def make_upstream_a_data():
+def make_upstream_a_data() -> Callable[..., pl.DataFrame]:
     def _make(
         *,
         sample_uids: Sequence[int],
@@ -107,28 +108,20 @@ def make_upstream_a_data():
 
 
 @pytest.fixture
-def UpstreamFeatureA(features: dict[str, type[BaseFeature]]):
+def UpstreamFeatureA(features: dict[str, type[BaseFeature]]) -> type[BaseFeature]:
     return features["UpstreamFeatureA"]
 
 
 @pytest.fixture
-def UpstreamFeatureB(features: dict[str, type[BaseFeature]]):
+def UpstreamFeatureB(features: dict[str, type[BaseFeature]]) -> type[BaseFeature]:
     return features["UpstreamFeatureB"]
 
 
 @pytest.fixture
-def empty_store(graph: FeatureGraph, tmp_path) -> Iterator[DeltaMetadataStore]:
-    """Empty delta store."""
-    yield DeltaMetadataStore(root_path=tmp_path / "delta_store")
-
-
-@pytest.fixture
 def populated_store(
-    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data, tmp_path
+    UpstreamFeatureA: type[BaseFeature], make_upstream_a_data: Callable[..., pl.DataFrame], store: DeltaMetadataStore
 ) -> Iterator[DeltaMetadataStore]:
     """Store with sample upstream data."""
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-
     with store.open("w"):
         # Add upstream feature A
         upstream_a_data = make_upstream_a_data(
@@ -143,7 +136,10 @@ def populated_store(
 
 @pytest.fixture
 def multi_env_stores(
-    graph: FeatureGraph, UpstreamFeatureA, make_upstream_a_data, tmp_path
+    graph: FeatureGraph,
+    UpstreamFeatureA: type[BaseFeature],
+    make_upstream_a_data: Callable[..., pl.DataFrame],
+    tmp_path: Path,
 ) -> Iterator[dict[str, DeltaMetadataStore]]:
     """Multi-environment store setup (prod, staging, dev)."""
     prod = DeltaMetadataStore(root_path=tmp_path / "delta_prod")
@@ -165,26 +161,28 @@ def multi_env_stores(
 # Basic CRUD Tests
 
 
-def test_write_and_read(empty_store: DeltaMetadataStore, UpstreamFeatureA, make_upstream_a_data) -> None:
+def test_write_and_read(
+    store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature], make_upstream_a_data: Callable[..., pl.DataFrame]
+) -> None:
     """Test basic write and read operations."""
-    with empty_store.open("w"):
+    with store.open("w"):
         metadata = make_upstream_a_data(
             sample_uids=[1, 2, 3],
             prefix="hash",
             include_path=False,
         )
 
-        empty_store.write(UpstreamFeatureA, metadata)
-        result = collect_to_polars(empty_store.read(UpstreamFeatureA))
+        store.write(UpstreamFeatureA, metadata)
+        result = collect_to_polars(store.read(UpstreamFeatureA))
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
         assert "metaxy_provenance_by_field" in result.columns
 
 
-def test_write_invalid_schema(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_write_invalid_schema(store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with empty_store.open("w"):
+    with store.open("w"):
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -193,16 +191,16 @@ def test_write_invalid_schema(empty_store: DeltaMetadataStore, UpstreamFeatureA)
         )
 
         with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
-            empty_store.write(UpstreamFeatureA, invalid_df)
+            store.write(UpstreamFeatureA, invalid_df)
 
 
 def test_write_append(
-    empty_store: DeltaMetadataStore,
-    UpstreamFeatureA,
-    make_upstream_a_data,
+    store: DeltaMetadataStore,
+    UpstreamFeatureA: type[BaseFeature],
+    make_upstream_a_data: Callable[..., pl.DataFrame],
 ) -> None:
     """Test that writes are append-only."""
-    with empty_store.open("w"):
+    with store.open("w"):
         df1 = make_upstream_a_data(
             sample_uids=[1, 2],
             prefix="h",
@@ -214,15 +212,15 @@ def test_write_append(
             include_path=False,
         )
 
-        empty_store.write(UpstreamFeatureA, df1)
-        empty_store.write(UpstreamFeatureA, df2)
+        store.write(UpstreamFeatureA, df1)
+        store.write(UpstreamFeatureA, df2)
 
-        result = collect_to_polars(empty_store.read(UpstreamFeatureA))
+        result = collect_to_polars(store.read(UpstreamFeatureA))
         assert len(result) == 4
         assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
-def test_read_with_filters(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_read_with_filters(populated_store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test reading with Polars filter expressions."""
     with populated_store.open("w"):
         result = collect_to_polars(populated_store.read(UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]))
@@ -231,7 +229,7 @@ def test_read_with_filters(populated_store: DeltaMetadataStore, UpstreamFeatureA
         assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
-def test_read_with_column_selection(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_read_with_column_selection(populated_store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test reading specific columns."""
     with populated_store.open("w"):
         result = collect_to_polars(
@@ -242,17 +240,19 @@ def test_read_with_column_selection(populated_store: DeltaMetadataStore, Upstrea
         assert "path" not in result.columns
 
 
-def test_read_nonexistent_feature(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_read_nonexistent_feature(store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test that reading nonexistent feature raises error."""
-    with empty_store.open("w"):
+    with store.open("w"):
         with pytest.raises(FeatureNotFoundError):
-            empty_store.read(UpstreamFeatureA)
+            store.read(UpstreamFeatureA)
 
 
 # Feature Existence Tests
 
 
-def test_has_feature_local(populated_store: DeltaMetadataStore, UpstreamFeatureA, UpstreamFeatureB) -> None:
+def test_has_feature_local(
+    populated_store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature], UpstreamFeatureB: type[BaseFeature]
+) -> None:
     """Test has_feature for local store."""
     with populated_store.open("w"):
         assert populated_store.has_feature(UpstreamFeatureA, check_fallback=False)
@@ -261,8 +261,8 @@ def test_has_feature_local(populated_store: DeltaMetadataStore, UpstreamFeatureA
 
 def test_has_feature_with_fallback(
     multi_env_stores: dict[str, DeltaMetadataStore],
-    UpstreamFeatureA,
-    UpstreamFeatureB,
+    UpstreamFeatureA: type[BaseFeature],
+    UpstreamFeatureB: type[BaseFeature],
 ) -> None:
     """Test has_feature checking fallback stores."""
     dev = multi_env_stores["dev"]
@@ -278,7 +278,9 @@ def test_has_feature_with_fallback(
 # Fallback Store Tests
 
 
-def test_read_from_fallback(multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA) -> None:
+def test_read_from_fallback(
+    multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA: type[BaseFeature]
+) -> None:
     """Test reading from fallback store."""
     dev = multi_env_stores["dev"]
     staging = multi_env_stores["staging"]
@@ -290,7 +292,7 @@ def test_read_from_fallback(multi_env_stores: dict[str, DeltaMetadataStore], Ups
         assert len(result) == 3
 
 
-def test_read_no_fallback(multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA) -> None:
+def test_read_no_fallback(multi_env_stores: dict[str, DeltaMetadataStore], UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test that allow_fallback=False doesn't check fallback stores."""
     dev = multi_env_stores["dev"]
 
@@ -340,8 +342,8 @@ def test_soft_delete_from_fallback_creates_soft_deletion_marker(
 
 def test_write_to_dev_not_prod(
     multi_env_stores: dict[str, DeltaMetadataStore],
-    UpstreamFeatureA,
-    UpstreamFeatureB,
+    UpstreamFeatureA: type[BaseFeature],
+    UpstreamFeatureB: type[BaseFeature],
 ) -> None:
     """Test that writes go to dev, not prod."""
     dev = multi_env_stores["dev"]
@@ -370,7 +372,7 @@ def test_write_to_dev_not_prod(
 # Store Open/Close Tests
 
 
-def test_store_not_open_write_raises(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_store_not_open_write_raises(store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test that writing to a closed store raises StoreNotOpenError."""
     metadata = pl.DataFrame(
         {
@@ -384,38 +386,40 @@ def test_store_not_open_write_raises(empty_store: DeltaMetadataStore, UpstreamFe
     )
 
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
-        empty_store.write(UpstreamFeatureA, metadata)
+        store.write(UpstreamFeatureA, metadata)
 
 
-def test_store_not_open_read_raises(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_store_not_open_read_raises(populated_store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test that reading from a closed store raises StoreNotOpenError."""
     # Store is already closed after fixture setup
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
         populated_store.read(UpstreamFeatureA)
 
 
-def test_store_not_open_has_feature_raises(populated_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_store_not_open_has_feature_raises(
+    populated_store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]
+) -> None:
     """Test that has_feature on a closed store raises StoreNotOpenError."""
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
         populated_store.has_feature(UpstreamFeatureA)
 
 
 def test_store_context_manager_opens_and_closes(
-    empty_store: DeltaMetadataStore,
+    store: DeltaMetadataStore,
 ) -> None:
     """Test that context manager properly opens and closes store."""
     # Initially closed
-    assert not empty_store._is_open
+    assert not store._is_open
 
-    with empty_store.open("w"):
+    with store.open("w"):
         # Should be open inside context
-        assert empty_store._is_open
+        assert store._is_open
 
     # Should be closed after context
-    assert not empty_store._is_open
+    assert not store._is_open
 
 
-def test_write_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, UpstreamFeatureA) -> None:
+def test_write_casts_null_typed_system_columns(store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:
     """Test that system columns with Null dtype are cast to correct types."""
     # Create a DataFrame with Null-typed system columns
     # This can happen with empty frames or certain Polars operations
@@ -444,11 +448,11 @@ def test_write_casts_null_typed_system_columns(empty_store: DeltaMetadataStore, 
     assert df.schema["metaxy_created_at"] == pl.Null
     assert df.schema["metaxy_materialization_id"] == pl.Null
 
-    with empty_store.open("w"):
-        empty_store.write(UpstreamFeatureA, df)
+    with store.open("w"):
+        store.write(UpstreamFeatureA, df)
 
         # Read back and verify columns are now correctly typed
-        result = collect_to_polars(empty_store.read(UpstreamFeatureA))
+        result = collect_to_polars(store.read(UpstreamFeatureA))
 
         assert result.schema["metaxy_provenance"] == pl.String
         assert result.schema["metaxy_feature_version"] == pl.String

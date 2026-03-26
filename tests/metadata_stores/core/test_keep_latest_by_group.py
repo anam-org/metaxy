@@ -7,6 +7,8 @@ They are parametrized across Polars and Ibis versioning engines.
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import pytest_cases
 from pytest_cases import parametrize_with_cases
@@ -17,7 +19,7 @@ from metaxy._utils import collect_to_polars
 class KeepLatestTestDataCases:
     """Test data cases for keep_latest_by_group tests."""
 
-    def case_polars(self):
+    def case_polars(self) -> tuple[Any, Any, datetime]:
         import narwhals as nw
 
         from metaxy.versioning.polars import PolarsVersioningEngine
@@ -29,7 +31,7 @@ class KeepLatestTestDataCases:
 
         return (PolarsVersioningEngine, create_data_fn, base_time)
 
-    def case_ibis(self, tmp_path):
+    def case_ibis(self, tmp_path: Path) -> tuple[Any, Any, datetime]:
         import ibis
         import narwhals as nw
 
@@ -56,11 +58,11 @@ class KeepLatestTestDataCases:
 
 @pytest_cases.fixture
 @parametrize_with_cases("test_data", cases=KeepLatestTestDataCases)
-def keep_latest_test_data(test_data):
+def keep_latest_test_data(test_data: tuple[Any, Any, datetime]) -> tuple[Any, Any, datetime]:
     return test_data
 
 
-def test_keep_latest_by_group(keep_latest_test_data):
+def test_keep_latest_by_group(keep_latest_test_data: tuple[Any, Any, datetime]) -> None:
     from datetime import timedelta
 
     import polars as pl
@@ -106,7 +108,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
     )
 
 
-def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
+def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data: tuple[Any, Any, datetime]) -> None:
     """Test keep_latest_by_group with N:1 aggregation (sensor readings to hourly stats)."""
     from datetime import timedelta
 
@@ -170,7 +172,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
     )
 
 
-def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
+def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data: tuple[Any, Any, datetime]) -> None:
     """Test keep_latest_by_group with 1:N expansion (video to video frames)."""
     from datetime import timedelta
 

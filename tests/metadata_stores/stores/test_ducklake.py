@@ -22,11 +22,13 @@ from metaxy.ext.metadata_stores.ducklake import (
     S3StorageConfig,
     format_attach_options,
 )
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_definition import FeatureDefinition
 
 
 # Hypothesis strategies for generating metadata dataframes using Polars parametric testing
 @st.composite
-def metadata_dataframe_strategy(draw, fields=None, size=None):
+def metadata_dataframe_strategy(draw, fields: list[str] | None = None, size: int | None = None):
     """Generate a metadata DataFrame using Polars parametric testing.
 
     Args:
@@ -262,7 +264,9 @@ _test_recorded_commands: list[str] = []
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(size=st.integers(min_value=1, max_value=5))
-def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -> None:
+def test_ducklake_store_read_write_roundtrip(
+    test_features: dict[str, FeatureDefinition], monkeypatch: pytest.MonkeyPatch, size: int
+) -> None:
     """DuckLake-configured store should still support read/write API.
 
     Uses hypothesis to generate test payloads with varying sizes and data.
@@ -337,7 +341,9 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
 @given(
     num_samples=st.integers(min_value=1, max_value=5),
 )
-def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) -> None:
+def test_ducklake_e2e_with_dependencies(
+    test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition], num_samples: int
+) -> None:
     """Real end-to-end integration test for DuckLake with DuckDB catalog and local filesystem storage.
 
     This is a real integration test that actually uses the DuckLake extension (no mocking).
@@ -548,8 +554,8 @@ def test_s3_storage_credential_chain() -> None:
 @pytest.mark.ducklake
 @pytest.mark.duckdb
 def test_ducklake_s3_storage_roundtrip(
-    test_features,
-    s3_bucket_and_storage_options: tuple[str, dict],
+    test_features: dict[str, FeatureDefinition],
+    s3_bucket_and_storage_options: tuple[str, dict[str, str]],
 ) -> None:
     """DuckLake with S3 storage backend should accept S3 secret config and support read/write roundtrip."""
     bucket_name, storage_options = s3_bucket_and_storage_options

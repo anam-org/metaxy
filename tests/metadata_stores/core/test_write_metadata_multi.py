@@ -12,7 +12,6 @@ Tests cover:
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from unittest.mock import patch
 
 import polars as pl
@@ -26,13 +25,13 @@ from metaxy import (
     FeatureKey,
     FieldKey,
     FieldSpec,
+    MetadataStore,
 )
 from metaxy._utils import collect_to_polars
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 
 @pytest.fixture
-def features_with_deps(graph: FeatureGraph):
+def features_with_deps(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
     """Create a set of features with dependencies for testing.
 
     Dependency graph:
@@ -88,26 +87,19 @@ def features_with_deps(graph: FeatureGraph):
     }
 
 
-@pytest.fixture
-def store(tmp_path) -> Iterator[DeltaMetadataStore]:
-    """Create an empty metadata store."""
-    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
-        yield store
-
-
 class TestBasicFunctionality:
     """Test basic functionality of write_multi."""
 
-    def test_empty_dict_is_noop(self, store: DeltaMetadataStore):
+    def test_empty_dict_is_noop(self, store: MetadataStore) -> None:
         """Test that passing an empty dict does nothing (no-op)."""
-        # Should not raise any errors
-        store.write_multi({})
+        with store.open("w"):
+            store.write_multi({})
 
     def test_single_feature(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test writing metadata for a single feature."""
         FeatureA = features_with_deps["FeatureA"]
 
@@ -127,16 +119,16 @@ class TestBasicFunctionality:
         with store.open("w"):
             store.write_multi(metadata)
 
-        # Verify data was written
-        result = collect_to_polars(store.read(FeatureA))
-        assert len(result) == 3
-        assert set(result["sample_uid"].to_list()) == {1, 2, 3}
+            # Verify data was written
+            result = collect_to_polars(store.read(FeatureA))
+            assert len(result) == 3
+            assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
     def test_multiple_features_no_dependencies(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test writing metadata for multiple features without dependencies."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureB = features_with_deps["FeatureB"]
@@ -159,12 +151,12 @@ class TestBasicFunctionality:
         with store.open("w"):
             store.write_multi(metadata)
 
-        # Verify both features were written
-        result_a = collect_to_polars(store.read(FeatureA))
-        result_b = collect_to_polars(store.read(FeatureB))
+            # Verify both features were written
+            result_a = collect_to_polars(store.read(FeatureA))
+            result_b = collect_to_polars(store.read(FeatureB))
 
-        assert len(result_a) == 2
-        assert len(result_b) == 2
+            assert len(result_a) == 2
+            assert len(result_b) == 2
 
 
 class TestReverseTopologicalOrder:
@@ -172,9 +164,9 @@ class TestReverseTopologicalOrder:
 
     def test_writes_in_reverse_topological_order(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that features are written in reverse topological order (dependents first).
 
         For the dependency graph:
@@ -242,7 +234,7 @@ class TestReverseTopologicalOrder:
         # All features should have been written
         assert len(write_order) == 4
 
-    def test_writes_linear_chain_in_reverse_order(self, store: DeltaMetadataStore, graph: FeatureGraph):
+    def test_writes_linear_chain_in_reverse_order(self, store: MetadataStore, graph: FeatureGraph):
         """Test a simple linear chain is written in reverse order: C -> B -> A for A -> B -> C."""
 
         class FeatureA(
@@ -304,9 +296,9 @@ class TestInputVariations:
 
     def test_accepts_feature_keys(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that feature keys can be provided as FeatureKey objects."""
         FeatureA = features_with_deps["FeatureA"]
 
@@ -322,14 +314,14 @@ class TestInputVariations:
         with store.open("w"):
             store.write_multi(metadata)
 
-        result = collect_to_polars(store.read(FeatureA))
-        assert len(result) == 1
+            result = collect_to_polars(store.read(FeatureA))
+            assert len(result) == 1
 
     def test_accepts_string_paths(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that feature keys can be provided as string paths."""
         FeatureA = features_with_deps["FeatureA"]
 
@@ -345,14 +337,14 @@ class TestInputVariations:
         with store.open("w"):
             store.write_multi(metadata)
 
-        result = collect_to_polars(store.read(FeatureA))
-        assert len(result) == 1
+            result = collect_to_polars(store.read(FeatureA))
+            assert len(result) == 1
 
     def test_accepts_feature_classes(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that feature keys can be provided as Feature classes."""
         FeatureA = features_with_deps["FeatureA"]
 
@@ -368,14 +360,14 @@ class TestInputVariations:
         with store.open("w"):
             store.write_multi(metadata)
 
-        result = collect_to_polars(store.read(FeatureA))
-        assert len(result) == 1
+            result = collect_to_polars(store.read(FeatureA))
+            assert len(result) == 1
 
     def test_accepts_mixed_key_types(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that feature keys can be provided as mixed types."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureB = features_with_deps["FeatureB"]
@@ -398,11 +390,11 @@ class TestInputVariations:
         with store.open("w"):
             store.write_multi(metadata)
 
-        result_a = collect_to_polars(store.read(FeatureA))
-        result_b = collect_to_polars(store.read(FeatureB))
+            result_a = collect_to_polars(store.read(FeatureA))
+            result_b = collect_to_polars(store.read(FeatureB))
 
-        assert len(result_a) == 1
-        assert len(result_b) == 1
+            assert len(result_a) == 1
+            assert len(result_b) == 1
 
 
 class TestMaterializationId:
@@ -410,9 +402,9 @@ class TestMaterializationId:
 
     def test_materialization_id_parameter(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that materialization_id is passed to write calls."""
         FeatureA = features_with_deps["FeatureA"]
 
@@ -445,9 +437,9 @@ class TestMaterializationId:
 
     def test_materialization_id_propagates_to_all_writes(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that materialization_id is passed to all write calls."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureB = features_with_deps["FeatureB"]
@@ -491,9 +483,9 @@ class TestDataIntegrity:
 
     def test_data_integrity_after_multi_write(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that data written via write_multi can be read back correctly."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureB = features_with_deps["FeatureB"]
@@ -523,31 +515,31 @@ class TestDataIntegrity:
         with store.open("w"):
             store.write_multi(metadata)
 
-        # Read back and verify
-        result_a = collect_to_polars(store.read(FeatureA))
-        result_b = collect_to_polars(store.read(FeatureB))
-        result_c = collect_to_polars(store.read(FeatureC))
+            # Read back and verify
+            result_a = collect_to_polars(store.read(FeatureA))
+            result_b = collect_to_polars(store.read(FeatureB))
+            result_c = collect_to_polars(store.read(FeatureC))
 
-        assert len(result_a) == 2
-        assert set(result_a["sample_uid"].to_list()) == {1, 2}
+            assert len(result_a) == 2
+            assert set(result_a["sample_uid"].to_list()) == {1, 2}
 
-        assert len(result_b) == 2
-        assert set(result_b["sample_uid"].to_list()) == {3, 4}
+            assert len(result_b) == 2
+            assert set(result_b["sample_uid"].to_list()) == {3, 4}
 
-        assert len(result_c) == 2
-        assert set(result_c["sample_uid"].to_list()) == {5, 6}
+            assert len(result_c) == 2
+            assert set(result_c["sample_uid"].to_list()) == {5, 6}
 
 
 class TestErrorHandling:
     """Test error handling for write_multi."""
 
-    def test_store_not_open_raises(self, features_with_deps: dict[str, type[BaseFeature]], tmp_path):
+    def test_store_not_open_raises(
+        self, features_with_deps: dict[str, type[BaseFeature]], store: MetadataStore
+    ) -> None:
         """Test that calling write_multi on a closed store raises StoreNotOpenError."""
         from metaxy.metadata_store import StoreNotOpenError
 
         FeatureA = features_with_deps["FeatureA"]
-
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         metadata = {
             FeatureA: pl.DataFrame(
@@ -564,9 +556,9 @@ class TestErrorHandling:
 
     def test_invalid_schema_raises(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test that invalid schema raises MetadataSchemaError."""
         from metaxy.metadata_store import MetadataSchemaError
 
@@ -592,9 +584,9 @@ class TestSubsetOfFeatures:
 
     def test_write_subset_of_features(
         self,
-        store: DeltaMetadataStore,
+        store: MetadataStore,
         features_with_deps: dict[str, type[BaseFeature]],
-    ):
+    ) -> None:
         """Test writing metadata for only some features in a dependency graph."""
         FeatureA = features_with_deps["FeatureA"]
         FeatureC = features_with_deps["FeatureC"]
@@ -618,9 +610,9 @@ class TestSubsetOfFeatures:
         with store.open("w"):
             store.write_multi(metadata)
 
-        # Verify A and C were written
-        result_a = collect_to_polars(store.read(FeatureA))
-        result_c = collect_to_polars(store.read(FeatureC))
+            # Verify A and C were written
+            result_a = collect_to_polars(store.read(FeatureA))
+            result_c = collect_to_polars(store.read(FeatureC))
 
-        assert len(result_a) == 1
-        assert len(result_c) == 1
+            assert len(result_a) == 1
+            assert len(result_c) == 1

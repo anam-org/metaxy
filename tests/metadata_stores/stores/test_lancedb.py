@@ -13,6 +13,8 @@ from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import MetadataStore, StoreNotOpenError
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_definition import FeatureDefinition
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -52,7 +54,7 @@ class TestLanceDB(
 
 
 @pytest.fixture(autouse=True)
-def _lancedb_project(config):
+def _lancedb_project(config: MetaxyConfig):
     """Ensure LanceDB tests run with the same project as test features."""
     original_config = MetaxyConfig.get()
     project_config = config.model_copy(update={"project": "test_stores"})
@@ -61,12 +63,19 @@ def _lancedb_project(config):
     MetaxyConfig.set(original_config)
 
 
-def test_lancedb_table_naming(tmp_path, test_graph, test_features) -> None:
+@pytest.fixture
+def lancedb_store(tmp_path: Path) -> LanceDBMetadataStore:
+    """A LanceDBMetadataStore backed by a temporary local directory."""
+    return LanceDBMetadataStore(tmp_path / "lancedb")
+
+
+def test_lancedb_table_naming(
+    lancedb_store: LanceDBMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Test that feature keys are converted to table names correctly."""
-    database_path = tmp_path / "lancedb"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with LanceDBMetadataStore(database_path).open("w") as store:
+    with lancedb_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -79,21 +88,20 @@ def test_lancedb_table_naming(tmp_path, test_graph, test_features) -> None:
         assert store.has_feature(feature_cls, check_fallback=False)
 
 
-def test_lancedb_conn_property_enforcement(tmp_path, test_graph, test_features) -> None:
+def test_lancedb_conn_property_enforcement(
+    lancedb_store: LanceDBMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Test that conn property enforces store is open."""
-    database_path = tmp_path / "lancedb"
-    store = LanceDBMetadataStore(database_path)
-
     # Should raise when accessing conn while closed
     with pytest.raises(StoreNotOpenError, match="LanceDB connection is not open"):
-        _ = store.conn
+        _ = lancedb_store.conn
 
-    with store:
-        conn = store.conn
+    with lancedb_store:
+        conn = lancedb_store.conn
         assert conn is not None
 
 
-def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
+def test_lancedb_remote_uri_no_mkdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that open() doesn't call mkdir for remote URIs."""
     mkdir_called = []
 
@@ -127,7 +135,7 @@ def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(Path, "mkdir", original_mkdir)
 
 
-def test_lancedb_local_path_calls_mkdir(tmp_path, monkeypatch) -> None:
+def test_lancedb_local_path_calls_mkdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that open() calls mkdir for local filesystem paths."""
     mkdir_calls = []
 
@@ -155,7 +163,7 @@ def test_lancedb_local_path_calls_mkdir(tmp_path, monkeypatch) -> None:
             assert mkdir_calls[0][2].get("exist_ok") is True
 
 
-def test_lancedb_connection_string_variations(tmp_path, monkeypatch) -> None:
+def test_lancedb_connection_string_variations(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that the uri argument is correctly passed to lancedb.connect."""
     mock_lancedb = Mock()
     connect_calls = []
@@ -210,7 +218,7 @@ def test_lancedb_sanitize_path() -> None:
     assert sanitize_uri("db://user@host/db") == "db://***:@host/db"
 
 
-def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
+def test_lancedb_display_masks_credentials(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that display() masks credentials in URIs."""
     # Mock lancedb.connect to avoid actual connection
     mock_lancedb = Mock()
@@ -227,17 +235,18 @@ def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
     assert "***:***@localhost" in display
 
 
-def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> None:
+def test_lancedb_has_feature_without_listing_tables(
+    lancedb_store: LanceDBMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Test that has_feature checks existence without listing all tables.
 
     This is a performance optimization - using open_table() with try/except
     is more efficient than listing all tables, especially on S3/remote storage.
     """
-    database_path = tmp_path / "lancedb"
     feature_cls = test_features["UpstreamFeatureA"]
     nonexistent_key = FeatureKey(["nonexistent", "feature"])
 
-    with LanceDBMetadataStore(database_path).open("w") as store:
+    with lancedb_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -256,7 +265,9 @@ def test_lancedb_has_feature_without_listing_tables(tmp_path, test_features) -> 
         table_names_mock.assert_not_called()
 
 
-def test_lancedb_s3_storage_options_passed(s3_bucket_and_storage_options, test_features) -> None:
+def test_lancedb_s3_storage_options_passed(
+    s3_bucket_and_storage_options: tuple[str, dict[str, str]], test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify storage_options are passed to LanceDB operations with moto-backed S3.
 
     This ensures object store credentials are correctly forwarded to lance-rs.

@@ -11,8 +11,7 @@ import polars as pl
 import pytest
 from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy import BaseFeature, FeatureDep, FeatureGraph
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy import BaseFeature, FeatureDep, FeatureGraph, MetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
@@ -30,7 +29,7 @@ def graph() -> FeatureGraph:
 class TestComputeProvenance:
     """Test compute_provenance method."""
 
-    def test_compute_provenance_single_upstream(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_single_upstream(self, graph: FeatureGraph, store: MetadataStore):
         """Test computing provenance from a single upstream feature."""
 
         class UpstreamFeature(
@@ -51,8 +50,6 @@ class TestComputeProvenance:
             ),
         ):
             sample_uid: str
-
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         # Create upstream metadata with provenance columns
         upstream_df = pl.DataFrame(
@@ -88,7 +85,7 @@ class TestComputeProvenance:
         assert result_pl["sample_uid"].to_list() == ["s1", "s2"]
         assert result_pl["value"].to_list() == [10, 20]
 
-    def test_compute_provenance_multiple_upstreams(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_multiple_upstreams(self, graph: FeatureGraph, store: MetadataStore):
         """Test computing provenance from multiple upstream features."""
 
         class Upstream1Feature(
@@ -121,8 +118,6 @@ class TestComputeProvenance:
             ),
         ):
             sample_uid: str
-
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         # Create joined DataFrame with both upstream columns renamed
         upstream1_key = Upstream1Feature.spec().key
@@ -158,7 +153,7 @@ class TestComputeProvenance:
         assert result_pl["a"].to_list() == [1, 2]
         assert result_pl["b"].to_list() == [10, 20]
 
-    def test_compute_provenance_missing_column_raises_error(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_missing_column_raises_error(self, graph: FeatureGraph, store: MetadataStore):
         """Test that missing upstream columns raise a clear error."""
 
         class UpstreamFeature(
@@ -180,8 +175,6 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-
         # Create DataFrame WITHOUT the required renamed column
         df = pl.DataFrame(
             {
@@ -194,7 +187,7 @@ class TestComputeProvenance:
             with pytest.raises(ValueError, match="missing required upstream columns"):
                 store.compute_provenance(DownstreamFeature, nw.from_native(df))
 
-    def test_compute_provenance_returns_eager_for_eager_input(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_returns_eager_for_eager_input(self, graph: FeatureGraph, store: MetadataStore):
         """Test that compute_provenance returns eager DataFrame for eager input."""
 
         class UpstreamFeature(
@@ -216,8 +209,6 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-
         upstream_key = UpstreamFeature.spec().key
         renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
 
@@ -238,7 +229,7 @@ class TestComputeProvenance:
         result_pl = result.to_polars()
         assert isinstance(result_pl, pl.DataFrame)
 
-    def test_compute_provenance_returns_lazy_for_lazy_input(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_returns_lazy_for_lazy_input(self, graph: FeatureGraph, store: MetadataStore):
         """Test that compute_provenance returns LazyFrame for lazy input."""
 
         class UpstreamFeature(
@@ -260,8 +251,6 @@ class TestComputeProvenance:
         ):
             sample_uid: str
 
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
-
         upstream_key = UpstreamFeature.spec().key
         renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
 
@@ -280,7 +269,7 @@ class TestComputeProvenance:
         # Should return lazy
         assert isinstance(result, nw.LazyFrame)
 
-    def test_compute_provenance_integration_with_resolve_update(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_integration_with_resolve_update(self, graph: FeatureGraph, store: MetadataStore):
         """Test that compute_provenance output works with resolve_update."""
 
         class UpstreamFeature(
@@ -301,8 +290,6 @@ class TestComputeProvenance:
             ),
         ):
             sample_uid: str
-
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         upstream_key = UpstreamFeature.spec().key
         renamed_col = f"{METAXY_DATA_VERSION_BY_FIELD}__{upstream_key.table_name}"
@@ -331,7 +318,7 @@ class TestComputeProvenance:
         assert increment.stale.to_polars().height == 0
         assert increment.orphaned.to_polars().height == 0
 
-    def test_compute_provenance_root_feature(self, graph: FeatureGraph, tmp_path):
+    def test_compute_provenance_root_feature(self, graph: FeatureGraph, store: MetadataStore):
         """Test compute_provenance with a root feature (no upstream dependencies)."""
 
         class RootFeature(
@@ -342,8 +329,6 @@ class TestComputeProvenance:
             ),
         ):
             sample_uid: str
-
-        store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
         # Root features have no upstream deps, so no renamed columns needed
         df = pl.DataFrame(

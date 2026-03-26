@@ -16,6 +16,7 @@ from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey
 from tests.metadata_stores.shared import (
     CRUDTests,
@@ -26,6 +27,24 @@ from tests.metadata_stores.shared import (
     VersioningTests,
     WriteTests,
 )
+
+
+@pytest.fixture
+def duckdb_store(tmp_path: Path) -> DuckDBMetadataStore:
+    """DuckDB store with auto_create_tables enabled."""
+    return DuckDBMetadataStore(tmp_path / "test.duckdb", auto_create_tables=True)
+
+
+@pytest.fixture
+def duckdb_store_bare(tmp_path: Path) -> DuckDBMetadataStore:
+    """DuckDB store without auto_create_tables (default settings)."""
+    return DuckDBMetadataStore(tmp_path / "test.duckdb")
+
+
+@pytest.fixture
+def duckdb_store_memory() -> DuckDBMetadataStore:
+    """In-memory DuckDB store with auto_create_tables enabled."""
+    return DuckDBMetadataStore(database=":memory:", auto_create_tables=True)
 
 
 @pytest.mark.ibis
@@ -73,16 +92,11 @@ class TestDuckDB(
         assert "DuckDBMetadataStore" in repr(store)
 
 
-def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
-    """Test that feature keys are converted to table names correctly.
-
-    Args:
-        tmp_path: Pytest tmp_path fixture
-        test_graph: Registry with test features
-    """
-    db_path = tmp_path / "test.duckdb"
-
-    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
+def test_duckdb_table_naming(
+    duckdb_store: DuckDBMetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
+    """Test that feature keys are converted to table names correctly."""
+    with duckdb_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -96,13 +110,14 @@ def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict[str
         assert "test_stores__upstream_a" in table_names
 
 
-def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Prefix should apply to feature and system tables."""
-    db_path = tmp_path / "prefixed.duckdb"
     table_prefix = "prod_v2_"
     feature = test_features["UpstreamFeatureA"]
 
-    with DuckDBMetadataStore(db_path, auto_create_tables=True, table_prefix=table_prefix).open("w") as store:
+    with DuckDBMetadataStore(tmp_path / "prefixed.duckdb", auto_create_tables=True, table_prefix=table_prefix).open(
+        "w"
+    ) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -123,76 +138,51 @@ def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph, test_features: 
         assert store.get_table_name(FEATURE_VERSIONS_KEY) == expected_system_table
 
 
-def test_duckdb_with_custom_config(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
-    """Test creating DuckDB store with custom configuration.
-
-    Args:
-        tmp_path: Pytest tmp_path fixture
-        test_graph: Registry with test features
-    """
-    db_path = tmp_path / "test.duckdb"
-
+def test_duckdb_with_custom_config(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
+    """Test creating DuckDB store with custom configuration."""
     config: dict[str, str] = {
         "threads": "2",
         "memory_limit": "1GB",
     }
 
-    with DuckDBMetadataStore(db_path, config=config, auto_create_tables=True) as store:
+    with DuckDBMetadataStore(tmp_path / "test.duckdb", config=config, auto_create_tables=True) as store:
         # Just verify store opens successfully with config
         assert store._is_open
         assert store.backend == "duckdb"
 
 
-def test_duckdb_uses_ibis_backend(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
-    """Test that DuckDB store uses Ibis backend.
-
-    Args:
-        tmp_path: Pytest tmp_path fixture
-        test_graph: Registry with test features
-    """
-    db_path = tmp_path / "test.duckdb"
-
-    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
+def test_duckdb_uses_ibis_backend(
+    duckdb_store: DuckDBMetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
+    """Test that DuckDB store uses Ibis backend."""
+    with duckdb_store as store:
         # Should have conn
         assert hasattr(store, "conn")
         # Backend should be duckdb
         assert store.backend == "duckdb"
 
 
-def test_duckdb_conn_property_enforcement(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
-    """Test that conn property enforces store is open.
-
-    Args:
-        tmp_path: Pytest tmp_path fixture
-        test_graph: Registry with test features
-    """
+def test_duckdb_conn_property_enforcement(
+    duckdb_store_bare: DuckDBMetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
+    """Test that conn property enforces store is open."""
     from metaxy.metadata_store import StoreNotOpenError
-
-    db_path = tmp_path / "test.duckdb"
-    store = DuckDBMetadataStore(db_path)
 
     # Should raise when accessing conn while closed (Ibis error message)
     with pytest.raises(StoreNotOpenError, match="Ibis connection is not open"):
-        _ = store.conn
+        _ = duckdb_store_bare.conn
 
     # Should work when open
-    with store.open("w"):
-        conn = store.conn
-        assert conn is not None
+    with duckdb_store_bare.open("w"):
+        assert duckdb_store_bare.conn is not None
 
 
-def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
-    """Test that data persists across different store instances.
-
-    Args:
-        tmp_path: Pytest tmp_path fixture
-        test_graph: Registry with test features
-    """
-
-    db_path = tmp_path / "test.duckdb"
-
+def test_duckdb_persistence_across_instances(
+    duckdb_store: DuckDBMetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
+    """Test that data persists across different store instances."""
     # Write data in first instance
-    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store1:
+    with duckdb_store.open("w") as store1:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -205,8 +195,8 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
         )
         store1.write(test_features["UpstreamFeatureA"], metadata)
 
-    # Read data in second instance
-    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store2:
+    # Read data in second instance with a fresh store pointing at the same database
+    with DuckDBMetadataStore(duckdb_store.database, auto_create_tables=True) as store2:
         result = collect_to_polars(store2.read(test_features["UpstreamFeatureA"]))
 
         assert len(result) == 3
@@ -214,14 +204,14 @@ def test_duckdb_persistence_across_instances(tmp_path: Path, test_graph, test_fe
 
 
 def test_duckdb_in_memory_nested_write_from_read_mode(
-    test_graph,
+    duckdb_store_memory: DuckDBMetadataStore,
+    test_graph: FeatureGraph,
     test_features: dict[str, Any],
 ) -> None:
     """Regression test for issue #1016 without Dagster."""
     feature = test_features["UpstreamFeatureA"]
-    store = DuckDBMetadataStore(database=":memory:", auto_create_tables=True)
 
-    with store:
+    with duckdb_store_memory as store:
         with store.open("w"):
             store.write(
                 feature,
@@ -296,13 +286,15 @@ def test_duckdb_read_mode_read_only_selection(
 
 
 def test_duckdb_get_filtered_lazy_does_not_require_list_tables(
-    tmp_path: Path, test_graph, test_features: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    duckdb_store: DuckDBMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """_get_filtered_ibis_lazy should avoid metadata scans via list_tables."""
-    db_path = tmp_path / "test.duckdb"
     feature = test_features["UpstreamFeatureA"]
 
-    with DuckDBMetadataStore(db_path, auto_create_tables=True).open("w") as store:
+    with duckdb_store.open("w") as store:
         store.write(
             feature,
             pl.DataFrame(
@@ -330,7 +322,7 @@ def test_duckdb_get_filtered_lazy_does_not_require_list_tables(
         assert missing is None
 
 
-def test_duckdb_ducklake_integration(tmp_path: Path, test_graph, test_features: dict[str, Any]) -> None:
+def test_duckdb_ducklake_integration(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
     from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
 

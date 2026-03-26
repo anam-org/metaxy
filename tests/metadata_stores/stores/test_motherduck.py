@@ -13,6 +13,7 @@ from metaxy.ext.metadata_stores.ducklake import (
     DuckLakeAttachmentManager,
     DuckLakeConfig,
 )
+from metaxy.models.feature_definition import FeatureDefinition
 
 pytestmark = pytest.mark.motherduck
 
@@ -52,7 +53,7 @@ def test_motherduck_ducklake_attachment(
 
 
 def test_motherduck_ducklake_write_read_roundtrip(
-    test_features,
+    test_features: dict[str, FeatureDefinition],
     motherduck_token: str,
     motherduck_ducklake_database: str,
     motherduck_region: str | None,

@@ -17,6 +17,7 @@ except ImportError:
 
 from metaxy_testing.models import SampleFeature
 
+from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -252,7 +253,9 @@ def test_bigquery_config_with_fallback_stores():
 
 
 @pytest.mark.integration
-def test_bigquery_table_operations(mock_bigquery_connection, test_graph, test_features: dict[str, type[SampleFeature]]):
+def test_bigquery_table_operations(
+    mock_bigquery_connection: MagicMock, test_graph: FeatureGraph, test_features: dict[str, type[SampleFeature]]
+):
     """Test BigQuery table operations with mocked connection.
 
     This test would require actual BigQuery connection in integration tests.

@@ -19,6 +19,7 @@ from metaxy_testing import (
 from metaxy_testing.models import SampleFeatureSpec
 from metaxy_testing.pytest_helpers import skip_exception
 from pytest_cases import parametrize_with_cases
+from syrupy import SnapshotAssertion
 
 from metaxy import (
     BaseFeature,
@@ -86,7 +87,7 @@ def create_store_for_fallback(
 
 
 @pytest.fixture
-def features(graph: FeatureGraph):
+def features(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
     class RootFeature(
         BaseFeature,
         spec=SampleFeatureSpec(
@@ -130,17 +131,17 @@ def features(graph: FeatureGraph):
 
 
 @pytest.fixture
-def RootFeature(features):
+def RootFeature(features: dict[str, type[BaseFeature]]) -> type[BaseFeature]:
     return features["RootFeature"]
 
 
 @pytest.fixture
-def DownstreamFeature(features):
+def DownstreamFeature(features: dict[str, type[BaseFeature]]) -> type[BaseFeature]:
     return features["DownstreamFeature"]
 
 
 @pytest.fixture
-def fallback_store_type():
+def fallback_store_type() -> str:
     return "deltalake"
 
 
@@ -152,10 +153,10 @@ def test_fallback_store_warning_issued(
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
-    snapshot,
-    RootFeature,
-    DownstreamFeature,
-):
+    snapshot: SnapshotAssertion,
+    RootFeature: type[BaseFeature],
+    DownstreamFeature: type[BaseFeature],
+) -> None:
     """Test that warning IS issued when upstream feature is in fallback store.
 
     This tests the core fallback scenario:
@@ -251,9 +252,9 @@ def test_no_fallback_warning_when_all_local(
     tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
-    RootFeature,
-    DownstreamFeature,
-):
+    RootFeature: type[BaseFeature],
+    DownstreamFeature: type[BaseFeature],
+) -> None:
     """Test that warning is NOT issued when all upstream is in the same store.
 
     This tests the normal case:
@@ -306,10 +307,10 @@ def test_fallback_store_switches_to_polars_components(
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
-    snapshot,
-    RootFeature,
-    DownstreamFeature,
-):
+    snapshot: SnapshotAssertion,
+    RootFeature: type[BaseFeature],
+    DownstreamFeature: type[BaseFeature],
+) -> None:
     """Test that resolve_update switches from native to Polars components with fallback.
 
     This verifies the component selection logic:
@@ -426,9 +427,9 @@ def test_versioning_engine_polars_no_warning_even_without_fallback(
     tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
-    RootFeature,
-    DownstreamFeature,
-):
+    RootFeature: type[BaseFeature],
+    DownstreamFeature: type[BaseFeature],
+) -> None:
     """Test that versioning_engine="polars" doesn't issue fallback warning.
 
     When versioning_engine="polars", the store always uses Polars components,
@@ -476,9 +477,9 @@ def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_c
     tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
-    RootFeature,
-    DownstreamFeature,
-):
+    RootFeature: type[BaseFeature],
+    DownstreamFeature: type[BaseFeature],
+) -> None:
     """Test that versioning_engine="native" works when data is local even with fallback configured.
 
     When fallback stores are configured but the data exists in the primary store,
@@ -533,9 +534,9 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
     tmp_path: Path,
     hash_algorithm: HashAlgorithm,
     store_type: str,
-    RootFeature,
-    DownstreamFeature,
-):
+    RootFeature: type[BaseFeature],
+    DownstreamFeature: type[BaseFeature],
+) -> None:
     """Test that versioning_engine="native" warns (but doesn't error) when fallback is accessed.
 
     When fallback stores are configured AND actually used (data only exists in fallback),
@@ -593,7 +594,7 @@ def test_versioning_engine_native_warns_when_fallback_actually_used(
 #    implementation check, and creating native (Ibis) samples in tests is non-trivial
 
 
-def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureGraph) -> None:
+def test_fallback_stores_opened_on_demand_when_reading(tmp_path: Path, graph: FeatureGraph) -> None:
     """Test that fallback stores are opened on demand when reading metadata.
 
     This tests the fix for a bug where fallback stores were not opened when
@@ -644,7 +645,7 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path, graph: FeatureG
         assert len(collected) == 3
 
 
-def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGraph) -> None:
+def test_get_store_metadata_respects_fallback_stores(tmp_path: Path, graph: FeatureGraph) -> None:
     """Test that get_store_metadata returns metadata from fallback store when feature is only there.
 
     This tests the fix for issue #549: MetadataStore.get_store_metadata should respect
@@ -718,7 +719,7 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path, graph: FeatureGra
         assert "resolved_from" not in store_metadata_no_fallback
 
 
-def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph) -> None:
+def test_get_store_metadata_prefers_current_store(tmp_path: Path, graph: FeatureGraph) -> None:
     """Test that get_store_metadata returns metadata from current store when feature exists there.
 
     Even when a fallback store has the same feature, get_store_metadata should return
@@ -777,7 +778,7 @@ def test_get_store_metadata_prefers_current_store(tmp_path, graph: FeatureGraph)
         assert "fallback" not in resolved_from["uri"]
 
 
-def test_read_with_store_info(tmp_path, graph: FeatureGraph) -> None:
+def test_read_with_store_info(tmp_path: Path, graph: FeatureGraph) -> None:
     """Test read with_store_info returns the resolved store.
 
     When with_store_info=True, read should return a tuple of

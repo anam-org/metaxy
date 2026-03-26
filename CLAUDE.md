@@ -35,6 +35,7 @@ uv run pytest    # Run tests (add -k "pattern" to filter)
 
 - Always add or update tests when modifying features. Run `uv run pytest tests/path/to/test.py` to verify changes before considering work complete.
 - Never run the full test suite unless instructed. Only run relevant tests by filtering with `-k "pattern"`, specific files or specific tests `uv run pytest tests/test_migrations.py::test_migration_generation`
+- Always use fixtures to setup data and common values. Always request fixtures with appropriate type annotations.
 
 **Type safety**: Code must pass `just typecheck`. Fix type errors before submitting.
 

@@ -27,6 +27,7 @@ from metaxy import (
     FieldSpec,
     LineageRelationship,
 )
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
@@ -761,7 +762,7 @@ class VersioningTests:
         self,
         store: MetadataStore,
         feature_plan_sequence: FeaturePlanSequence,
-    ):
+    ) -> None:
         """Test metadata store provenance calculation matches golden reference.
 
         The golden reference is computed using PolarsVersioningEngine.resolve_increment_with_provenance.
@@ -834,7 +835,7 @@ class VersioningTests:
         self,
         store: MetadataStore,
         feature_plan_sequence: FeaturePlanSequence,
-    ):
+    ) -> None:
         """Test deduplication logic correctly filters older versions before computing provenance.
 
         Uses only the first plan from the sequence (deduplication testing doesn't need
@@ -931,7 +932,7 @@ class VersioningTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test deduplication with all samples having duplicate entries at same timestamp."""
         empty_store = store
 
@@ -1028,7 +1029,7 @@ class VersioningTests:
         self,
         store: MetadataStore,
         feature_plan_sequence: FeaturePlanSequence,
-    ):
+    ) -> None:
         """Test golden reference with only some upstream samples having duplicates.
 
         Uses only the first plan from the sequence (deduplication testing doesn't need
@@ -1114,7 +1115,7 @@ class VersioningTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Regression test: expansion lineage should not duplicate changed rows.
 
         When upstream changes for expansion lineage (1:N), resolve_update should return
@@ -1251,7 +1252,9 @@ class VersioningTests:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
     @pytest.mark.parametrize("truncation_length", [16])
-    def test_hash_truncation_any_store(self, config_with_truncation, store: MetadataStore, graph: FeatureGraph):
+    def test_hash_truncation_any_store(
+        self, config_with_truncation: MetaxyConfig, store: MetadataStore, graph: FeatureGraph
+    ) -> None:
         """Test that hash truncation is applied correctly across store types."""
 
         class ParentFeature(

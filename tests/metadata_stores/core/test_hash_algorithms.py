@@ -12,6 +12,8 @@ hash_algorithm × store_type × truncation in other test files.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import polars as pl
 import polars.testing as pl_testing
 import pytest
@@ -23,6 +25,7 @@ from metaxy_testing.parametric import (
 from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
+from metaxy.config import MetaxyConfig
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.versioning.types import HashAlgorithm
 
@@ -33,7 +36,7 @@ from metaxy.versioning.types import HashAlgorithm
 def test_hash_algorithm_produces_consistent_hashes(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
-    tmp_path,
+    tmp_path: Path,
 ):
     """Test that each hash algorithm produces consistent hashes across runs."""
 
@@ -75,7 +78,7 @@ def test_hash_algorithm_produces_consistent_hashes(
     parent_df = upstream_data["parent"]
 
     # Create store with specific hash algorithm
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", hash_algorithm=hash_algorithm)
 
     with store.open("w"), graph.use():
         # Write parent metadata
@@ -116,10 +119,10 @@ def test_hash_algorithm_produces_consistent_hashes(
 @pytest.mark.parametrize("truncation_length", [8, 16, 32])
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 def test_hash_truncation(
-    config_with_truncation,
+    config_with_truncation: MetaxyConfig,
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
-    tmp_path,
+    tmp_path: Path,
 ):
     # Config is already set by fixture
     truncation_length = config_with_truncation.hash_truncation_length
@@ -176,7 +179,7 @@ def test_hash_truncation(
 
     parent_df = upstream_data["parent"]
 
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", hash_algorithm=hash_algorithm)
 
     with store.open("w"), graph.use():
         # Write parent metadata
@@ -212,7 +215,7 @@ def test_hash_truncation(
 def test_field_level_provenance_structure(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
-    tmp_path,
+    tmp_path: Path,
 ):
     """Test that field-level provenance has correct structure for each hash algorithm."""
 
@@ -241,7 +244,7 @@ def test_field_level_provenance_structure(
         "child": ChildFeature.feature_version(),
     }
 
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store", hash_algorithm=hash_algorithm)
+    store = DeltaMetadataStore(root_path=tmp_path / "store", hash_algorithm=hash_algorithm)
 
     with store.open("w"), graph.use():
         # Generate test data

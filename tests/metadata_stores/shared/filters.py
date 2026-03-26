@@ -16,7 +16,7 @@ from metaxy.models.types import FeatureKey
 class FilterTests:
     """Tests for column filters with dependencies and feature dep filters."""
 
-    def test_read_with_filter_on_own_column(self, store: MetadataStore):
+    def test_read_with_filter_on_own_column(self, store: MetadataStore) -> None:
         """Test filtering on a feature's OWN column when the feature has dependencies.
 
         This reproduces the bug where:
@@ -105,7 +105,7 @@ class FilterTests:
                     f"Expected chunks with height > 500, got {df['chunk_id'].to_list()}"
                 )
 
-    def test_read_with_filter_after_dedup(self, store: MetadataStore):
+    def test_read_with_filter_after_dedup(self, store: MetadataStore) -> None:
         """Test filtering on a feature's column after deduplication.
 
         This tests the scenario where:
@@ -203,7 +203,7 @@ class FilterTests:
                     f"Expected chunks with height > 600 after dedup, got {df['chunk_id'].to_list()}"
                 )
 
-    def test_read_with_columns_and_filter_on_different_column(self, store: MetadataStore):
+    def test_read_with_columns_and_filter_on_different_column(self, store: MetadataStore) -> None:
         """Test reading with specific columns but filtering on a column NOT in that list.
 
         This reproduces the exact bug from the CLI:
@@ -262,7 +262,7 @@ class FilterTests:
                 # And the result should only have the chunk_id column (what we requested)
                 assert df.columns == ["chunk_id"], f"Expected only chunk_id column, got {df.columns}"
 
-    def test_read_with_deps_columns_and_filter_on_own_column(self, store: MetadataStore):
+    def test_read_with_deps_columns_and_filter_on_own_column(self, store: MetadataStore) -> None:
         """Test the EXACT scenario: feature with deps, columns param, filter on own column.
 
         This combines all the conditions from the bug report:
@@ -364,7 +364,7 @@ class FilterTests:
                 # And the result should only have the chunk_id column (what we requested)
                 assert df.columns == ["chunk_id"], f"Expected only chunk_id column, got {df.columns}"
 
-    def test_resolve_update_with_target_filter_on_child_only_column(self, store: MetadataStore):
+    def test_resolve_update_with_target_filter_on_child_only_column(self, store: MetadataStore) -> None:
         """Test resolve_update with target_filters on a column that only exists in child.
 
         This tests the fix for:
@@ -454,7 +454,7 @@ class FilterTests:
                 # we expect to see rows that need updates based on the filtered view
                 assert result is not None
 
-    def test_resolve_update_with_global_filter_on_child_only_column_fails(self, store: MetadataStore):
+    def test_resolve_update_with_global_filter_on_child_only_column_fails(self, store: MetadataStore) -> None:
         """Test that resolve_update with global_filters FAILS on a child-only column.
 
         This verifies the expected behavior: global_filters are applied to ALL features,

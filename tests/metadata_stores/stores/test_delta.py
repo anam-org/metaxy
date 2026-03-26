@@ -10,6 +10,7 @@ import pytest
 from metaxy import HashAlgorithm
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 from metaxy.metadata_store import MetadataStore
+from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
 from tests.metadata_stores.shared import (
     CRUDTests,
@@ -20,6 +21,22 @@ from tests.metadata_stores.shared import (
     VersioningTests,
     WriteTests,
 )
+
+
+@pytest.fixture
+def delta_store(tmp_path: Path) -> DeltaMetadataStore:
+    """A DeltaMetadataStore backed by a local temporary directory."""
+    return DeltaMetadataStore(root_path=tmp_path / "delta_store")
+
+
+@pytest.fixture
+def delta_s3_store(s3_bucket_and_storage_options: tuple[str, dict[str, str]]) -> DeltaMetadataStore:
+    """A DeltaMetadataStore backed by an S3 bucket."""
+    bucket_name, storage_options = s3_bucket_and_storage_options
+    return DeltaMetadataStore(
+        root_path=f"s3://{bucket_name}/delta_store",
+        storage_options=storage_options,
+    )
 
 
 @pytest.mark.delta
@@ -49,16 +66,18 @@ class TestDelta(
         )
 
 
-def test_delta_local_absolute_path(tmp_path, test_features) -> None:
+def test_delta_local_absolute_path(
+    delta_store: DeltaMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify DeltaMetadataStore works with local absolute paths like /tmp/rofl.
 
     This test ensures the store correctly constructs table paths under the root path
     rather than writing to the current directory.
     """
-    store_path = tmp_path / "delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
+    store_path = Path(delta_store._root_uri)
 
-    with DeltaMetadataStore(store_path).open("w") as store:
+    with delta_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -79,11 +98,8 @@ def test_delta_local_absolute_path(tmp_path, test_features) -> None:
         assert result.collect().to_native().height == 1
 
 
-def test_delta_feature_uri_generation(tmp_path) -> None:
+def test_delta_feature_uri_generation(delta_store: DeltaMetadataStore) -> None:
     """Verify _feature_uri generates correct URIs for valid feature keys."""
-    store_path = tmp_path / "delta_store"
-    store = DeltaMetadataStore(store_path)
-
     # Valid feature keys and their expected URI suffixes
     test_cases = [
         ("feature", "feature.delta"),
@@ -94,12 +110,12 @@ def test_delta_feature_uri_generation(tmp_path) -> None:
 
     for key_str, expected_suffix in test_cases:
         key = FeatureKey(key_str)
-        uri = store._feature_uri(key)
-        expected_uri = f"{store._root_uri}/{expected_suffix}"
+        uri = delta_store._feature_uri(key)
+        expected_uri = f"{delta_store._root_uri}/{expected_suffix}"
         assert uri == expected_uri, f"For key '{key_str}' (parts={key.parts}), expected '{expected_uri}', got '{uri}'"
 
 
-def test_delta_feature_key_validation_rejects_empty_parts(tmp_path) -> None:
+def test_delta_feature_key_validation_rejects_empty_parts() -> None:
     """Ensure FeatureKey rejects invalid keys with empty parts.
 
     Leading slashes like '/feature' would create empty parts ('', 'feature')
@@ -117,16 +133,16 @@ def test_delta_feature_key_validation_rejects_empty_parts(tmp_path) -> None:
             FeatureKey(key_str)
 
 
-def test_delta_s3_storage_options_passed(s3_bucket_and_storage_options, test_features) -> None:
+def test_delta_s3_storage_options_passed(
+    delta_s3_store: DeltaMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify storage_options are passed to Delta operations with S3.
 
     This ensures object store credentials are correctly forwarded to delta-rs.
     """
-    bucket_name, storage_options = s3_bucket_and_storage_options
-    store_path = f"s3://{bucket_name}/delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
-    with DeltaMetadataStore(store_path, storage_options=storage_options).open("w") as store:
+    with delta_s3_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -137,13 +153,15 @@ def test_delta_s3_storage_options_passed(s3_bucket_and_storage_options, test_fea
         assert store.has_feature(feature_cls, check_fallback=False)
 
 
-def test_delta_sink_lazyframe_local(tmp_path, test_features) -> None:
+def test_delta_sink_lazyframe_local(
+    delta_store: DeltaMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify LazyFrame.sink_delta works with local storage.
 
     With Polars >= 1.37, lazy frames should be sinked directly without materialization.
     """
-    store_path = tmp_path / "delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
+    store_path = Path(delta_store._root_uri)
 
     # Create a lazy frame (native Polars)
     metadata_lazy = pl.LazyFrame(
@@ -157,7 +175,7 @@ def test_delta_sink_lazyframe_local(tmp_path, test_features) -> None:
         }
     )
 
-    with DeltaMetadataStore(store_path).open("w") as store:
+    with delta_store.open("w") as store:
         store.write(feature_cls, metadata_lazy)
 
         # Verify the table was created
@@ -170,13 +188,13 @@ def test_delta_sink_lazyframe_local(tmp_path, test_features) -> None:
         assert result.collect().to_native().height == 3
 
 
-def test_delta_sink_lazyframe_s3(s3_bucket_and_storage_options, test_features) -> None:
+def test_delta_sink_lazyframe_s3(
+    delta_s3_store: DeltaMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
     """Verify LazyFrame.sink_delta works with S3 storage.
 
     With Polars >= 1.37, lazy frames should be sinked directly without materialization.
     """
-    bucket_name, storage_options = s3_bucket_and_storage_options
-    store_path = f"s3://{bucket_name}/delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
 
     # Create a lazy frame (native Polars)
@@ -191,7 +209,7 @@ def test_delta_sink_lazyframe_s3(s3_bucket_and_storage_options, test_features) -
         }
     )
 
-    with DeltaMetadataStore(store_path, storage_options=storage_options).open("w") as store:
+    with delta_s3_store.open("w") as store:
         store.write(feature_cls, metadata_lazy)
 
         # Verify the feature exists

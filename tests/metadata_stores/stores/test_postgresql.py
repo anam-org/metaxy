@@ -14,7 +14,7 @@ from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-from metaxy.models.feature import current_graph
+from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
@@ -59,7 +59,7 @@ class TestPostgreSQL(
 
 
 @pytest.fixture
-def clean_postgres_db(postgresql_db: str, test_graph):
+def clean_postgres_db(postgresql_db: str, test_graph: FeatureGraph):
     """Provide a clean PostgreSQL database for each test."""
     with PostgreSQLMetadataStore(postgresql_db) as store:
         for table_name in store.conn.list_tables():
@@ -68,22 +68,51 @@ def clean_postgres_db(postgresql_db: str, test_graph):
     yield postgresql_db
 
 
-def test_postgresql_native_implementation(postgresql_db: str, test_graph) -> None:
+@pytest.fixture
+def pg_store(postgresql_db: str) -> PostgreSQLMetadataStore:
+    """Unopened PostgreSQL store backed by the shared test database."""
+    return PostgreSQLMetadataStore(postgresql_db)
+
+
+@pytest.fixture
+def clean_pg_store(clean_postgres_db: str) -> PostgreSQLMetadataStore:
+    """Unopened PostgreSQL store backed by a clean (table-purged) test database."""
+    return PostgreSQLMetadataStore(clean_postgres_db)
+
+
+@pytest.fixture
+def clean_pg_store_auto_cast_on(clean_postgres_db: str) -> PostgreSQLMetadataStore:
+    """Unopened PostgreSQL store with auto_cast_struct_for_jsonb=True."""
+    return PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True)
+
+
+@pytest.fixture
+def clean_pg_store_auto_cast_off(clean_postgres_db: str) -> PostgreSQLMetadataStore:
+    """Unopened PostgreSQL store with auto_cast_struct_for_jsonb=False."""
+    return PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=False)
+
+
+@pytest.fixture
+def dummy_pg_store() -> PostgreSQLMetadataStore:
+    """PostgreSQL store with dummy connection params, never opened."""
+    return PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
+
+
+def test_postgresql_native_implementation(pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph) -> None:
     """Test that PostgreSQL store always uses Polars engine for versioning."""
     import narwhals as nw
 
-    with PostgreSQLMetadataStore(postgresql_db) as store:
+    with pg_store as store:
         assert store.native_implementation() == nw.Implementation.POLARS
 
 
-def test_postgresql_connection_string_init(postgresql_db: str, test_graph) -> None:
+def test_postgresql_connection_string_init(pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph) -> None:
     """Test initialization with connection string."""
-    store = PostgreSQLMetadataStore(postgresql_db)
-    assert not store._is_open
+    assert not pg_store._is_open
 
-    with store.open():
-        assert store._is_open
-        assert store._conn is not None
+    with pg_store.open():
+        assert pg_store._is_open
+        assert pg_store._conn is not None
 
 
 def test_postgresql_connection_params_init() -> None:
@@ -133,12 +162,14 @@ def test_with_search_path_appends_to_existing_options_with_percent20() -> None:
     assert "+-csearch_path=isolated_schema" not in parsed.query
 
 
-def test_postgresql_struct_to_jsonb_roundtrip(clean_postgres_db: str, test_graph, test_features: dict) -> None:
+def test_postgresql_struct_to_jsonb_roundtrip(
+    clean_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """Test that struct columns serialize to JSONB and parse back correctly.
 
     This is critical for PostgreSQL - verifies the struct ↔ JSONB conversion layer works.
     """
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         # Write data with struct columns
         original_metadata = pl.DataFrame(
             {
@@ -159,9 +190,9 @@ def test_postgresql_struct_to_jsonb_roundtrip(clean_postgres_db: str, test_graph
         pl.testing.assert_frame_equal(result_sorted, original_metadata.sort("sample_uid"), check_dtypes=False)
 
 
-def test_postgresql_uses_ibis_backend(postgresql_db: str, test_graph) -> None:
+def test_postgresql_uses_ibis_backend(pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph) -> None:
     """Test that PostgreSQL store uses Ibis backend."""
-    with PostgreSQLMetadataStore(postgresql_db) as store:
+    with pg_store as store:
         # Should have conn
         assert hasattr(store, "conn")
         # Backend should be postgres
@@ -169,21 +200,21 @@ def test_postgresql_uses_ibis_backend(postgresql_db: str, test_graph) -> None:
 
 
 def test_postgresql_create_versioning_engine_uses_polars_without_hash_functions(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """PostgreSQL should construct PolarsVersioningEngine without hash_functions kwarg."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         plan = store._resolve_feature_plan(test_features["UpstreamFeatureA"].key)
         with store._create_versioning_engine(plan) as engine:
             assert isinstance(engine, PolarsVersioningEngine)
 
 
 def test_postgresql_auto_cast_false_only_converts_system_columns(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_off: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """With auto_cast=False, transform_before_write leaves user Struct columns unchanged."""
     feature = test_features["UpstreamFeatureA"]
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=False).open(mode="w") as store:
+    with clean_pg_store_auto_cast_off.open(mode="w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -210,12 +241,12 @@ def test_postgresql_auto_cast_false_only_converts_system_columns(
 
 
 def test_postgresql_auto_cast_false_only_decodes_system_columns_on_read(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_off: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """With auto_cast=False, user TEXT JSON stays as text while system columns still decode."""
     feature = test_features["UpstreamFeatureA"]
 
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=False).open(mode="r") as store:
+    with clean_pg_store_auto_cast_off.open(mode="r") as store:
         table_name = store.get_table_name(feature.key)
         feature_version = current_graph().get_feature_version(feature.key)
         project_version = current_graph().project_version
@@ -296,11 +327,13 @@ def test_postgresql_auto_cast_false_only_decodes_system_columns_on_read(
         ]
 
 
-def test_postgresql_user_defined_jsonb_column(clean_postgres_db: str, test_graph, test_features: dict) -> None:
+def test_postgresql_user_defined_jsonb_column(
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """User-defined JSONB columns should decode back to Polars Struct on read."""
     feature = test_features["UpstreamFeatureA"]
 
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="r") as store:
+    with clean_pg_store_auto_cast_on.open(mode="r") as store:
         table_name = store.get_table_name(feature.key)
         feature_version = current_graph().get_feature_version(feature.key)
         project_version = current_graph().project_version
@@ -387,8 +420,8 @@ def test_postgresql_user_defined_jsonb_column(clean_postgres_db: str, test_graph
     ids=["jsonb", "json"],
 )
 def test_postgresql_auto_cast_struct_for_json_columns(
-    clean_postgres_db: str,
-    test_graph,
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore,
+    test_graph: FeatureGraph,
     test_features: dict,
     user_column_type: str,
     expected_pg_type: str,
@@ -396,7 +429,7 @@ def test_postgresql_auto_cast_struct_for_json_columns(
     """auto_cast_struct_for_jsonb=True should adapt Structs to the target PostgreSQL JSON type."""
     feature = test_features["UpstreamFeatureA"]
 
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
+    with clean_pg_store_auto_cast_on.open(mode="w") as store:
         table_name = store.get_table_name(feature.key)
 
         store.conn.raw_sql(f"DROP TABLE IF EXISTS {table_name}")  # ty: ignore[unresolved-attribute]
@@ -447,9 +480,9 @@ def test_postgresql_auto_cast_struct_for_json_columns(
         assert raw_types == [(expected_pg_type,), (expected_pg_type,)]
 
 
-def test_postgresql_default_hash_algorithm(postgresql_db: str) -> None:
+def test_postgresql_default_hash_algorithm(pg_store: PostgreSQLMetadataStore) -> None:
     """Test that PostgreSQL defaults to XXHASH32 (computed in Polars)."""
-    with PostgreSQLMetadataStore(postgresql_db) as store:
+    with pg_store as store:
         assert store._get_default_hash_algorithm() == HashAlgorithm.XXHASH32
 
 
@@ -470,10 +503,12 @@ def test_postgresql_validate_hash_algorithm_uses_polars_public_api(monkeypatch: 
         store._validate_hash_algorithm_support()
 
 
-def test_postgresql_hard_delete_with_single_filter(clean_postgres_db: str, test_graph, test_features: dict) -> None:
+def test_postgresql_hard_delete_with_single_filter(
+    clean_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """Hard delete should remove rows matching a single Narwhals predicate."""
     feature = test_features["UpstreamFeatureA"]
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         store.write(
             feature,
             pl.DataFrame(
@@ -506,10 +541,12 @@ def test_postgresql_hard_delete_with_single_filter(clean_postgres_db: str, test_
         assert result["sample_uid"].to_list() == [1, 3]
 
 
-def test_postgresql_hard_delete_with_multiple_filters(clean_postgres_db: str, test_graph, test_features: dict) -> None:
+def test_postgresql_hard_delete_with_multiple_filters(
+    clean_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """Hard delete should combine multiple Narwhals predicates with AND semantics."""
     feature = test_features["UpstreamFeatureA"]
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         store.write(
             feature,
             pl.DataFrame(
@@ -544,11 +581,11 @@ def test_postgresql_hard_delete_with_multiple_filters(clean_postgres_db: str, te
 
 
 def test_postgresql_hard_delete_with_empty_filter_list_deletes_all(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Hard delete with an empty filter list should delete all rows without errors."""
     feature = test_features["UpstreamFeatureA"]
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         store.write(
             feature,
             pl.DataFrame(
@@ -593,15 +630,15 @@ def test_postgresql_hard_delete_with_empty_filter_list_deletes_all(
     ids=["or_predicate", "in_predicate", "nested_boolean_predicate"],
 )
 def test_postgresql_hard_delete_with_complex_predicates(
-    clean_postgres_db: str,
-    test_graph,
+    clean_pg_store: PostgreSQLMetadataStore,
+    test_graph: FeatureGraph,
     test_features: dict,
     filters: list[nw.Expr],
     expected_remaining: list[int],
 ) -> None:
     """Hard delete should support complex predicate shapes compiled through SQL WHERE extraction."""
     feature = test_features["UpstreamFeatureA"]
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         store.write(
             feature,
             pl.DataFrame(
@@ -677,20 +714,21 @@ def test_postgresql_hard_delete_with_complex_predicates(
         "user-float64-auto_off",
     ],
 )
-def test_get_json_columns_for_struct(col_name: str, col_dtype: dt.DataType, auto_cast: bool, expected: bool) -> None:
+def test_get_json_columns_for_struct(
+    dummy_pg_store: PostgreSQLMetadataStore, col_name: str, col_dtype: dt.DataType, auto_cast: bool, expected: bool
+) -> None:
     """Verify _get_json_columns_for_struct correctly identifies columns by type and auto_cast setting."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
-    store.auto_cast_struct_for_jsonb = auto_cast
+    dummy_pg_store.auto_cast_struct_for_jsonb = auto_cast
     schema = sch.Schema.from_tuples([(col_name, col_dtype)])
-    result = store._get_json_columns_for_struct(schema)
+    result = dummy_pg_store._get_json_columns_for_struct(schema)
     assert (col_name in result) == expected
 
 
 def test_postgresql_auto_create_struct_columns_use_jsonb(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Auto-created Struct columns should use JSONB instead of TEXT."""
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
+    with clean_pg_store_auto_cast_on.open(mode="w") as store:
         feature = test_features["UpstreamFeatureA"]
         table_name = store.get_table_name(feature.key)
         df = pl.DataFrame(
@@ -732,10 +770,10 @@ def test_postgresql_auto_create_struct_columns_use_jsonb(
 
 
 def test_postgresql_auto_cast_struct_for_jsonb_all_null_values(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """All-NULL user Struct values stored as JSONB remain nullable strings on read."""
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
+    with clean_pg_store_auto_cast_on.open(mode="w") as store:
         feature = test_features["UpstreamFeatureA"]
         table_name = store.get_table_name(feature.key)
         df = pl.DataFrame(
@@ -780,7 +818,7 @@ def test_postgresql_auto_cast_struct_for_jsonb_all_null_values(
 
 @pytest.mark.parametrize("auto_cast", [True, False], ids=["auto_cast_on", "auto_cast_off"])
 def test_postgresql_system_struct_columns_all_null_roundtrip(
-    clean_postgres_db: str, test_graph, test_features: dict, auto_cast: bool
+    clean_postgres_db: str, test_graph: FeatureGraph, test_features: dict, auto_cast: bool
 ) -> None:
     """All-null system JSON payloads should roundtrip without forcing a Struct schema."""
     with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=auto_cast).open(mode="w") as store:
@@ -806,10 +844,10 @@ def test_postgresql_system_struct_columns_all_null_roundtrip(
 
 
 def test_postgresql_auto_cast_struct_for_jsonb_user_jsonb_all_null_values(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """User JSONB columns with all SQL NULL values should roundtrip as nullable strings."""
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
+    with clean_pg_store_auto_cast_on.open(mode="w") as store:
         feature = test_features["UpstreamFeatureA"]
         table_name = store.get_table_name(feature.key)
 
@@ -852,10 +890,10 @@ def test_postgresql_auto_cast_struct_for_jsonb_user_jsonb_all_null_values(
 
 
 def test_postgresql_auto_cast_struct_for_jsonb_false_all_null_values(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_off: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """With auto_cast=False, all-NULL user JSON strings stay strings."""
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=False).open(mode="w") as store:
+    with clean_pg_store_auto_cast_off.open(mode="w") as store:
         df = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -883,7 +921,9 @@ def test_postgresql_auto_cast_struct_for_jsonb_false_all_null_values(
         assert result["user_json"].to_list() == [None, None]
 
 
-def test_postgresql_parse_json_user_column_all_null_values(postgresql_db: str, test_graph, test_features: dict) -> None:
+def test_postgresql_parse_json_user_column_all_null_values(
+    postgresql_db: str, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """All-NULL user JSON columns infer pl.Null when input is created without dtype hints."""
     with PostgreSQLMetadataStore(postgresql_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
         feature_key = test_features["UpstreamFeatureA"].key
@@ -895,9 +935,10 @@ def test_postgresql_parse_json_user_column_all_null_values(postgresql_db: str, t
         assert result["user_json"].null_count() == len(result)
 
 
-def test_postgresql_parse_json_user_utf8_column_all_null_values(test_graph, test_features: dict) -> None:
+def test_postgresql_parse_json_user_utf8_column_all_null_values(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """All-NULL nullable UTF8 user columns should remain UTF8 (not Struct) when parsing candidates."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     feature_key = test_features["UpstreamFeatureA"].key
     pl_df = pl.DataFrame(
         {
@@ -906,15 +947,16 @@ def test_postgresql_parse_json_user_utf8_column_all_null_values(test_graph, test
         }
     )
 
-    result = store._parse_json_to_struct_columns(pl_df, feature_key, ["user_text"])
+    result = dummy_pg_store._parse_json_to_struct_columns(pl_df, feature_key, ["user_text"])
 
     assert result.schema["user_text"] == pl.Utf8
     assert result["user_text"].to_list() == [None, None]
 
 
-def test_postgresql_parse_json_user_utf8_literal_null_values(test_graph, test_features: dict) -> None:
+def test_postgresql_parse_json_user_utf8_literal_null_values(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """Literal \"null\" values in UTF8 user columns should remain UTF8 strings."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     feature_key = test_features["UpstreamFeatureA"].key
     pl_df = pl.DataFrame(
         {
@@ -923,17 +965,17 @@ def test_postgresql_parse_json_user_utf8_literal_null_values(test_graph, test_fe
         }
     )
 
-    result = store._parse_json_to_struct_columns(pl_df, feature_key, ["user_text"])
+    result = dummy_pg_store._parse_json_to_struct_columns(pl_df, feature_key, ["user_text"])
 
     assert result.schema["user_text"] == pl.Utf8
     assert result["user_text"].to_list() == ["null", None]
 
 
 def test_postgresql_plain_nullable_text_columns_remain_utf8_after_read(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Nullable plain TEXT columns should not be auto-converted to Struct on read."""
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
+    with clean_pg_store_auto_cast_on.open(mode="w") as store:
         df = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -973,9 +1015,10 @@ def test_postgresql_plain_nullable_text_columns_remain_utf8_after_read(
         assert result["plain_text_with_object_json"].to_list() == ['{"looks":"json"}', None]
 
 
-def test_parse_json_to_struct_columns_missing_feature_in_graph_decodes_system_structs(test_graph) -> None:
+def test_parse_json_to_struct_columns_missing_feature_in_graph_decodes_system_structs(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Missing feature definitions should still decode Metaxy system columns."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     original_value = '{"frames":"h1","audio":"h2"}'
     df = pl.DataFrame(
         {
@@ -986,7 +1029,7 @@ def test_parse_json_to_struct_columns_missing_feature_in_graph_decodes_system_st
     )
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = store._parse_json_to_struct_columns(
+    result = dummy_pg_store._parse_json_to_struct_columns(
         df,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD],
@@ -995,9 +1038,10 @@ def test_parse_json_to_struct_columns_missing_feature_in_graph_decodes_system_st
     assert result[METAXY_PROVENANCE_BY_FIELD].to_list() == [{"frames": "h1", "audio": "h2"}]
 
 
-def test_postgresql_validate_required_system_columns_without_feature_schema(test_graph) -> None:
+def test_postgresql_validate_required_system_columns_without_feature_schema(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Required system columns should validate after inference-based decode despite key-order differences."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
     df = pl.DataFrame(
         {
@@ -1005,12 +1049,12 @@ def test_postgresql_validate_required_system_columns_without_feature_schema(test
             METAXY_DATA_VERSION_BY_FIELD: ['{"audio":"v2","frames":"v1"}'],
         }
     )
-    parsed = store._parse_json_to_struct_columns(
+    parsed = dummy_pg_store._parse_json_to_struct_columns(
         df,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
@@ -1019,9 +1063,11 @@ def test_postgresql_validate_required_system_columns_without_feature_schema(test
     assert isinstance(parsed.schema[METAXY_DATA_VERSION_BY_FIELD], pl.Struct)
 
 
-def test_postgresql_read_missing_feature_schema_decodes_system_columns(clean_postgres_db: str, test_graph) -> None:
+def test_postgresql_read_missing_feature_schema_decodes_system_columns(
+    clean_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Public read() should decode required system columns even when JSON key order differs."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="r") as store:
+    with clean_pg_store.open(mode="r") as store:
         missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
         table_name = store.get_table_name(missing_feature_key)
 
@@ -1066,10 +1112,10 @@ def test_postgresql_read_missing_feature_schema_decodes_system_columns(clean_pos
 
 
 def test_postgresql_read_missing_feature_schema_fails_fast_on_invalid_system_json(
-    clean_postgres_db: str, test_graph
+    clean_pg_store: PostgreSQLMetadataStore, test_graph
 ) -> None:
     """Public read() should fail early when required system columns are not decoded to Struct."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="r") as store:
+    with clean_pg_store.open(mode="r") as store:
         missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
         table_name = store.get_table_name(missing_feature_key)
 
@@ -1100,9 +1146,11 @@ def test_postgresql_read_missing_feature_schema_fails_fast_on_invalid_system_jso
             )
 
 
-def test_postgresql_read_missing_feature_schema_allows_all_null_system_json(clean_postgres_db: str, test_graph) -> None:
+def test_postgresql_read_missing_feature_schema_allows_all_null_system_json(
+    clean_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """All-NULL required system columns should be treated as no payload and not fail."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="r") as store:
+    with clean_pg_store.open(mode="r") as store:
         missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
         table_name = store.get_table_name(missing_feature_key)
 
@@ -1141,7 +1189,7 @@ def test_postgresql_read_missing_feature_schema_allows_all_null_system_json(clea
 
 @pytest.mark.parametrize("auto_cast", [True, False], ids=["auto_cast_on", "auto_cast_off"])
 def test_postgresql_read_missing_feature_schema_all_null_system_json_auto_cast_modes(
-    clean_postgres_db: str, test_graph, auto_cast: bool
+    clean_postgres_db: str, test_graph: FeatureGraph, auto_cast: bool
 ) -> None:
     """All-NULL required system columns should not fail regardless of auto_cast mode."""
     with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=auto_cast).open(mode="r") as store:
@@ -1180,9 +1228,10 @@ def test_postgresql_read_missing_feature_schema_all_null_system_json_auto_cast_m
         assert result[METAXY_DATA_VERSION_BY_FIELD].to_list() == [None, None]
 
 
-def test_postgresql_validate_required_system_columns_allows_all_null_without_feature_schema(test_graph) -> None:
+def test_postgresql_validate_required_system_columns_allows_all_null_without_feature_schema(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Validation should allow all-NULL required system columns without feature schema context."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
     parsed = pl.DataFrame(
         {
@@ -1199,7 +1248,7 @@ def test_postgresql_validate_required_system_columns_allows_all_null_without_fea
         }
     )
 
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
@@ -1207,12 +1256,12 @@ def test_postgresql_validate_required_system_columns_allows_all_null_without_fea
 
 
 def test_postgresql_known_feature_empty_result_preserves_system_struct_schema(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Empty reads for known features should preserve Metaxy struct schemas."""
     feature = test_features["UpstreamFeatureA"]
 
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="w") as store:
+    with clean_pg_store.open(mode="w") as store:
         store.write(
             feature,
             pl.DataFrame(
@@ -1238,9 +1287,11 @@ def test_postgresql_known_feature_empty_result_preserves_system_struct_schema(
         assert isinstance(result.schema[METAXY_DATA_VERSION_BY_FIELD], pl.Struct)
 
 
-def test_postgresql_read_missing_feature_schema_empty_result_returns_empty(clean_postgres_db: str, test_graph) -> None:
+def test_postgresql_read_missing_feature_schema_empty_result_returns_empty(
+    clean_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Missing-feature reads with zero rows should return empty results, not validation errors."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="r") as store:
+    with clean_pg_store.open(mode="r") as store:
         missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
         table_name = store.get_table_name(missing_feature_key)
 
@@ -1267,10 +1318,10 @@ def test_postgresql_read_missing_feature_schema_empty_result_returns_empty(clean
 
 
 def test_postgresql_read_missing_feature_schema_filter_to_zero_rows_returns_empty(
-    clean_postgres_db: str, test_graph
+    clean_pg_store: PostgreSQLMetadataStore, test_graph
 ) -> None:
     """Missing-feature reads filtered to zero rows should return empty results, not validation errors."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="r") as store:
+    with clean_pg_store.open(mode="r") as store:
         missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
         table_name = store.get_table_name(missing_feature_key)
 
@@ -1305,10 +1356,10 @@ def test_postgresql_read_missing_feature_schema_filter_to_zero_rows_returns_empt
 
 
 def test_postgresql_read_missing_required_system_columns_raises_schema_error(
-    clean_postgres_db: str, test_graph
+    clean_pg_store: PostgreSQLMetadataStore, test_graph
 ) -> None:
     """Missing required Metaxy system columns should raise a clear schema error on full reads."""
-    with PostgreSQLMetadataStore(clean_postgres_db).open(mode="r") as store:
+    with clean_pg_store.open(mode="r") as store:
         missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
         table_name = store.get_table_name(missing_feature_key)
 
@@ -1331,9 +1382,10 @@ def test_postgresql_read_missing_required_system_columns_raises_schema_error(
             )
 
 
-def test_parse_json_system_columns_all_null_remain_null_without_forced_schema(test_graph, test_features: dict) -> None:
+def test_parse_json_system_columns_all_null_remain_null_without_forced_schema(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """All-NULL required system columns should not force a Struct schema."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     feature_key = test_features["UpstreamFeatureA"].key
     df = pl.DataFrame(
         {
@@ -1342,12 +1394,12 @@ def test_parse_json_system_columns_all_null_remain_null_without_forced_schema(te
         }
     )
 
-    parsed = store._parse_json_to_struct_columns(
+    parsed = dummy_pg_store._parse_json_to_struct_columns(
         df,
         feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
@@ -1359,9 +1411,10 @@ def test_parse_json_system_columns_all_null_remain_null_without_forced_schema(te
     assert parsed[METAXY_DATA_VERSION_BY_FIELD].to_list() == [None, None]
 
 
-def test_validate_required_system_columns_allow_inferred_sparse_fields(test_graph, test_features: dict) -> None:
+def test_validate_required_system_columns_allow_inferred_sparse_fields(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
+) -> None:
     """Required system columns should rely on inferred Struct fields without backfilling missing keys."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     feature_key = test_features["UpstreamFeatureA"].key
     df = pl.DataFrame(
         {
@@ -1369,12 +1422,12 @@ def test_validate_required_system_columns_allow_inferred_sparse_fields(test_grap
             METAXY_DATA_VERSION_BY_FIELD: ['{"frames":"v1"}'],
         }
     )
-    parsed = store._parse_json_to_struct_columns(
+    parsed = dummy_pg_store._parse_json_to_struct_columns(
         df,
         feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
@@ -1387,10 +1440,9 @@ def test_validate_required_system_columns_allow_inferred_sparse_fields(test_grap
 
 
 def test_validate_required_system_columns_ignores_field_order_with_feature_schema(
-    test_graph, test_features: dict
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Field-name order should not matter for inferred Struct validation."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     feature_key = test_features["UpstreamFeatureA"].key
     parsed = pl.DataFrame(
         {
@@ -1399,7 +1451,7 @@ def test_validate_required_system_columns_ignores_field_order_with_feature_schem
         }
     )
 
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
@@ -1407,10 +1459,9 @@ def test_validate_required_system_columns_ignores_field_order_with_feature_schem
 
 
 def test_validate_required_system_columns_allows_extra_fields_with_feature_schema(
-    test_graph, test_features: dict
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Extra inferred fields should remain valid when system JSON decodes to Struct."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     feature_key = test_features["UpstreamFeatureA"].key
     parsed = pl.DataFrame(
         {
@@ -1419,16 +1470,17 @@ def test_validate_required_system_columns_allows_extra_fields_with_feature_schem
         }
     )
 
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
 
 
-def test_validate_required_system_columns_without_feature_schema_allows_different_field_sets(test_graph) -> None:
+def test_validate_required_system_columns_without_feature_schema_allows_different_field_sets(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Required system columns should not need matching inferred field sets."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
     parsed = pl.DataFrame(
         {
@@ -1437,16 +1489,17 @@ def test_validate_required_system_columns_without_feature_schema_allows_differen
         }
     )
 
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
 
 
-def test_validate_required_system_columns_without_feature_schema_ignores_field_order(test_graph) -> None:
+def test_validate_required_system_columns_without_feature_schema_ignores_field_order(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Without feature schema lookup, decoded Struct validation ignores key order."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
     parsed = pl.DataFrame(
         {
@@ -1455,16 +1508,17 @@ def test_validate_required_system_columns_without_feature_schema_ignores_field_o
         }
     )
 
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
 
 
-def test_validate_required_system_columns_without_feature_schema_allows_consistent_extra_fields(test_graph) -> None:
+def test_validate_required_system_columns_without_feature_schema_allows_consistent_extra_fields(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Without feature schema lookup, extra inferred fields should remain valid."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
     parsed = pl.DataFrame(
         {
@@ -1473,55 +1527,58 @@ def test_validate_required_system_columns_without_feature_schema_allows_consiste
         }
     )
 
-    store._validate_required_system_struct_columns(
+    dummy_pg_store._validate_required_system_struct_columns(
         parsed,
         missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
 
 
-def test_parse_json_user_columns_do_not_require_feature_in_graph(test_graph) -> None:
+def test_parse_json_user_columns_do_not_require_feature_in_graph(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """User JSON decode should not require feature definition lookup."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     df = pl.DataFrame({"user_json": ['{"model":"resnet","version":"1"}']})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
+    result = dummy_pg_store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
 
     assert isinstance(result.schema["user_json"], pl.Struct)
     assert result["user_json"].to_list() == [{"model": "resnet", "version": "1"}]
 
 
-def test_parse_json_user_columns_infers_from_full_column(test_graph) -> None:
+def test_parse_json_user_columns_infers_from_full_column(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph
+) -> None:
     """Schema inference for user JSON should include sparse keys from all rows."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     df = pl.DataFrame({"user_json": ['{"a":1}', '{"a":2,"b":"x"}']})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
+    result = dummy_pg_store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
 
     assert isinstance(result.schema["user_json"], pl.Struct)
     assert result["user_json"].to_list() == [{"a": 1, "b": None}, {"a": 2, "b": "x"}]
 
 
-def test_parse_json_user_columns_with_incompatible_shapes_fallback_to_strings(test_graph) -> None:
+def test_parse_json_user_columns_with_incompatible_shapes_fallback_to_strings(
+    dummy_pg_store: PostgreSQLMetadataStore, test_graph
+) -> None:
     """Incompatible user JSON rows should remain strings instead of failing decode."""
-    store = PostgreSQLMetadataStore(connection_params={"host": "localhost", "database": "dummy"})
     original_values = ['{"a":1}', '{"a":{"nested":2}}']
     df = pl.DataFrame({"user_json": original_values})
     missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
+    result = dummy_pg_store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
 
     assert result.schema["user_json"] == pl.Utf8
     assert result["user_json"].to_list() == original_values
 
 
 def test_postgresql_user_jsonb_infers_schema_from_all_rows(
-    clean_postgres_db: str, test_graph, test_features: dict
+    clean_pg_store_auto_cast_on: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """User JSONB decode should infer schema across all rows without dropping sparse fields."""
-    with PostgreSQLMetadataStore(clean_postgres_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
+    with clean_pg_store_auto_cast_on.open(mode="w") as store:
         feature = test_features["UpstreamFeatureA"]
 
         df = pl.DataFrame(

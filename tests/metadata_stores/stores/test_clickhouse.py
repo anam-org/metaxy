@@ -16,6 +16,7 @@ from metaxy import FeatureDefinition, HashAlgorithm
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store import MetadataStore
+from metaxy.models.feature import FeatureGraph
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -25,6 +26,18 @@ from tests.metadata_stores.shared import (
     VersioningTests,
     WriteTests,
 )
+
+
+@pytest.fixture
+def clickhouse_store(clickhouse_db: str) -> ClickHouseMetadataStore:
+    """ClickHouseMetadataStore with default settings."""
+    return ClickHouseMetadataStore(clickhouse_db)
+
+
+@pytest.fixture
+def clickhouse_store_no_autocreate(clickhouse_db: str) -> ClickHouseMetadataStore:
+    """ClickHouseMetadataStore with auto_create_tables=False."""
+    return ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False)
 
 
 @pytest.mark.ibis
@@ -40,7 +53,7 @@ class TestClickHouse(
     WriteTests,
 ):
     @pytest.fixture
-    def store(self, request) -> MetadataStore:
+    def store(self, request: pytest.FixtureRequest) -> MetadataStore:
         connection_string = request.getfixturevalue("clickhouse_db")
         return ClickHouseMetadataStore(
             connection_string=connection_string,
@@ -48,7 +61,7 @@ class TestClickHouse(
         )
 
     @pytest.fixture
-    def named_store(self, request) -> MetadataStore:
+    def named_store(self, request: pytest.FixtureRequest) -> MetadataStore:
         connection_string = request.getfixturevalue("clickhouse_db")
         return ClickHouseMetadataStore(
             connection_string=connection_string,
@@ -57,17 +70,11 @@ class TestClickHouse(
         )
 
 
-def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]) -> None:
-    """Test that feature keys are converted to table names correctly.
-
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
-    """
-    with ClickHouseMetadataStore(clickhouse_db).open("w") as store:
-        import polars as pl
-
+def test_clickhouse_table_naming(
+    clickhouse_store: ClickHouseMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
+) -> None:
+    """Test that feature keys are converted to table names correctly."""
+    with clickhouse_store.open("w") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
@@ -82,16 +89,10 @@ def test_clickhouse_table_naming(clickhouse_db: str, test_graph, test_features: 
 
 
 def test_clickhouse_uses_ibis_backend(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store: ClickHouseMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Test that ClickHouse store uses Ibis backend.
-
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
-    """
-    with ClickHouseMetadataStore(clickhouse_db) as store:
+    """Test that ClickHouse store uses Ibis backend."""
+    with clickhouse_store as store:
         # Should have conn
         assert hasattr(store, "conn")
         # Backend should be clickhouse
@@ -99,41 +100,29 @@ def test_clickhouse_uses_ibis_backend(
 
 
 def test_clickhouse_conn_property_enforcement(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store: ClickHouseMetadataStore, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Test that conn property enforces store is open.
-
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
-    """
+    """Test that conn property enforces store is open."""
     from metaxy.metadata_store import StoreNotOpenError
-
-    store = ClickHouseMetadataStore(clickhouse_db)
 
     # Should raise when accessing conn while closed (Ibis error message)
     with pytest.raises(StoreNotOpenError, match="Ibis connection is not open"):
-        _ = store.conn
+        _ = clickhouse_store.conn
 
     # Should work when open
-    with store.open():
-        conn = store.conn
+    with clickhouse_store.open():
+        conn = clickhouse_store.conn
         assert conn is not None
 
-    with store.open("w"):
-        conn = store.conn
+    with clickhouse_store.open("w"):
+        conn = clickhouse_store.conn
         assert conn is not None
 
 
-def test_clickhouse_persistence(clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]) -> None:
-    """Test that data persists across different store instances.
-
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
-    """
+def test_clickhouse_persistence(
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
+) -> None:
+    """Test that data persists across different store instances."""
 
     # Write data in first instance
     with ClickHouseMetadataStore(clickhouse_db).open("w") as store1:
@@ -158,7 +147,7 @@ def test_clickhouse_persistence(clickhouse_db: str, test_graph, test_features: d
 
 
 def test_clickhouse_hash_algorithms(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that ClickHouse supports MD5, XXHASH32, and XXHASH64 hash algorithms.
 
@@ -197,7 +186,7 @@ def test_clickhouse_hash_algorithms(
 
 
 def test_clickhouse_config_instantiation(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test instantiating ClickHouse store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -247,7 +236,7 @@ def test_clickhouse_config_with_connection_params(test_graph, test_features: dic
 
 
 def test_clickhouse_config_with_hash_algorithm(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test ClickHouse store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -274,7 +263,7 @@ def test_clickhouse_config_with_hash_algorithm(
 
 
 def test_clickhouse_config_with_fallback_stores(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test ClickHouse store config with fallback stores."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -307,7 +296,9 @@ def test_clickhouse_config_with_fallback_stores(
 
 
 def test_clickhouse_json_column_type(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test that native ClickHouse JSON columns are handled correctly.
 
@@ -327,7 +318,7 @@ def test_clickhouse_json_column_type(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with clickhouse_store_no_autocreate as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -400,7 +391,9 @@ def test_clickhouse_json_column_type(
 
 
 def test_clickhouse_map_column_type(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test that ClickHouse Map(K,V) columns are converted to Struct on read.
 
@@ -414,7 +407,7 @@ def test_clickhouse_map_column_type(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with clickhouse_store_no_autocreate as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -484,7 +477,9 @@ def test_clickhouse_map_column_type(
 
 
 def test_clickhouse_map_column_empty_table_read(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test reading from an EMPTY table with Map(String, String) columns.
 
@@ -502,7 +497,7 @@ def test_clickhouse_map_column_empty_table_read(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with clickhouse_store_no_autocreate as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -545,7 +540,9 @@ def test_clickhouse_map_column_empty_table_read(
 
 
 def test_clickhouse_map_column_resolve_update_write(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test resolve_update and write with Map(String, String) columns.
 
@@ -561,7 +558,7 @@ def test_clickhouse_map_column_resolve_update_write(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+    with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -630,7 +627,9 @@ def test_clickhouse_map_column_resolve_update_write(
 
 
 def test_clickhouse_map_column_write_from_ibis_struct(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test writing Ibis-backed DataFrame with Struct columns to Map columns.
 
@@ -658,7 +657,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
     feature_key = feature_cls.spec.key
     plan = test_graph.get_feature_plan(feature_key)
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+    with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -745,7 +744,9 @@ def test_clickhouse_map_column_write_from_ibis_struct(
 
 
 def test_clickhouse_user_defined_map_column(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test that user-defined Map(String, T) columns are preserved (not transformed).
 
@@ -765,7 +766,7 @@ def test_clickhouse_user_defined_map_column(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False) as store:
+    with clickhouse_store_no_autocreate as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -842,7 +843,9 @@ def test_clickhouse_user_defined_map_column(
 
 
 def test_clickhouse_auto_cast_struct_for_map_true(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test auto_cast_struct_for_map=True converts user Struct columns to Map on write.
 
@@ -854,7 +857,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
     feature_key = feature_cls.spec.key
 
     # auto_cast_struct_for_map=True is the default
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+    with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -921,7 +924,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
 
 
 def test_clickhouse_auto_cast_struct_for_map_false(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test auto_cast_struct_for_map=False does NOT convert user Struct columns.
 
@@ -982,7 +985,9 @@ def test_clickhouse_auto_cast_struct_for_map_false(
 
 
 def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test auto_cast_struct_for_map=True works with Ibis-backed DataFrames.
 
@@ -995,7 +1000,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+    with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1080,7 +1085,9 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
 
 def test_clickhouse_auto_cast_struct_for_map_non_string_values(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test auto_cast_struct_for_map with non-string Map value types.
 
@@ -1090,7 +1097,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+    with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1155,7 +1162,9 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
 
 
 def test_clickhouse_auto_cast_struct_for_map_empty_struct(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_store_no_autocreate: ClickHouseMetadataStore,
+    test_graph: FeatureGraph,
+    test_features: dict[str, FeatureDefinition],
 ) -> None:
     """Test auto_cast_struct_for_map handles empty structs gracefully.
 
@@ -1165,7 +1174,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
     feature_cls = test_features["UpstreamFeatureA"]
     feature_key = feature_cls.spec.key
 
-    with ClickHouseMetadataStore(clickhouse_db, auto_create_tables=False).open("w") as store:
+    with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
         table_name = store.get_table_name(feature_key)
 
@@ -1227,7 +1236,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
 
 
 def test_clickhouse_auto_cast_struct_for_map_null_values(
-    clickhouse_db: str, test_graph, test_features: dict[str, FeatureDefinition]
+    clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
     """Test that Struct columns with NULL values are handled correctly.
 

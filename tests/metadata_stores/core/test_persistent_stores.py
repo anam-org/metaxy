@@ -14,14 +14,18 @@ from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,
+    MetadataStore,
     StoreNotOpenError,
 )
 from metaxy.metadata_store.system import SystemTableStorage
+from metaxy.models.feature import FeatureGraph
 
 # Context Manager Tests
 
 
-def test_store_requires_context_manager(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_store_requires_context_manager(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that operations outside context manager raise error."""
     data = pl.DataFrame(
         {
@@ -42,7 +46,9 @@ def test_store_requires_context_manager(persistent_store, test_graph, test_featu
         persistent_store.read(test_features["UpstreamFeatureA"])
 
 
-def test_store_context_manager(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_store_context_manager(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that store works as a context manager."""
     with persistent_store.open("w") as store:
         # Store should be open
@@ -64,7 +70,9 @@ def test_store_context_manager(persistent_store, test_graph, test_features: dict
 # Basic CRUD Tests
 
 
-def test_write_and_read(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_write_and_read(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test basic write and read operations."""
     with persistent_store.open("w") as store:
         metadata = pl.DataFrame(
@@ -88,7 +96,9 @@ def test_write_and_read(persistent_store, test_graph, test_features: dict[str, A
         assert "path" in result.columns
 
 
-def test_write_invalid_schema(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_write_invalid_schema(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that writing without provenance_by_field column raises error."""
     with persistent_store.open("w") as store:
         invalid_df = pl.DataFrame(
@@ -102,7 +112,7 @@ def test_write_invalid_schema(persistent_store, test_graph, test_features: dict[
             store.write(test_features["UpstreamFeatureA"], invalid_df)
 
 
-def test_write_append(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_write_append(persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Test that writes are append-only."""
     with persistent_store.open("w") as store:
         df1 = pl.DataFrame(
@@ -133,7 +143,9 @@ def test_write_append(persistent_store, test_graph, test_features: dict[str, Any
         assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
-def test_read_with_filters(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_read_with_filters(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test reading with Polars filter expressions."""
     with persistent_store.open("w") as store:
         metadata = pl.DataFrame(
@@ -159,7 +171,9 @@ def test_read_with_filters(persistent_store, test_graph, test_features: dict[str
         assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
-def test_read_with_column_selection(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_read_with_column_selection(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test reading specific columns."""
     with persistent_store.open("w") as store:
         metadata = pl.DataFrame(
@@ -186,7 +200,9 @@ def test_read_with_column_selection(persistent_store, test_graph, test_features:
         assert "path" not in result.columns
 
 
-def test_read_nonexistent_feature(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_read_nonexistent_feature(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that reading nonexistent feature raises error."""
     with persistent_store.open("w") as store:
         with pytest.raises(FeatureNotFoundError):
@@ -196,7 +212,9 @@ def test_read_nonexistent_feature(persistent_store, test_graph, test_features: d
 # Feature Existence Tests
 
 
-def test_has_feature_local(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_has_feature_local(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test has_feature for local store."""
     with persistent_store.open("w") as store:
         assert not store.has_feature(test_features["UpstreamFeatureA"], check_fallback=False)
@@ -216,7 +234,7 @@ def test_has_feature_local(persistent_store, test_graph, test_features: dict[str
 # System Tables Tests
 
 
-def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
+def test_system_tables(persistent_store: MetadataStore, test_features: dict[str, Any]) -> None:
     """Test that system tables work correctly.
 
     Args:
@@ -251,7 +269,7 @@ def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
 # Display/Repr Tests
 
 
-def test_display(persistent_store) -> None:
+def test_display(persistent_store: MetadataStore) -> None:
     """Test display method works when store is closed and open."""
     # Should work when closed
     display_closed = persistent_store.display()
@@ -266,7 +284,9 @@ def test_display(persistent_store) -> None:
 # Nested Context Manager Tests
 
 
-def test_nested_context_managers(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_nested_context_managers(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test that nested context managers work correctly.
 
     Args:
@@ -299,7 +319,9 @@ def test_nested_context_managers(persistent_store, test_graph, test_features: di
 # Multiple Features Tests
 
 
-def test_multiple_features(persistent_store, test_graph, test_features: dict[str, Any]) -> None:
+def test_multiple_features(
+    persistent_store: MetadataStore, test_graph: FeatureGraph, test_features: dict[str, Any]
+) -> None:
     """Test storing multiple features in same store.
 
     Args:

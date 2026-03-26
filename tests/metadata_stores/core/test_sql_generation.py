@@ -8,7 +8,7 @@ import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
-from metaxy_testing.predicate_cases import predicate_cases
+from metaxy_testing.predicate_cases import PredicateCase, predicate_cases
 from sqlglot import exp, parse_one
 from syrupy.assertion import SnapshotAssertion
 
@@ -199,7 +199,7 @@ def test_narwhals_predicate_executes_in_datafusion_is_in() -> None:
 )
 @pytest.mark.parametrize("dialect", ["duckdb", "datafusion"])
 def test_narwhals_expr_to_sql_predicate_outputs(
-    case,
+    case: PredicateCase,
     dialect: str,
     snapshot: SnapshotAssertion,
 ) -> None:
@@ -217,7 +217,7 @@ def test_narwhals_expr_to_sql_predicate_outputs(
     ids=[case.name for case in PREDICATE_CASES],
 )
 def test_predicate_equality_duckdb_datafusion_snapshot(
-    case,
+    case: PredicateCase,
     snapshot: SnapshotAssertion,
 ) -> None:
     table = duckdb_datafusion_table()

@@ -17,6 +17,7 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
+    MetadataStore,
 )
 from metaxy.config import MetaxyConfig
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
@@ -32,7 +33,7 @@ UPSTREAM_SPEC = SampleFeatureSpec(
 
 
 @pytest.fixture(autouse=True)
-def setup_default_config():
+def setup_default_config() -> Iterator[None]:
     """Set up default MetaxyConfig for all tests."""
     config = MetaxyConfig(project="default", stores={})
     MetaxyConfig.set(config)
@@ -83,11 +84,9 @@ def _create_graph(
     return temp_module
 
 
-def test_rebase_updates_provenance(tmp_path: Path, make_graph: list[TempFeatureModule]):
+def test_rebase_updates_provenance(store: MetadataStore, make_graph: list[TempFeatureModule]):
     """Happy path: write data with old version, rebase, verify new provenance."""
     temp_module_v1 = _create_graph(make_graph, "test_rebase_happy_v1", downstream_code_version="1")
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_module_v1.graph.use(), store.open("w"):
         upstream_data = pl.DataFrame(
@@ -170,7 +169,10 @@ def test_rebase_recalculates_provenance_by_field(tmp_path: Path, make_graph: lis
 
     v2 adds a second field to downstream, so provenance_by_field must gain
     a new key after rebase.
+
+    Uses DeltaMetadataStore because DuckDB silently drops new struct keys on insert.
     """
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
     downstream_spec_v1 = SampleFeatureSpec(
         key=DOWNSTREAM_KEY,
         deps=[FeatureDep(feature=UPSTREAM_KEY)],
@@ -186,8 +188,6 @@ def test_rebase_recalculates_provenance_by_field(tmp_path: Path, make_graph: lis
     temp_v1 = TempFeatureModule("test_rebase_pbf_v1")
     temp_v1.write_features({"Upstream": UPSTREAM_SPEC, "Downstream": downstream_spec_v1})
     make_graph.append(temp_v1)
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_v1.graph.use(), store.open("w"):
         upstream_data = pl.DataFrame(
@@ -266,11 +266,9 @@ def test_rebase_recalculates_provenance_by_field(tmp_path: Path, make_graph: lis
             assert "extra" in row_pbf
 
 
-def test_rebase_defaults_to_current_version(tmp_path: Path, make_graph: list[TempFeatureModule]):
+def test_rebase_defaults_to_current_version(store: MetadataStore, make_graph: list[TempFeatureModule]):
     """When to_feature_version is omitted, rebase uses the current active graph."""
     temp_module_v1 = _create_graph(make_graph, "test_rebase_default_v1", downstream_code_version="1")
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_module_v1.graph.use(), store.open("w"):
         upstream_data = pl.DataFrame(
@@ -323,11 +321,9 @@ def test_rebase_defaults_to_current_version(tmp_path: Path, make_graph: list[Tem
         assert result.height == 3
 
 
-def test_rebase_unknown_version_raises(tmp_path: Path, make_graph: list[TempFeatureModule]):
+def test_rebase_unknown_version_raises(store: MetadataStore, make_graph: list[TempFeatureModule]):
     """Passing an unknown to_feature_version raises ValueError."""
     temp_module = _create_graph(make_graph, "test_rebase_unknown", downstream_code_version="1")
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_module.graph.use(), store.open("w"):
         upstream_data = pl.DataFrame(
@@ -352,7 +348,7 @@ def test_rebase_unknown_version_raises(tmp_path: Path, make_graph: list[TempFeat
             )
 
 
-def test_rebase_root_feature_raises(tmp_path: Path, make_graph: list[TempFeatureModule]):
+def test_rebase_root_feature_raises(store: MetadataStore, make_graph: list[TempFeatureModule]):
     """Root features raise ValueError."""
     temp_module = TempFeatureModule("test_rebase_root")
     root_spec = SampleFeatureSpec(
@@ -361,8 +357,6 @@ def test_rebase_root_feature_raises(tmp_path: Path, make_graph: list[TempFeature
     )
     temp_module.write_features({"Root": root_spec})
     make_graph.append(temp_module)
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_module.graph.use(), store.open("w"):
         empty_df = nw.from_native(pl.DataFrame({"sample_uid": [], "metaxy_provenance_by_field": []}))
@@ -374,11 +368,9 @@ def test_rebase_root_feature_raises(tmp_path: Path, make_graph: list[TempFeature
             )
 
 
-def test_rebase_preserves_user_data_version(tmp_path: Path, make_graph: list[TempFeatureModule]):
+def test_rebase_preserves_user_data_version(store: MetadataStore, make_graph: list[TempFeatureModule]):
     """Rebase recalculates default data_version but preserves user-overridden values."""
     temp_module_v1 = _create_graph(make_graph, "test_rebase_dv_v1", downstream_code_version="1")
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_module_v1.graph.use(), store.open("w"):
         upstream_data = pl.DataFrame(
@@ -463,11 +455,9 @@ def test_rebase_preserves_user_data_version(tmp_path: Path, make_graph: list[Tem
             assert result["metaxy_data_version"][i] == result["metaxy_provenance"][i]
 
 
-def test_write_fills_null_data_version_from_provenance(tmp_path: Path, make_graph: list[TempFeatureModule]):
+def test_write_fills_null_data_version_from_provenance(store: MetadataStore, make_graph: list[TempFeatureModule]):
     """Write fills null data_version_by_field rows from provenance."""
     temp_module = _create_graph(make_graph, "test_write_null_dv", downstream_code_version="1")
-
-    store = DeltaMetadataStore(root_path=tmp_path / "delta_store")
 
     with temp_module.graph.use(), store.open("w"):
         upstream_data = pl.DataFrame(

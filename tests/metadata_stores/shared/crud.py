@@ -20,7 +20,7 @@ class CRUDTests:
         # For named stores, repr() wraps display() with [name] prefix
         assert store.display() in repr(store)
 
-    def test_store_is_pickleable(self, store: MetadataStore):
+    def test_store_is_pickleable(self, store: MetadataStore) -> None:
         """Test that metadata stores can be pickled and unpickled."""
         # Pickle the store
         pickled = pickle.dumps(store)
@@ -32,7 +32,7 @@ class CRUDTests:
         assert type(unpickled_store) is type(store)
         assert isinstance(unpickled_store, MetadataStore)
 
-    def test_has_feature(self, store: MetadataStore):
+    def test_has_feature(self, store: MetadataStore) -> None:
         """Test that metadata stores can be pickled and unpickled."""
         key = FeatureKey(["test"])
 
@@ -56,7 +56,7 @@ class CRUDTests:
             assert store.has_feature(key)
             assert store.has_feature(MyFeature)
 
-    def test_read_raises_store_not_open(self, store: MetadataStore):
+    def test_read_raises_store_not_open(self, store: MetadataStore) -> None:
         """Test that read raises StoreNotOpenError when store is not open."""
         key = FeatureKey(["test_not_open"])
 
@@ -70,7 +70,7 @@ class CRUDTests:
         with pytest.raises(StoreNotOpenError, match="must be opened before use"):
             store.read(key)
 
-    def test_write_raises_store_not_open(self, store: MetadataStore):
+    def test_write_raises_store_not_open(self, store: MetadataStore) -> None:
         """Test that write raises StoreNotOpenError when store is not open."""
         key = FeatureKey(["test_not_open"])
 
@@ -86,7 +86,7 @@ class CRUDTests:
         with pytest.raises(StoreNotOpenError, match="must be opened before use"):
             store.write(key, metadata)
 
-    def test_has_feature_raises_store_not_open(self, store: MetadataStore):
+    def test_has_feature_raises_store_not_open(self, store: MetadataStore) -> None:
         """Test that has_feature raises StoreNotOpenError when store is not open."""
         key = FeatureKey(["test_not_open"])
 
@@ -100,7 +100,7 @@ class CRUDTests:
         with pytest.raises(StoreNotOpenError, match="must be opened before use"):
             store.has_feature(key)
 
-    def test_read_filters_applied_after_deduplication(self, store: MetadataStore):
+    def test_read_filters_applied_after_deduplication(self, store: MetadataStore) -> None:
         """Test that user filters in read are applied AFTER timestamp-based deduplication.
 
         This tests the critical behavior where:
@@ -176,7 +176,7 @@ class CRUDTests:
             ids = set(result_not_null_df.to_polars()["id"].to_list())
             assert ids == {"a", "b", "c"}, f"Expected rows a, b, c but got {ids}"
 
-    def test_metaxy_updated_at_column(self, store: MetadataStore):
+    def test_metaxy_updated_at_column(self, store: MetadataStore) -> None:
         """Test that metaxy_updated_at is populated on write and used for deduplication.
 
         This tests the behavior of the metaxy_updated_at column:
@@ -241,7 +241,7 @@ class CRUDTests:
             assert latest.shape[0] == 1, "Should get 1 row after deduplication"
             assert latest["value"][0] == 2, "Should get the latest value"
 
-    def test_soft_delete_preserves_original_updated_at(self, store: MetadataStore):
+    def test_soft_delete_preserves_original_updated_at(self, store: MetadataStore) -> None:
         """Test that soft delete preserves the original metaxy_updated_at timestamp.
 
         When a row is soft-deleted, metaxy_deleted_at is set to the deletion time,
@@ -292,7 +292,7 @@ class CRUDTests:
             )
             assert deleted_at > updated_at, "metaxy_deleted_at should be after metaxy_updated_at"
 
-    def test_soft_delete_timestamps_consistency(self, store: MetadataStore):
+    def test_soft_delete_timestamps_consistency(self, store: MetadataStore) -> None:
         """Test timestamp consistency during soft delete operations.
 
         When soft deleting:

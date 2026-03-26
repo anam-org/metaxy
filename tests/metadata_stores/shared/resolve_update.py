@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import narwhals as nw
@@ -50,7 +51,7 @@ from metaxy.models.constants import (
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
-from metaxy.versioning.types import Increment, LazyIncrement
+from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan]
@@ -363,7 +364,7 @@ class OptionalDependencyCases:
 def _compute_golden_increment_for_optional_deps(
     child_plan: FeaturePlan,
     upstream_data: Mapping[str, pl.DataFrame],
-    hash_algorithm,
+    hash_algorithm: HashAlgorithm,
 ) -> Increment:
     """Compute golden increment using PolarsVersioningEngine for optional dependency tests."""
     from metaxy.versioning.polars import PolarsVersioningEngine
@@ -406,7 +407,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         root_feature: type[BaseFeature],
-    ):
+    ) -> None:
         """Test that resolve_update raises ValueError for root features without samples."""
         with store:
             with pytest.raises(ValueError, match="root feature"):
@@ -417,7 +418,7 @@ class ResolveUpdateTests:
         store: MetadataStore,
         root_feature: type[BaseFeature],
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test resolve_update for root features with provided samples."""
         # Generate sample data using the parametric strategy
         feature_spec = root_feature.spec()
@@ -466,7 +467,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         feature_plan_config: FeaturePlanOutput,
-    ):
+    ) -> None:
         """Test resolve_update for downstream features with upstream dependencies."""
         graph, upstream_features, child_plan = feature_plan_config
 
@@ -538,7 +539,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         feature_plan_config: FeaturePlanOutput,
-    ):
+    ) -> None:
         """Test that resolve_update correctly detects added/changed/removed samples."""
         graph, upstream_features, child_plan = feature_plan_config
 
@@ -616,7 +617,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test resolve_update with lazy=True returns lazy frames with correct implementation."""
 
         # Create a feature graph with multiple parents (realistic scenario)
@@ -734,7 +735,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         feature_plan_config: FeaturePlanOutput,
-    ):
+    ) -> None:
         """Test that calling resolve_update multiple times is idempotent."""
         graph, upstream_features, child_plan = feature_plan_config
 
@@ -799,7 +800,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that resolve_update accepts feature classes as filter keys."""
 
         class UpstreamFeature(
@@ -852,7 +853,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that resolve_update accepts FeatureKey objects as filter keys."""
 
         class UpstreamFeature(
@@ -907,7 +908,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that resolve_update applies global_filters to all features."""
 
         class UpstreamFeature(
@@ -961,7 +962,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that global_filters are combined with feature-specific filters."""
 
         class UpstreamFeature(
@@ -1024,7 +1025,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that resolve_update orphaned count is correct after multiple writes with expansion lineage.
 
         This test simulates a realistic scenario where:
@@ -1156,7 +1157,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test orphaned count when upstream parents are removed.
 
         This test verifies that when upstream videos are removed (or filtered out),
@@ -1277,7 +1278,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test orphaned count when there are duplicate writes with expansion lineage.
 
         This test reproduces the user's scenario where they wrote to the feature
@@ -1397,7 +1398,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test orphaned count with identity lineage when writing multiple times without deduplication.
 
         This reproduces the user's scenario where:
@@ -1504,9 +1505,9 @@ class ResolveUpdateTests:
 
     def test_resolve_update_deduplicates_current_metadata_delta_store(
         self,
-        tmp_path,
+        tmp_path: Path,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Regression test: resolve_update must deduplicate current metadata when using append-mode stores.
 
         This test reproduces the exact bug reported by the user:
@@ -1624,8 +1625,8 @@ class ResolveUpdateTests:
     def test_identity_lineage_orphaned_with_stale_upstream_from_fallback(
         self,
         graph: FeatureGraph,
-        tmp_path,
-    ):
+        tmp_path: Path,
+    ) -> None:
         """Test orphaned count when upstream data differs between fallback and local store.
 
         This reproduces the user's actual scenario where:
@@ -1834,7 +1835,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that optional dependencies produce NULLs for missing rows and provenance is stable.
 
         This test verifies critical properties of optional dependencies:
@@ -2031,7 +2032,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that all-optional dependencies use full outer join.
 
         When ALL dependencies are optional (no required deps), the engine should use
@@ -2147,7 +2148,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that field-level lineage is preserved through aggregation lineage.
 
         This tests a critical property of aggregation: changing an upstream field
@@ -2307,7 +2308,7 @@ class ResolveUpdateTests:
     def test_aggregation_lineage_field_level_provenance_definition_change(
         self,
         store: MetadataStore,
-    ):
+    ) -> None:
         """Test field-level provenance isolation when upstream field definition changes.
 
         When upstream field code_version changes, the upstream data would be recomputed
@@ -2512,7 +2513,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that aggregation lineage preserves user-specified columns in FeatureDep.select.
 
         Regression test for a bug where columns specified in FeatureDep.select were dropped
@@ -2627,7 +2628,7 @@ class ResolveUpdateTests:
         self,
         store: MetadataStore,
         graph: FeatureGraph,
-    ):
+    ) -> None:
         """Test that global_filters work with aggregation lineage when filtering on user columns.
 
         This reproduces the exact bug scenario:

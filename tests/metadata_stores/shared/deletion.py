@@ -9,7 +9,7 @@ import narwhals as nw
 import polars as pl
 import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.predicate_cases import predicate_cases
+from metaxy_testing.predicate_cases import PredicateCase, predicate_cases
 
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.constants import (
@@ -71,7 +71,7 @@ class DeletionTests:
     # ---- fixtures from test_delete_filters.py ----
 
     @pytest.fixture
-    def delete_filter_feature(self):
+    def delete_filter_feature(self) -> type[SampleFeature]:
         class DeleteFilterFeature(
             SampleFeature,
             spec=SampleFeatureSpec(
@@ -149,8 +149,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Soft-deleted metadata rows should be hidden by default and opt-in with include_deleted."""
 
         class SoftDeleteFeature(
@@ -189,8 +189,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Test write->delete->write sequence: latest write is visible, soft deletes is hidden by default."""
 
         class WriteDeleteWriteFeature(
@@ -250,8 +250,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Test write->delete->write->delete: no active rows by default, latest write visible with filter."""
 
         class WriteDeleteWriteDeleteFeature(
@@ -300,8 +300,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Soft-deleting old versions should not hide the current version."""
 
         class VersionedFeature(
@@ -353,8 +353,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Writing new metadata after a soft delete should make the row active again."""
 
         class RestoreFeature(
@@ -405,7 +405,7 @@ class DeletionTests:
         self,
         store: MetadataStore,
         user_profile_df: pl.DataFrame,
-    ):
+    ) -> None:
         """Hard delete currently implemented for in-memory and delta stores."""
 
         class UserProfile(
@@ -437,7 +437,7 @@ class DeletionTests:
         self,
         store: MetadataStore,
         user_profile_df: pl.DataFrame,
-    ):
+    ) -> None:
         """Hard delete removes rows from storage."""
 
         class UserProfile(
@@ -468,8 +468,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Hard-deleting old versions should keep the latest version intact."""
 
         class VersionedHardDeleteFeature(
@@ -517,8 +517,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Writing new metadata after a hard delete should reintroduce the row."""
 
         class RestoreHardDeleteFeature(
@@ -566,8 +566,8 @@ class DeletionTests:
         self,
         store: MetadataStore,
         base_time: datetime,
-        make_value_df,
-    ):
+        make_value_df: Callable[..., pl.DataFrame],
+    ) -> None:
         """Soft delete should preserve the original created_at and set deleted_at.
 
         When delete with soft=True is called, it:
@@ -634,8 +634,8 @@ class DeletionTests:
     def test_delete_accepts_predicate_cases(
         self,
         store: MetadataStore,
-        case,
-        delete_filter_feature,
+        case: PredicateCase,
+        delete_filter_feature: type[SampleFeature],
         base_delete_filter_df: pl.DataFrame,
         soft: bool,
     ) -> None:
@@ -651,7 +651,7 @@ class DeletionTests:
     def test_delete_datetime_filter_hard_delete(
         self,
         store: MetadataStore,
-        delete_filter_feature,
+        delete_filter_feature: type[SampleFeature],
         base_delete_filter_df: pl.DataFrame,
     ) -> None:
         cutoff = datetime(2024, 1, 5, tzinfo=timezone.utc)
@@ -672,7 +672,7 @@ class DeletionTests:
     def test_delete_with_none_filters(
         self,
         store: MetadataStore,
-        delete_filter_feature,
+        delete_filter_feature: type[SampleFeature],
         base_delete_filter_df: pl.DataFrame,
         soft: bool,
     ) -> None:
