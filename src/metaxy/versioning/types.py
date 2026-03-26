@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, cast
 
 import narwhals as nw
 import polars as pl
@@ -74,8 +74,12 @@ class PolarsLazyIncrement:
         Returns:
             PolarsIncrement: The collected increment.
         """
-        added, changed, removed = pl.collect_all([self.new, self.stale, self.orphaned], **kwargs)
-        return PolarsIncrement(added, changed, removed)  # ty: ignore[invalid-argument-type]
+        collected = cast(
+            list[pl.DataFrame],
+            pl.collect_all([self.new, self.stale, self.orphaned], **kwargs),
+        )
+        added, changed, removed = collected
+        return PolarsIncrement(added, changed, removed)
 
 
 @public

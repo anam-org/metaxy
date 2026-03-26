@@ -152,6 +152,7 @@ plugins:
             - https://docs.dagster.io/objects.inv
             - https://docs.ray.io/en/latest/objects.inv
             - https://delta-io.github.io/delta-rs/objects.inv
+            - https://py.iceberg.apache.org/objects.inv
 
 markdown_extensions:
   # Core extensions
@@ -261,6 +262,7 @@ nav:
         - PostgreSQL: integrations/metadata-stores/databases/postgresql.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
+        - Apache Iceberg: integrations/metadata-stores/storage/iceberg.md
         - Delta Lake: integrations/metadata-stores/storage/delta.md
         - DuckLake: integrations/metadata-stores/storage/ducklake.md
     - Compute:
