@@ -5,6 +5,7 @@ import json
 import polars as pl
 import pytest
 from metaxy_testing import TempMetaxyProject
+from polars.testing import assert_frame_equal
 
 
 def _define_features():
@@ -100,8 +101,10 @@ def test_metadata_read_json(metaxy_project: TempMetaxyProject, capsys: pytest.Ca
         result = metaxy_project.run_cli(["metadata", "read", "files_root", "-f", "json"], capsys=capsys)
         assert result.returncode == 0
         data = json.loads(result.stdout)
-        assert len(data) == 3
-        assert data[0]["value"] == "val_1"
+        result_df = pl.DataFrame(data)
+        assert len(result_df) == 3
+        assert "value" in result_df.columns
+        assert result_df["value"].to_list() == ["val_1", "val_2", "val_3"]
 
 
 def test_metadata_read_select_and_filter(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
@@ -162,7 +165,7 @@ def test_metadata_read_query(metaxy_project: TempMetaxyProject, capsys: pytest.C
                 "read",
                 "files_root",
                 "--query",
-                "SELECT count(*) as cnt FROM metadata WHERE category = 'A'",
+                "SELECT count(*) as cnt FROM files_root WHERE category = 'A'",
                 "-f",
                 "json",
             ],
@@ -251,10 +254,10 @@ def test_metadata_read_parquet_file(metaxy_project: TempMetaxyProject, tmp_path,
 
         assert result.returncode == 0
         assert output_file.exists()
-        # Verify it's a valid parquet
+        # Verify it's a valid parquet with correct data
         df = pl.read_parquet(output_file)
-        assert len(df) == 1
-        assert "sample_uid" in df.columns
+        expected = pl.DataFrame({"sample_uid": [1], "value": ["val_1"], "category": ["A"]})
+        assert_frame_equal(df.select("sample_uid", "value", "category"), expected)
 
 
 def test_metadata_read_markdown_file(metaxy_project: TempMetaxyProject, tmp_path, capsys: pytest.CaptureFixture[str]):
@@ -312,7 +315,9 @@ def test_metadata_read_json_file(metaxy_project: TempMetaxyProject, tmp_path, ca
         assert result.returncode == 0
         assert output_file.exists()
         data = json.loads(output_file.read_text())
-        assert data[0]["sample_uid"] == 1
+        result_df = pl.DataFrame(data)
+        expected = pl.DataFrame({"sample_uid": [1], "value": ["val_1"], "category": ["A"]})
+        assert_frame_equal(result_df.select("sample_uid", "value", "category"), expected)
 
 
 def test_metadata_read_error_parquet_stdout(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
@@ -358,7 +363,7 @@ def test_metadata_read_invalid_sql(metaxy_project: TempMetaxyProject, capsys: py
             store.write(FeatureKey(["files_root"]), upstream_data)
 
         result = metaxy_project.run_cli(
-            ["metadata", "read", "files_root", "--query", "SELECT invalid_column FROM metadata"],
+            ["metadata", "read", "files_root", "--query", "SELECT invalid_column FROM files_root"],
             capsys=capsys,
             check=False,
         )

@@ -756,7 +756,11 @@ def read(
         str | None,
         cyclopts.Parameter(
             name=["--query"],
-            help="Arbitrary SQL query to execute against the metadata. The table name is 'metadata'.",
+            help=(
+                "Arbitrary SQL query to execute against the metadata. "
+                "The table name matches the feature's table_name "
+                "(e.g. 'my__feature' for feature key 'my/feature')."
+            ),
         ),
     ] = None,
     output: Annotated[
@@ -786,13 +790,17 @@ def read(
         ```
 
         ```console
-        $ metaxy metadata read my/feature --query "SELECT * FROM metadata WHERE status = 'active'" -f csv
+        $ metaxy metadata read my/feature --query "SELECT * FROM my__feature WHERE status = 'active'" -f csv
         ```
     """
+    import sys
+
     import polars as pl
 
+    from metaxy._utils import collect_to_polars
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
+    from metaxy.metadata_store.ibis import IbisMetadataStore
 
     filters = filters or []
     context = AppContext.get()
@@ -811,73 +819,98 @@ def read(
 
     for feature_key in selector:
         try:
+            table_name = feature_key.table_name
+
             with metadata_store:
-                # We don't use allow_fallback=True inside context by default unless we want all metadata
-                # but usually reading metadata allows fallback so we see upstream.
                 df = metadata_store.read(feature_key, filters=filters, allow_fallback=True)
 
                 if select:
                     df = df.select(*select)
 
-                # Convert to polars for SQL or formatting
-                pl_df = df.collect().to_polars()
+                # For IbisMetadataStore, try to execute SQL in the DB before collecting
+                if query and isinstance(metadata_store, IbisMetadataStore):
+                    import duckdb
 
-            if query:
+                    # Collect to Polars, register with the dynamic table name, and run SQL
+                    pl_df = collect_to_polars(df)
+                    con = duckdb.connect()
+                    con.register(table_name, pl_df)
+                    pl_df = con.query(query).pl()
+                else:
+                    # Collect to Polars using the project utility
+                    pl_df = collect_to_polars(df)
+
+            # Execute SQL query if not already handled above (non-Ibis stores)
+            if query and not isinstance(metadata_store, IbisMetadataStore):
                 try:
                     import duckdb
 
                     con = duckdb.connect()
-                    # Register the dataframe as 'metadata'
-                    con.register("metadata", pl_df)
+                    con.register(table_name, pl_df)
                     pl_df = con.query(query).pl()
                 except ImportError:
                     # Fallback to Polars SQL Context if duckdb is not installed
                     ctx = pl.SQLContext()
-                    ctx.register("metadata", pl_df.lazy())
+                    ctx.register(table_name, pl_df.lazy())
                     pl_df = ctx.execute(query, eager=True)
 
+            # --- Output ---
             fmt = format.lower()
+
+            # Validate parquet-to-stdout early
+            if fmt == "parquet" and not output:
+                exit_with_error(
+                    CLIError(
+                        code=CLIErrorCode.GENERIC_ERROR,
+                        message="Cannot print parquet to stdout. Use --output instead.",
+                    ),
+                    "plain",
+                )
+
+            if fmt not in ("csv", "json", "parquet", "markdown"):
+                exit_with_error(
+                    CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"),
+                    "plain",
+                )
+
             if output:
-                if fmt == "csv":
-                    pl_df.write_csv(output)
-                elif fmt == "parquet":
-                    pl_df.write_parquet(output)
-                elif fmt == "json":
-                    pl_df.write_json(output)
-                elif fmt == "markdown":
-                    with open(str(output), "w") as f:
-                        with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
-                            f.write(str(pl_df))
-                else:
-                    exit_with_error(
-                        CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain"
-                    )
+                _write_output(pl_df, fmt, output)
                 console.print(f"[green]✓[/green] Wrote to {output}")
             else:
-                if fmt == "csv":
-                    print(pl_df.write_csv())
-                elif fmt == "json":
-                    import sys
-
-                    sys.stdout.write(pl_df.write_json())
-                    sys.stdout.write("\n")
-                elif fmt == "markdown":
-                    with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
-                        print(pl_df)
-                elif fmt == "parquet":
-                    exit_with_error(
-                        CLIError(
-                            code=CLIErrorCode.GENERIC_ERROR,
-                            message="Cannot print parquet to stdout. Use --output instead.",
-                        ),
-                        "plain",
-                    )
-                else:
-                    exit_with_error(
-                        CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain"
-                    )
+                _print_output(pl_df, fmt, sys.stdout)
 
         except Exception as e:
             error_msg = str(e)
             error_console.print(f"[red]Error reading {feature_key.to_string()}:[/red] {error_msg}")
             raise SystemExit(1)
+
+
+def _write_output(df: pl.DataFrame, fmt: str, path: str) -> None:  # noqa: F821
+    """Write a Polars DataFrame to a file in the given format."""
+    import polars as pl
+
+    if fmt == "csv":
+        df.write_csv(path)
+    elif fmt == "parquet":
+        df.write_parquet(path)
+    elif fmt == "json":
+        df.write_json(path)
+    elif fmt == "markdown":
+        with open(str(path), "w", encoding="utf-8") as f:
+            with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
+                f.write(str(df))
+
+
+def _print_output(df: pl.DataFrame, fmt: str, out: Any) -> None:  # noqa: F821
+    """Print a Polars DataFrame to a stream (e.g. sys.stdout) in the given format."""
+    import polars as pl
+
+    if fmt == "csv":
+        out.write(df.write_csv())
+    elif fmt == "json":
+        out.write(df.write_json())
+        out.write("\n")
+    elif fmt == "markdown":
+        with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
+            out.write(str(df))
+            out.write("\n")
