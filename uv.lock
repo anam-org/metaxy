@@ -2950,6 +2950,9 @@ mcp = [
 mermaid = [
     { name = "mermaid-py" },
 ]
+polars-map = [
+    { name = "polars-map" },
+]
 postgres = [
     { name = "ibis-framework", extra = ["postgres"] },
     { name = "psycopg" },
@@ -2989,6 +2992,7 @@ dev = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
+    { name = "polars-map" },
     { name = "prek" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -3051,6 +3055,7 @@ requires-dist = [
     { name = "polars", marker = "extra == 'iceberg'", specifier = ">=1.39.0" },
     { name = "polars", marker = "extra == 'lancedb'", specifier = ">=1.36.1" },
     { name = "polars-hash", specifier = ">=0.5.1" },
+    { name = "polars-map", marker = "extra == 'polars-map'", specifier = ">=0.1.1" },
     { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
@@ -3072,7 +3077,7 @@ requires-dist = [
     { name = "tomlkit", specifier = ">=0.13.2" },
     { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
-provides-extras = ["ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
+provides-extras = ["polars-map", "ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3096,6 +3101,7 @@ dev = [
     { name = "nox-uv", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "polars-map", specifier = ">=0.1.1" },
     { name = "prek", specifier = ">=0.2.11" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
@@ -4488,6 +4494,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1a/0d/0467d7de92501b2b883cabefb165cea8fb0de7c5bd1eba5a76e1bc5700eb/polars_hash-0.5.5-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a07ce1c6d169b7c18060e062ca839477d8253d1269d42b78b85d664fdce5c338", size = 5089978, upload-time = "2025-08-28T17:56:22.393Z" },
     { url = "https://files.pythonhosted.org/packages/c7/0f/84fd1416d146ae3adc2a4b36cd80047ad00a0325ec4d3cf692c9b4a74066/polars_hash-0.5.5-cp38-abi3-win32.whl", hash = "sha256:80d9d95cc2787eabe44b934c383c01fcccfd92f506735b2c0abc53a47f194024", size = 3793114, upload-time = "2025-08-28T17:56:24.153Z" },
     { url = "https://files.pythonhosted.org/packages/42/ea/e92fe639db605b7d932a57e33330a4597fbc40a47f061221d0e56e96c365/polars_hash-0.5.5-cp38-abi3-win_amd64.whl", hash = "sha256:7233f75b65feee40ffcb565a63a18fb8a47dfe1f6eea4d3fa4f6c8543274be00", size = 4189410, upload-time = "2025-08-28T17:56:25.549Z" },
+]
+
+[[package]]
+name = "polars-map"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "polars" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/5b/1338353452f27a1436061627e010c07bf6ab8d8a7c71ffe3f51eb7f4115e/polars_map-0.1.1.tar.gz", hash = "sha256:36e2557db5b5fe630d3c6458a1a1213dde3fea01f892c067a958aee2352a077c", size = 30945, upload-time = "2026-03-26T02:52:10.555Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/9e/ff007df1f889e8d62151dd7ddae011be99b74a6015fb1cdbe767a62d38be/polars_map-0.1.1-py3-none-any.whl", hash = "sha256:73fb1aa78022da73720c768b967c792fb147296df0824cd50dd09c87c55924f9", size = 8738, upload-time = "2026-03-26T02:52:09.239Z" },
 ]
 
 [[package]]

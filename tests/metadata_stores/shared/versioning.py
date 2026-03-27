@@ -1251,6 +1251,55 @@ class VersioningTests:
         except HashAlgorithmNotSupportedError:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
 
+    def test_enable_map_datatype_does_not_affect_versioning(
+        self,
+        store: MetadataStore,
+        feature_plan_sequence: FeaturePlanSequence,
+    ) -> None:
+        """Toggling enable_map_datatype must not change versioning results.
+
+        Writes upstream data once, then runs resolve_update with the flag off
+        and on, asserting both produce identical increments.
+        """
+        feature_plan_config = feature_plan_sequence[0]
+        graph, upstream_features, child_feature_plan = feature_plan_config
+        child_key = child_feature_plan.feature.key
+        child_version = graph.get_feature_version(child_key)
+
+        upstream_data, _ = generate_plan_data(store, feature_plan_config)
+
+        try:
+            with store.open("w"), graph.use():
+                write_upstream_to_store(store, feature_plan_config, upstream_data)
+
+                def _resolve_with_map_flag(enabled: bool) -> pl.DataFrame:
+                    config = MetaxyConfig.get().model_copy(update={"enable_map_datatype": enabled})
+                    with config.use():
+                        increment = store.resolve_update(
+                            child_key,
+                            target_version=child_version,
+                            project_version=graph.project_version,
+                        )
+                    return increment.new.lazy().collect().to_polars()
+
+                result_off = _resolve_with_map_flag(False)
+                result_on = _resolve_with_map_flag(True)
+
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
+
+        assert len(result_off) > 0, "Expected non-empty versioning result"
+
+        from metaxy.models.constants import METAXY_CREATED_AT
+
+        common_columns = [c for c in result_off.columns if c in result_on.columns and c != METAXY_CREATED_AT]
+        pl_testing.assert_frame_equal(
+            result_off.select(common_columns).sort(common_columns),
+            result_on.select(common_columns).sort(common_columns),
+            check_row_order=True,
+            check_column_order=False,
+        )
+
     @pytest.mark.parametrize("truncation_length", [16])
     def test_hash_truncation_any_store(
         self, config_with_truncation: MetaxyConfig, store: MetadataStore, graph: FeatureGraph

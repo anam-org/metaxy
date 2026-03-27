@@ -8,6 +8,7 @@ from .crud import CRUDTests
 from .deletion import DeletionTests
 from .display import DisplayTests
 from .filters import FilterTests
+from .map_dtype import MapDtypeTests
 from .resolve_update import ResolveUpdateTests
 from .versioning import VersioningTests
 from .write import WriteTests
@@ -17,6 +18,7 @@ __all__ = [
     "DeletionTests",
     "DisplayTests",
     "FilterTests",
+    "MapDtypeTests",
     "ResolveUpdateTests",
     "VersioningTests",
     "WriteTests",
