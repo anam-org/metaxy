@@ -789,10 +789,10 @@ def read(
         $ metaxy metadata read my/feature --query "SELECT * FROM metadata WHERE status = 'active'" -f csv
         ```
     """
+    import polars as pl
+
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
-    import polars as pl
-    import pyarrow as pa
 
     filters = filters or []
     context = AppContext.get()
@@ -825,6 +825,7 @@ def read(
             if query:
                 try:
                     import duckdb
+
                     con = duckdb.connect()
                     # Register the dataframe as 'metadata'
                     con.register("metadata", pl_df)
@@ -848,25 +849,35 @@ def read(
                         with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
                             f.write(str(pl_df))
                 else:
-                    exit_with_error(CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain")
+                    exit_with_error(
+                        CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain"
+                    )
                 console.print(f"[green]✓[/green] Wrote to {output}")
             else:
                 if fmt == "csv":
                     print(pl_df.write_csv())
                 elif fmt == "json":
                     import sys
+
                     sys.stdout.write(pl_df.write_json())
                     sys.stdout.write("\n")
                 elif fmt == "markdown":
                     with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
                         print(pl_df)
                 elif fmt == "parquet":
-                    exit_with_error(CLIError(code=CLIErrorCode.GENERIC_ERROR, message="Cannot print parquet to stdout. Use --output instead."), "plain")
+                    exit_with_error(
+                        CLIError(
+                            code=CLIErrorCode.GENERIC_ERROR,
+                            message="Cannot print parquet to stdout. Use --output instead.",
+                        ),
+                        "plain",
+                    )
                 else:
-                    exit_with_error(CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain")
+                    exit_with_error(
+                        CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain"
+                    )
 
         except Exception as e:
             error_msg = str(e)
             error_console.print(f"[red]Error reading {feature_key.to_string()}:[/red] {error_msg}")
             raise SystemExit(1)
-
