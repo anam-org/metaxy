@@ -406,3 +406,184 @@ def test_metadata_read_explicit_store(metaxy_project: TempMetaxyProject, capsys:
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert data[0]["sample_uid"] == 1
+
+
+def test_metadata_read_invalid_format(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test reading with an unsupported format."""
+    with metaxy_project.with_features(_define_features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        # Must write data first, otherwise it fails on "feature not found"
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "value": ["val_1"],
+                "category": ["A"],
+                "metaxy_provenance_by_field": [{"default": "hash"}],
+            }
+        )
+        with graph.use(), store.open("w"):
+            store.write(FeatureKey(["files_root"]), upstream_data)
+
+        result = metaxy_project.run_cli(["metadata", "read", "files_root", "-f", "invalid"], capsys=capsys, check=False)
+        assert result.returncode == 1
+        assert "Unsupported format: invalid" in (result.stderr + result.stdout)
+
+
+def test_metadata_read_csv_stdout(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test reading and outputting CSV to stdout."""
+    with metaxy_project.with_features(_define_features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "default": ["val_1"],
+                "metaxy_provenance_by_field": [{"default": "hash"}],
+            }
+        )
+        with graph.use(), store.open("w"):
+            store.write(FeatureKey(["files_root"]), upstream_data)
+
+        # Use --select to keep output clean and predictable
+        result = metaxy_project.run_cli(
+            ["metadata", "read", "files_root", "-f", "csv", "--select", "sample_uid", "--select", "default"],
+            capsys=capsys,
+        )
+        assert result.returncode == 0
+        # Check that CSV header and data are in stdout (handle Windows line endings)
+        clean_out = result.stdout.replace("\r", "")
+        assert "sample_uid,default" in clean_out
+        assert "1,val_1" in clean_out
+
+
+def test_metadata_read_markdown_stdout(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test reading and outputting Markdown to stdout."""
+    with metaxy_project.with_features(_define_features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "default": ["val_1"],
+                "metaxy_provenance_by_field": [{"default": "hash"}],
+            }
+        )
+        with graph.use(), store.open("w"):
+            store.write(FeatureKey(["files_root"]), upstream_data)
+
+        # Use --select to limit columns and avoid system columns cluttering the check
+        result = metaxy_project.run_cli(
+            ["metadata", "read", "files_root", "-f", "markdown", "--select", "sample_uid", "--select", "default"],
+            capsys=capsys,
+        )
+        assert result.returncode == 0
+        assert "sample_uid" in result.stdout
+        assert "val_1" in result.stdout
+        assert "|" in result.stdout
+
+
+def test_metadata_read_ibis_fallback(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], monkeypatch
+):
+    """Test that Ibis optimization falls back to DuckDB on error."""
+    with metaxy_project.with_features(_define_features):
+        from unittest.mock import MagicMock
+
+        from metaxy.metadata_store.ibis import IbisMetadataStore
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                "value": ["val_1_fallback"],
+                "category": ["A"],
+                "metaxy_provenance_by_field": [{"default": "hash"}],
+            }
+        )
+        with graph.use(), store.open("w"):
+            store.write(FeatureKey(["files_root"]), upstream_data)
+
+        if isinstance(store, IbisMetadataStore):
+            # Mock .conn.sql to raise an error, forcing fallback to DuckDB
+            # We patch the _conn attribute so that .conn (the property) returns our mock
+            monkeypatch.setattr(store, "_conn", MagicMock())
+            # Ensure the property access in CLI gets this mock
+            store.conn.sql.side_effect = Exception("SQL Error")
+
+        result = metaxy_project.run_cli(
+            ["metadata", "read", "files_root", "--query", "SELECT * FROM files_root"], capsys=capsys
+        )
+        assert result.returncode == 0
+        assert "val_1_fallback" in result.stdout
+
+
+def test_metadata_read_non_ibis_sql(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], monkeypatch):
+    """Test SQL execution for a non-Ibis store (mocked)."""
+    with metaxy_project.with_features(_define_features):
+        from unittest.mock import MagicMock
+
+        import narwhals as nw
+
+        from metaxy.config import MetaxyConfig
+        from metaxy.metadata_store.base import MetadataStore
+
+        # Create a mock store that is NOT an IbisMetadataStore
+        mock_store = MagicMock(spec=MetadataStore)
+        mock_store.read.return_value = nw.from_native(pl.DataFrame({"a": [999]}).lazy())
+        mock_store.__enter__.return_value = mock_store
+
+        # Patch the config to return our mock store
+        monkeypatch.setattr(MetaxyConfig, "get_store", lambda self, name: mock_store)
+
+        result = metaxy_project.run_cli(
+            ["metadata", "read", "files_root", "--query", "SELECT * FROM files_root"], capsys=capsys
+        )
+        assert result.returncode == 0
+        assert "999" in result.stdout
+
+
+def test_metadata_read_polars_sql_fallback(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], monkeypatch
+):
+    """Test fallback to Polars SQL when DuckDB is missing (non-Ibis path)."""
+    with metaxy_project.with_features(_define_features):
+        import builtins
+        from unittest.mock import MagicMock
+
+        import narwhals as nw
+
+        from metaxy.config import MetaxyConfig
+        from metaxy.metadata_store.base import MetadataStore
+
+        # Mock duckdb import to fail
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "duckdb":
+                raise ImportError("Mocked duckdb missing")
+            return original_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+
+        # Create a mock store that is NOT an IbisMetadataStore
+        mock_store = MagicMock(spec=MetadataStore)
+        mock_store.read.return_value = nw.from_native(pl.DataFrame({"b": [888]}).lazy())
+        mock_store.__enter__.return_value = mock_store
+
+        # Patch the config to return our mock store
+        monkeypatch.setattr(MetaxyConfig, "get_store", lambda self, name: mock_store)
+
+        result = metaxy_project.run_cli(
+            ["metadata", "read", "files_root", "--query", "SELECT b FROM files_root"], capsys=capsys
+        )
+        assert result.returncode == 0
+        assert "888" in result.stdout

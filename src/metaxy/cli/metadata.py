@@ -13,6 +13,8 @@ from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat, StalenessPredicateArgs
 
 if TYPE_CHECKING:
+    import polars as pl
+
     from metaxy import FeatureDefinition
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
     from metaxy.metadata_store.base import MetadataStore
@@ -829,13 +831,27 @@ def read(
 
                 # For IbisMetadataStore, try to execute SQL in the DB before collecting
                 if query and isinstance(metadata_store, IbisMetadataStore):
-                    import duckdb
 
-                    # Collect to Polars, register with the dynamic table name, and run SQL
-                    pl_df = collect_to_polars(df)
-                    con = duckdb.connect()
-                    con.register(table_name, pl_df)
-                    pl_df = con.query(query).pl()
+                    # Create a temporary view with the dynamic table name and run the query
+                    # This allows the backend (DuckDB, Postgres, etc.) to handle the SQL
+                    try:
+                        conn = metadata_store.conn
+                        # Many backends support conn.sql(query) directly
+                        # But we need to make sure the 'table_name' is registered or reachable
+                        # Most Ibis backends allow querying an existing expression by name if we alias it
+                        sql_query = (
+                            str(query).replace("metadata", table_name) if "metadata" in str(query) else str(query)
+                        )
+                        res = conn.sql(sql_query)
+                        pl_df = res.to_polars()
+                    except (AttributeError, Exception):
+                        # Fallback: collect to Polars and use DuckDB as before
+                        pl_df = collect_to_polars(df)
+                        import duckdb
+
+                        con = duckdb.connect()
+                        con.register(table_name, pl_df)
+                        pl_df = con.query(query).pl()
                 else:
                     # Collect to Polars using the project utility
                     pl_df = collect_to_polars(df)
