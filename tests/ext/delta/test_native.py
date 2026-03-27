@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import polars as pl
@@ -58,6 +59,17 @@ class TestDelta(
             root_path=tmp_path / "delta_store",
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
+
+    def cleanup_feature(self, store: MetadataStore, feature: FeatureDefinition) -> None:
+        """Remove the Delta table directory to allow schema changes between iterations.
+
+        Delta's soft-delete retains the table schema, so writing a Map column with
+        a different key/value type would silently coerce data to the old schema.
+        """
+        assert isinstance(store, DeltaMetadataStore)
+        table_path = Path(store._feature_uri(feature.spec.key))
+        if table_path.exists():
+            shutil.rmtree(table_path)
 
     @pytest.fixture
     def named_store(self, tmp_path: Path) -> MetadataStore:

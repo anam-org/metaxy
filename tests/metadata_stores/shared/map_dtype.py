@@ -7,10 +7,14 @@ for both metaxy-managed (*_by_field) and user-defined Map columns.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import date
 
+import hypothesis.strategies as st
 import polars as pl
 import pyarrow as pa
 import pytest
+from hypothesis import HealthCheck, given, settings
+from polars.testing.parametric.strategies.data import data as pl_data
 from polars_map import Map
 
 from metaxy._utils import collect_to_polars
@@ -19,6 +23,67 @@ from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 
 MAP_STR_STR = Map(pl.String(), pl.String())
+
+# Hashable types suitable as Map keys.
+# Only types that survive roundtrip without promotion through Parquet-based
+# backends (Delta, Iceberg): small ints get widened, unsigned ints are not
+# natively supported in Parquet, Time is not universally supported.
+_KEY_DTYPES: list[pl.DataType] = [
+    pl.String(),
+    pl.Int32(),
+    pl.Int64(),
+    pl.Boolean(),
+    pl.Date(),
+]
+
+# ClickHouse Date (UInt16) range is 1970-01-01 to 2149-06-06.
+# Map columns use Date (not Date32), so constrain to the narrower range.
+_MIN_DATE = date(1970, 1, 1)
+_MAX_DATE = date(2149, 6, 6)
+
+# Value types (keys + floats).
+# Binary is excluded because it can contain non-UTF-8 bytes that Delta Lake rejects.
+_VALUE_ONLY_DTYPES: list[pl.DataType] = [
+    pl.Float32(),
+    pl.Float64(),
+]
+
+
+def _data_strategy(dtype: pl.DataType) -> st.SearchStrategy:
+    """Return a Hypothesis strategy for scalar values of the given Polars dtype.
+
+    Date values are constrained to the ClickHouse Date32 range.
+    """
+    if dtype == pl.Date():
+        return st.dates(min_value=_MIN_DATE, max_value=_MAX_DATE)
+    return pl_data(dtype, allow_null=False, allow_nan=False, allow_infinity=False)
+
+
+@st.composite
+def map_series(draw: st.DrawFn) -> pl.Series:
+    """Draw a single-row Series with a random Map(K, V) dtype and two entries."""
+    key_dtype = draw(st.sampled_from(_KEY_DTYPES))
+    val_dtype = draw(st.sampled_from(_KEY_DTYPES + _VALUE_ONLY_DTYPES))
+    keys = draw(
+        st.lists(
+            _data_strategy(key_dtype),
+            min_size=2,
+            max_size=2,
+            unique=True,
+        )
+    )
+    values = draw(
+        st.lists(
+            _data_strategy(val_dtype),
+            min_size=2,
+            max_size=2,
+        )
+    )
+    return pl.Series(
+        "user_map",
+        [list(zip(keys, values))],
+        dtype=Map(key_dtype, val_dtype),
+    )
 
 
 class MapDtypeTests:
@@ -348,3 +413,52 @@ class MapDtypeTests:
         assert df.schema["scores"] == map_int_float
         assert df["scores"].map.get(1).to_list() == [0.95, 0.91]  # ty: ignore[unresolved-attribute]
         assert df["scores"].map.get(2).to_list() == [0.87, 0.82]  # ty: ignore[unresolved-attribute]
+
+    # ── Hypothesis: random Map type roundtrip ───────────────────────────
+
+    def cleanup_feature(self, store: MetadataStore, feature: FeatureDefinition) -> None:
+        """Clean up a feature between hypothesis iterations.
+
+        Override in subclasses whose stores retain table schema after row deletion
+        (e.g. Delta Lake) and cannot handle Map column type changes via schema merge.
+        """
+        with store.open("w") as s:
+            if store.has_feature(feature):
+                s.drop_feature_metadata(feature)
+
+    @given(user_map=map_series())  # ty: ignore[missing-argument]
+    @settings(
+        max_examples=20,
+        deadline=None,
+        suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.differing_executors],
+    )
+    def test_random_map_type_roundtrip(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+        user_map: pl.Series,
+    ) -> None:
+        """Random Map(K, V) types survive a write→read roundtrip."""
+        feature = test_features["UpstreamFeatureA"]
+
+        self.cleanup_feature(store, feature)
+
+        with store.open("w") as s:
+            metadata = pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h2"}],
+                }
+            ).with_columns(user_map)
+            s.write(feature, metadata)
+
+        with store.open("r") as s:
+            result = s.read(feature)
+            assert result is not None
+            df = collect_to_polars(result)
+
+        assert df.schema["user_map"] == user_map.dtype
+        # Compare sorted by key since backends may reorder map entries
+        for actual, expected in zip(df["user_map"].to_list(), user_map.to_list()):
+            assert sorted(actual, key=lambda e: e["key"]) == sorted(expected, key=lambda e: e["key"])
