@@ -10,6 +10,10 @@ description: "Learn how to use Apache Iceberg to store Metaxy metadata."
 !!! note
     By default, it uses a SQLite-backed SQL catalog for local development. You can configure any PyIceberg-supported catalog (REST, Glue, Hive) via [`catalog_properties`](#metaxy.ext.metadata_stores.iceberg.IcebergMetadataStoreConfig.catalog_properties).
 
+!!! tip "Recommended: enable [`Map` datatype](../../../guide/concepts/metadata-stores.md#map-datatype)"
+
+    Apache Iceberg supports the `Map` type natively. Enabling [`enable_map_datatype`](../../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) preserves `Map` columns across read and write operations.
+
 ## Installation
 
 ```shell

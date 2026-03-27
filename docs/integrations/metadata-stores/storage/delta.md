@@ -14,6 +14,10 @@ It supports the local filesystem and remote object stores.
     If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
     `LazyFrame.sink_delta`, avoiding unnecessary materialization.
 
+!!! tip "Recommended: enable [`Map` datatype](../../../guide/concepts/metadata-stores.md#map-datatype)"
+
+    Delta Lake supports the `Map` natively. Enabling [`enable_map_datatype`](../../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) preserves `Map` columns across read and write operations.
+
 ## Installation
 
 ```shell

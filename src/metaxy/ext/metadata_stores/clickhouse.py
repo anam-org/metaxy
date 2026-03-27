@@ -315,8 +315,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     ) -> Any:
         """Convert a Map column to Struct expression.
 
-        ClickHouse Map(String, String) can be converted to a Struct by
-        extracting specific keys using ibis.struct().
+        ClickHouse `Map(String, String)` can be converted to a Struct by
+        extracting specific keys using `ibis.struct()`.
 
         Args:
             table: Ibis table

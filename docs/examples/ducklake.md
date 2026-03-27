@@ -29,6 +29,10 @@ Available backend combinations:
 
     MotherDuck supports a "Bring Your Own Bucket" (BYOB) mode where MotherDuck manages the DuckLake catalog while you provide your own S3-compatible storage. Storage secrets are created `IN MOTHERDUCK` so that MotherDuck compute can access your bucket.
 
+!!! tip "Recommended: enable [`Map` datatype](../guide/concepts/metadata-stores.md#map-datatype)"
+
+    DuckLake has native `Map` type support. Enabling [`enable_map_datatype`](../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) preserves `Map` columns across read and write operations.
+
 ## Getting Started
 
 Install the example's dependencies:
