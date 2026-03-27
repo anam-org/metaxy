@@ -731,3 +731,142 @@ def copy(
     data_console.print(
         f"[green]✓[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
     )
+
+
+@app.command()
+def read(
+    selector: FeatureSelector = FeatureSelector(),
+    *,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store name (defaults to configured default store).",
+        ),
+    ] = None,
+    filters: FilterArgs | None = None,
+    select: Annotated[
+        list[str] | None,
+        cyclopts.Parameter(
+            name=["--select"],
+            help="Columns to select. Can be repeated.",
+        ),
+    ] = None,
+    query: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--query"],
+            help="Arbitrary SQL query to execute against the metadata. The table name is 'metadata'.",
+        ),
+    ] = None,
+    output: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--output", "-o"],
+            help="Output file path (default: print to stdout).",
+        ),
+    ] = None,
+    format: Annotated[
+        str,
+        cyclopts.Parameter(
+            name=["--format", "-f"],
+            help="Output format: markdown, json, csv, parquet.",
+        ),
+    ] = "markdown",
+) -> None:
+    """Read feature metadata and optionally execute arbitrary SQL against it.
+
+    Examples:
+        ```console
+        $ metaxy metadata read my/feature
+        ```
+
+        ```console
+        $ metaxy metadata read my/feature --select id --select status
+        ```
+
+        ```console
+        $ metaxy metadata read my/feature --query "SELECT * FROM metadata WHERE status = 'active'" -f csv
+        ```
+    """
+    from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
+    import polars as pl
+    import pyarrow as pa
+
+    filters = filters or []
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    selector.resolve("plain")
+
+    if not selector:
+        exit_with_error(
+            CLIError(
+                code=CLIErrorCode.NO_FEATURES,
+                message="No valid features selected for reading.",
+            ),
+            "plain",
+        )
+
+    for feature_key in selector:
+        try:
+            with metadata_store:
+                # We don't use allow_fallback=True inside context by default unless we want all metadata
+                # but usually reading metadata allows fallback so we see upstream.
+                df = metadata_store.read(feature_key, filters=filters, allow_fallback=True)
+
+                if select:
+                    df = df.select(*select)
+
+                # Convert to polars for SQL or formatting
+                pl_df = df.collect().to_polars()
+
+            if query:
+                try:
+                    import duckdb
+                    con = duckdb.connect()
+                    # Register the dataframe as 'metadata'
+                    con.register("metadata", pl_df)
+                    pl_df = con.query(query).pl()
+                except ImportError:
+                    # Fallback to Polars SQL Context if duckdb is not installed
+                    ctx = pl.SQLContext()
+                    ctx.register("metadata", pl_df.lazy())
+                    pl_df = ctx.execute(query, eager=True)
+
+            fmt = format.lower()
+            if output:
+                if fmt == "csv":
+                    pl_df.write_csv(output)
+                elif fmt == "parquet":
+                    pl_df.write_parquet(output)
+                elif fmt == "json":
+                    pl_df.write_json(output)
+                elif fmt == "markdown":
+                    with open(str(output), "w") as f:
+                        with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
+                            f.write(str(pl_df))
+                else:
+                    exit_with_error(CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain")
+                console.print(f"[green]✓[/green] Wrote to {output}")
+            else:
+                if fmt == "csv":
+                    print(pl_df.write_csv())
+                elif fmt == "json":
+                    import sys
+                    sys.stdout.write(pl_df.write_json())
+                    sys.stdout.write("\n")
+                elif fmt == "markdown":
+                    with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
+                        print(pl_df)
+                elif fmt == "parquet":
+                    exit_with_error(CLIError(code=CLIErrorCode.GENERIC_ERROR, message="Cannot print parquet to stdout. Use --output instead."), "plain")
+                else:
+                    exit_with_error(CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"), "plain")
+
+        except Exception as e:
+            error_msg = str(e)
+            error_console.print(f"[red]Error reading {feature_key.to_string()}:[/red] {error_msg}")
+            raise SystemExit(1)
+
