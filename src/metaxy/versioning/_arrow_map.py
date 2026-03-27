@@ -99,6 +99,26 @@ def has_extension_map_columns(table: pa.Table) -> bool:
     return any(_is_extension_map_field(field) for field in table.schema)
 
 
+def strip_extension_map_metadata(table: pa.Table) -> pa.Table:
+    """Strip polars-map extension metadata, keeping data as List(Struct({key, value})).
+
+    For backends that don't support native Arrow MapArray (e.g. LanceDB/Lance),
+    this preserves the data in a compatible format while removing extension metadata
+    that would confuse the storage layer.
+    """
+    for i, field in enumerate(table.schema):
+        if not _is_extension_map_field(field):
+            continue
+        col = table.column(i)
+        storage_type = col.type
+        if hasattr(storage_type, "storage_type"):
+            storage_type = storage_type.storage_type
+        clean_field = pa.field(field.name, storage_type)
+        storage_chunks = [chunk.storage if hasattr(chunk, "storage") else chunk for chunk in col.chunks]
+        table = table.set_column(i, clean_field, pa.chunked_array(storage_chunks))
+    return table
+
+
 # ── Read path: Arrow MapArray → polars_map.Map ──────────────────────────
 
 

@@ -14,6 +14,7 @@ from pydantic import Field
 
 from metaxy._decorators import public
 from metaxy._utils import collect_to_polars
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path, sanitize_uri
@@ -255,16 +256,53 @@ class LanceDBMetadataStore(MetadataStore):
             feature_key: Feature key to write to
             df: Narwhals Frame with metadata (already validated by base class)
         """
-        # Convert Narwhals frame to Polars DataFrame
-        df_polars = collect_to_polars(df)
-
         table_name = self._table_name(feature_key)
+
+        if MetaxyConfig.get().enable_map_datatype:
+            self._write_with_map_columns(df, table_name)
+            return
+
+        df_polars = collect_to_polars(df)
 
         if self._table_exists(table_name):
             table = self._get_table(table_name)
             table.add(df_polars)
         else:
             self.conn.create_table(table_name, data=df_polars)
+
+    def _write_with_map_columns(self, df: Frame, table_name: str) -> None:
+        """Collect to Arrow and convert Struct *_by_field columns to List(Struct({key,value})) before writing.
+
+        Lance doesn't support native Arrow MapArray, so Map columns are stored as
+        List(Struct({key, value})) — the underlying Arrow storage format for polars-map.
+        """
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+        from metaxy.versioning._arrow_map import convert_structs_to_maps, strip_extension_map_metadata
+
+        df_polars = collect_to_polars(df)
+        df_polars = convert_structs_to_maps(
+            df_polars, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
+        )
+        arrow_table = strip_extension_map_metadata(df_polars.to_arrow())
+
+        if self._table_exists(table_name):
+            table = self._get_table(table_name)
+            table.add(arrow_table)
+        else:
+            self.conn.create_table(table_name, data=arrow_table)
+
+    @staticmethod
+    def _read_map_columns(lf: Any, table: Any) -> Any:
+        """Convert List(Struct({key, value})) columns back to polars_map.Map on read."""
+        import polars as pl
+
+        from metaxy.versioning._arrow_map import _is_list_of_kv_struct, convert_maps_to_polars_map
+
+        schema = lf.collect_schema() if isinstance(lf, pl.LazyFrame) else lf.schema
+        map_columns = [name for name, dtype in schema.items() if _is_list_of_kv_struct(dtype)]
+        if map_columns:
+            return convert_maps_to_polars_map(lf, columns=map_columns)
+        return lf
 
     def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop Lance table for feature.
@@ -354,6 +392,10 @@ class LanceDBMetadataStore(MetadataStore):
         # LanceDB's to_polars() returns a Polars LazyFrame directly
         # (fixed in Polars via https://github.com/pola-rs/polars/pull/25654)
         pl_lazy = table.to_polars()
+
+        if MetaxyConfig.get().enable_map_datatype:
+            pl_lazy = self._read_map_columns(pl_lazy, table)
+
         nw_lazy = nw.from_native(pl_lazy)
 
         if filters:
