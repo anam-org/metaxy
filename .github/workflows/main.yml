@@ -11,10 +11,6 @@ on:
         type: boolean
         default: false
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: write
   pull-requests: write
@@ -41,6 +37,9 @@ jobs:
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
   docs:
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     needs: qa
     uses: ./.github/workflows/_docs.yml
     permissions:
