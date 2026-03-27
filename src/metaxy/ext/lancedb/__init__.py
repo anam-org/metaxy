@@ -1,5 +1,3 @@
-"""Backwards-compatibility shim. Import from metaxy.ext.polars.lancedb instead."""
-
 from metaxy.ext.lancedb.config import LanceDBMetadataStoreConfig
 from metaxy.ext.lancedb.legacy_store import LanceDBMetadataStore
 

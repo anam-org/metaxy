@@ -1,7 +1,5 @@
-"""Backwards-compatible re-exports from the ``metaxy.ext.duckdb`` subpackage."""
-
-from duckdb import DuckDBPyConnection  # noqa: TID252
-
+from metaxy.ext.duckdb.config import DuckDBMetadataStoreConfig, ExtensionSpec
+from metaxy.ext.duckdb.engine import DuckDBEngine
 from metaxy.ext.duckdb.handlers.ducklake.attachment import DuckLakeAttachmentManager
 from metaxy.ext.duckdb.handlers.ducklake.config import (
     DuckDBCatalogConfig,
@@ -13,15 +11,19 @@ from metaxy.ext.duckdb.handlers.ducklake.config import (
     R2StorageConfig,
     S3StorageConfig,
     SQLiteCatalogConfig,
-    build_secret_sql,
-    format_attach_options,
 )
+from metaxy.ext.duckdb.handlers.ducklake.handler import DuckDBDuckLakeHandler
+from metaxy.ext.duckdb.legacy_store import DuckDBMetadataStore
 
 __all__ = [
     "DuckDBCatalogConfig",
-    "DuckDBPyConnection",
+    "DuckDBDuckLakeHandler",
+    "DuckDBEngine",
+    "DuckDBMetadataStore",
+    "DuckDBMetadataStoreConfig",
     "DuckLakeAttachmentManager",
     "DuckLakeConfig",
+    "ExtensionSpec",
     "GCSStorageConfig",
     "LocalStorageConfig",
     "MotherDuckCatalogConfig",
@@ -29,6 +31,4 @@ __all__ = [
     "R2StorageConfig",
     "S3StorageConfig",
     "SQLiteCatalogConfig",
-    "build_secret_sql",
-    "format_attach_options",
 ]

@@ -1,5 +1,3 @@
-"""Backwards-compatibility shim. Import from metaxy.ext.polars.iceberg instead."""
-
 from metaxy.ext.iceberg.config import IcebergMetadataStoreConfig, TableIdentifier
 from metaxy.ext.iceberg.legacy_store import IcebergMetadataStore
 

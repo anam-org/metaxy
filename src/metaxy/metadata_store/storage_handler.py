@@ -122,3 +122,6 @@ class StorageHandler(ABC, Generic[ConnectionT]):
 
         Override to perform one-time setup that needs a live connection.
         """
+
+    def on_connection_closing(self) -> None:
+        """Called before the engine closes its connection."""
