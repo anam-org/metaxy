@@ -68,7 +68,7 @@ def config_with_features():
 @pytest.fixture
 def sqla_metadata(config_with_features: MetaxyConfig) -> MetaData:
     """Plain SQLAlchemy MetaData with tables matching the feature table names."""
-    store = config_with_features.get_store(expected_type=IbisMetadataStore)
+    store = config_with_features.get_store()
     metadata = MetaData()
     for feature_key in [FeatureKey(["project_a", "feature"]), FeatureKey(["project_b", "feature"])]:
         Table(
@@ -97,7 +97,7 @@ def test_get_metaxy_system_metadata():
     )
 
     with config.use():
-        store = config.get_store(expected_type=IbisMetadataStore)
+        store = config.get_store()
         url, metadata = get_system_slqa_metadata(store)
 
         assert "metaxy_system__feature_versions" in metadata.tables
@@ -120,7 +120,7 @@ def test_feature_versions_table_columns_match_polars_schema():
     )
 
     with config.use():
-        store = config.get_store(expected_type=IbisMetadataStore)
+        store = config.get_store()
         _, metadata = get_system_slqa_metadata(store)
 
         feature_versions_table = metadata.tables["metaxy_system__feature_versions"]
@@ -139,7 +139,7 @@ def test_filter_feature_sqla_metadata_filtered_by_project(
     sqla_metadata: MetaData,
 ):
     """Test that user features are filtered by project."""
-    store = config_with_features.get_store(expected_type=IbisMetadataStore)
+    store = config_with_features.get_store()
     _, metadata = filter_feature_sqla_metadata(store, sqla_metadata)
 
     assert "project_a__feature" in metadata.tables
@@ -151,7 +151,7 @@ def test_filter_feature_sqla_metadata_explicit_project(
     sqla_metadata: MetaData,
 ):
     """Test explicit project parameter."""
-    store = config_with_features.get_store(expected_type=IbisMetadataStore)
+    store = config_with_features.get_store()
     _, metadata = filter_feature_sqla_metadata(store, sqla_metadata, project="project_b")
 
     assert "project_b__feature" in metadata.tables
@@ -163,7 +163,7 @@ def test_filter_feature_sqla_metadata_no_filter(
     sqla_metadata: MetaData,
 ):
     """Test that filtering can be disabled."""
-    store = config_with_features.get_store(expected_type=IbisMetadataStore)
+    store = config_with_features.get_store()
     _, metadata = filter_feature_sqla_metadata(store, sqla_metadata, filter_by_project=False)
 
     assert "project_a__feature" in metadata.tables
@@ -184,7 +184,7 @@ def test_get_store_sqlalchemy_url_default_store():
     )
 
     with config.use():
-        store = config.get_store(expected_type=IbisMetadataStore)
+        store = config.get_store()
         url, _ = get_system_slqa_metadata(store)
         assert url == "duckdb:///test.db"
 
@@ -206,8 +206,8 @@ def test_get_store_sqlalchemy_url_named_store():
     )
 
     with config.use():
-        store1 = config.get_store("store1", expected_type=IbisMetadataStore)
-        store2 = config.get_store("store2", expected_type=IbisMetadataStore)
+        store1 = config.get_store("store1")
+        store2 = config.get_store("store2")
         url1, _ = get_system_slqa_metadata(store1)
         url2, _ = get_system_slqa_metadata(store2)
         assert url1 == "duckdb:///store1.db"
@@ -231,7 +231,7 @@ class TestProtocolParameter:
         )
 
         with config.use():
-            store = config.get_store(expected_type=IbisMetadataStore)
+            store = config.get_store()
 
             url_default, _ = get_system_slqa_metadata(store)
             assert url_default == "duckdb:///test.db"
@@ -253,7 +253,7 @@ class TestProtocolParameter:
         )
 
         with config.use():
-            store = config.get_store(expected_type=IbisMetadataStore)
+            store = config.get_store()
             url, _ = get_system_slqa_metadata(store, protocol=None)
             assert url == "duckdb:///mydb.db"
 
@@ -263,7 +263,7 @@ class TestProtocolParameter:
         sqla_metadata: MetaData,
     ):
         """Test that protocol parameter works in filter_feature_sqla_metadata."""
-        store = config_with_features.get_store(expected_type=IbisMetadataStore)
+        store = config_with_features.get_store()
 
         url_default, _ = filter_feature_sqla_metadata(store, sqla_metadata)
         assert url_default.startswith("duckdb://")

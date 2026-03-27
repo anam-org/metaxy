@@ -1,16 +1,18 @@
-"""DuckDB metadata store - thin wrapper around IbisMetadataStore."""
+"""DuckDB metadata store — thin wrapper that composes DuckDBEngine + IbisStorageConfig."""
+
+from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
-from typing_extensions import Self
+
+from metaxy.metadata_store.storage_handler import StorageHandler
 
 if TYPE_CHECKING:
-    from metaxy.metadata_store.base import MetadataStore
+    pass
 
 from metaxy._decorators import public
 from metaxy.ext.metadata_stores.ducklake import (
@@ -19,8 +21,18 @@ from metaxy.ext.metadata_stores.ducklake import (
     DuckLakeConfig,
     MotherDuckCatalogConfig,
 )
-from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
+from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
+from metaxy.metadata_store.ibis import IbisMetadataStoreConfig
+from metaxy.metadata_store.ibis_compute_engine import (
+    DuckLakeStorageConfig,
+    IbisComputeEngine,
+    IbisSQLHandler,
+    IbisStorageConfig,
+    IbisStoreBackcompat,
+)
+from metaxy.metadata_store.storage_config import StorageConfig
 from metaxy.metadata_store.types import AccessMode
+from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -83,9 +95,8 @@ def _normalise_extensions(
 
 
 @public
-class DuckDBMetadataStore(IbisMetadataStore):
-    """
-    [DuckDB](https://duckdb.org/) metadata store using [Ibis](https://ibis-project.org/) backend.
+class DuckDBMetadataStore(IbisStoreBackcompat):
+    """[DuckDB](https://duckdb.org/) metadata store using [Ibis](https://ibis-project.org/) backend.
 
     Example: Local File
         ```py
@@ -94,10 +105,225 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
     Example: With extensions
         ```py
-        # With extensions
         store = DuckDBMetadataStore("md:my_database", extensions=["spatial"])
         ```
     """
+
+    def __init__(
+        self,
+        database: str | Path = "",  # noqa: ARG002
+        *,
+        config: dict[str, str] | None = None,  # noqa: ARG002
+        extensions: Sequence[str | ExtensionSpec] | None = None,  # noqa: ARG002
+        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
+        ducklake: DuckLakeConfig | None = None,  # noqa: ARG002
+        table_prefix: str | None = None,  # noqa: ARG002
+        **kwargs: Any,  # noqa: ARG002
+    ) -> None:
+        pass  # __new__ already initialized via MetadataStore.__init__
+
+    # -- backcompat properties (deprecated, will be removed in 0.2.0) --
+
+    @property
+    def database(self) -> str:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("database")
+        assert isinstance(self._engine, DuckDBEngine)
+        return self._engine.database
+
+    @property
+    def extensions(self) -> list[ExtensionSpec]:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("extensions")
+        assert isinstance(self._engine, DuckDBEngine)
+        return self._engine.extensions
+
+    def _open(self, mode: Any) -> None:
+        """Backcompat: delegates to engine.open(). Patchable for tests."""
+        self._engine.open(mode)
+
+    def _close(self) -> None:
+        """Backcompat: delegates to engine.close()."""
+        self._engine.close()
+
+    def _load_extensions(self) -> None:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("_load_extensions")
+        assert isinstance(self._engine, DuckDBEngine)
+        self._engine._load_extensions()
+
+    def _duckdb_raw_connection(self) -> DuckDBPyConnection:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("_duckdb_raw_connection")
+        assert isinstance(self._engine, DuckDBEngine)
+        return self._engine._duckdb_raw_connection()
+
+    def preview_ducklake_sql(self) -> list[str]:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("preview_ducklake_sql")
+        assert isinstance(self._engine, DuckDBEngine)
+        handler = self._engine.handler if isinstance(self._engine.handler, DuckDBDuckLakeHandler) else None
+        assert handler is not None, "DuckLake is not configured"
+        return handler.preview_ducklake_sql()
+
+    @property
+    def ducklake_attachment(self) -> DuckLakeAttachmentManager:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("ducklake_attachment")
+        assert isinstance(self._engine, DuckDBEngine)
+        handler = self._engine.handler if isinstance(self._engine.handler, DuckDBDuckLakeHandler) else None
+        assert handler is not None, "DuckLake is not configured"
+        return handler.attachment_manager
+
+    @property
+    def ducklake_attachment_config(self) -> DuckLakeConfig:
+        from metaxy.metadata_store.ibis_compute_engine import _backcompat_warn_attr
+
+        _backcompat_warn_attr("ducklake_attachment_config")
+        assert isinstance(self._engine, DuckDBEngine)
+        handler = self._engine.handler if isinstance(self._engine.handler, DuckDBDuckLakeHandler) else None
+        assert handler is not None, "DuckLake is not configured"
+        return handler.ducklake_config
+
+    def __new__(
+        cls,
+        database: str | Path = "",
+        *,
+        config: dict[str, str] | None = None,
+        extensions: Sequence[str | ExtensionSpec] | None = None,
+        fallback_stores: list[MetadataStore] | None = None,
+        ducklake: DuckLakeConfig | None = None,
+        table_prefix: str | None = None,
+        **kwargs: Any,
+    ) -> MetadataStore:
+        auto_create_tables = kwargs.pop("auto_create_tables", None)
+        if auto_create_tables is None:
+            from metaxy.config import MetaxyConfig
+
+            auto_create_tables = MetaxyConfig.get().auto_create_tables
+
+        all_extensions = list(_normalise_extensions(extensions or []))
+        ducklake_handler: DuckDBDuckLakeHandler | None = None
+
+        prefix = table_prefix or ""
+        storage: list[IbisStorageConfig]
+        if ducklake is not None:
+            ducklake_handler = DuckDBDuckLakeHandler(
+                ducklake,
+                auto_create_tables=auto_create_tables,
+                store_name=kwargs.get("name"),
+            )
+            for ext in ducklake_handler.required_extensions():
+                if ext.name not in {e.name for e in all_extensions}:
+                    all_extensions.append(ext)
+            storage = [DuckLakeStorageConfig(format="ducklake", location=str(database), table_prefix=prefix)]
+        else:
+            storage = [IbisStorageConfig(format="duckdb", location=str(database), table_prefix=prefix)]
+
+        engine = DuckDBEngine(
+            database=database,
+            config=config,
+            extensions=all_extensions,
+            auto_create_tables=auto_create_tables,
+            handler=ducklake_handler,
+        )
+
+        instance = IbisStoreBackcompat.__new__(cls)
+        MetadataStore.__init__(
+            instance,
+            engine=engine,
+            storage=storage,
+            fallback_stores=fallback_stores,
+            auto_create_tables=auto_create_tables,
+            **kwargs,
+        )
+        return instance
+
+    @classmethod
+    def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> MetadataStore:
+        from metaxy.config import MetaxyConfig
+        from metaxy.metadata_store.fallback import FallbackStoreList
+
+        assert isinstance(config, DuckDBMetadataStoreConfig)
+        config_dict = config.model_dump(exclude_unset=True, exclude={"ducklake", "fallback_stores"})
+        store = cast(MetadataStore, cls(ducklake=config.ducklake, **config_dict, **kwargs))
+        fallback_store_names = config.model_dump(exclude_unset=True).get("fallback_stores", [])
+        if fallback_store_names:
+            store.fallback_stores = FallbackStoreList(
+                fallback_store_names,
+                config=MetaxyConfig.get(),
+                parent_hash_algorithm=store.hash_algorithm,
+            )
+        return store
+
+    @classmethod
+    def config_model(cls) -> type[DuckDBMetadataStoreConfig]:
+        return DuckDBMetadataStoreConfig
+
+
+class DuckDBDuckLakeHandler(IbisSQLHandler):
+    """Storage handler for DuckLake tables accessed through a DuckDB connection.
+
+    Attachment happens via the ``on_connection_opened`` hook — the engine
+    calls it after connecting, before any I/O.
+    """
+
+    def __init__(
+        self,
+        ducklake_config: DuckLakeConfig,
+        *,
+        auto_create_tables: bool = False,
+        store_name: str | None = None,
+    ) -> None:
+        super().__init__(auto_create_tables=auto_create_tables)
+        self._config = ducklake_config
+        self._attachment = DuckLakeAttachmentManager(ducklake_config, store_name=store_name)
+
+    # -- capability: only handles DuckLakeStorageConfig -----------------------
+
+    def can_read(self, storage_config: StorageConfig, key: FeatureKey) -> bool:  # noqa: ARG002
+        return isinstance(storage_config, DuckLakeStorageConfig)
+
+    def can_write(self, storage_config: StorageConfig, key: FeatureKey) -> bool:  # noqa: ARG002
+        return isinstance(storage_config, DuckLakeStorageConfig)
+
+    # -- lifecycle hook -------------------------------------------------------
+
+    def on_connection_opened(self, conn: Any) -> None:
+        """ATTACH the DuckLake catalog on the live DuckDB connection."""
+        raw_conn = conn.con
+        self._attachment._attached = False
+        self._attachment.configure(raw_conn)
+
+    # -- public DuckLake API -------------------------------------------------
+
+    @property
+    def ducklake_config(self) -> DuckLakeConfig:
+        return self._config
+
+    @property
+    def attachment_manager(self) -> DuckLakeAttachmentManager:
+        return self._attachment
+
+    def preview_ducklake_sql(self) -> list[str]:
+        return self._attachment.preview_sql()
+
+    def required_extensions(self) -> list[ExtensionSpec]:
+        """Extensions this handler needs loaded on the DuckDB connection."""
+        exts = [ExtensionSpec(name="ducklake")]
+        if isinstance(self._config.catalog, MotherDuckCatalogConfig):
+            exts.append(ExtensionSpec(name="motherduck"))
+        return exts
+
+
+class DuckDBEngine(IbisComputeEngine):
+    """Compute engine for DuckDB backends using Ibis."""
 
     def __init__(
         self,
@@ -105,191 +331,30 @@ class DuckDBMetadataStore(IbisMetadataStore):
         *,
         config: dict[str, str] | None = None,
         extensions: Sequence[str | ExtensionSpec] | None = None,
-        fallback_stores: list["MetadataStore"] | None = None,
-        ducklake: DuckLakeConfig | None = None,
-        **kwargs,
-    ):
-        """
-        Initialize [DuckDB](https://duckdb.org/) metadata store.
-
-        Args:
-            database: Database connection string or path.
-                - File path: `"metadata.db"` or `Path("metadata.db")`
-
-                - In-memory: `":memory:"`
-
-                - MotherDuck: `"md:my_database"` or `"md:my_database?motherduck_token=..."`
-
-                - S3: `"s3://bucket/path/database.duckdb"` (read-only via ATTACH)
-
-                - HTTPS: `"https://example.com/database.duckdb"` (read-only via ATTACH)
-
-                - Any valid DuckDB connection string
-
-            config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
-            extensions: List of DuckDB extensions to install and load on open.
-                Supports strings (assumes `"core"` repo) or
-                [metaxy.ext.metadata_stores.duckdb.ExtensionSpec][] instances.
-            ducklake: Optional [DuckLake](https://ducklake.select/) attachment configuration.
-                Learn more [here](/integrations/metadata-stores/storage/ducklake.md).
-            fallback_stores: Ordered list of read-only fallback stores.
-        """
-        database_str = str(database)
-
-        connection_params = {"database": database_str}
-        if config:
-            connection_params.update(config)
-
-        self.database = database_str
+        auto_create_tables: bool = False,
+        handler: StorageHandler | None = None,
+    ) -> None:
+        self.database = str(database)
         self.extensions: list[ExtensionSpec] = _normalise_extensions(extensions or [])
-
-        self._ducklake_config: DuckLakeConfig | None = None
-        self._ducklake_attachment: DuckLakeAttachmentManager | None = None
-        if ducklake is not None:
-            existing_names = {ext.name for ext in self.extensions}
-            if "ducklake" not in existing_names:
-                self.extensions.append(ExtensionSpec(name="ducklake"))
-            if isinstance(ducklake.catalog, MotherDuckCatalogConfig) and "motherduck" not in existing_names:
-                self.extensions.append(ExtensionSpec(name="motherduck"))
-            self._ducklake_config = ducklake
-            self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
 
         if "hashfuncs" not in {ext.name for ext in self.extensions}:
             self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))
 
+        connection_params: dict[str, Any] = {"database": self.database}
+        if config:
+            connection_params.update(config)
+
         super().__init__(
             backend="duckdb",
             connection_params=connection_params,
-            fallback_stores=fallback_stores,
-            **kwargs,
+            auto_create_tables=auto_create_tables,
+            handler=handler,
         )
 
-    @property
-    def sqlalchemy_url(self) -> str:
-        """Get SQLAlchemy-compatible connection URL for DuckDB.
-
-        Constructs a DuckDB SQLAlchemy URL from the database parameter.
-
-        Returns:
-            SQLAlchemy-compatible URL string (e.g., "duckdb:///path/to/db.db")
-
-        Example:
-            ```python
-            store = DuckDBMetadataStore(":memory:")
-            print(store.sqlalchemy_url)  # duckdb:///:memory:
-
-            store = DuckDBMetadataStore("metadata.db")
-            print(store.sqlalchemy_url)  # duckdb:///metadata.db
-            ```
-        """
-        # DuckDB SQLAlchemy URL format: duckdb:///database_path
-        return f"duckdb:///{self.database}"
-
-    def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Get default hash algorithm for DuckDB stores.
-
-        Uses XXHASH32 which requires the hashfuncs extension.
-        """
-        return HashAlgorithm.XXHASH32
-
-    @contextmanager
-    def _create_versioning_engine(self, plan):
-        """Create provenance engine for DuckDB backend as a context manager.
-
-        Args:
-            plan: Feature plan for the feature we're tracking provenance for
-
-        Yields:
-            IbisVersioningEngine with DuckDB-specific hash functions.
-        """
-        with super()._create_versioning_engine(plan) as engine:
-            yield engine
-
-    def _load_extensions(self) -> None:
-        """Install and load all configured DuckDB extensions."""
-        if not self.extensions:
-            return
-
-        duckdb_conn = self._duckdb_raw_connection()
-        for ext in self.extensions:
-            duckdb_conn.install_extension(ext.name, repository=ext.repository)
-            duckdb_conn.load_extension(ext.name)
-            for sql in ext.init_sql:
-                duckdb_conn.execute(sql)
-
-    def _create_hash_functions(self):
-        """Create DuckDB-specific hash functions for Ibis expressions.
-
-        Implements MD5 and xxHash functions using DuckDB's native functions.
-
-        Returns hash functions that take Ibis column expressions and return
-        Ibis expressions that call DuckDB SQL functions.
-        """
-        # Import ibis for wrapping built-in SQL functions
-        import ibis
-
-        hash_functions = {}
-
-        # DuckDB MD5 implementation
-        @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:  # ty: ignore[empty-body]
-            """DuckDB MD5() function."""
-            ...
-
-        @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:  # ty: ignore[empty-body]
-            """DuckDB HEX() function."""
-            ...
-
-        @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:  # ty: ignore[empty-body]
-            """DuckDB LOWER() function."""
-            ...
-
-        def md5_hash(col_expr):
-            """Hash a column using DuckDB's MD5() function."""
-            # MD5 already returns hex string, just convert to lowercase
-            return LOWER(MD5(col_expr.cast(str)))
-
-        hash_functions[HashAlgorithm.MD5] = md5_hash
-
-        # Add xxHash functions if hashfuncs extension is loaded
-        if "hashfuncs" in {ext.name for ext in self.extensions}:
-            # Use Ibis's builtin UDF decorator to wrap DuckDB's xxhash functions
-            # These functions already exist in DuckDB (via hashfuncs extension)
-            # The decorator tells Ibis to call them directly in SQL
-            # NOTE: xxh32/xxh64 return integers in DuckDB, not strings
-            @ibis.udf.scalar.builtin
-            def xxh32(x: str) -> int:  # ty: ignore[empty-body]
-                """DuckDB xxh32() hash function from hashfuncs extension."""
-                ...
-
-            @ibis.udf.scalar.builtin
-            def xxh64(x: str) -> int:  # ty: ignore[empty-body]
-                """DuckDB xxh64() hash function from hashfuncs extension."""
-                ...
-
-            # Create hash functions that use these wrapped SQL functions
-            def xxhash32_hash(col_expr):
-                """Hash a column using DuckDB's xxh32() function."""
-                # Cast to string and then cast result to string (xxh32 returns integer in DuckDB)
-                return xxh32(col_expr.cast(str)).cast(str)
-
-            def xxhash64_hash(col_expr):
-                """Hash a column using DuckDB's xxh64() function."""
-                # Cast to string and then cast result to string (xxh64 returns integer in DuckDB)
-                return xxh64(col_expr.cast(str)).cast(str)
-
-            hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
-            hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
-
-        return hash_functions
-
-    # ------------------------------------------------------------------ DuckLake
-    def _open(self, mode: AccessMode) -> None:
+    def open(self, mode: AccessMode) -> None:
         if mode == "r":
-            db_param = self.connection_params.get("database")
-            db = str(db_param) if db_param is not None else ""
+            db = self.connection_params.get("database", "")
+            db = str(db) if db is not None else ""
             is_in_memory = db in {"", ":memory:"}
             scheme = urlsplit(db).scheme if db else ""
             is_windows_drive_path = len(scheme) == 1 and bool(Path(db).drive)
@@ -302,36 +367,59 @@ class DuckDBMetadataStore(IbisMetadataStore):
         else:
             self.connection_params.pop("read_only", None)
 
-        super()._open(mode)
-
+        super().open(mode)
         self._load_extensions()
-        if self._ducklake_attachment is not None:
-            self._ducklake_attachment._attached = False
-            self._ducklake_attachment.configure(self._duckdb_raw_connection())
 
-    def _close(self) -> None:
-        super()._close()
+    def close(self) -> None:
+        super().close()
 
-    def preview_ducklake_sql(self) -> list[str]:
-        """Return DuckLake attachment SQL if configured."""
-        return self.ducklake_attachment.preview_sql()
+    def _create_hash_functions(self) -> dict:
+        import ibis
 
-    @property
-    def ducklake_attachment(self) -> DuckLakeAttachmentManager:
-        """DuckLake attachment manager (raises if not configured)."""
-        if self._ducklake_attachment is None:
-            raise RuntimeError("DuckLake attachment is not configured.")
-        return self._ducklake_attachment
+        hash_functions = {}
 
-    @property
-    def ducklake_attachment_config(self) -> DuckLakeConfig:
-        """DuckLake attachment configuration (raises if not configured)."""
-        if self._ducklake_config is None:
-            raise RuntimeError("DuckLake attachment is not configured.")
-        return self._ducklake_config
+        @ibis.udf.scalar.builtin
+        def MD5(x: str) -> str:  # ty: ignore[empty-body]  # noqa: N802
+            ...
+
+        @ibis.udf.scalar.builtin
+        def HEX(x: str) -> str:  # ty: ignore[empty-body]  # noqa: N802
+            ...
+
+        @ibis.udf.scalar.builtin
+        def LOWER(x: str) -> str:  # ty: ignore[empty-body]  # noqa: N802
+            ...
+
+        def md5_hash(col_expr):  # noqa: ANN001, ANN202
+            return LOWER(MD5(col_expr.cast(str)))
+
+        hash_functions[HashAlgorithm.MD5] = md5_hash
+
+        if "hashfuncs" in {ext.name for ext in self.extensions}:
+
+            @ibis.udf.scalar.builtin
+            def xxh32(x: str) -> int:  # ty: ignore[empty-body]
+                ...
+
+            @ibis.udf.scalar.builtin
+            def xxh64(x: str) -> int:  # ty: ignore[empty-body]
+                ...
+
+            def xxhash32_hash(col_expr):  # noqa: ANN001, ANN202
+                return xxh32(col_expr.cast(str)).cast(str)
+
+            def xxhash64_hash(col_expr):  # noqa: ANN001, ANN202
+                return xxh64(col_expr.cast(str)).cast(str)
+
+            hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
+            hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
+
+        return hash_functions
+
+    def get_default_hash_algorithm(self) -> HashAlgorithm:
+        return HashAlgorithm.XXHASH32
 
     def _duckdb_raw_connection(self) -> DuckDBPyConnection:
-        """Return the underlying DuckDBPyConnection from the Ibis backend."""
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")
 
@@ -342,21 +430,25 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         return candidate
 
-    @classmethod
-    def from_config(cls, config: DuckDBMetadataStoreConfig, **kwargs: Any) -> Self:  # ty: ignore[invalid-method-override]
-        from metaxy.config import MetaxyConfig
-        from metaxy.metadata_store.fallback import FallbackStoreList
+    def _load_extensions(self) -> None:
+        if not self.extensions:
+            return
 
-        config_dict = config.model_dump(exclude_unset=True, exclude={"ducklake", "fallback_stores"})
-        store = cls(ducklake=config.ducklake, **config_dict, **kwargs)
-        fallback_store_names = config.model_dump(exclude_unset=True).get("fallback_stores", [])
-        if fallback_store_names:
-            store.fallback_stores = FallbackStoreList(
-                fallback_store_names,
-                config=MetaxyConfig.get(),
-                parent_hash_algorithm=store.hash_algorithm,
-            )
-        return store
+        duckdb_conn = self._duckdb_raw_connection()
+        for ext in self.extensions:
+            duckdb_conn.install_extension(ext.name, repository=ext.repository)
+            duckdb_conn.load_extension(ext.name)
+            for sql in ext.init_sql:
+                duckdb_conn.execute(sql)
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        return f"duckdb:///{self.database}"
+
+    def display(self) -> str:
+        from metaxy.metadata_store.utils import sanitize_uri
+
+        return f"DuckDBEngine(database={sanitize_uri(self.database)})"
 
     @classmethod
     def config_model(cls) -> type[DuckDBMetadataStoreConfig]:

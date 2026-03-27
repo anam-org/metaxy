@@ -407,9 +407,10 @@ class DuckLakeConfig(BaseModel):
 class DuckLakeAttachmentManager:
     """Responsible for configuring a DuckDB connection for DuckLake usage."""
 
-    def __init__(self, config: DuckLakeConfig, *, store_name: str | None = None):
+    def __init__(self, config: DuckLakeConfig, *, store_name: str | None = None, use_catalog: bool = True):
         self._config = config
         self._secret_suffix = f"{store_name}_{config.alias}" if store_name else config.alias
+        self._use_catalog = use_catalog
         self._attached: bool = False
 
     def _build_sql_statements(self) -> list[str]:
@@ -440,7 +441,8 @@ class DuckLakeAttachmentManager:
             statements.append(f"CREATE DATABASE IF NOT EXISTS {md.database} (TYPE DUCKLAKE, {data_path_sql});")
             if storage_secret_sql:
                 statements.append(storage_secret_sql)
-        statements.append(f"USE {md.database};")
+        if self._use_catalog:
+            statements.append(f"USE {md.database};")
         return statements
 
     def _build_standard_statements(self, statements: list[str]) -> list[str]:
@@ -470,7 +472,8 @@ class DuckLakeAttachmentManager:
             options["data_inlining_row_limit"] = self._config.data_inlining_row_limit
         options_clause = format_attach_options(options)
         statements.append(f"ATTACH IF NOT EXISTS 'ducklake:{ducklake_secret}' AS {self._config.alias}{options_clause};")
-        statements.append(f"USE {self._config.alias};")
+        if self._use_catalog:
+            statements.append(f"USE {self._config.alias};")
         return statements
 
     def configure(self, conn: DuckDBPyConnection) -> None:
