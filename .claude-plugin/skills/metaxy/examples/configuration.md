@@ -16,6 +16,9 @@ entrypoints = ["src/my_project/features"]
 # Auto-create tables (global setting, not recommended for production)
 # auto_create_tables = true
 
+# Enable native Arrow Map columns (experimental, requires polars-map)
+# enable_map_datatype = true
+
 # Development store
 [stores.dev]
 type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
