@@ -873,7 +873,7 @@ def read(
             fmt = format.lower()
 
             # Validate parquet-to-stdout early
-            if fmt == "parquet" and not output:
+            if not output and fmt == "parquet":
                 exit_with_error(
                     CLIError(
                         code=CLIErrorCode.GENERIC_ERROR,
@@ -888,11 +888,26 @@ def read(
                     "plain",
                 )
 
+            from contextlib import contextmanager
+
+            @contextmanager
+            def _get_output_stream(path: str | None, out_fmt: str):
+                if path:
+                    mode = "wb" if out_fmt == "parquet" else "w"
+                    encoding = None if out_fmt == "parquet" else "utf-8"
+                    f = open(path, mode, encoding=encoding)
+                    try:
+                        yield f
+                    finally:
+                        f.close()
+                else:
+                    yield sys.stdout
+
+            with _get_output_stream(output, fmt) as out_stream:
+                _write_output(pl_df, fmt, out_stream)
+
             if output:
-                _write_output(pl_df, fmt, output)
                 console.print(f"[green]✓[/green] Wrote to {output}")
-            else:
-                _print_output(pl_df, fmt, sys.stdout)
 
         except Exception as e:
             error_msg = str(e)
@@ -900,32 +915,17 @@ def read(
             raise SystemExit(1)
 
 
-def _write_output(df: pl.DataFrame, fmt: str, path: str) -> None:  # noqa: F821
-    """Write a Polars DataFrame to a file in the given format."""
+def _write_output(df: pl.DataFrame, fmt: str, out: Any) -> None:  # noqa: F821
+    """Write a Polars DataFrame to a file-like stream in the given format."""
     import polars as pl
 
     if fmt == "csv":
-        df.write_csv(path)
+        df.write_csv(out)
     elif fmt == "parquet":
-        df.write_parquet(path)
-    elif fmt == "json":
-        df.write_json(path)
-    elif fmt == "markdown":
-        with open(str(path), "w", encoding="utf-8") as f:
-            with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
-                f.write(str(df))
-
-
-def _print_output(df: pl.DataFrame, fmt: str, out: Any) -> None:  # noqa: F821
-    """Print a Polars DataFrame to a stream (e.g. sys.stdout) in the given format."""
-    import polars as pl
-
-    if fmt == "csv":
-        out.write(df.write_csv())
+        df.write_parquet(out)
     elif fmt == "json":
         out.write(df.write_json())
         out.write("\n")
     elif fmt == "markdown":
         with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
-            out.write(str(df))
-            out.write("\n")
+            out.write(str(df) + "\n")
