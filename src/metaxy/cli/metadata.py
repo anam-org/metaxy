@@ -831,7 +831,6 @@ def read(
 
                 # For IbisMetadataStore, try to execute SQL in the DB before collecting
                 if query and isinstance(metadata_store, IbisMetadataStore):
-
                     # Create a temporary view with the dynamic table name and run the query
                     # This allows the backend (DuckDB, Postgres, etc.) to handle the SQL
                     try:
