@@ -3885,6 +3885,10 @@ This lets you choose independent backends for each layer, for example PostgreSQL
 <p class="admonition-title">Note</p>
 <p>MotherDuck supports a "Bring Your Own Bucket" (BYOB) mode where MotherDuck manages the DuckLake catalog while you provide your own S3-compatible storage. Storage secrets are created <code>IN MOTHERDUCK</code> so that MotherDuck compute can access your bucket.</p>
 </div>
+<div class="admonition tip">
+<p class="admonition-title">Recommended: enable <a href="../../guide/concepts/metadata-stores/#map-datatype"><code>Map</code> datatype</a></p>
+<p>DuckLake has native <code>Map</code> type support. Enabling <a href="../../reference/configuration/#metaxy.config.MetaxyConfig.enable_map_datatype"><code>enable_map_datatype</code></a> preserves <code>Map</code> columns across read and write operations.</p>
+</div>
 <h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
 <p>Install the example's dependencies:</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>sync

@@ -4251,8 +4251,8 @@
 <p>File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider using <a href="https://motherduck.com/">Motherduck</a>, <a href="../../storage/ducklake/">DuckLake</a> with a <code>PostgreSQL</code> catalog, or refer to <a href="https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes">DuckDB's documentation</a> to learn about implementing application-side work-arounds.</p>
 </div>
 <div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>The <a href="../../storage/delta/">Delta Lake metadata store</a> might be a better alternative for concurrent writes (with it's Polars-based versioning engine being as fast as DuckDB).</p>
+<p class="admonition-title">Recommended: enable <a href="../../../../guide/concepts/metadata-stores/#map-datatype"><code>Map</code> datatype</a></p>
+<p>DuckDB natively supports the <code>Map</code> type. Enabling <a href="../../../../reference/configuration/#metaxy.config.MetaxyConfig.enable_map_datatype"><code>enable_map_datatype</code></a> preserves <code>Map</code> columns across read and write operations.</p>
 </div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[duckdb]&#39;</span>

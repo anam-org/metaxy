@@ -929,6 +929,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#map-datatype" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map Datatype
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Map Datatype">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimental-map-datatype-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experimental Map Datatype Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metadata-store-implementations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3983,6 +4011,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#map-datatype" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map Datatype
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Map Datatype">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#experimental-map-datatype-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Experimental Map Datatype Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metadata-store-implementations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4311,6 +4367,40 @@ Instead, Metaxy stores can automatically pull missing metadata from production.<
 </div>
 <p>Metaxy doesn't mix metadata from different stores: either the entire feature is going to be pulled from the fallback store, or the primary store will be used.</p>
 <p>Fallback stores can be chained at arbitrary depth.</p>
+<h2 id="map-datatype"><code>Map</code> Datatype<a class="headerlink" href="#map-datatype" title="Permanent link">&para;</a></h2>
+<p>Metaxy uses dictionary-like columns internally for Metaxy's <abbr title="columns used to track field-level versioning information: `metaxy_provenance_by_field` and `metaxy_data_version_by_field`. | /reference/system-columns/">field-level versioning columns</abbr>. Most storage systems and Apache Arrow represent have native support for the <a href="https://arrow.apache.org/docs/python/generated/pyarrow.map_.html"><code>Map</code></a> type, but <a href="https://github.com/pola-rs/polars/issues/8385">Polars doesn't</a>. Polars converts <code>Map</code> columns to <code>List(Struct(key, value))</code> (physically equivalent to <code>Map</code>). This means that:</p>
+<ol>
+<li>
+<p>user-defined <code>Map</code> columns lose their type when round-tripped through Polars</p>
+</li>
+<li>
+<p>Metaxy has to represent field-versioning columns as <code>Struct</code> instead, which is very much not ideal as the fields <strong>will</strong> change over time, causing problems with some storage systems.</p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is also known as "The <code>Map</code> Hell" problem (the term invented by me).</p>
+</div>
+<h3 id="experimental-map-datatype-support">Experimental <code>Map</code> Datatype Support<a class="headerlink" href="#experimental-map-datatype-support" title="Permanent link">&para;</a></h3>
+<p>These problems can be solved with the <a href="../../../reference/configuration/#metaxy.config.MetaxyConfig.enable_map_datatype"><code>enable_map_datatype</code></a> configuration option:</p>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">enable_map_datatype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Experimental</p>
+<p><code>Map</code> datatype support requires the <a href="https://pypi.org/project/polars-map/"><code>polars-map</code></a> package to be installed and is experimental.</p>
+</div>
+<p>When enabled, Metaxy keeps Arrow <code>Map</code> columns intact across operations (including reads and writes), avoiding unnecessary conversions and preserving user-defined <code>Map</code> columns.</p>
+<p>The following metadata stores support <code>Map</code> columns when <code>enable_map_datatype</code> is enabled:</p>
+<ul>
+<li><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a></li>
+<li><a href="../../../integrations/metadata-stores/databases/clickhouse/">ClickHouse</a></li>
+<li><a href="../../../integrations/metadata-stores/storage/delta/">Delta Lake</a></li>
+<li><a href="../../../integrations/metadata-stores/storage/iceberg/">Apache Iceberg</a></li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title"><code>Map</code> support in Narwhals</p>
+<p>It's not there yet. See the <a href="https://github.com/narwhals-dev/narwhals/issues/3525">Narwhals tracking issue</a> for more details.</p>
+</div>
 <h2 id="metadata-store-implementations">Metadata Store Implementations<a class="headerlink" href="#metadata-store-implementations" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides ready <code>MetadataStore</code> <a href="../../../integrations/metadata-stores/">implementations</a> for popular databases and storage systems.</p>
 

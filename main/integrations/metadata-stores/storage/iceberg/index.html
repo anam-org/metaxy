@@ -4162,6 +4162,10 @@
 <p class="admonition-title">Note</p>
 <p>By default, it uses a SQLite-backed SQL catalog for local development. You can configure any PyIceberg-supported catalog (REST, Glue, Hive) via <a href="#metaxy.ext.metadata_stores.iceberg.IcebergMetadataStoreConfig.catalog_properties"><code>catalog_properties</code></a>.</p>
 </div>
+<div class="admonition tip">
+<p class="admonition-title">Recommended: enable <a href="../../../../guide/concepts/metadata-stores/#map-datatype"><code>Map</code> datatype</a></p>
+<p>Apache Iceberg supports the <code>Map</code> type natively. Enabling <a href="../../../../reference/configuration/#metaxy.config.MetaxyConfig.enable_map_datatype"><code>enable_map_datatype</code></a> preserves <code>Map</code> columns across read and write operations.</p>
+</div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[iceberg]&#39;</span>
 </span></code></pre></div>
