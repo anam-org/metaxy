@@ -513,11 +513,11 @@ def test_metadata_read_ibis_fallback(
             store.write(FeatureKey(["files_root"]), upstream_data)
 
         if isinstance(store, IbisMetadataStore):
-            # Mock .conn.sql to raise an error, forcing fallback to DuckDB
+            # Mock .conn.sql to raise an error,
             # We patch the _conn attribute so that .conn (the property) returns our mock
             monkeypatch.setattr(store, "_conn", MagicMock())
             # Ensure the property access in CLI gets this mock
-            store.conn.sql.side_effect = Exception("SQL Error")
+            store.conn.sql.side_effect = Exception("SQL Error")  # type: ignore
 
         result = metaxy_project.run_cli(
             ["metadata", "read", "files_root", "--query", "SELECT * FROM files_root"], capsys=capsys
