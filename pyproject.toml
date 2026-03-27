@@ -319,6 +319,7 @@ markers = [
   "delta: Delta Lake store tests",
   "iceberg: Apache Iceberg store tests",
   "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
+  "lance: Lance storage format tests",
   "lancedb: LanceDB store tests",
   "postgresql: PostgreSQL store tests",
   "integration: Integration tests (require external services)",
