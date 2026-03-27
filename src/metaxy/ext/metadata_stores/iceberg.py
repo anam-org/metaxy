@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, NewType, overload
 
 if TYPE_CHECKING:
     from pyiceberg.catalog import Catalog
+    from pyiceberg.schema import Schema
     from pyiceberg.table import Table
 
 import narwhals as nw
@@ -19,6 +20,7 @@ from pydantic import Field
 
 from metaxy._decorators import public
 from metaxy._utils import collect_to_polars
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path
@@ -29,6 +31,13 @@ from metaxy.versioning.types import HashAlgorithm
 
 TableIdentifier = NewType("TableIdentifier", tuple[str, str])
 """A ``(namespace, table_name)`` pair used by PyIceberg to locate a table within a catalog."""
+
+
+def _map_columns_from_iceberg_schema(schema: Schema) -> list[str]:
+    """Return column names that have a native Map type in the Iceberg schema."""
+    from pyiceberg.types import MapType
+
+    return [field.name for field in schema.fields if isinstance(field.field_type, MapType)]
 
 
 def _strip_casts() -> Callable[[Any], Any]:
@@ -257,7 +266,9 @@ class IcebergMetadataStore(MetadataStore):
             and Version(pl.__version__) >= Version("1.39.0")
         )
 
-        if can_sink:
+        if MetaxyConfig.get().enable_map_datatype:
+            self._write_with_map_columns(df, identifier, **kwargs)
+        elif can_sink:
             lf_native = df.to_native()
             assert isinstance(lf_native, pl.LazyFrame)
             arrow_schema = pl.DataFrame(schema=self._cast_enum_to_string(lf_native).collect_schema()).to_arrow().schema
@@ -296,7 +307,13 @@ class IcebergMetadataStore(MetadataStore):
         if not self.catalog.table_exists(identifier):
             return None
 
-        nw_lazy = nw.from_native(pl.scan_iceberg(self.catalog.load_table(identifier)))
+        iceberg_table = self.catalog.load_table(identifier)
+        lf = pl.scan_iceberg(iceberg_table)
+
+        if MetaxyConfig.get().enable_map_datatype:
+            lf = self._read_map_columns(lf, iceberg_table)
+
+        nw_lazy = nw.from_native(lf)
 
         if filters:
             nw_lazy = nw_lazy.filter(*filters)
@@ -305,6 +322,33 @@ class IcebergMetadataStore(MetadataStore):
             nw_lazy = nw_lazy.select(columns)
 
         return nw_lazy
+
+    def _write_with_map_columns(
+        self,
+        df: Frame,
+        identifier: TableIdentifier,
+        **kwargs: Any,
+    ) -> None:
+        """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+        from metaxy.versioning._arrow_map import convert_extension_maps_to_native, convert_structs_to_maps
+
+        df_polars = self._cast_enum_to_string(collect_to_polars(df))
+        df_polars = convert_structs_to_maps(
+            df_polars, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
+        )
+        arrow_table = convert_extension_maps_to_native(df_polars.to_arrow())
+        iceberg_table = self._ensure_table(identifier, arrow_table.schema)
+        iceberg_table.append(arrow_table, **kwargs)
+
+    def _read_map_columns(self, lf: pl.LazyFrame, iceberg_table: Table) -> pl.LazyFrame:
+        """Convert native Iceberg Map columns back to Polars Map dtype on read."""
+        map_columns = _map_columns_from_iceberg_schema(iceberg_table.schema())
+        if map_columns:
+            from metaxy.versioning._arrow_map import convert_maps_to_polars_map
+
+            return convert_maps_to_polars_map(lf, columns=map_columns)
+        return lf
 
     def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop the Iceberg table for the specified feature from the catalog."""

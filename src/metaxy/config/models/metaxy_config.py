@@ -189,6 +189,11 @@ class MetaxyConfig(BaseSettings):
 
     hash_truncation_length: int = PydanticField(default=8, description="Truncate hash values to this length.", ge=8)
 
+    enable_map_datatype: bool = PydanticField(
+        default=False,
+        description="Use `polars-map.Map` datatype for versioning columns instead of `pl.Struct`. Experimental.",
+    )
+
     auto_create_tables: bool = PydanticField(
         default=False,
         description="Auto-create tables when opening stores. It is not advised to enable this setting in production.",

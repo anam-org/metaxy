@@ -18,7 +18,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
-from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.models.types import FeatureKey
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 from metaxy.versioning.renamed_df import RenamedDataFrame
 from metaxy.versioning.types import HashAlgorithm
@@ -282,6 +282,34 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
+    def _extract_metadata_fields(self, df: FrameT, col_name: str, field_mapping: dict[str, str]) -> FrameT:
+        """Extract fields from a metadata column and add as new columns.
+
+        Args:
+            df: Input DataFrame.
+            col_name: Name of the metadata column (Struct or Map).
+            field_mapping: Mapping from field names to output column names.
+        """
+        from metaxy._utils import find_map_columns
+
+        if col_name not in find_map_columns(df):
+            exprs = [
+                nw.col(col_name).struct.field(field_name).cast(nw.String).alias(out_col)
+                for field_name, out_col in field_mapping.items()
+            ]
+            return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
+
+        # Map path: drop to native polars
+        import polars as pl
+        import polars_map  # noqa: F401  # registers .map accessor
+
+        native = df.to_native()  # ty: ignore[invalid-argument-type]
+        exprs = [
+            pl.col(col_name).map.get(field_name).cast(pl.String).alias(out_col)  # ty: ignore[unresolved-attribute]
+            for field_name, out_col in field_mapping.items()
+        ]
+        return cast(FrameT, nw.from_native(native.with_columns(exprs)))
+
     def aggregate_metadata_columns(
         self,
         df: FrameT,
@@ -315,14 +343,9 @@ class VersioningEngine(ABC):
         Returns:
             DataFrame with aggregated metadata columns (same row count as input).
         """
-        # Step 1: Extract each field value from struct to a temp column
-        extracted_cols: dict[str, str] = {}  # field_name -> extracted_col_name
-        for field_name in upstream_field_names:
-            extracted_col = f"__extract_{field_name}"
-            extracted_cols[field_name] = extracted_col
-
-            extract_expr = nw.col(renamed_data_version_by_field_col).struct.field(field_name).cast(nw.String)
-            df = df.with_columns(extract_expr.alias(extracted_col))  # ty: ignore[invalid-argument-type]
+        # Step 1: Extract each field value from metadata column to a temp column
+        extracted_cols: dict[str, str] = {fn: f"__extract_{fn}" for fn in upstream_field_names}
+        df = self._extract_metadata_fields(df, renamed_data_version_by_field_col, extracted_cols)
 
         # Step 2: Use window function to aggregate within groups
         aggregated_cols: dict[str, str] = {}  # field_name -> aggregated_col_name
@@ -376,12 +399,11 @@ class VersioningEngine(ABC):
         )
 
         # Compute sample-level data_version and provenance by hashing all fields together
-        # Concatenate all field hashes with separator, then hash
-        field_exprs = [
-            nw.col(renamed_data_version_by_field_col).struct.field(field_name)
-            for field_name in sorted(upstream_field_names)
-        ]
-        sample_concat = nw.concat_str(field_exprs, separator="|")
+        # Pre-extract fields, then concatenate with separator and hash
+        sorted_fields = sorted(upstream_field_names)
+        temp_field_cols = {fn: f"__field_{fn}" for fn in sorted_fields}
+        df = self._extract_metadata_fields(df, renamed_data_version_by_field_col, temp_field_cols)
+        sample_concat = nw.concat_str([nw.col(c) for c in temp_field_cols.values()], separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
         df = self.hash_string_column(  # ty: ignore[invalid-assignment]
@@ -396,47 +418,13 @@ class VersioningEngine(ABC):
         )
 
         # Drop temp columns
-        df = df.drop("__sample_concat", *hashed_field_cols.values())
+        df = df.drop("__sample_concat", *hashed_field_cols.values(), *temp_field_cols.values())
 
         return df
 
     def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed data_version_by_field column name for an upstream feature."""
         return self.feature_transformers_by_key[feature_key].renamed_data_version_by_field_col
-
-    def get_field_provenance_exprs(
-        self,
-    ) -> dict[FieldKey, dict[FQFieldKey, nw.Expr]]:
-        """Build expressions for extracting upstream data_version values per field.
-
-        Creates Narwhals expressions that read from the renamed data_version_by_field
-        struct columns of upstream features. These expressions are used to build the
-        provenance hash for each field in the current feature.
-
-        Returns:
-            Nested dictionary mapping each field key to its parent field expressions.
-        """
-        res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
-        for field_spec in self.plan.feature.fields:
-            field_provenance: dict[FQFieldKey, nw.Expr] = {}
-            for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(field_spec.key).items():
-                # Read from data_version_by_field instead of provenance_by_field
-                # This enables user-defined versioning control
-                base_expr = nw.col(self.get_renamed_data_version_by_field_col(fq_key.feature)).struct.field(
-                    parent_field_spec.key.to_struct_key()
-                )
-
-                # Check if this is from an optional dependency
-                transformer = self.feature_transformers_by_key.get(fq_key.feature)
-                if transformer and transformer.is_optional:
-                    # Handle NULL values from optional dependencies
-                    # Use fill_null to replace NULL with empty string for deterministic provenance
-                    field_provenance[fq_key] = base_expr.fill_null("")
-                else:
-                    field_provenance[fq_key] = base_expr
-
-            res[field_spec.key] = field_provenance
-        return res
 
     def _compute_provenance_internal(
         self,
@@ -450,8 +438,22 @@ class VersioningEngine(ABC):
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
 
-        # Get field provenance expressions (these read from upstream data_version_by_field)
-        field_provenance_exprs = self.get_field_provenance_exprs()
+        # Pre-extract upstream data_version_by_field values as temporary columns
+        pre_extracted_temp_cols: list[str] = []
+        parent_field_col_map: dict[FQFieldKey, str] = {}  # fq_key -> temp_col_name
+
+        for field_spec in self.plan.feature.fields:
+            parent_fields = self.plan.get_parent_fields_for_field(field_spec.key)
+            for fq_key, parent_field_spec in parent_fields.items():
+                if fq_key in parent_field_col_map:
+                    continue
+                col_name = self.get_renamed_data_version_by_field_col(fq_key.feature)
+                struct_key = parent_field_spec.key.to_struct_key()
+                temp_col = f"__pf_{fq_key.feature.table_name}_{struct_key}"
+                parent_field_col_map[fq_key] = temp_col
+                pre_extracted_temp_cols.append(temp_col)
+
+                df = self._extract_metadata_fields(df, col_name, {struct_key: temp_col})  # ty: ignore[invalid-argument-type]
 
         for field_spec in self.plan.feature.fields:
             field_key_str = field_spec.key.to_struct_key()
@@ -465,11 +467,15 @@ class VersioningEngine(ABC):
             ]
 
             # Add upstream provenance values in deterministic order
-            # For aggregation lineage, values are already pre-aggregated by transform_upstream
-            parent_field_exprs = field_provenance_exprs.get(field_spec.key, {})
-            for fq_field_key in sorted(parent_field_exprs.keys()):
+            parent_fields = self.plan.get_parent_fields_for_field(field_spec.key)
+            for fq_field_key in sorted(parent_fields.keys()):
                 components.append(nw.lit(fq_field_key.to_string()))
-                components.append(parent_field_exprs[fq_field_key])
+                col_ref = parent_field_col_map[fq_field_key]
+                transformer = self.feature_transformers_by_key.get(fq_field_key.feature)
+                expr = nw.col(col_ref)
+                if transformer and transformer.is_optional:
+                    expr = expr.fill_null("")
+                components.append(expr)
 
             # Concatenate all components
             concat_expr = nw.concat_str(components, separator="|")
@@ -497,7 +503,7 @@ class VersioningEngine(ABC):
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)  # ty: ignore[invalid-assignment]
 
         # Drop all temporary columns
-        temp_columns_to_drop = list(temp_concat_cols.values()) + list(temp_hash_cols.values())
+        temp_columns_to_drop = list(temp_concat_cols.values()) + list(temp_hash_cols.values()) + pre_extracted_temp_cols
         df = df.drop(*temp_columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         # Drop renamed upstream system columns
@@ -619,9 +625,11 @@ class VersioningEngine(ABC):
         if field_names is None:
             field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
 
-        # Concatenate all field hashes with separator
-        sample_components = [nw.col(struct_column).struct.field(field_name) for field_name in sorted(field_names)]
-        sample_concat = nw.concat_str(sample_components, separator="|")
+        # Pre-extract fields, concatenate with separator, then hash
+        sorted_names = sorted(field_names)
+        temp_cols = {fn: f"__hsvf_{fn}" for fn in sorted_names}
+        df = self._extract_metadata_fields(df, struct_column, temp_cols)
+        sample_concat = nw.concat_str([nw.col(c) for c in temp_cols.values()], separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
         # Hash the concatenation to produce final provenance hash
@@ -631,7 +639,7 @@ class VersioningEngine(ABC):
             hash_column,
             hash_algorithm,
             truncate_length=get_hash_truncation_length(),
-        ).drop("__sample_concat")
+        ).drop("__sample_concat", *temp_cols.values())
 
     def resolve_increment_with_provenance(
         self,

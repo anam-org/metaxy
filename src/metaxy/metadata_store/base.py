@@ -61,6 +61,20 @@ if TYPE_CHECKING:
     pass
 
 
+def _is_map_column(df: Frame, col_name: str) -> bool:
+    """Check if a column in a narwhals frame is a Map type.
+
+    Returns False immediately if enable_map_datatype is not set.
+    Delegates to find_map_columns for backend-specific detection.
+    """
+    if not MetaxyConfig.get().enable_map_datatype:
+        return False
+
+    from metaxy._utils import find_map_columns
+
+    return col_name in find_map_columns(df)
+
+
 # TypeVar for config types - used for typing from_config method
 MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
 
@@ -1229,7 +1243,7 @@ class MetadataStore(ABC):
                     df.implementation,
                     message=f"`{hash_column}` will be calculated in Polars.",
                 )
-                df = nw.from_native(df.lazy().collect().to_polars())
+                df = switch_implementation_to_polars(nw.from_native(df.lazy().collect()))
 
             return cast(
                 Frame,
@@ -1647,10 +1661,12 @@ class MetadataStore(ABC):
         if METAXY_PROVENANCE_BY_FIELD not in schema.names():
             raise MetadataSchemaError(f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column")
 
-        # Check that metaxy_provenance_by_field is a struct
+        # Check that metaxy_provenance_by_field is a struct or map
         provenance_dtype = schema[METAXY_PROVENANCE_BY_FIELD]
-        if not isinstance(provenance_dtype, nw.Struct):
-            raise MetadataSchemaError(f"'{METAXY_PROVENANCE_BY_FIELD}' column must be a Struct, got {provenance_dtype}")
+        if not isinstance(provenance_dtype, nw.Struct) and not _is_map_column(df, METAXY_PROVENANCE_BY_FIELD):
+            raise MetadataSchemaError(
+                f"'{METAXY_PROVENANCE_BY_FIELD}' column must be a Struct or Map, got {provenance_dtype}"
+            )
 
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
