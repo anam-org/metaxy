@@ -359,6 +359,18 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         return ibis.struct(struct_dict)
 
+    @staticmethod
+    def _is_table_not_found_error(e: Exception) -> bool:
+        import ibis.common.exceptions
+
+        if isinstance(e, ibis.common.exceptions.TableNotFound):
+            return True
+        try:
+            from clickhouse_connect.driver.exceptions import DatabaseError
+        except ImportError:
+            return False
+        return isinstance(e, DatabaseError) and "UNKNOWN_TABLE" in str(e)
+
     def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
         """Transform Polars Struct columns to Map format for ClickHouse.
 

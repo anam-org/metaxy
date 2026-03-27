@@ -60,9 +60,8 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
-        assert isinstance(df, pl.DataFrame)
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         df = df.sort("sample_uid")
         frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
@@ -95,10 +94,10 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
         assert frames == ["a1", "a2", "a3"]
         assert audio == ["b1", "b2", "b3"]
 
@@ -133,10 +132,10 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["tags"] == MAP_STR_STR
-        envs = df["tags"].map.get("env").to_list()
+        envs = df["tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
         assert envs == ["prod", "dev"]
 
     # ── Write accepts pre-built Map columns ────────────────────────────
@@ -162,7 +161,7 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
@@ -191,7 +190,7 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
         assert df["sample_uid"].to_list() == [1]
 
@@ -224,12 +223,12 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.height == 2
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
         assert frames == ["f1", "f2"]
         assert audio == ["a1", "a2"]
 
@@ -270,15 +269,15 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.schema["user_tags"] == MAP_STR_STR
 
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
         assert frames == ["f1", "f2"]
 
-        envs = df["user_tags"].map.get("env").to_list()
+        envs = df["user_tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
         assert envs == ["prod", "dev"]
 
     # ── User struct columns are not converted ──────────────────────────
@@ -305,7 +304,7 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
         # metaxy column should be Map
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR

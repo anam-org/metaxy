@@ -71,6 +71,7 @@ bigquery = [
 clickhouse = [
   "ibis-framework[clickhouse]>=11.0.0",
   "sqlalchemy>=2.0",
+  "clickhouse-connect",
 ]
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",

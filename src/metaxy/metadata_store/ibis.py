@@ -350,19 +350,20 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Apply backend-specific transformations before writing
         df = self.transform_before_write(df, feature_key, table_name)
 
+        from metaxy.config import MetaxyConfig
+
+        if MetaxyConfig.get().enable_map_datatype:
+            df = self._handle_map_columns(df, table_name)
+
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
         else:
-            from metaxy._utils import collect_to_polars
-
-            df_to_insert = collect_to_polars(df)  # Polars DataFrame
+            df_to_insert = (df.collect() if isinstance(df, nw.LazyFrame) else df).to_arrow()
 
         try:
-            self.conn.insert(table_name, obj=df_to_insert)  # ty: ignore[invalid-argument-type]
+            self.conn.insert(table_name, obj=df_to_insert)
         except Exception as e:
-            import ibis.common.exceptions
-
-            if not isinstance(e, ibis.common.exceptions.TableNotFound):
+            if not self._is_table_not_found_error(e):
                 raise
             if self.auto_create_tables:
                 # Warn about auto-create (first time only)
@@ -601,10 +602,6 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         Override in subclasses to apply backend-specific transformations.
 
-        !!! example
-            ClickHouse needs to convert Polars Struct columns to
-            Map-compatible format when the table has Map columns.
-
         Args:
             df: Narwhals DataFrame to be written
             feature_key: The feature key being written to
@@ -614,6 +611,97 @@ class IbisMetadataStore(MetadataStore, ABC):
             Transformed DataFrame (default: unchanged)
         """
         return df
+
+    @staticmethod
+    def _is_table_not_found_error(e: Exception) -> bool:
+        """Check if an exception indicates a missing table.
+
+        Override in subclasses to handle backend-specific exception types.
+        """
+        import ibis.common.exceptions
+
+        return isinstance(e, ibis.common.exceptions.TableNotFound)
+
+    def _handle_map_columns(self, df: Frame, table_name: str) -> Frame:
+        """Convert Struct columns to Map format for metaxy system columns.
+
+        For Ibis-backed frames, the conversion stays lazy using ibis.map() expressions.
+        For non-Ibis frames, converts through Arrow using polars-map utilities.
+        """
+        import ibis.expr.datatypes as dt
+
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+
+        # Always convert the two metaxy system struct columns
+        map_columns: set[str] = {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}
+
+        # Also convert any user-defined Map columns if table already exists with Map schema
+        table_schema: dict[str, dt.DataType] = {}
+        if table_name in self.conn.list_tables():
+            schema = self.conn.table(table_name).schema()
+            table_schema = {name: dtype for name, dtype in schema.items() if isinstance(dtype, dt.Map)}
+            map_columns |= set(table_schema)
+
+        if df.implementation == nw.Implementation.IBIS:
+            return self._handle_ibis_map_columns(df, map_columns, table_schema)
+
+        return self._handle_polars_map_columns(df, map_columns)
+
+    def _handle_ibis_map_columns(
+        self, df: Frame, map_columns: set[str], table_schema: dict[str, "ibis.expr.datatypes.DataType"]
+    ) -> Frame:
+        """Convert Ibis Struct columns to Map(String, value_type) expressions (stays lazy).
+
+        Keys are always strings (field names from versioning/provenance columns).
+        """
+        from typing import cast as typing_cast
+
+        import ibis
+        import ibis.expr.datatypes as dt
+
+        ibis_table = typing_cast("ibis.Table", df.to_native())
+        schema = ibis_table.schema()
+
+        mutations: dict[str, ibis.Expr] = {}
+        for col_name in map_columns:
+            if col_name not in schema:
+                continue
+            col_dtype = schema[col_name]
+            if not isinstance(col_dtype, dt.Struct):
+                continue
+
+            field_names = list(col_dtype.names)  # ty: ignore[invalid-argument-type]
+
+            # Use target Map value type from table schema if available, else infer from struct
+            if col_name in table_schema:
+                value_type = table_schema[col_name].value_type  # ty: ignore[unresolved-attribute]
+            else:
+                value_type = col_dtype.types[0] if col_dtype.types else dt.String()  # ty: ignore[not-subscriptable]
+
+            if not field_names:
+                mutations[col_name] = ibis.literal(
+                    {},
+                    type=dt.Map(dt.String(), value_type),  # ty: ignore[invalid-argument-type, missing-argument]
+                )
+                continue
+
+            keys = ibis.array([ibis.literal(name) for name in field_names])
+            values = ibis.array([ibis_table[col_name][name].cast(value_type) for name in field_names])
+            mutations[col_name] = ibis.map(keys, values)
+
+        if not mutations:
+            return df
+
+        return nw.from_native(ibis_table.mutate(**mutations), eager_only=False)  # ty: ignore[invalid-argument-type]
+
+    def _handle_polars_map_columns(self, df: Frame, map_columns: set[str]) -> Frame:
+        """Convert Polars Struct columns to native Arrow Map columns."""
+        from metaxy._utils import collect_to_polars
+        from metaxy.versioning._arrow_map import convert_extension_maps_to_native, convert_structs_to_maps
+
+        polars_df = collect_to_polars(df)
+        polars_df = convert_structs_to_maps(polars_df, columns=list(map_columns))
+        return nw.from_native(convert_extension_maps_to_native(polars_df.to_arrow()), eager_only=False)
 
     def _can_compute_native(self) -> bool:
         """

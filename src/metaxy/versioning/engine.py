@@ -299,7 +299,7 @@ class VersioningEngine(ABC):
             ]
             return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
 
-        # Map path: drop to native polars
+        # Map path: use native polars-map expressions (preserves laziness)
         import polars as pl
         import polars_map  # noqa: F401  # registers .map accessor
 
