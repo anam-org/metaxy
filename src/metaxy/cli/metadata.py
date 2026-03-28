@@ -826,10 +826,7 @@ def read(
                 if select:
                     df = df.select(*select)
 
-                # For IbisMetadataStore, execute SQL in the DB by extending the lazy Ibis frame.
-                # We compile the already-filtered df expression into a CTE so the user's SQL
-                # query runs inside the database (great perf: no collect needed).
-                # Both table_name and 'metadata' are provided as aliases.
+                # Execute SQL natively in Ibis using a CTE to extend the lazy evaluation pipeline.
                 if query and isinstance(metadata_store, IbisMetadataStore):
                     import ibis
 
@@ -846,10 +843,8 @@ def read(
                     # Collect to Polars using the project utility
                     pl_df = collect_to_polars(df)
 
-            # Execute SQL query if not already handled above (non-Ibis stores)
+            # Fallback SQL execution for non-Ibis stores using Polars SQLContext
             if query and not isinstance(metadata_store, IbisMetadataStore):
-                # Use Polars SQLContext as the default SQL engine for local frames.
-                # This ensures consistent behavior without optional DuckDB dependencies.
                 ctx = pl.SQLContext()
                 ctx.register(table_name, pl_df.lazy())
                 ctx.register("metadata", pl_df.lazy())
@@ -863,9 +858,7 @@ def read(
             @contextmanager
             def _get_output_stream(path: str | None, out_fmt: Literal["csv", "json", "parquet", "markdown"]):
                 if path:
-                    # Binary formats (CSV, Parquet) use binary mode.
-                    # Text formats need explicit UTF-8 for cross-platform correctness
-                    # (Windows defaults to cp1252, which can't handle chars like μ).
+                    # Enforce UTF-8 for text formats to avoid Windows charmap errors
                     if out_fmt in ("parquet", "csv"):
                         f = open(path, "wb")
                     else:
@@ -875,7 +868,6 @@ def read(
                     finally:
                         f.close()
                 else:
-                    # Similarly, use binary buffer for stdout if format is binary.
                     if out_fmt in ("parquet", "csv"):
                         yield sys.stdout.buffer
                     else:
