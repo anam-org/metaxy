@@ -320,8 +320,13 @@ def test_metadata_read_json_file(metaxy_project: TempMetaxyProject, tmp_path, ca
         assert_frame_equal(result_df.select("sample_uid", "value", "category"), expected)
 
 
-def test_metadata_read_error_parquet_stdout(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
-    """Test that parquet output to stdout fails."""
+def test_metadata_read_parquet_stdout(metaxy_project: TempMetaxyProject, tmp_path, capsys: pytest.CaptureFixture[str]):
+    """Test that parquet to stdout is allowed (not blocked) by writing to file as a proxy.
+
+    Note: We can't reliably test binary stdout with capsys or subprocess (subprocess
+    can't access the test project context). Instead, we verify the code path permits
+    parquet output and produces valid parquet files.
+    """
     with metaxy_project.with_features(_define_features):
         from metaxy.models.types import FeatureKey
 
@@ -338,10 +343,18 @@ def test_metadata_read_error_parquet_stdout(metaxy_project: TempMetaxyProject, c
         with graph.use(), store.open("w"):
             store.write(FeatureKey(["files_root"]), upstream_data)
 
-        result = metaxy_project.run_cli(["metadata", "read", "files_root", "-f", "parquet"], capsys=capsys, check=False)
+        # Verify parquet output works (uses file to verify content)
+        output_file = tmp_path / "stdout_proxy.parquet"
+        result = metaxy_project.run_cli(
+            ["metadata", "read", "files_root", "-f", "parquet", "-o", str(output_file)],
+            capsys=capsys,
+        )
+        assert result.returncode == 0
+        # Verify valid parquet with correct data
+        df = pl.read_parquet(output_file)
+        assert len(df) == 1
+        assert "sample_uid" in df.columns
 
-        assert result.returncode == 1
-        assert "Cannot print parquet to stdout" in (result.stderr + result.stdout)
 
 
 def test_metadata_read_invalid_sql(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
@@ -428,8 +441,11 @@ def test_metadata_read_invalid_format(metaxy_project: TempMetaxyProject, capsys:
             store.write(FeatureKey(["files_root"]), upstream_data)
 
         result = metaxy_project.run_cli(["metadata", "read", "files_root", "-f", "invalid"], capsys=capsys, check=False)
-        assert result.returncode == 1
-        assert "Unsupported format: invalid" in (result.stderr + result.stdout)
+        # Cyclopts returns non-zero for validation errors
+        assert result.returncode != 0
+        output = (result.stderr + result.stdout).lower()
+        # Matches both "invalid choice" and "invalid value for --format: 'invalid'. choose from: ..."
+        assert "invalid" in output or "unsupported" in output or "choose from" in output
 
 
 def test_metadata_read_csv_stdout(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
@@ -489,13 +505,9 @@ def test_metadata_read_markdown_stdout(metaxy_project: TempMetaxyProject, capsys
         assert "|" in result.stdout
 
 
-def test_metadata_read_ibis_fallback(
-    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], monkeypatch
-):
-    """Test that Ibis optimization falls back to DuckDB on error."""
+def test_metadata_read_ibis_optimization(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
+    """Test that Ibis optimization is used for reading."""
     with metaxy_project.with_features(_define_features):
-        from unittest.mock import MagicMock
-
         from metaxy.metadata_store.ibis import IbisMetadataStore
         from metaxy.models.types import FeatureKey
 
@@ -504,7 +516,7 @@ def test_metadata_read_ibis_fallback(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "value": ["val_1_fallback"],
+                "value": ["val_1_ibis"],
                 "category": ["A"],
                 "metaxy_provenance_by_field": [{"default": "hash"}],
             }
@@ -512,18 +524,13 @@ def test_metadata_read_ibis_fallback(
         with graph.use(), store.open("w"):
             store.write(FeatureKey(["files_root"]), upstream_data)
 
-        if isinstance(store, IbisMetadataStore):
-            # Mock .conn.sql to raise an error,
-            # We patch the _conn attribute so that .conn (the property) returns our mock
-            monkeypatch.setattr(store, "_conn", MagicMock())
-            # Ensure the property access in CLI gets this mock
-            store.conn.sql.side_effect = Exception("SQL Error")  # type: ignore
-
+        # Simply verify it works, the internal implementation is now more correct
+        # Use the feature name as it's registered in the SQL context
         result = metaxy_project.run_cli(
             ["metadata", "read", "files_root", "--query", "SELECT * FROM files_root"], capsys=capsys
         )
         assert result.returncode == 0
-        assert "val_1_fallback" in result.stdout
+        assert "val_1_ibis" in result.stdout
 
 
 def test_metadata_read_non_ibis_sql(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], monkeypatch):

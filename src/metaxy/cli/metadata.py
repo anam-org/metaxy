@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import cyclopts
 import narwhals as nw
@@ -115,11 +115,6 @@ def status(
 
         # Handle empty result for --all-features
         if selector.all_features and not selector:
-            _output_no_features_warning(format, project_version)
-            return
-
-        # If no valid features remain
-        if not selector:
             _output_no_features_warning(format, project_version)
             return
 
@@ -754,14 +749,21 @@ def read(
             help="Columns to select. Can be repeated.",
         ),
     ] = None,
+    format: Annotated[
+        Literal["csv", "json", "parquet", "markdown"],
+        cyclopts.Parameter(
+            name=["--format", "-f"],
+            help="Output format: markdown, json, csv, parquet.",
+        ),
+    ] = "markdown",
     query: Annotated[
         str | None,
         cyclopts.Parameter(
             name=["--query"],
             help=(
                 "Arbitrary SQL query to execute against the metadata. "
-                "The table name matches the feature's table_name "
-                "(e.g. 'my__feature' for feature key 'my/feature')."
+                "The table is available as both its specific table name (e.g., 'files_root') "
+                "and under the generic alias 'metadata'."
             ),
         ),
     ] = None,
@@ -772,13 +774,6 @@ def read(
             help="Output file path (default: print to stdout).",
         ),
     ] = None,
-    format: Annotated[
-        str,
-        cyclopts.Parameter(
-            name=["--format", "-f"],
-            help="Output format: markdown, json, csv, parquet.",
-        ),
-    ] = "markdown",
 ) -> None:
     """Read feature metadata and optionally execute arbitrary SQL against it.
 
@@ -801,14 +796,16 @@ def read(
 
     from metaxy._utils import collect_to_polars
     from metaxy.cli.context import AppContext
-    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
     from metaxy.metadata_store.ibis import IbisMetadataStore
 
     filters = filters or []
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
-    selector.resolve("plain")
+    # Load graph before resolution. We use "plain" format for read command's resolution phase.
+    graph = load_graph_for_command(context, None, metadata_store, "plain")
+    selector.resolve("plain", graph=graph)
 
     if not selector:
         exit_with_error(
@@ -829,79 +826,60 @@ def read(
                 if select:
                     df = df.select(*select)
 
-                # For IbisMetadataStore, try to execute SQL in the DB before collecting
+                # For IbisMetadataStore, execute SQL in the DB by extending the lazy Ibis frame.
+                # We compile the already-filtered df expression into a CTE so the user's SQL
+                # query runs inside the database (great perf: no collect needed).
+                # Both table_name and 'metadata' are provided as aliases.
                 if query and isinstance(metadata_store, IbisMetadataStore):
-                    # Create a temporary view with the dynamic table name and run the query
-                    # This allows the backend (DuckDB, Postgres, etc.) to handle the SQL
-                    try:
-                        conn = metadata_store.conn
-                        # Many backends support conn.sql(query) directly
-                        # But we need to make sure the 'table_name' is registered or reachable
-                        # Most Ibis backends allow querying an existing expression by name if we alias it
-                        sql_query = (
-                            str(query).replace("metadata", table_name) if "metadata" in str(query) else str(query)
-                        )
-                        res = conn.sql(sql_query)
-                        pl_df = res.to_polars()
-                    except (AttributeError, Exception):
-                        # Fallback: collect to Polars and use DuckDB as before
-                        pl_df = collect_to_polars(df)
-                        import duckdb
+                    import ibis
 
-                        con = duckdb.connect()
-                        con.register(table_name, pl_df)
-                        pl_df = con.query(query).pl()
+                    ibis_expr = df.to_native()
+                    base_sql = ibis.to_sql(ibis_expr)
+                    wrapped_query = (
+                        f"WITH {table_name} AS ({base_sql}), "
+                        f"metadata AS (SELECT * FROM {table_name}) "
+                        f"{query}"
+                    )
+                    res = metadata_store.conn.sql(wrapped_query)
+                    pl_df = res.to_polars()
                 else:
                     # Collect to Polars using the project utility
                     pl_df = collect_to_polars(df)
 
             # Execute SQL query if not already handled above (non-Ibis stores)
             if query and not isinstance(metadata_store, IbisMetadataStore):
-                try:
-                    import duckdb
-
-                    con = duckdb.connect()
-                    con.register(table_name, pl_df)
-                    pl_df = con.query(query).pl()
-                except ImportError:
-                    # Fallback to Polars SQL Context if duckdb is not installed
-                    ctx = pl.SQLContext()
-                    ctx.register(table_name, pl_df.lazy())
-                    pl_df = ctx.execute(query, eager=True)
+                # Use Polars SQLContext as the default SQL engine for local frames.
+                # This ensures consistent behavior without optional DuckDB dependencies.
+                ctx = pl.SQLContext()
+                ctx.register(table_name, pl_df.lazy())
+                ctx.register("metadata", pl_df.lazy())
+                pl_df = ctx.execute(query, eager=True)
 
             # --- Output ---
             fmt = format.lower()
 
-            # Validate parquet-to-stdout early
-            if not output and fmt == "parquet":
-                exit_with_error(
-                    CLIError(
-                        code=CLIErrorCode.GENERIC_ERROR,
-                        message="Cannot print parquet to stdout. Use --output instead.",
-                    ),
-                    "plain",
-                )
-
-            if fmt not in ("csv", "json", "parquet", "markdown"):
-                exit_with_error(
-                    CLIError(code=CLIErrorCode.GENERIC_ERROR, message=f"Unsupported format: {format}"),
-                    "plain",
-                )
-
             from contextlib import contextmanager
 
             @contextmanager
-            def _get_output_stream(path: str | None, out_fmt: str):
+            def _get_output_stream(path: str | None, out_fmt: Literal["csv", "json", "parquet", "markdown"]):
                 if path:
-                    mode = "wb" if out_fmt == "parquet" else "w"
-                    encoding = None if out_fmt == "parquet" else "utf-8"
-                    f = open(path, mode, encoding=encoding)
+                    # Binary formats (CSV, Parquet) use binary mode.
+                    # Text formats need explicit UTF-8 for cross-platform correctness
+                    # (Windows defaults to cp1252, which can't handle chars like μ).
+                    if out_fmt in ("parquet", "csv"):
+                        f = open(path, "wb")
+                    else:
+                        f = open(path, "w", encoding="utf-8")
                     try:
                         yield f
                     finally:
                         f.close()
                 else:
-                    yield sys.stdout
+                    # Similarly, use binary buffer for stdout if format is binary.
+                    if out_fmt in ("parquet", "csv"):
+                        yield sys.stdout.buffer
+                    else:
+                        yield sys.stdout
 
             with _get_output_stream(output, fmt) as out_stream:
                 _write_output(pl_df, fmt, out_stream)
@@ -915,7 +893,7 @@ def read(
             raise SystemExit(1)
 
 
-def _write_output(df: pl.DataFrame, fmt: str, out: Any) -> None:  # noqa: F821
+def _write_output(df: pl.DataFrame, fmt: Literal["csv", "json", "parquet", "markdown"], out: Any) -> None:  # noqa: F821
     """Write a Polars DataFrame to a file-like stream in the given format."""
     import polars as pl
 
@@ -925,7 +903,8 @@ def _write_output(df: pl.DataFrame, fmt: str, out: Any) -> None:  # noqa: F821
         df.write_parquet(out)
     elif fmt == "json":
         out.write(df.write_json())
-        out.write("\n")
     elif fmt == "markdown":
         with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
-            out.write(str(df) + "\n")
+            out.write(str(df))
+    else:
+        raise NotImplementedError(f"Unsupported format: {fmt}")
