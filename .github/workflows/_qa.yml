@@ -388,10 +388,12 @@ jobs:
         run: >
           uv run pytest
           -k "not clickhouse and not graphviz"
+          -p no:pytest_postgresql
           --ignore=tests/docs
           --ignore=tests/cli
           --ignore=tests/examples
           --ignore=tests/ext/ray
+          --ignore=tests/ext/clickhouse
           --ignore=tests/project
           --durations=15
           --snapshot-warn-unused
@@ -431,8 +433,10 @@ jobs:
         run: >
           uv run pytest
           -k "not clickhouse and not graphviz"
+          -p no:pytest_postgresql
           --ignore=tests/docs
           --ignore=tests/ext/ray
+          --ignore=tests/ext/clickhouse
           --durations=15
           --snapshot-warn-unused
 

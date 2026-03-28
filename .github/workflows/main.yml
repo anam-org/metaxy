@@ -38,7 +38,7 @@ jobs:
 
   docs:
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+      group: docs-deploy-${{ github.ref }}
       cancel-in-progress: true
     needs: qa
     uses: ./.github/workflows/_docs.yml
