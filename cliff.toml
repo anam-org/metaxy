@@ -22,17 +22,17 @@ commit_preprocessors = [
   { pattern = ' \(#\d+\)', replace = "" },
 ]
 commit_parsers = [
-  { message = "^.*!:", group = "<0>### :bomb: Breaking" },
-  { message = "^feat", group = "<1>### :sparkles: Features" },
-  { message = "^fix", group = "<2>### :bug: Bug Fixes" },
-  { message = "^docs", group = "<3>### :book: Docs" },
-  { message = "^perf", group = "<4>### :zap: Performance" },
-  { message = "^refactor", group = "<5>### :hammer_and_wrench: Other Improvements" },
-  { message = "^chore", group = "<5>### :hammer_and_wrench: Other Improvements" },
-  { message = "^ci", group = "<5>### :hammer_and_wrench: Other Improvements" },
-  { message = "^build", group = "<5>### :hammer_and_wrench: Other Improvements" },
-  { message = "^test", group = "<5>### :hammer_and_wrench: Other Improvements" },
-  { message = "^style", group = "<5>### :hammer_and_wrench: Other Improvements" },
+  { message = "^.*!:", group = "<0>### :bomb: Breaking", default_scope = "" },
+  { message = "^feat", group = "<1>### :sparkles: Features", default_scope = "" },
+  { message = "^fix", group = "<2>### :bug: Bug Fixes", default_scope = "" },
+  { message = "^docs", group = "<3>### :book: Docs", default_scope = "" },
+  { message = "^perf", group = "<4>### :zap: Performance", default_scope = "" },
+  { message = "^refactor", group = "<5>### :hammer_and_wrench: Other Improvements", default_scope = "" },
+  { message = "^chore", group = "<5>### :hammer_and_wrench: Other Improvements", default_scope = "" },
+  { message = "^ci", group = "<5>### :hammer_and_wrench: Other Improvements", default_scope = "" },
+  { message = "^build", group = "<5>### :hammer_and_wrench: Other Improvements", default_scope = "" },
+  { message = "^test", group = "<5>### :hammer_and_wrench: Other Improvements", default_scope = "" },
+  { message = "^style", group = "<5>### :hammer_and_wrench: Other Improvements", default_scope = "" },
   { message = "^.*", skip = true },
 ]
 ignore_tags = "v0\\.0\\."
@@ -73,7 +73,11 @@ body = """
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
 {{ group | striptags | trim }}
-{% for commit in commits -%}
+{% for scope, scoped_commits in commits | group_by(attribute="scope") %}
+{%- if scope %}
+#### {{ scope | upper_first }}
+{% endif -%}
+{% for commit in scoped_commits -%}
 {%- set_global changelog_lines = "" -%}
 {%- set_global changelog_source = "" -%}
 {%- if commit.body and commit.body is containing("## Changelog") -%}
@@ -99,19 +103,18 @@ body = """
 {%- endif -%}
 {%- endfor -%}
 {%- endif -%}
-{%- set_global scope_prefix = "" -%}
-{%- if commit.scope -%}{%- set_global scope_prefix = "**" ~ commit.scope ~ "**: " -%}{%- endif -%}
 {%- if changelog_lines | length > 0 -%}
 {%- for line in changelog_lines | trim | split(pat="\n") %}
-- {{ scope_prefix }}{{ line }}
+- {{ line }}
 {%- endfor -%}
 {%- else %}
-- {{ scope_prefix }}{{ commit.message | split(pat="\n") | first | trim }}
+- {{ commit.message | split(pat="\n") | first | trim }}
 {%- endif %}
 {%- if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/anam-org/metaxy/pull/{{ commit.remote.pr_number }}){% if commit.remote.username %} by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}){% endif %})
 {%- elif commit.remote.username %} (by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}))
 {%- endif %}
 {%- endfor %}
+{% endfor %}
 {% endfor %}\
 {%- set new_contributors = github.contributors | filter(attribute="is_first_time", value=true) -%}
 {%- set_global new_contribs_count = 0 -%}
@@ -132,6 +135,8 @@ body = """
 """
 postprocessors = [
   { pattern = 'a new `extends` config field', replace = "a new `extend` config field" },
+  # deltalake Map support was bundled with the iceberg PR; add a separate changelog section
+  { pattern = '(#### Iceberg\n\n- `Map` type support)', replace = "#### Deltalake\n\n- `Map` type support (experimental) ([#1108](https://github.com/anam-org/metaxy/pull/1108) by [@danielgafni](https://github.com/danielgafni))\n\n$1" },
 ]
 footer = """
 
