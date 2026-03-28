@@ -356,7 +356,6 @@ def test_metadata_read_parquet_stdout(metaxy_project: TempMetaxyProject, tmp_pat
         assert "sample_uid" in df.columns
 
 
-
 def test_metadata_read_invalid_sql(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that invalid SQL query triggers the error catch block."""
     with metaxy_project.with_features(_define_features):
@@ -508,7 +507,6 @@ def test_metadata_read_markdown_stdout(metaxy_project: TempMetaxyProject, capsys
 def test_metadata_read_ibis_optimization(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):
     """Test that Ibis optimization is used for reading."""
     with metaxy_project.with_features(_define_features):
-        from metaxy.metadata_store.ibis import IbisMetadataStore
         from metaxy.models.types import FeatureKey
 
         graph = metaxy_project.graph

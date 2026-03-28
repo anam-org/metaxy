@@ -113,9 +113,20 @@ def status(
         selector.resolve(format, graph=graph, error_missing=assert_in_sync)
         missing_keys = selector.missing_keys
 
-        # Handle empty result for --all-features
-        if selector.all_features and not selector:
-            _output_no_features_warning(format, project_version)
+        # Handle empty result
+        if not selector:
+            if selector.all_features:
+                _output_no_features_warning(format, project_version)
+            else:
+                if format == "json":
+                    data_console.print_json(
+                        data={
+                            "warning": "No valid features to check",
+                            "features": {},
+                        }
+                    )
+                else:
+                    data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
             return
 
         # Print header for plain format only when using a snapshot
@@ -624,7 +635,7 @@ def rebase(
     if dry_run:
         console.print(f"[bold cyan]Dry run[/bold cyan]: {rows_affected} row(s) would be rebased")
     else:
-        console.print(f"[green]✓[/green] Rebased {rows_affected} row(s)")
+        console.print(f"[green]SUCCESS:[/green] Rebased {rows_affected} row(s)")
 
 
 @app.command()
@@ -726,7 +737,7 @@ def copy(
             )
 
     data_console.print(
-        f"[green]✓[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
+        f"[green]SUCCESS:[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
     )
 
 
@@ -833,9 +844,7 @@ def read(
                     ibis_expr = df.to_native()
                     base_sql = ibis.to_sql(ibis_expr)
                     wrapped_query = (
-                        f"WITH {table_name} AS ({base_sql}), "
-                        f"metadata AS (SELECT * FROM {table_name}) "
-                        f"{query}"
+                        f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
                     )
                     res = metadata_store.conn.sql(wrapped_query)
                     pl_df = res.to_polars()
@@ -851,7 +860,9 @@ def read(
                 pl_df = ctx.execute(query, eager=True)
 
             # --- Output ---
-            fmt = format.lower()
+            import typing
+
+            fmt = typing.cast(Literal["csv", "json", "parquet", "markdown"], format.lower())
 
             from contextlib import contextmanager
 
@@ -877,7 +888,7 @@ def read(
                 _write_output(pl_df, fmt, out_stream)
 
             if output:
-                console.print(f"[green]✓[/green] Wrote to {output}")
+                console.print(f"[green]SUCCESS:[/green] Wrote to {output}")
 
         except Exception as e:
             error_msg = str(e)
