@@ -42,7 +42,7 @@ jobs:
       test: ${{ steps.filter.outputs.test }}
       docs: ${{ steps.filter.outputs.docs }}
       claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
-      core: ${{ steps.filter.outputs.core || steps.core-filter.outputs.core-src == 'true' }}
+      core: ${{ steps.filter.outputs.core == 'true' || steps.core-filter.outputs.core-src == 'true' }}
       duckdb: ${{ steps.filter.outputs.duckdb }}
       clickhouse: ${{ steps.filter.outputs.clickhouse }}
       postgres: ${{ steps.filter.outputs.postgres }}
