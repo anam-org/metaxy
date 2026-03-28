@@ -42,7 +42,7 @@ jobs:
       test: ${{ steps.filter.outputs.test }}
       docs: ${{ steps.filter.outputs.docs }}
       claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
-      core: ${{ steps.filter.outputs.core }}
+      core: ${{ steps.filter.outputs.core == 'true' || steps.core-filter.outputs.core-src == 'true' }}
       duckdb: ${{ steps.filter.outputs.duckdb }}
       clickhouse: ${{ steps.filter.outputs.clickhouse }}
       postgres: ${{ steps.filter.outputs.postgres }}
@@ -81,8 +81,6 @@ jobs:
             claude-plugin:
               - '.claude-plugin/**'
             core:
-              - 'src/metaxy/**'
-              - '!src/metaxy/ext/**'
               - 'tests/metadata_stores/shared/**'
               - 'tests/ext/conftest.py'
               - 'tests/conftest.py'
@@ -131,6 +129,14 @@ jobs:
             mcp:
               - 'src/metaxy/ext/mcp/**'
               - 'tests/ext/mcp/**'
+      - uses: dorny/paths-filter@v4.0.0
+        id: core-filter
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            core-src:
+              - 'src/metaxy/**'
+              - '!src/metaxy/ext/**'
 
   lint:
     runs-on: depot-ubuntu-latest
@@ -382,10 +388,12 @@ jobs:
         run: >
           uv run pytest
           -k "not clickhouse and not graphviz"
+          -p no:pytest_postgresql
           --ignore=tests/docs
           --ignore=tests/cli
           --ignore=tests/examples
           --ignore=tests/ext/ray
+          --ignore=tests/ext/clickhouse
           --ignore=tests/project
           --durations=15
           --snapshot-warn-unused
@@ -425,8 +433,10 @@ jobs:
         run: >
           uv run pytest
           -k "not clickhouse and not graphviz"
+          -p no:pytest_postgresql
           --ignore=tests/docs
           --ignore=tests/ext/ray
+          --ignore=tests/ext/clickhouse
           --durations=15
           --snapshot-warn-unused
 

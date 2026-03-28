@@ -62,7 +62,7 @@ def integration(session: nox.Session, integration: str) -> None:
 
 @nox_uv.session(
     python="3.10",
-    uv_extras=["duckdb"],
+    uv_all_extras=True,
     uv_all_groups=True,
     uv_sync_locked=False,
     tags=["compat"],

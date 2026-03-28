@@ -21,6 +21,8 @@ from tests.metadata_stores.shared import (
     DeletionTests,
     DisplayTests,
     FilterTests,
+    IbisMapTests,
+    MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
     WriteTests,
@@ -53,6 +55,8 @@ class TestDuckDB(
     DeletionTests,
     DisplayTests,
     FilterTests,
+    IbisMapTests,
+    MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
     WriteTests,
@@ -72,22 +76,210 @@ class TestDuckDB(
             name="staging",
         )
 
-    def test_store_from_config_gets_name(self, tmp_path: Path):
-        """Test that stores created via MetaxyConfig.get_store() receive the config key as name."""
-        config = MetaxyConfig(
-            stores={
-                "my_store": StoreConfig(
-                    type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
-                    config={"database": str(tmp_path / "test.duckdb")},
-                )
-            }
-        )
+
+@pytest.mark.ibis
+@pytest.mark.native
+@pytest.mark.duckdb
+class TestDuckDBPreCreatedMapTable:
+    """Test writing to a DuckDB table that was pre-created with MAP columns via SQL."""
+
+    def test_write_to_precreated_map_table(self, tmp_path: Path, test_features: dict[str, Any]) -> None:
+        """Writing to a table pre-created with MAP(VARCHAR, VARCHAR) columns works."""
+        import duckdb
+
+        from metaxy._utils import collect_to_polars
+        from metaxy.config import MetaxyConfig
+
+        db_path = tmp_path / "test.duckdb"
+        store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
+        feature = test_features["UpstreamFeatureA"]
+        table_name = store.get_table_name(store._resolve_feature_key(feature))
+
+        con = duckdb.connect(str(db_path))
+        con.execute(f"""
+            CREATE TABLE {table_name} (
+                sample_uid BIGINT,
+                metaxy_provenance_by_field MAP(VARCHAR, VARCHAR),
+                metaxy_provenance VARCHAR,
+                metaxy_data_version_by_field MAP(VARCHAR, VARCHAR),
+                metaxy_data_version VARCHAR,
+                metaxy_feature_version VARCHAR,
+                metaxy_project_version VARCHAR,
+                metaxy_created_at TIMESTAMPTZ,
+                metaxy_updated_at TIMESTAMPTZ,
+                metaxy_deleted_at TIMESTAMPTZ,
+                metaxy_materialization_id VARCHAR
+            )
+        """)
+        con.close()
+
+        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
         with config.use():
-            store = config.get_store("my_store")
-        assert store.name == "my_store"
-        assert not store.display().startswith("[")
-        assert repr(store).startswith("[my_store]")
-        assert "DuckDBMetadataStore" in repr(store)
+            metadata = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"frames": "h1", "audio": "h2"},
+                        {"frames": "h3", "audio": "h4"},
+                    ],
+                }
+            )
+            with store.open("w") as s:
+                s.write(feature, metadata)
+
+            with store.open("r") as s:
+                result = s.read(feature)
+                assert result is not None
+                df = collect_to_polars(result).sort("sample_uid")
+
+            assert df.height == 2
+            assert df["sample_uid"].to_list() == [1, 2]
+
+    def test_write_to_precreated_table_with_user_map_column(
+        self, tmp_path: Path, test_features: dict[str, Any]
+    ) -> None:
+        """Writing to a table with a user-defined MAP column pre-created via SQL."""
+        import duckdb
+        from polars_map import Map
+
+        from metaxy._utils import collect_to_polars
+        from metaxy.config import MetaxyConfig
+
+        db_path = tmp_path / "test.duckdb"
+        store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
+        feature = test_features["UpstreamFeatureA"]
+        table_name = store.get_table_name(store._resolve_feature_key(feature))
+
+        con = duckdb.connect(str(db_path))
+        con.execute(f"""
+            CREATE TABLE {table_name} (
+                sample_uid BIGINT,
+                metaxy_provenance_by_field MAP(VARCHAR, VARCHAR),
+                metaxy_provenance VARCHAR,
+                metaxy_data_version_by_field MAP(VARCHAR, VARCHAR),
+                metaxy_data_version VARCHAR,
+                metaxy_feature_version VARCHAR,
+                metaxy_project_version VARCHAR,
+                metaxy_created_at TIMESTAMPTZ,
+                metaxy_updated_at TIMESTAMPTZ,
+                metaxy_deleted_at TIMESTAMPTZ,
+                metaxy_materialization_id VARCHAR,
+                user_tags MAP(VARCHAR, VARCHAR)
+            )
+        """)
+        con.close()
+
+        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        with config.use():
+            user_map = pl.Series(
+                "user_tags",
+                [[("env", "prod"), ("region", "us")]],
+                dtype=Map(pl.String(), pl.String()),
+            )
+            metadata = pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h2"}],
+                }
+            ).with_columns(user_map)
+
+            with store.open("w") as s:
+                s.write(feature, metadata)
+
+            with store.open("r") as s:
+                result = s.read(feature)
+                assert result is not None
+
+                # Verify Ibis sees native Map type before collecting to Polars
+                import ibis.expr.datatypes as dt
+
+                ibis_schema = result.to_native().schema()
+                assert isinstance(ibis_schema["user_tags"], dt.Map)
+                assert isinstance(ibis_schema["metaxy_provenance_by_field"], dt.Map)
+
+                df = collect_to_polars(result)
+
+            assert df.height == 1
+            assert df["sample_uid"].to_list() == [1]
+
+    def test_write_ibis_frame_to_precreated_map_table(self, tmp_path: Path, test_features: dict[str, Any]) -> None:
+        """Writing an Ibis-backed frame to a MAP table stays lazy (no materialization)."""
+        import duckdb
+
+        from metaxy._utils import collect_to_polars
+        from metaxy.config import MetaxyConfig
+
+        db_path = tmp_path / "test.duckdb"
+        store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=True)
+        feature = test_features["UpstreamFeatureA"]
+        table_name = store.get_table_name(store._resolve_feature_key(feature))
+
+        # First write Polars data so the table exists with Struct columns
+        config = MetaxyConfig(auto_create_tables=True)
+        with config.use():
+            metadata = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"frames": "h1", "audio": "h2"},
+                        {"frames": "h3", "audio": "h4"},
+                    ],
+                }
+            )
+            with store.open("w") as s:
+                s.write(feature, metadata)
+
+        # Recreate the table with MAP columns
+        raw_con = duckdb.connect(str(db_path))
+        raw_con.execute(f"DROP TABLE IF EXISTS {table_name}")
+        raw_con.execute(f"""
+            CREATE TABLE {table_name} (
+                sample_uid BIGINT,
+                metaxy_provenance_by_field MAP(VARCHAR, VARCHAR),
+                metaxy_provenance VARCHAR,
+                metaxy_data_version_by_field MAP(VARCHAR, VARCHAR),
+                metaxy_data_version VARCHAR,
+                metaxy_feature_version VARCHAR,
+                metaxy_project_version VARCHAR,
+                metaxy_created_at TIMESTAMPTZ,
+                metaxy_updated_at TIMESTAMPTZ,
+                metaxy_deleted_at TIMESTAMPTZ,
+                metaxy_materialization_id VARCHAR
+            )
+        """)
+        raw_con.close()
+
+        # Write using Ibis-backed frame (via the store's own read -> write roundtrip)
+        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        with config.use():
+            with store.open("w") as s:
+                s.write(feature, metadata)
+
+            with store.open("r") as s:
+                result = s.read(feature)
+                assert result is not None
+                df = collect_to_polars(result).sort("sample_uid")
+
+            assert df.height == 2
+            assert df["sample_uid"].to_list() == [1, 2]
+
+
+def test_store_from_config_gets_name(tmp_path: Path) -> None:
+    """Test that stores created via MetaxyConfig.get_store() receive the config key as name."""
+    config = MetaxyConfig(
+        stores={
+            "my_store": StoreConfig(
+                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                config={"database": str(tmp_path / "test.duckdb")},
+            )
+        }
+    )
+    with config.use():
+        store = config.get_store("my_store")
+    assert store.name == "my_store"
+    assert not store.display().startswith("[")
+    assert repr(store).startswith("[my_store]")
+    assert "DuckDBMetadataStore" in repr(store)
 
 
 def test_duckdb_table_naming(

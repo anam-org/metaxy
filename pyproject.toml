@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.1.6"
+version = "0.1.7"
 description = "Pluggable versioned metadata management for incremental multimodal pipelines."
 readme = "README.md"
 authors = [
@@ -71,6 +71,7 @@ bigquery = [
 clickhouse = [
   "ibis-framework[clickhouse]>=11.0.0",
   "sqlalchemy>=2.0",
+  "clickhouse-connect",
 ]
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",

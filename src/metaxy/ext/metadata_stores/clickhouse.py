@@ -89,7 +89,7 @@ class ClickHouseMetadataStoreConfig(IbisMetadataStoreConfig):
 
     auto_cast_struct_for_map: bool = Field(
         default=True,
-        description="Auto-convert DataFrame Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.",
+        description="Auto-convert DataFrame Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted. Ignored when enable_map_datatype is set.",
     )
 
 
@@ -275,37 +275,31 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         - `JSON` columns: Cast to String (ClickHouse driver returns dict, PyArrow expects bytes)
 
-        - `Map(String, String)` metaxy columns: Convert to named Struct by extracting keys
+        - `Map(String, String)` metaxy columns: When `enable_map_datatype` is off, convert to
+          named Struct by extracting keys. When on, leave as Map (collected to `polars_map.Map`
+          by `collect_to_polars`).
 
-        For metaxy Map columns (`metaxy_provenance_by_field`, `metaxy_data_version_by_field`),
-        we build a named Struct from map key accesses using known field names from the
-        feature spec.
-
-        User-defined Map columns are left as-is and will appear in e.g. Polars as
-        `List[Struct{key, value}]` (the standard Arrow Map representation).
+        User-defined Map columns are always left as-is.
         """
         import ibis.expr.datatypes as dt
 
-        from metaxy.models.constants import (
-            METAXY_DATA_VERSION_BY_FIELD,
-            METAXY_PROVENANCE_BY_FIELD,
-        )
-
-        # Only convert these metaxy system Map columns to Struct
-        metaxy_map_columns = {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}
+        from metaxy.config import MetaxyConfig
 
         schema = table.schema()
         mutations: dict[str, Any] = {}
 
         for col_name, dtype in schema.items():
             if isinstance(dtype, dt.JSON):
-                # JSON → String (can't convert to Struct due to ClickHouse CAST limitations)
                 mutations[col_name] = table[col_name].cast("string")
 
-            elif isinstance(dtype, dt.Map) and col_name in metaxy_map_columns:
-                # Only convert metaxy system Map(String, String) columns to Struct
-                # User-defined Map columns are left as-is
-                mutations[col_name] = self._map_to_struct_expr(table, col_name, dtype, feature_key)
+            elif isinstance(dtype, dt.Map) and not MetaxyConfig.get().enable_map_datatype:
+                from metaxy.models.constants import (
+                    METAXY_DATA_VERSION_BY_FIELD,
+                    METAXY_PROVENANCE_BY_FIELD,
+                )
+
+                if col_name in {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}:
+                    mutations[col_name] = self._map_to_struct_expr(table, col_name, dtype, feature_key)
 
         if not mutations:
             return table
@@ -321,8 +315,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     ) -> Any:
         """Convert a Map column to Struct expression.
 
-        ClickHouse Map(String, String) can be converted to a Struct by
-        extracting specific keys using ibis.struct().
+        ClickHouse `Map(String, String)` can be converted to a Struct by
+        extracting specific keys using `ibis.struct()`.
 
         Args:
             table: Ibis table
@@ -359,13 +353,30 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         return ibis.struct(struct_dict)
 
+    @staticmethod
+    def _is_table_not_found_error(e: Exception) -> bool:
+        import ibis.common.exceptions
+
+        if isinstance(e, ibis.common.exceptions.TableNotFound):
+            return True
+        try:
+            from clickhouse_connect.driver.exceptions import DatabaseError
+        except ImportError:
+            return False
+        return isinstance(e, DatabaseError) and "UNKNOWN_TABLE" in str(e)
+
     def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
         """Transform Polars Struct columns to Map format for ClickHouse.
 
-        If the ClickHouse table has Map(K,V) columns but the DataFrame has Struct
-        columns, convert the Struct to Map format before inserting.
+        When `enable_map_datatype` is set, the base `IbisMetadataStore._write_feature`
+        handles Struct→Map conversion via Arrow. Otherwise, falls back to the legacy
+        ClickHouse-specific conversion.
         """
-        # Check if table exists and get its schema
+        from metaxy.config import MetaxyConfig
+
+        if MetaxyConfig.get().enable_map_datatype:
+            return df
+
         if table_name not in self.conn.list_tables():
             return df
 

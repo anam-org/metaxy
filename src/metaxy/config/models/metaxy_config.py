@@ -191,7 +191,7 @@ class MetaxyConfig(BaseSettings):
 
     enable_map_datatype: bool = PydanticField(
         default=False,
-        description="Use `polars-map.Map` datatype for versioning columns instead of `pl.Struct`. Experimental.",
+        description="Preserve [`Map` datatype](/guide/concepts/metadata-stores.md/#map-datatype) across Metaxy operations. Requires `polars-map` to be installed. Experimental.",
     )
 
     auto_create_tables: bool = PydanticField(

@@ -27,6 +27,7 @@ from metaxy import (
     FieldSpec,
     LineageRelationship,
 )
+from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -1280,7 +1281,7 @@ class VersioningTests:
                             target_version=child_version,
                             project_version=graph.project_version,
                         )
-                    return increment.new.lazy().collect().to_polars()
+                        return collect_to_polars(increment.new)
 
                 result_off = _resolve_with_map_flag(False)
                 result_on = _resolve_with_map_flag(True)
@@ -1290,7 +1291,17 @@ class VersioningTests:
 
         assert len(result_off) > 0, "Expected non-empty versioning result"
 
-        from metaxy.models.constants import METAXY_CREATED_AT
+        from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+        from metaxy.versioning._arrow_map import convert_structs_to_maps
+
+        # Normalize result_off's Struct _by_field columns to polars_map.Map so
+        # both frames have the same type and values can be compared.
+        by_field_columns = [
+            c
+            for c in (METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD)
+            if c in result_off.columns and c in result_on.columns
+        ]
+        result_off = convert_structs_to_maps(result_off, columns=by_field_columns)
 
         common_columns = [c for c in result_off.columns if c in result_on.columns and c != METAXY_CREATED_AT]
         pl_testing.assert_frame_equal(

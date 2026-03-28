@@ -381,11 +381,16 @@ def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         A DataFrame with complex/temporal types converted to strings.
     """
+    from metaxy._utils import _is_polars_map_dtype
+
     exprs: list[pl.Expr] = []
 
     for col_name in df.columns:
         dtype = df[col_name].dtype
-        if isinstance(dtype, pl.Struct):
+        if _is_polars_map_dtype(dtype):
+            # Map extension types: convert to {"key": "value", ...} JSON string
+            exprs.append(_map_to_json_expr(pl.col(col_name).to_physical(), alias=col_name))
+        elif isinstance(dtype, pl.Struct):
             # Struct types: use json_encode for a clean JSON representation
             exprs.append(pl.col(col_name).struct.json_encode())
         elif isinstance(dtype, pl.List):
@@ -446,3 +451,24 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
     )
 
     return pl.when(list_len <= max_items).then(short_result).otherwise(long_result).alias(alias)
+
+
+def _map_to_json_expr(list_expr: pl.Expr, alias: str) -> pl.Expr:
+    """Convert a Map's physical List(Struct({key, value})) expression to a JSON object string.
+
+    Produces `{"key1": "value1", "key2": "value2"}` format.
+    """
+    return (
+        pl.lit("{")
+        .add(
+            list_expr.list.eval(
+                pl.lit('"')
+                .add(pl.element().struct.field("key"))
+                .add(pl.lit('": "'))
+                .add(pl.element().struct.field("value").cast(pl.String))
+                .add(pl.lit('"'))
+            ).list.join(", ")
+        )
+        .add(pl.lit("}"))
+        .alias(alias)
+    )

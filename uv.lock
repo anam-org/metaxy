@@ -2888,7 +2888,7 @@ wheels = [
 
 [[package]]
 name = "metaxy"
-version = "0.1.6"
+version = "0.1.7"
 source = { editable = "." }
 dependencies = [
     { name = "cyclopts" },
@@ -2916,6 +2916,7 @@ bigquery = [
     { name = "ibis-framework", extra = ["bigquery"] },
 ]
 clickhouse = [
+    { name = "clickhouse-connect" },
     { name = "ibis-framework", extra = ["clickhouse"] },
     { name = "sqlalchemy" },
 ]
@@ -3033,6 +3034,7 @@ examples = [
 
 [package.metadata]
 requires-dist = [
+    { name = "clickhouse-connect", marker = "extra == 'clickhouse'" },
     { name = "cyclopts", specifier = ">=4.4.0" },
     { name = "dagster", marker = "extra == 'dagster'", specifier = ">=1.12.9" },
     { name = "dagster-shared", marker = "extra == 'dagster'", specifier = ">=1.12.9" },

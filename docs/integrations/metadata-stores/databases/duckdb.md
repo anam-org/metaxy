@@ -11,9 +11,9 @@ description: "Learn how to use DuckDB as a Metaxy metadata store."
 
     File-based DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider using [Motherduck](https://motherduck.com/), [DuckLake](../storage/ducklake.md) with a `PostgreSQL` catalog, or refer to [DuckDB's documentation](https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes) to learn about implementing application-side work-arounds.
 
-!!! tip
+!!! tip "Recommended: enable [`Map` datatype](../../../guide/concepts/metadata-stores.md#map-datatype)"
 
-    The [Delta Lake metadata store](../storage/delta.md) might be a better alternative for concurrent writes (with it's Polars-based versioning engine being as fast as DuckDB).
+    DuckDB natively supports the `Map` type. Enabling [`enable_map_datatype`](../../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) preserves `Map` columns across read and write operations.
 
 ## Installation
 

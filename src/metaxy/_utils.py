@@ -5,6 +5,8 @@ import narwhals as nw
 import polars as pl
 from narwhals.typing import DataFrameT, Frame, FrameT, LazyFrameT
 
+from metaxy._decorators import public
+
 PolarsCompatibleFrame: TypeAlias = Frame | pl.DataFrame | pl.LazyFrame
 
 
@@ -54,11 +56,17 @@ def has_polars_map_columns(df: pl.DataFrame | pl.LazyFrame) -> bool:
     return bool(find_map_columns(cast(Frame, nw.from_native(df))))
 
 
+@public
 def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
     """Helper to convert a Narwhals frame into an eager Polars DataFrame.
 
-    Avoids unnecessary re-materialization when the frame is already a Polars-backed
-    eager DataFrame. Preserves polars_map.Map columns when enable_map_datatype is set.
+    Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
+
+    Args:
+        frame: The Narwhals frame to convert.
+
+    Returns:
+        The materialized eager Polars DataFrame.
     """
     if isinstance(frame, pl.DataFrame):
         return frame

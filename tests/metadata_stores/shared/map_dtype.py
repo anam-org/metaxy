@@ -7,18 +7,85 @@ for both metaxy-managed (*_by_field) and user-defined Map columns.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import date
+from pathlib import Path
 
+import hypothesis.strategies as st
 import polars as pl
 import pyarrow as pa
 import pytest
+from hypothesis import HealthCheck, given, settings
+from polars.testing.parametric.strategies.data import data as pl_data
 from polars_map import Map
 
+import metaxy as mx
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 
 MAP_STR_STR = Map(pl.String(), pl.String())
+
+# Hashable types suitable as Map keys.
+# Only types that survive roundtrip without promotion through Parquet-based
+# backends (Delta, Iceberg): small ints get widened, unsigned ints are not
+# natively supported in Parquet, Time is not universally supported.
+_KEY_DTYPES: list[pl.DataType] = [
+    pl.String(),
+    pl.Int32(),
+    pl.Int64(),
+    pl.Boolean(),
+    pl.Date(),
+]
+
+# ClickHouse Date (UInt16) range is 1970-01-01 to 2149-06-06.
+# Map columns use Date (not Date32), so constrain to the narrower range.
+_MIN_DATE = date(1970, 1, 1)
+_MAX_DATE = date(2149, 6, 6)
+
+# Value types (keys + floats).
+# Binary is excluded because it can contain non-UTF-8 bytes that Delta Lake rejects.
+_VALUE_ONLY_DTYPES: list[pl.DataType] = [
+    pl.Float32(),
+    pl.Float64(),
+]
+
+
+def _data_strategy(dtype: pl.DataType) -> st.SearchStrategy:
+    """Return a Hypothesis strategy for scalar values of the given Polars dtype.
+
+    Date values are constrained to the ClickHouse Date32 range.
+    """
+    if dtype == pl.Date():
+        return st.dates(min_value=_MIN_DATE, max_value=_MAX_DATE)
+    return pl_data(dtype, allow_null=False, allow_nan=False, allow_infinity=False)
+
+
+@st.composite
+def map_series(draw: st.DrawFn) -> pl.Series:
+    """Draw a single-row Series with a random Map(K, V) dtype and two entries."""
+    key_dtype = draw(st.sampled_from(_KEY_DTYPES))
+    val_dtype = draw(st.sampled_from(_KEY_DTYPES + _VALUE_ONLY_DTYPES))
+    keys = draw(
+        st.lists(
+            _data_strategy(key_dtype),
+            min_size=2,
+            max_size=2,
+            unique=True,
+        )
+    )
+    values = draw(
+        st.lists(
+            _data_strategy(val_dtype),
+            min_size=2,
+            max_size=2,
+        )
+    )
+    return pl.Series(
+        "user_map",
+        [list(zip(keys, values))],
+        dtype=Map(key_dtype, val_dtype),
+    )
 
 
 class MapDtypeTests:
@@ -60,9 +127,8 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
-        assert isinstance(df, pl.DataFrame)
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         df = df.sort("sample_uid")
         frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
@@ -95,10 +161,10 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
         assert frames == ["a1", "a2", "a3"]
         assert audio == ["b1", "b2", "b3"]
 
@@ -133,10 +199,10 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["tags"] == MAP_STR_STR
-        envs = df["tags"].map.get("env").to_list()
+        envs = df["tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
         assert envs == ["prod", "dev"]
 
     # ── Write accepts pre-built Map columns ────────────────────────────
@@ -162,7 +228,7 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
@@ -191,7 +257,7 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
         assert df["sample_uid"].to_list() == [1]
 
@@ -224,12 +290,12 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.height == 2
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
         assert frames == ["f1", "f2"]
         assert audio == ["a1", "a2"]
 
@@ -270,15 +336,15 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native().sort("sample_uid")
+            df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.schema["user_tags"] == MAP_STR_STR
 
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
         assert frames == ["f1", "f2"]
 
-        envs = df["user_tags"].map.get("env").to_list()
+        envs = df["user_tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
         assert envs == ["prod", "dev"]
 
     # ── User struct columns are not converted ──────────────────────────
@@ -305,7 +371,7 @@ class MapDtypeTests:
         with store.open("r") as s:
             result = s.read(feature)
             assert result is not None
-            df = result.collect().to_native()
+            df = collect_to_polars(result)
 
         # metaxy column should be Map
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
@@ -349,3 +415,169 @@ class MapDtypeTests:
         assert df.schema["scores"] == map_int_float
         assert df["scores"].map.get(1).to_list() == [0.95, 0.91]  # ty: ignore[unresolved-attribute]
         assert df["scores"].map.get(2).to_list() == [0.87, 0.82]  # ty: ignore[unresolved-attribute]
+
+    # ── Hypothesis: random Map type roundtrip ───────────────────────────
+
+    def cleanup_feature(self, store: MetadataStore, feature: FeatureDefinition) -> None:
+        """Clean up a feature between hypothesis iterations.
+
+        Override in subclasses whose stores retain table schema after row deletion
+        (e.g. Delta Lake) and cannot handle Map column type changes via schema merge.
+        """
+        with store.open("w") as s:
+            if store.has_feature(feature):
+                s.drop_feature_metadata(feature)
+
+    @given(user_map=map_series())  # ty: ignore[missing-argument]
+    @settings(
+        max_examples=20,
+        deadline=None,
+        suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.differing_executors],
+    )
+    def test_random_map_type_roundtrip(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+        user_map: pl.Series,
+    ) -> None:
+        """Random Map(K, V) types survive a write→read roundtrip."""
+        feature = test_features["UpstreamFeatureA"]
+
+        self.cleanup_feature(store, feature)
+
+        with store.open("w") as s:
+            metadata = pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h2"}],
+                }
+            ).with_columns(user_map)
+            s.write(feature, metadata)
+
+        with store.open("r") as s:
+            result = s.read(feature)
+            assert result is not None
+            df = collect_to_polars(result)
+
+        assert df.schema["user_map"] == user_map.dtype
+        # Compare sorted by key since backends may reorder map entries
+        for actual, expected in zip(df["user_map"].to_list(), user_map.to_list()):
+            assert sorted(actual, key=lambda e: e["key"]) == sorted(expected, key=lambda e: e["key"])
+
+    # ── Fallback store: resolve_update with Map columns ──────────────
+
+    def test_resolve_update_with_map_columns_from_fallback_store(
+        self,
+        store: MetadataStore,
+        graph: mx.FeatureGraph,
+        tmp_path: Path,
+    ) -> None:
+        """Map columns survive resolve_update when upstream is read from a Delta fallback store.
+
+        Scenario:
+        1. Upstream feature is written to a Delta fallback store (with Map columns).
+        2. The main store is configured with the Delta store as a fallback.
+        3. resolve_update on the downstream feature reads upstream from fallback,
+           joins it with local downstream data, and computes the increment.
+        """
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureDep, FeatureKey
+        from metaxy.config import MetaxyConfig
+        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.models.field import FieldSpec
+        from metaxy.models.types import FieldKey
+
+        config = MetaxyConfig(enable_map_datatype=True)
+        with config.use():
+
+            class UpstreamMap(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["map_fallback", "upstream"]),
+                    fields=[
+                        FieldSpec(key=FieldKey(["video_path"]), code_version="1"),
+                    ],
+                ),
+            ):
+                pass
+
+            class DownstreamMap(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["map_fallback", "downstream"]),
+                    deps=[FeatureDep(feature=UpstreamMap)],
+                    fields=[
+                        FieldSpec(key=FieldKey(["result"]), code_version="1"),
+                    ],
+                ),
+            ):
+                pass
+
+            # Set up fallback Delta store with upstream data
+            fallback_store = DeltaMetadataStore(root_path=tmp_path / "delta_fallback")
+            # Local Delta store with fallback configured
+            local_store = DeltaMetadataStore(
+                root_path=tmp_path / "delta_local",
+                fallback_stores=[fallback_store],
+            )
+
+            with fallback_store.open("w"), local_store.open("w"), graph.use():
+                # Write upstream to fallback with Map provenance columns
+                upstream_data = pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2, 3],
+                        "video_path": ["/a.mp4", "/b.mp4", "/c.mp4"],
+                        "metaxy_provenance_by_field": [
+                            {"video_path": "hash_a"},
+                            {"video_path": "hash_b"},
+                            {"video_path": "hash_c"},
+                        ],
+                        "metaxy_provenance": ["prov_a", "prov_b", "prov_c"],
+                    }
+                )
+                fallback_store.write(UpstreamMap, upstream_data)
+
+                # Verify upstream is readable via fallback
+                upstream_df = collect_to_polars(local_store.read(UpstreamMap)).sort("sample_uid")
+                assert upstream_df.height == 3
+                assert upstream_df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+
+                # Build downstream data joined with upstream provenance
+                downstream_batch = pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2],
+                        "result": ["r1", "r2"],
+                    }
+                )
+                downstream_joined = downstream_batch.join(
+                    upstream_df.select(
+                        "sample_uid",
+                        "metaxy_data_version_by_field",
+                        "metaxy_provenance",
+                    ).rename(
+                        {
+                            "metaxy_data_version_by_field": "metaxy_data_version_by_field__map_fallback_upstream",
+                            "metaxy_provenance": "__map_fallback_upstream_provenance",
+                        }
+                    ),
+                    on="sample_uid",
+                )
+
+                import narwhals as nw
+
+                downstream_with_prov = local_store.compute_provenance(DownstreamMap, nw.from_native(downstream_joined))
+                local_store.write(DownstreamMap, downstream_with_prov)
+
+                # resolve_update should read upstream from fallback, join with
+                # local downstream, and return an increment with Map columns intact
+                increment = local_store.resolve_update(DownstreamMap, lazy=False)
+
+                # sample_uid=3 is in upstream but not downstream → 1 new sample
+                assert len(increment.new) == 1
+                assert increment.new["sample_uid"].to_list() == [3]
+
+                # samples 1,2 already materialized → 0 stale, 0 orphaned
+                assert len(increment.stale) == 0
+                assert len(increment.orphaned) == 0

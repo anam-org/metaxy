@@ -409,3 +409,23 @@ def test_build_table_preview_list_truncation() -> None:
     assert records_data[0]["long_list"] == "[1,..,10]"
     assert records_data[1]["long_list"] == "[10,..,50]"
     assert records_data[2]["long_list"] == "[1,..,3]"
+
+
+def test_build_table_preview_map_columns() -> None:
+    """Test that Map extension type columns are converted to JSON object strings."""
+    from metaxy.versioning._arrow_map import convert_structs_to_maps
+
+    df = convert_structs_to_maps(
+        pl.DataFrame({"id": [1], "mapping": [{"a": "1", "b": "2"}]}),
+        columns=["mapping"],
+    )
+
+    schema = dg.TableSchema(
+        columns=[
+            dg.TableColumn(name="id", type="int"),
+            dg.TableColumn(name="mapping", type="Map"),
+        ]
+    )
+
+    result = build_table_preview_metadata(nw.from_native(df.lazy()), schema, n_rows=5)
+    assert result.records[0].data["mapping"] == '{"a": "1", "b": "2"}'

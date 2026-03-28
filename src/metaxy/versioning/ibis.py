@@ -105,31 +105,61 @@ class IbisVersioningEngine(VersioningEngine):
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Build a metadata column (Struct or Map) from existing columns.
 
-        Args:
-            df: Narwhals DataFrame backed by Ibis
-            struct_name: Name for the new struct column
-            field_columns: Mapping from struct field names to column names
-
-        Returns:
-            Narwhals DataFrame with new struct column added, backed by Ibis.
-            The source columns remain unchanged.
+        When ``enable_map_datatype`` is set, produces a ``Map(String, String)``
+        column. Otherwise produces a Struct column.
         """
-        # Import ibis lazily
+        from metaxy.config import MetaxyConfig
+
+        if MetaxyConfig.get().enable_map_datatype:
+            return IbisVersioningEngine._build_map_column(df, struct_name, field_columns)
+        return IbisVersioningEngine._build_ibis_struct_column(df, struct_name, field_columns)
+
+    @staticmethod
+    def _build_ibis_struct_column(
+        df: FrameT,
+        col_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build an Ibis Struct column from existing columns."""
         import ibis.expr.types
 
-        # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        expr = ibis.struct({field_name: ibis_table[src_col] for field_name, src_col in field_columns.items()})
+        return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: expr})))
 
-        # Build struct expression - reference columns by name
-        struct_expr = ibis.struct({field_name: ibis_table[col_name] for field_name, col_name in field_columns.items()})
+    @staticmethod
+    def _build_map_column(
+        df: FrameT,
+        col_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build a Map(String, String) column from existing columns using ibis.map()."""
+        import ibis.expr.types
 
-        # Add struct column
-        result_table = ibis_table.mutate(**{struct_name: struct_expr})
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        keys = ibis.array([ibis.literal(name) for name in field_columns])
+        values = ibis.array([ibis_table[src_col].cast("string") for src_col in field_columns.values()])
+        return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: ibis.map(keys, values)})))
 
-        # Convert back to Narwhals
+    def _extract_metadata_fields(self, df: FrameT, col_name: str, field_mapping: dict[str, str]) -> FrameT:
+        """Extract fields from a metadata column (Struct or Map) using Ibis expressions."""
+        import ibis.expr.types
+
+        from metaxy._utils import find_map_columns
+
+        if col_name not in find_map_columns(df):
+            return super()._extract_metadata_fields(df, col_name, field_mapping)
+
+        # Map path: use Ibis-native map element access
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        result_table = ibis_table.mutate(
+            **{
+                out_col: ibis_table[col_name].get(field_name).cast("string")
+                for field_name, out_col in field_mapping.items()
+            }
+        )
         return cast(FrameT, nw.from_native(result_table))
 
     def concat_strings_over_groups(

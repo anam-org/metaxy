@@ -1,6 +1,6 @@
 ---
 name: metaxy
-description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", "metaxy lock", "lock features", "external features", "multi-environment", "multi-project setup", "monorepo features", "cross-project dependencies", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, testing patterns, feature locking, or multi-environment configuration.
+description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", "metaxy lock", "lock features", "external features", "multi-environment", "monorepo features", "enable Map datatype", "enable_map_datatype", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, testing patterns, feature locking, Map datatype configuration, or multi-environment configuration.
 ---
 
 # Metaxy
@@ -63,6 +63,10 @@ with config.use() as cfg:
 ```
 
 Supported backends: DuckDB, ClickHouse, BigQuery, LanceDB, Delta Lake.
+
+#### Map Datatype (Experimental)
+
+To enable native Arrow Map column support (recommended for stores that support it), set `enable_map_datatype = true` in `metaxy.toml`. Requires the `polars-map` package. See https://docs.metaxy.io/latest/guide/concepts/metadata-stores/#map-datatype
 
 ### Feature Graph
 

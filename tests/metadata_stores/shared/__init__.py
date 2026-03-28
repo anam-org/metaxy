@@ -8,6 +8,7 @@ from .crud import CRUDTests
 from .deletion import DeletionTests
 from .display import DisplayTests
 from .filters import FilterTests
+from .ibis_map import IbisMapTests
 from .map_dtype import MapDtypeTests
 from .resolve_update import ResolveUpdateTests
 from .versioning import VersioningTests
@@ -18,6 +19,7 @@ __all__ = [
     "DeletionTests",
     "DisplayTests",
     "FilterTests",
+    "IbisMapTests",
     "MapDtypeTests",
     "ResolveUpdateTests",
     "VersioningTests",

@@ -292,6 +292,43 @@ Metaxy doesn't mix metadata from different stores: either the entire feature is 
 
 Fallback stores can be chained at arbitrary depth.
 
+## `Map` Datatype
+
+Metaxy uses dictionary-like columns internally for Metaxy's field-level versioning columns. Most storage systems and Apache Arrow represent have native support for the [`Map`](https://arrow.apache.org/docs/python/generated/pyarrow.map_.html) type, but [Polars doesn't](https://github.com/pola-rs/polars/issues/8385). Polars converts `Map` columns to `List(Struct(key, value))` (physically equivalent to `Map`). This means that:
+
+1. user-defined `Map` columns lose their type when round-tripped through Polars
+
+2. Metaxy has to represent field-versioning columns as `Struct` instead, which is very much not ideal as the fields **will** change over time, causing problems with some storage systems.
+
+!!! note
+
+    This is also known as "The `Map` Hell" problem (the term invented by me).
+
+### Experimental `Map` Datatype Support
+
+These problems can be solved with the [`enable_map_datatype`](../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) configuration option:
+
+```toml title="metaxy.toml"
+enable_map_datatype = true
+```
+
+!!! warning "Experimental"
+
+    `Map` datatype support requires the [`polars-map`](https://pypi.org/project/polars-map/) package to be installed and is experimental.
+
+When enabled, Metaxy keeps Arrow `Map` columns intact across operations (including reads and writes), avoiding unnecessary conversions and preserving user-defined `Map` columns.
+
+The following metadata stores support `Map` columns when `enable_map_datatype` is enabled:
+
+- [DuckDB](../../integrations/metadata-stores/databases/duckdb.md)
+- [ClickHouse](../../integrations/metadata-stores/databases/clickhouse.md)
+- [Delta Lake](../../integrations/metadata-stores/storage/delta.md)
+- [Apache Iceberg](../../integrations/metadata-stores/storage/iceberg.md)
+
+!!! info "`Map` support in Narwhals"
+
+    It's not there yet. See the [Narwhals tracking issue](https://github.com/narwhals-dev/narwhals/issues/3525) for more details.
+
 ## Metadata Store Implementations
 
 Metaxy provides ready `MetadataStore` [implementations](../../integrations/metadata-stores/index.md) for popular databases and storage systems.

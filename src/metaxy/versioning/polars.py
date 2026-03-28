@@ -90,28 +90,47 @@ class PolarsVersioningEngine(VersioningEngine):
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Build a metadata column (Struct or Map) from existing columns.
 
-        Args:
-            df: Narwhals DataFrame backed by Polars
-            struct_name: Name for the new struct column
-            field_columns: Mapping from struct field names to column names
-
-        Returns:
-            Narwhals DataFrame with new struct column added, backed by Polars.
-            The source columns remain unchanged.
+        When ``enable_map_datatype`` is set, produces a ``polars_map.Map(String, String)``
+        column. Otherwise produces a Struct column.
         """
-        assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
+        from metaxy.config import MetaxyConfig
+
+        if MetaxyConfig.get().enable_map_datatype:
+            return PolarsVersioningEngine._build_map_column(df, struct_name, field_columns)
+        return PolarsVersioningEngine._build_polars_struct_column(df, struct_name, field_columns)
+
+    @staticmethod
+    def _build_polars_struct_column(
+        df: FrameT,
+        col_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build a Polars Struct column from existing columns."""
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        struct_expr = pl.struct([pl.col(src_col).alias(field_name) for field_name, src_col in field_columns.items()])
+        return cast(FrameT, nw.from_native(df_pl.with_columns(struct_expr.alias(col_name))))
 
-        # Build struct expression
-        struct_expr = pl.struct([pl.col(col_name).alias(field_name) for field_name, col_name in field_columns.items()])
+    @staticmethod
+    def _build_map_column(
+        df: FrameT,
+        col_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build a polars_map.Map(String, String) column from existing columns."""
+        import polars_map  # noqa: F401  # registers .map accessor
 
-        # Add struct column
-        df_pl = df_pl.with_columns(struct_expr.alias(struct_name))
-
-        # Convert back to Narwhals
-        return cast(FrameT, nw.from_native(df_pl))
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        kv_pairs = [
+            pl.struct(
+                pl.lit(field_name).alias("key"),
+                pl.col(src_col).cast(pl.String).alias("value"),
+            )
+            for field_name, src_col in field_columns.items()
+        ]
+        map_expr = pl.concat_list(kv_pairs).map.from_entries().alias(col_name)  # ty: ignore[unresolved-attribute]
+        return cast(FrameT, nw.from_native(df_pl.with_columns(map_expr)))
 
     def concat_strings_over_groups(
         self,
