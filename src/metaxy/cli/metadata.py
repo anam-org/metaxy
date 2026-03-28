@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import cyclopts
 import narwhals as nw
@@ -13,6 +13,8 @@ from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat, StalenessPredicateArgs
 
 if TYPE_CHECKING:
+    import polars as pl
+
     from metaxy import FeatureDefinition
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
     from metaxy.metadata_store.base import MetadataStore
@@ -111,14 +113,20 @@ def status(
         selector.resolve(format, graph=graph, error_missing=assert_in_sync)
         missing_keys = selector.missing_keys
 
-        # Handle empty result for --all-features
-        if selector.all_features and not selector:
-            _output_no_features_warning(format, project_version)
-            return
-
-        # If no valid features remain
+        # Handle empty result
         if not selector:
-            _output_no_features_warning(format, project_version)
+            if selector.all_features:
+                _output_no_features_warning(format, project_version)
+            else:
+                if format == "json":
+                    data_console.print_json(
+                        data={
+                            "warning": "No valid features to check",
+                            "features": {},
+                        }
+                    )
+                else:
+                    data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
             return
 
         # Print header for plain format only when using a snapshot
@@ -627,7 +635,7 @@ def rebase(
     if dry_run:
         console.print(f"[bold cyan]Dry run[/bold cyan]: {rows_affected} row(s) would be rebased")
     else:
-        console.print(f"[green]✓[/green] Rebased {rows_affected} row(s)")
+        console.print(f"[green]SUCCESS:[/green] Rebased {rows_affected} row(s)")
 
 
 @app.command()
@@ -729,5 +737,177 @@ def copy(
             )
 
     data_console.print(
-        f"[green]✓[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
+        f"[green]SUCCESS:[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
     )
+
+
+@app.command()
+def read(
+    selector: FeatureSelector = FeatureSelector(),
+    *,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store name (defaults to configured default store).",
+        ),
+    ] = None,
+    filters: FilterArgs | None = None,
+    select: Annotated[
+        list[str] | None,
+        cyclopts.Parameter(
+            name=["--select"],
+            help="Columns to select. Can be repeated.",
+        ),
+    ] = None,
+    format: Annotated[
+        Literal["csv", "json", "parquet", "markdown"],
+        cyclopts.Parameter(
+            name=["--format", "-f"],
+            help="Output format: markdown, json, csv, parquet.",
+        ),
+    ] = "markdown",
+    query: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--query"],
+            help=(
+                "Arbitrary SQL query to execute against the metadata. "
+                "The table is available as both its specific table name (e.g., 'files_root') "
+                "and under the generic alias 'metadata'."
+            ),
+        ),
+    ] = None,
+    output: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--output", "-o"],
+            help="Output file path (default: print to stdout).",
+        ),
+    ] = None,
+) -> None:
+    """Read feature metadata and optionally execute arbitrary SQL against it.
+
+    Examples:
+        ```console
+        $ metaxy metadata read my/feature
+        ```
+
+        ```console
+        $ metaxy metadata read my/feature --select id --select status
+        ```
+
+        ```console
+        $ metaxy metadata read my/feature --query "SELECT * FROM my__feature WHERE status = 'active'" -f csv
+        ```
+    """
+    import sys
+
+    import polars as pl
+
+    from metaxy._utils import collect_to_polars
+    from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
+    from metaxy.metadata_store.ibis import IbisMetadataStore
+
+    filters = filters or []
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    # Load graph before resolution. We use "plain" format for read command's resolution phase.
+    graph = load_graph_for_command(context, None, metadata_store, "plain")
+    selector.resolve("plain", graph=graph)
+
+    if not selector:
+        exit_with_error(
+            CLIError(
+                code=CLIErrorCode.NO_FEATURES,
+                message="No valid features selected for reading.",
+            ),
+            "plain",
+        )
+
+    for feature_key in selector:
+        try:
+            table_name = feature_key.table_name
+
+            with metadata_store:
+                df = metadata_store.read(feature_key, filters=filters, allow_fallback=True)
+
+                if select:
+                    df = df.select(*select)
+
+                # Execute SQL natively in Ibis using a CTE to extend the lazy evaluation pipeline.
+                if query and isinstance(metadata_store, IbisMetadataStore):
+                    import ibis
+
+                    ibis_expr = df.to_native()
+                    base_sql = ibis.to_sql(ibis_expr)
+                    wrapped_query = (
+                        f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
+                    )
+                    res = metadata_store.conn.sql(wrapped_query)
+                    pl_df = res.to_polars()
+                else:
+                    # Collect to Polars using the project utility
+                    pl_df = collect_to_polars(df)
+
+            # Fallback SQL execution for non-Ibis stores using Polars SQLContext
+            if query and not isinstance(metadata_store, IbisMetadataStore):
+                ctx = pl.SQLContext()
+                ctx.register(table_name, pl_df.lazy())
+                ctx.register("metadata", pl_df.lazy())
+                pl_df = ctx.execute(query, eager=True)
+
+            # --- Output ---
+            import typing
+
+            fmt = typing.cast(Literal["csv", "json", "parquet", "markdown"], format.lower())
+
+            from contextlib import contextmanager
+
+            @contextmanager
+            def _get_output_stream(path: str | None, out_fmt: Literal["csv", "json", "parquet", "markdown"]):
+                if path:
+                    # Enforce UTF-8 for text formats to avoid Windows charmap errors
+                    if out_fmt in ("parquet", "csv"):
+                        f = open(path, "wb")
+                    else:
+                        f = open(path, "w", encoding="utf-8")
+                    try:
+                        yield f
+                    finally:
+                        f.close()
+                else:
+                    if out_fmt in ("parquet", "csv"):
+                        yield sys.stdout.buffer
+                    else:
+                        yield sys.stdout
+
+            with _get_output_stream(output, fmt) as out_stream:
+                _write_output(pl_df, fmt, out_stream)
+
+            if output:
+                console.print(f"[green]SUCCESS:[/green] Wrote to {output}")
+
+        except Exception as e:
+            error_msg = str(e)
+            error_console.print(f"[red]Error reading {feature_key.to_string()}:[/red] {error_msg}")
+            raise SystemExit(1)
+
+
+def _write_output(df: pl.DataFrame, fmt: Literal["csv", "json", "parquet", "markdown"], out: Any) -> None:  # noqa: F821
+    """Write a Polars DataFrame to a file-like stream in the given format."""
+    import polars as pl
+
+    if fmt == "csv":
+        df.write_csv(out)
+    elif fmt == "parquet":
+        df.write_parquet(out)
+    elif fmt == "json":
+        out.write(df.write_json())
+    elif fmt == "markdown":
+        with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
+            out.write(str(df))
+    else:
+        raise NotImplementedError(f"Unsupported format: {fmt}")
