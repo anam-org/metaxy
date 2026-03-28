@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import date
+from pathlib import Path
 
 import hypothesis.strategies as st
 import polars as pl
@@ -17,6 +18,7 @@ from hypothesis import HealthCheck, given, settings
 from polars.testing.parametric.strategies.data import data as pl_data
 from polars_map import Map
 
+import metaxy as mx
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
@@ -462,3 +464,120 @@ class MapDtypeTests:
         # Compare sorted by key since backends may reorder map entries
         for actual, expected in zip(df["user_map"].to_list(), user_map.to_list()):
             assert sorted(actual, key=lambda e: e["key"]) == sorted(expected, key=lambda e: e["key"])
+
+    # ── Fallback store: resolve_update with Map columns ──────────────
+
+    def test_resolve_update_with_map_columns_from_fallback_store(
+        self,
+        store: MetadataStore,
+        graph: mx.FeatureGraph,
+        tmp_path: Path,
+    ) -> None:
+        """Map columns survive resolve_update when upstream is read from a Delta fallback store.
+
+        Scenario:
+        1. Upstream feature is written to a Delta fallback store (with Map columns).
+        2. The main store is configured with the Delta store as a fallback.
+        3. resolve_update on the downstream feature reads upstream from fallback,
+           joins it with local downstream data, and computes the increment.
+        """
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+        from metaxy import FeatureDep, FeatureKey
+        from metaxy.config import MetaxyConfig
+        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.models.field import FieldSpec
+        from metaxy.models.types import FieldKey
+
+        config = MetaxyConfig(enable_map_datatype=True)
+        with config.use():
+
+            class UpstreamMap(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["map_fallback", "upstream"]),
+                    fields=[
+                        FieldSpec(key=FieldKey(["video_path"]), code_version="1"),
+                    ],
+                ),
+            ):
+                pass
+
+            class DownstreamMap(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["map_fallback", "downstream"]),
+                    deps=[FeatureDep(feature=UpstreamMap)],
+                    fields=[
+                        FieldSpec(key=FieldKey(["result"]), code_version="1"),
+                    ],
+                ),
+            ):
+                pass
+
+            # Set up fallback Delta store with upstream data
+            fallback_store = DeltaMetadataStore(root_path=tmp_path / "delta_fallback")
+            # Local Delta store with fallback configured
+            local_store = DeltaMetadataStore(
+                root_path=tmp_path / "delta_local",
+                fallback_stores=[fallback_store],
+            )
+
+            with fallback_store.open("w"), local_store.open("w"), graph.use():
+                # Write upstream to fallback with Map provenance columns
+                upstream_data = pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2, 3],
+                        "video_path": ["/a.mp4", "/b.mp4", "/c.mp4"],
+                        "metaxy_provenance_by_field": [
+                            {"video_path": "hash_a"},
+                            {"video_path": "hash_b"},
+                            {"video_path": "hash_c"},
+                        ],
+                        "metaxy_provenance": ["prov_a", "prov_b", "prov_c"],
+                    }
+                )
+                fallback_store.write(UpstreamMap, upstream_data)
+
+                # Verify upstream is readable via fallback
+                upstream_df = collect_to_polars(local_store.read(UpstreamMap)).sort("sample_uid")
+                assert upstream_df.height == 3
+                assert upstream_df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+
+                # Build downstream data joined with upstream provenance
+                downstream_batch = pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2],
+                        "result": ["r1", "r2"],
+                    }
+                )
+                downstream_joined = downstream_batch.join(
+                    upstream_df.select(
+                        "sample_uid",
+                        "metaxy_data_version_by_field",
+                        "metaxy_provenance",
+                    ).rename(
+                        {
+                            "metaxy_data_version_by_field": "metaxy_data_version_by_field__map_fallback_upstream",
+                            "metaxy_provenance": "__map_fallback_upstream_provenance",
+                        }
+                    ),
+                    on="sample_uid",
+                )
+
+                import narwhals as nw
+
+                downstream_with_prov = local_store.compute_provenance(DownstreamMap, nw.from_native(downstream_joined))
+                local_store.write(DownstreamMap, downstream_with_prov)
+
+                # resolve_update should read upstream from fallback, join with
+                # local downstream, and return an increment with Map columns intact
+                increment = local_store.resolve_update(DownstreamMap, lazy=False)
+
+                # sample_uid=3 is in upstream but not downstream → 1 new sample
+                assert len(increment.new) == 1
+                assert increment.new["sample_uid"].to_list() == [3]
+
+                # samples 1,2 already materialized → 0 stale, 0 orphaned
+                assert len(increment.stale) == 0
+                assert len(increment.orphaned) == 0
