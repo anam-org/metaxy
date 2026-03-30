@@ -160,7 +160,7 @@ See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for co
 
 ::: metaxy.ext.sqlmodel.SQLModelFeatureConfig
     options:
-      members: false
+      members: true
       heading_level: 3
 
 ::: metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata

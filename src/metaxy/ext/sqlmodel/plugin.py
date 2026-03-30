@@ -56,7 +56,10 @@ class SQLModelFeatureConfig(TypedDict, total=False):
     """
 
     inject_primary_key: bool
+    """Whether to automatically create a composite PK for (metaxy_feature_version, *id_columns, metaxy_updated_at)."""
+
     inject_index: bool
+    """Whether to automatically create a composite index on (metaxy_feature_version, *id_columns, metaxy_updated_at)."""
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
