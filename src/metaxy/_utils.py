@@ -1,5 +1,8 @@
 import warnings
-from typing import Any, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 import narwhals as nw
 import polars as pl
@@ -58,7 +61,7 @@ def has_polars_map_columns(df: pl.DataFrame | pl.LazyFrame) -> bool:
 
 @public
 def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
-    """Helper to convert a Narwhals frame into an eager Polars DataFrame.
+    """Helper to convert a frame into an eager Polars DataFrame.
 
     Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
 
@@ -90,6 +93,28 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
     if isinstance(collected, pl.DataFrame):
         return collected
     return collected.to_polars()
+
+
+@public
+def collect_to_arrow(frame: PolarsCompatibleFrame) -> "pa.Table":
+    """Convert a frame into a PyArrow Table.
+
+    If the dataframe is a Polars dataframe, it converts `polars_map.Map`
+        extension columns to native Arrow `MapArray`.
+    """
+    import pyarrow as pa
+
+    nw_frame = nw.from_native(frame) if isinstance(frame, (pl.DataFrame, pl.LazyFrame)) else frame
+    collected = nw_frame.collect() if isinstance(nw_frame, nw.LazyFrame) else nw_frame
+    table: pa.Table = collected.to_arrow()
+
+    if collected.implementation == nw.Implementation.POLARS:
+        from metaxy.versioning._arrow_map import convert_extension_maps_to_native, has_extension_map_columns
+
+        if has_extension_map_columns(table):
+            table = convert_extension_maps_to_native(table)
+
+    return table
 
 
 def lazy_frame_to_polars(frame: nw.LazyFrame[Any]) -> pl.LazyFrame:
@@ -138,4 +163,4 @@ def switch_implementation_to_polars(frame: FrameT) -> FrameT:
     return result
 
 
-__all__ = ["collect_to_polars"]
+__all__ = ["collect_to_arrow", "collect_to_polars"]
