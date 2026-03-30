@@ -330,6 +330,8 @@ def test_soft_delete_from_fallback_creates_soft_deletion_marker(
         assert soft_deletion_markers["sample_uid"].to_list() == [1]
         assert soft_deletion_markers["metaxy_deleted_at"].is_not_null().all()
 
+        # After soft-deleting sample_uid=1 in dev, reading with fallback
+        # returns it from the fallback chain (soft deletes don't block fallback)
         active = collect_to_polars(
             dev.read(
                 UpstreamFeatureA,
@@ -337,7 +339,33 @@ def test_soft_delete_from_fallback_creates_soft_deletion_marker(
                 allow_fallback=True,
             )
         )
-        assert active.is_empty()
+        assert active.height == 1
+        assert active["sample_uid"].to_list() == [1]
+
+
+def test_empty_table_falls_through_to_fallback(
+    multi_env_stores: dict[str, DeltaMetadataStore],
+    UpstreamFeatureA: type[BaseFeature],
+    make_upstream_a_data: Callable[..., pl.DataFrame],
+) -> None:
+    """When a feature table exists but has no visible rows, fallback stores are tried."""
+    dev = multi_env_stores["dev"]
+    staging = multi_env_stores["staging"]
+    prod = multi_env_stores["prod"]
+
+    with dev.open("w"), staging.open("w"), prod.open("w"):
+        dev.write(
+            UpstreamFeatureA,
+            make_upstream_a_data(sample_uids=[10], prefix="dev_hash", include_path=False),
+        )
+        assert collect_to_polars(dev.read(UpstreamFeatureA, allow_fallback=False)).height == 1
+
+        dev.delete(UpstreamFeatureA, filters=nw.col("sample_uid") == 10, soft=True)
+
+        # Dev table exists with only soft-deleted rows — should fall through
+        result = collect_to_polars(dev.read(UpstreamFeatureA, allow_fallback=True))
+        assert result.height == 3
+        assert sorted(result["sample_uid"].to_list()) == [1, 2, 3]
 
 
 def test_write_to_dev_not_prod(

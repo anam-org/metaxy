@@ -284,9 +284,7 @@ type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
 root_path = "s3://my-prod-bucket/metaxy"
 ```
 
-!!! warning
-
-    Currently, the "missing metadata" detection works by checking whether the feature table exists in the store. This works in conjunction with [automatic table creation](), but doesn't work if empty tables are pre-created by e.g. migration tooling or some kind of CI/CD workflows. This will be improved in the future.
+Metaxy decides whether to use a fallback store by checking the record count in the primary store. If the primary store has no records for a given feature (e.g. the table doesn't exist, is empty, or all rows have been soft-deleted), Metaxy falls through to the next fallback store in the chain.
 
 Metaxy doesn't mix metadata from different stores: either the entire feature is going to be pulled from the fallback store, or the primary store will be used.
 
