@@ -890,9 +890,17 @@ class MetadataStore(ABC):
             if columns:
                 lazy_frame = lazy_frame.select(columns)
 
-            if with_store_info:
-                return lazy_frame, self
-            return lazy_frame
+            # When fallback stores are configured, check row count instead of
+            # relying on table existence — an empty result (e.g. all rows
+            # soft-deleted or filtered out) should fall through to fallback
+            if self.fallback_stores and allow_fallback and not is_system_table:
+                if not lazy_frame.select(nw.len() > 0).collect().item():
+                    lazy_frame = None
+
+            if lazy_frame is not None:
+                if with_store_info:
+                    return lazy_frame, self
+                return lazy_frame
 
         # Try fallback stores (opened on demand)
         if allow_fallback:
