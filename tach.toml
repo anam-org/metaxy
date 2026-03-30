@@ -1,0 +1,107 @@
+interfaces = []
+exclude = [
+  "**/*__pycache__",
+  "**/*egg-info",
+  "**/docs",
+  "**/tests",
+  "**/venv",
+]
+source_roots = ["src"]
+
+[[modules]]
+path = "metaxy.entrypoints"
+depends_on = ["metaxy.models"]
+
+[[modules]]
+path = "metaxy.ext.dagster"
+depends_on = ["metaxy.models", "metaxy.metadata_store", "metaxy"]
+
+[[modules]]
+path = "metaxy._hashing"
+depends_on = ["metaxy"]
+utility = true
+
+[[modules]]
+path = "metaxy.ext.metadata_stores"
+depends_on = ["metaxy.metadata_store", "metaxy.config", "metaxy.models"]
+
+[[modules]]
+path = "metaxy._warnings"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.models"
+depends_on = ["metaxy.config"]
+
+[[modules]]
+path = "metaxy.ext.sqlalchemy"
+depends_on = ["metaxy.config", "metaxy.models", "metaxy.metadata_store"]
+
+[[modules]]
+path = "metaxy.ext.sqlmodel"
+depends_on = ["metaxy.ext.sqlalchemy", "metaxy.models", "metaxy.config", "metaxy"]
+
+[[modules]]
+path = "metaxy.versioning"
+depends_on = ["metaxy.config", "metaxy.models"]
+utility = true
+
+[[modules]]
+path = "metaxy._exceptions"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store"
+depends_on = ["metaxy.models", "metaxy.config", "metaxy"]
+
+[[modules]]
+path = "metaxy.cli"
+depends_on = ["metaxy.ext.mcp", "metaxy.models", "metaxy.metadata_store", "metaxy.config", "metaxy"]
+
+[[modules]]
+path = "metaxy.utils"
+depends_on = ["metaxy.config", "metaxy.metadata_store", "metaxy.models", "metaxy"]
+utility = true
+
+[[modules]]
+path = "metaxy.ext.ray"
+depends_on = ["metaxy"]
+
+[[modules]]
+path = "metaxy._utils"
+depends_on = ["metaxy.config"]
+utility = true
+
+[[modules]]
+path = "metaxy.ext.mcp"
+depends_on = ["metaxy.models", "metaxy"]
+
+[[modules]]
+path = "metaxy.config"
+depends_on = ["metaxy.models"]
+
+[[modules]]
+path = "metaxy._version"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy._packaging"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.graph"
+depends_on = ["metaxy.metadata_store", "metaxy.models"]
+utility = true
+
+[[modules]]
+path = "metaxy._decorators"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy"
+depends_on = ["metaxy.metadata_store", "metaxy.entrypoints", "metaxy.config", "metaxy.models"]

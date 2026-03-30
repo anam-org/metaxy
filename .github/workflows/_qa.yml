@@ -43,6 +43,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
       core: ${{ steps.filter.outputs.core == 'true' || steps.core-filter.outputs.core-src == 'true' }}
+      tach: ${{ steps.filter.outputs.tach }}
       duckdb: ${{ steps.filter.outputs.duckdb }}
       clickhouse: ${{ steps.filter.outputs.clickhouse }}
       postgres: ${{ steps.filter.outputs.postgres }}
@@ -92,6 +93,9 @@ jobs:
               - devenv.nix
               - devenv.lock
               - devenv.yaml
+            tach:
+              - 'src/**'
+              - tach.toml
             duckdb:
               - 'src/metaxy/ext/metadata_stores/duckdb.py'
               - 'src/metaxy/ext/metadata_stores/ducklake.py'
@@ -149,6 +153,20 @@ jobs:
           enable-cache: true
       - name: Run Ruff
         run: uv run --no-sync --with ruff ruff check
+
+  tach:
+    runs-on: depot-ubuntu-latest
+    needs: filter
+    if: ${{ inputs.run-all-checks || needs.filter.outputs.tach == 'true' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.5.0
+        with:
+          enable-cache: true
+      - name: Run Tach
+        run: uv run --no-sync --with tach tach check
 
   deadcode:
     runs-on: depot-ubuntu-latest
@@ -534,6 +552,7 @@ jobs:
       - test-macos
       - lint
       - deadcode
+      - tach
       - format
       - typecheck
       - docs
@@ -545,4 +564,4 @@ jobs:
         uses: re-actors/alls-green@v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-core, test-integrations, generate-nox-matrix, test-nox-compat, test-windows, test-macos, typecheck, docs, claude-plugin, deadcode
+          allowed-skips: test-core, test-integrations, generate-nox-matrix, test-nox-compat, test-windows, test-macos, typecheck, docs, claude-plugin, deadcode, tach

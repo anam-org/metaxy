@@ -56,3 +56,9 @@ repos:
       language: system
       pass_filenames: false
       files: ^(src/|docs/|pyproject\.toml|uv\.lock|mkdocs\.yml|\.pre-commit-config\.yaml)
+    - id: tach
+      name: Check API Boundaries with Tach
+      entry: uv run tach check
+      language: system
+      pass_filenames: false
+      files: ^(src/)
