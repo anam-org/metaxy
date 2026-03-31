@@ -8,6 +8,8 @@ import pytest
 import tomli
 
 from metaxy import MetadataStore
+from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.utils.lock_file import LockedFeature, LockedFeatureInfo, LockFile
 
 
 class TestLockCommand:
@@ -83,7 +85,8 @@ database = "{store_path}"
         with consumer_project.with_features(consumer_features):
             result = consumer_project.run_cli(["lock"], capsys=capsys)
         assert result.returncode == 0
-        assert "Written 1 external feature(s)" in result.stderr
+        assert "+ shared/feature_a" in result.stderr
+        assert "Updated metaxy.lock" in result.stderr
 
         # Verify lock file was created
         lock_file = consumer_project.project_dir / "metaxy.lock"
@@ -215,7 +218,7 @@ database = "{store_path}"
         with project.with_features(local_features):
             result = project.run_cli(["lock"], check=False, capsys=capsys)
         assert result.returncode == 0
-        assert "Written 0 external feature(s)" in result.stderr
+        assert "is up to date" in result.stderr
 
         # Verify lock file was created with empty features
         lock_file = project.project_dir / "metaxy.lock"
@@ -303,7 +306,9 @@ database = "{store_path}"
         with consumer_project.with_features(consumer_features):
             result = consumer_project.run_cli(["lock"], capsys=capsys)
         assert result.returncode == 0
-        assert "Written 2 external feature(s)" in result.stderr
+        assert "+ multi/feature_a" in result.stderr
+        assert "+ multi/feature_b" in result.stderr
+        assert "Updated metaxy.lock" in result.stderr
 
         # Verify lock file content
         lock_file = consumer_project.project_dir / "metaxy.lock"
@@ -403,7 +408,10 @@ database = "{store_path}"
         with consumer_project.with_features(consumer_features):
             result = consumer_project.run_cli(["lock"], capsys=capsys)
         assert result.returncode == 0
-        assert "Written 3 external feature(s)" in result.stderr
+        assert "+ chain/a" in result.stderr
+        assert "+ chain/b" in result.stderr
+        assert "+ chain/c" in result.stderr
+        assert "Updated metaxy.lock" in result.stderr
 
         # Verify all three features are in lock file
         lock_file = consumer_project.project_dir / "metaxy.lock"
@@ -412,6 +420,175 @@ database = "{store_path}"
         assert "chain/a" in lock_content["features"]
         assert "chain/b" in lock_content["features"]
         assert "chain/c" in lock_content["features"]
+
+    def test_lock_up_to_date_on_rerun(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+        """Test that re-running lock without changes shows 'up to date'."""
+        from metaxy_testing import TempMetaxyProject
+
+        store_path = (tmp_path / "shared_store.duckdb").as_posix()
+
+        source_config = f'''project = "source"
+store = "shared"
+auto_create_tables = true
+
+[stores.shared]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.shared.config]
+database = "{store_path}"
+'''
+        source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
+
+        def source_features():
+            from metaxy_testing.models import SampleFeatureSpec
+
+            from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+            class Feature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["ext", "feat"]),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        with source_project.with_features(source_features):
+            source_project.run_cli(["push"], capsys=capsys)
+
+        consumer_config = f'''project = "consumer"
+store = "shared"
+auto_create_tables = true
+
+[stores.shared]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.shared.config]
+database = "{store_path}"
+'''
+        consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
+
+        def consumer_features():
+            from metaxy_testing.models import SampleFeatureSpec
+
+            from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+
+            class Local(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["consumer", "local"]),
+                    deps=[FeatureDep(feature="ext/feat")],
+                    fields=[FieldSpec(key=FieldKey(["r"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        # First lock: should add
+        with consumer_project.with_features(consumer_features):
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
+        assert result.returncode == 0
+        assert "+ ext/feat" in result.stderr
+        assert "Updated metaxy.lock" in result.stderr
+
+        # Second lock: should be up to date
+        with consumer_project.with_features(consumer_features):
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
+        assert result.returncode == 0
+        assert "is up to date" in result.stderr
+        assert "+" not in result.stderr
+        assert "~" not in result.stderr
+
+    def test_lock_shows_updated_features(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+        """Test that re-running lock after a feature change shows updated features."""
+        from metaxy_testing import TempMetaxyProject
+
+        store_path = (tmp_path / "shared_store.duckdb").as_posix()
+
+        source_config = f'''project = "source"
+store = "shared"
+auto_create_tables = true
+
+[stores.shared]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.shared.config]
+database = "{store_path}"
+'''
+        source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
+
+        def source_features_v1():
+            from metaxy_testing.models import SampleFeatureSpec
+
+            from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+            class Feature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["ext", "feat"]),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        with source_project.with_features(source_features_v1):
+            source_project.run_cli(["push"], capsys=capsys)
+
+        consumer_config = f'''project = "consumer"
+store = "shared"
+auto_create_tables = true
+
+[stores.shared]
+type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+
+[stores.shared.config]
+database = "{store_path}"
+'''
+        consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
+
+        def consumer_features():
+            from metaxy_testing.models import SampleFeatureSpec
+
+            from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+
+            class Local(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["consumer", "local"]),
+                    deps=[FeatureDep(feature="ext/feat")],
+                    fields=[FieldSpec(key=FieldKey(["r"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        # First lock
+        with consumer_project.with_features(consumer_features):
+            consumer_project.run_cli(["lock"], capsys=capsys)
+
+        # Update the source feature (bump code_version)
+        def source_features_v2():
+            from metaxy_testing.models import SampleFeatureSpec
+
+            from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+
+            class Feature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["ext", "feat"]),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="2")],
+                ),
+            ):
+                pass
+
+        with source_project.with_features(source_features_v2):
+            source_project.run_cli(["push"], capsys=capsys)
+
+        # Second lock: should show update
+        with consumer_project.with_features(consumer_features):
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
+        assert result.returncode == 0
+        assert "~ ext/feat" in result.stderr
+        assert "->" in result.stderr
+        assert "Updated metaxy.lock" in result.stderr
 
     def test_lock_custom_output_path(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command respects custom output path."""
@@ -584,9 +761,9 @@ class TestGenerateLockFileSelection:
         self._push_project(store, "upstream", ["up/a", "up/b"])
 
         lock_path = tmp_path / "metaxy.lock"
-        count = generate_lock_file(store, lock_path, selection=FeatureSelection(projects=["upstream"]))
+        result = generate_lock_file(store, lock_path, selection=FeatureSelection(projects=["upstream"]))
 
-        assert count == 2
+        assert result.count == 2
         content = tomli.loads(lock_path.read_text())
         assert set(content["features"].keys()) == {"up/a", "up/b"}
 
@@ -598,9 +775,9 @@ class TestGenerateLockFileSelection:
         self._push_project(store, "upstream", ["up/a", "up/b", "up/c"])
 
         lock_path = tmp_path / "metaxy.lock"
-        count = generate_lock_file(store, lock_path, selection=FeatureSelection(keys=["up/a", "up/c"]))
+        result = generate_lock_file(store, lock_path, selection=FeatureSelection(keys=["up/a", "up/c"]))
 
-        assert count == 2
+        assert result.count == 2
         content = tomli.loads(lock_path.read_text())
         assert set(content["features"].keys()) == {"up/a", "up/c"}
 
@@ -613,9 +790,9 @@ class TestGenerateLockFileSelection:
         self._push_project(store, "proj-b", ["b/y"])
 
         lock_path = tmp_path / "metaxy.lock"
-        count = generate_lock_file(store, lock_path, selection=FeatureSelection(all=True))
+        result = generate_lock_file(store, lock_path, selection=FeatureSelection(all=True))
 
-        assert count == 2
+        assert result.count == 2
         content = tomli.loads(lock_path.read_text())
         assert set(content["features"].keys()) == {"a/x", "b/y"}
 
@@ -646,14 +823,14 @@ class TestGenerateLockFileSelection:
 
             lock_path = tmp_path / "metaxy.lock"
             # selection adds up/extra on top of graph-discovered up/dep
-            count = generate_lock_file(
+            result = generate_lock_file(
                 store,
                 lock_path,
                 exclude_project="local",
                 selection=FeatureSelection(keys=["up/extra"]),
             )
 
-        assert count == 2
+        assert result.count == 2
         content = tomli.loads(lock_path.read_text())
         assert set(content["features"].keys()) == {"up/dep", "up/extra"}
 
@@ -693,7 +870,7 @@ class TestGenerateLockFileSelection:
                 __metaxy_project__ = "local"
 
             lock_path = tmp_path / "metaxy.lock"
-            count = generate_lock_file(
+            result = generate_lock_file(
                 store,
                 lock_path,
                 exclude_project="local",
@@ -701,7 +878,7 @@ class TestGenerateLockFileSelection:
             )
 
         # shared/feat is local, so only up/other should be locked
-        assert count == 1
+        assert result.count == 1
         content = tomli.loads(lock_path.read_text())
         assert set(content["features"].keys()) == {"up/other"}
 
@@ -713,11 +890,162 @@ class TestGenerateLockFileSelection:
         self._push_project(store, "upstream", ["up/a"])
 
         lock_path = tmp_path / "metaxy.lock"
-        count = generate_lock_file(store, lock_path, selection=FeatureSelection(projects=["nonexistent"]))
+        result = generate_lock_file(store, lock_path, selection=FeatureSelection(projects=["nonexistent"]))
 
-        assert count == 0
+        assert result.count == 0
         content = tomli.loads(lock_path.read_text())
         assert content["features"] == {}
+
+
+class TestDiffLockFiles:
+    """Unit tests for _diff_lock_files."""
+
+    @staticmethod
+    def _make_lock_file(features: dict[str, tuple[str, str, str]]) -> LockFile:
+        """Build a LockFile from {key: (project, version, definition_version)}."""
+        return LockFile(
+            features={
+                key: LockedFeature(
+                    info=LockedFeatureInfo(version=version, version_by_field={}, definition_version=defn_version),
+                    data=FeatureDefinition.from_stored_data(
+                        feature_spec=(
+                            f'{{"key": "{key}", "id_columns": ["uid"],'
+                            f' "fields": [{{"key": ["v"], "code_version": "1"}}]}}'
+                        ),
+                        feature_schema="{}",
+                        feature_class_path="test.Feature",
+                        project=project,
+                    ),
+                )
+                for key, (project, version, defn_version) in features.items()
+            }
+        )
+
+    def test_no_existing_file_all_added(self, tmp_path: Path):
+        """All features are reported as added when no lock file exists."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        new_lock = self._make_lock_file({"a/x": ("a", "v1", "d1"), "b/y": ("b", "v2", "d2")})
+        result = _diff_lock_files(tmp_path / "metaxy.lock", new_lock)
+
+        assert len(result.added) == 2
+        assert result.added[0].key == "a/x"
+        assert result.added[1].key == "b/y"
+        assert result.updated == []
+        assert result.removed == []
+
+    def test_corrupt_lock_file_warns_and_treats_as_fresh(self, tmp_path: Path):
+        """Corrupt lock file emits a warning and treats all features as added."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        lock_path = tmp_path / "metaxy.lock"
+        lock_path.write_text("this is not valid toml [[[")
+
+        new_lock = self._make_lock_file({"a/x": ("a", "v1", "d1")})
+
+        with pytest.warns(match="Could not parse existing lock file"):
+            result = _diff_lock_files(lock_path, new_lock)
+
+        assert len(result.added) == 1
+        assert result.added[0].key == "a/x"
+
+    def test_identical_lock_files_unchanged(self, tmp_path: Path):
+        """Identical lock files produce no changes."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        lock = self._make_lock_file({"a/x": ("a", "v1", "d1"), "a/y": ("a", "v2", "d2")})
+        lock_path = tmp_path / "metaxy.lock"
+        lock_path.write_text("# Generated by `metaxy lock`.\n\n" + lock.to_toml())
+
+        result = _diff_lock_files(lock_path, lock)
+
+        assert result.added == []
+        assert result.updated == []
+        assert result.removed == []
+        assert result.unchanged_count == 2
+        assert not result.changed
+
+    def test_removed_features(self, tmp_path: Path):
+        """Features in old lock but not new are reported as removed."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        old_lock = self._make_lock_file({"a/x": ("a", "v1", "d1"), "a/y": ("a", "v2", "d2")})
+        lock_path = tmp_path / "metaxy.lock"
+        lock_path.write_text("# Generated by `metaxy lock`.\n\n" + old_lock.to_toml())
+
+        new_lock = self._make_lock_file({"a/x": ("a", "v1", "d1")})
+        result = _diff_lock_files(lock_path, new_lock)
+
+        assert result.added == []
+        assert result.updated == []
+        assert len(result.removed) == 1
+        assert result.removed[0].key == "a/y"
+        assert result.removed[0].project == "a"
+        assert result.unchanged_count == 1
+
+    def test_updated_features_version_change(self, tmp_path: Path):
+        """Features with different definition_version and version are reported as updated."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        old_lock = self._make_lock_file({"a/x": ("a", "v1", "d1")})
+        lock_path = tmp_path / "metaxy.lock"
+        lock_path.write_text("# Generated by `metaxy lock`.\n\n" + old_lock.to_toml())
+
+        new_lock = self._make_lock_file({"a/x": ("a", "v2", "d2")})
+        result = _diff_lock_files(lock_path, new_lock)
+
+        assert result.added == []
+        assert len(result.updated) == 1
+        assert result.updated[0].key == "a/x"
+        assert result.updated[0].old_version == "v1"
+        assert result.updated[0].new_version == "v2"
+        assert not result.updated[0].metadata_only
+
+    def test_updated_features_metadata_only(self, tmp_path: Path):
+        """Features with different definition_version but same version are metadata-only updates."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        old_lock = self._make_lock_file({"a/x": ("a", "v1", "d1")})
+        lock_path = tmp_path / "metaxy.lock"
+        lock_path.write_text("# Generated by `metaxy lock`.\n\n" + old_lock.to_toml())
+
+        new_lock = self._make_lock_file({"a/x": ("a", "v1", "d2")})
+        result = _diff_lock_files(lock_path, new_lock)
+
+        assert len(result.updated) == 1
+        assert result.updated[0].metadata_only
+        assert result.updated[0].old_version == "v1"
+        assert result.updated[0].new_version == "v1"
+
+    def test_mixed_changes(self, tmp_path: Path):
+        """Added, updated, removed, and unchanged features in one diff."""
+        from metaxy.utils.lock_file import _diff_lock_files
+
+        old_lock = self._make_lock_file(
+            {
+                "a/keep": ("a", "v1", "d1"),
+                "a/update": ("a", "v1", "d1"),
+                "b/remove": ("b", "v1", "d1"),
+            }
+        )
+        lock_path = tmp_path / "metaxy.lock"
+        lock_path.write_text("# Generated by `metaxy lock`.\n\n" + old_lock.to_toml())
+
+        new_lock = self._make_lock_file(
+            {
+                "a/keep": ("a", "v1", "d1"),
+                "a/update": ("a", "v2", "d2"),
+                "c/new": ("c", "v1", "d1"),
+            }
+        )
+        result = _diff_lock_files(lock_path, new_lock)
+
+        assert [c.key for c in result.added] == ["c/new"]
+        assert [u.key for u in result.updated] == ["a/update"]
+        assert [c.key for c in result.removed] == ["b/remove"]
+        assert result.unchanged_count == 1
+        assert result.count == 3  # added(1) + updated(1) + unchanged(1)
+        assert result.changed
 
 
 def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Path):

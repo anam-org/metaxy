@@ -46,6 +46,8 @@ def lock(
 
     This functionality is currently experimental.
     """
+    import time
+    from collections import defaultdict
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
@@ -75,19 +77,22 @@ def lock(
         output_path = Path.cwd() / config.metaxy_lock_path
 
     metadata_store = context.get_store(store)
+    relative_path = output_path.relative_to(Path.cwd()) if output_path.is_relative_to(Path.cwd()) else output_path
 
     try:
+        t0 = time.monotonic()
         with Status(
-            f"Loading external feature definitions from {metadata_store}...",
+            f"Updating [link={output_path.as_uri()}]{relative_path}[/link] with external features from {metadata_store}...",
             console=console,
             spinner="dots",
         ):
-            count = generate_lock_file(
+            result = generate_lock_file(
                 metadata_store,
                 output_path,
                 exclude_project=config.project,
                 selection=reduce(or_, config.extra_features) if config.extra_features else None,
             )
+        elapsed = time.monotonic() - t0
     except FeatureNotFoundError as e:
         error = CLIError(
             code=CLIErrorCode.FEATURES_NOT_FOUND,
@@ -98,8 +103,38 @@ def lock(
         console.print(error.to_plain())
         raise SystemExit(1) from None
 
-    console.print(f"[dim]Loaded from {metadata_store}[/dim]")
-    relative_path = output_path.relative_to(Path.cwd()) if output_path.is_relative_to(Path.cwd()) else output_path
-    console.print(
-        f"[green]✓[/green] Written {count} external feature(s) to [link={output_path.as_uri()}]{relative_path}[/link]"
-    )
+    # Collect change lines grouped by project, sorted by key within each
+    lines_by_project: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
+
+    def _add(project: str, key: str, line: str) -> None:
+        lines_by_project[project].append((key, line))
+
+    for change in result.added:
+        _add(change.project, change.key, f" [green]+[/green] {change.key} [dim]({change.version})[/dim]")
+    for update in result.updated:
+        if update.metadata_only:
+            _add(
+                update.project,
+                update.key,
+                f" [yellow]~[/yellow] {update.key} [dim]({update.old_version}, non-versioning metadata update)[/dim]",
+            )
+        else:
+            _add(
+                update.project,
+                update.key,
+                f" [yellow]~[/yellow] {update.key} [dim]({update.old_version} -> {update.new_version})[/dim]",
+            )
+    for change in result.removed:
+        _add(change.project, change.key, f" [red]-[/red] {change.key} [dim]({change.version})[/dim]")
+
+    for project, entries in sorted(lines_by_project.items()):
+        if len(lines_by_project) > 1:
+            console.print(f" [bold]{project}[/bold]")
+        for _, line in sorted(entries):
+            console.print(line)
+
+    lock_link = f"[link={output_path.as_uri()}]{relative_path}[/link]"
+    if result.changed:
+        console.print(f"Updated {lock_link} from {metadata_store} in [bold]{elapsed:.2f}s[/bold].")
+    else:
+        console.print(f"Lock file {lock_link} is up to date [dim]({elapsed:.2f}s)[/dim].")
