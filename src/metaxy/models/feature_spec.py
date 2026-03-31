@@ -45,15 +45,19 @@ class FeatureDep(pydantic.BaseModel):
             Applied before column selection.
         fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
             When provided, fields without explicit deps will automatically map to matching upstream fields.
-            Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
+            Defaults to `[FieldsMapping.default][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
         filters: Optional SQL-like filter strings applied to this dependency. Automatically parsed into
             Narwhals expressions (accessible via the `filters` property). Filters are automatically
             applied by FeatureDepTransformer after renames during all FeatureDep operations (including
             resolve_update and version computation).
         lineage: The lineage relationship between this upstream dependency and the downstream feature.
+
             - `LineageRelationship.identity()` (default): 1:1 relationship, same cardinality
+
             - `LineageRelationship.aggregation(on=...)`: N:1, multiple upstream rows aggregate to one downstream
+
             - `LineageRelationship.expansion(on=...)`: 1:N, one upstream row expands to multiple downstream rows
+
         optional: Whether individual samples of the downstream feature can be computed without
             the corresponding samples of the upstream feature. If upstream samples are missing,
             they are going to be represented as NULL values in the joined upstream metadata.

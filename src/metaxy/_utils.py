@@ -120,10 +120,12 @@ def collect_to_arrow(frame: PolarsCompatibleFrame) -> "pa.Table":
 def lazy_frame_to_polars(frame: nw.LazyFrame[Any]) -> pl.LazyFrame:
     """Helper to convert a Narwhals lazy frame into a Polars lazy frame.
 
-    If the Narwhals LazyFrame is already backed by Polars, this is a no-op."""
+    Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
+    If the Narwhals LazyFrame is already backed by Polars, this is a no-op.
+    """
     if frame.implementation == nw.Implementation.POLARS:
         return frame.to_native()
-    return frame.collect().to_polars().lazy()
+    return collect_to_polars(frame).lazy()
 
 
 @overload
