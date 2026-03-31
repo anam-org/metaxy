@@ -1,3 +1,4 @@
+.dagger/sdk
 .coverage
 .test-timing
 
