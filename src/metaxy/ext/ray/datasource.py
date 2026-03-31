@@ -91,9 +91,12 @@ class MetaxyDatasource(Datasource):
         filters: Sequence of Narwhals filter expressions to apply.
         columns: Subset of columns to include. Metaxy's system columns are always included.
         allow_fallback: If `True`, check fallback stores on main store miss.
-        with_feature_history: If `True`, only return rows with current feature version.
+        with_feature_history: If `True`, include rows from historical feature versions.
+            If `False`, restrict results to the current feature version.
         feature_version: Explicit feature version to filter by (mutually exclusive with `with_feature_history=False`).
-        with_sample_history: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+        with_sample_history: Whether to include historical materializations instead of selecting
+            the current row per `id_columns` group using
+            `coalesce(metaxy_deleted_at, metaxy_updated_at)`.
         include_soft_deleted: If `True`, include soft-deleted rows in the result.
     """
 

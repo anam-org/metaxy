@@ -8,6 +8,7 @@ import polars as pl
 import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.pytest_helpers import add_metaxy_system_columns
+from pydantic import ValidationError
 
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
@@ -84,11 +85,11 @@ class TestJoiner:
 
 
 def test_feature_spec_id_columns_default():
-    """Test that id_columns defaults to None and is interpreted as ["sample_uid"]."""
+    """Test that id_columns defaults to None and is normalized to ("sample_uid",)."""
     spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
     )
-    assert spec.id_columns == ["sample_uid"]
+    assert spec.id_columns == ("sample_uid",)
 
 
 def test_feature_spec_id_columns_custom():
@@ -97,12 +98,12 @@ def test_feature_spec_id_columns_custom():
         key=FeatureKey(["test"]),
         id_columns=["user_id", "session_id"],
     )
-    assert spec.id_columns == ["user_id", "session_id"]
+    assert spec.id_columns == ("user_id", "session_id")
 
 
 def test_feature_spec_id_columns_validation():
     """Test that empty id_columns raises validation error."""
-    with pytest.raises(ValueError, match="id_columns must be non-empty"):
+    with pytest.raises(ValidationError, match="at least 1 item"):
         SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error
@@ -595,13 +596,13 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph, tmp_pat
         spec=SampleFeatureSpec(
             key=FeatureKey(["legacy"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-            # No id_columns specified - should default to ["sample_uid"]
+            # No id_columns specified - should default to ("sample_uid",)
         ),
     ):
         pass
 
     # Verify id_columns returns default
-    assert LegacyFeature.spec().id_columns == ["sample_uid"]
+    assert LegacyFeature.spec().id_columns == ("sample_uid",)
 
     # Test with metadata store
     with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:

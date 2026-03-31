@@ -4,11 +4,11 @@
 # ---
 # name: test_composite_key_multiple_columns
   dict({
-    'id_columns': list([
+    'id_columns': tuple(
       'user_id',
       'session_id',
       'timestamp',
-    ]),
+    ),
     'metaxy_feature_version': '70c01863',
     'metaxy_provenance_by_field': dict({
       'event': '0e1c4ff5',

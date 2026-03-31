@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
 from types import TracebackType
@@ -781,8 +781,11 @@ class MetadataStore(ABC):
             with_feature_history: If True, include rows from all historical feature versions.
                 By default (False), only returns rows with the currently registered feature version.
             with_sample_history: If True, include all historical materializations per sample.
-                By default (False), deduplicates samples within `id_columns` groups ordered by `metaxy_created_at`.
+                By default (False), deduplicates samples within `id_columns` groups ordered by
+                `coalesce(metaxy_deleted_at, metaxy_updated_at)`, keeping the row with the latest timestamp.
+                This disables `FeatureSpec.deduplication`, since historical rows are being requested.
             include_soft_deleted: If `True`, include soft-deleted rows in the result. Previous historical materializations of the same feature version will be effectively removed from the output otherwise.
+                This also disables `FeatureSpec.deduplication`, so deleted rows are not collapsed into active ones.
             with_store_info: If `True`, return a tuple of (LazyFrame, MetadataStore) where
                 the MetadataStore is the store that actually contained the feature (which
                 may be a fallback store if allow_fallback=True).
@@ -796,9 +799,10 @@ class MetadataStore(ABC):
             ValueError: If both feature_version and with_feature_history=False are provided
 
         !!! info
-            When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
-            metadata for the current feature version excluding soft-deleted rows. Therefore, it's perfectly suitable
-            for most use cases.
+            When this method is called with default arguments, it returns the current metadata for the
+            active feature version, excluding soft-deleted rows. The current row for each `id_columns`
+            group is selected by ordering on `coalesce(metaxy_deleted_at, metaxy_updated_at)` and keeping
+            the latest timestamp. Therefore, it's perfectly suitable for most use cases.
 
         !!! warning
             The order of rows is not guaranteed.
@@ -813,6 +817,7 @@ class MetadataStore(ABC):
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
+        feature_plan: FeaturePlan | None = None
 
         # Sync external features if auto-sync is enabled (default)
         # This call is a no-op most of the time and is very lightweight when it's not
@@ -849,10 +854,23 @@ class MetadataStore(ABC):
         if user_filters:
             read_columns = None
         elif columns and not is_system_table:
-            # Add only system columns that aren't already in the user's columns list
-            columns_set = set(columns)
-            missing_system_cols = [c for c in ALL_SYSTEM_COLUMNS if c not in columns_set]
-            read_columns = [*columns, *missing_system_cols]
+            # Only load dedup columns when deduplication will actually be applied:
+            # requires both with_sample_history=False and filter_deleted=True
+            additional_columns: Iterable[str] | None = None
+            if not with_sample_history:
+                graph = current_graph()
+                definition = graph.feature_definitions_by_key.get(feature_key)
+                if definition is not None:
+                    feature_plan = graph.get_feature_plan(feature_key)
+
+                # Current-view logic groups by id_columns; deduplication needs its own columns too
+                extra: list[str] = list(feature_plan.feature.id_columns) if feature_plan is not None else []
+                if filter_deleted and feature_plan is not None:
+                    deduplication = feature_plan.feature.deduplication
+                    if deduplication is not None:
+                        extra.extend(sorted(deduplication.by))
+                additional_columns = extra or None
+            read_columns = self._internal_read_columns(columns, additional_columns=additional_columns)
         else:
             read_columns = None
 
@@ -877,18 +895,14 @@ class MetadataStore(ABC):
             )
 
         if lazy_frame is not None and not is_system_table:
-            # Deduplicate first, then filter soft-deleted rows
             if not with_sample_history:
-                id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
-                # Treat soft-deletes like hard deletes by ordering on the
-                # most recent lifecycle timestamp.
-                lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
-                    df=lazy_frame,
-                    group_columns=id_cols,
-                    timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
+                feature_plan = feature_plan or self._resolve_feature_plan(feature_key)
+                lazy_frame = self._apply_current_feature_view(
+                    lazy_frame,
+                    plan=feature_plan,
+                    filter_deleted=filter_deleted,
                 )
-
-            if filter_deleted:
+            elif filter_deleted:
                 lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
 
             # Apply user filters AFTER deduplication so they see the latest version of each row
@@ -1450,6 +1464,62 @@ class MetadataStore(ABC):
         # Then get the plan
         graph = current_graph()
         return graph.get_feature_plan(feature_key)
+
+    @staticmethod
+    def _internal_read_columns(
+        columns: Sequence[str],
+        *,
+        additional_columns: Iterable[str] | None = None,
+    ) -> list[str]:
+        """Add internal columns required for read-time filtering and deduplication."""
+        normalized_columns = list(dict.fromkeys(columns))
+        columns_set = set(normalized_columns)
+        missing_system_columns = [column for column in ALL_SYSTEM_COLUMNS if column not in columns_set]
+        columns_set.update(missing_system_columns)
+        missing_additional_columns = [column for column in additional_columns or () if column not in columns_set]
+        columns_set.update(missing_additional_columns)
+        return [*normalized_columns, *missing_system_columns, *missing_additional_columns]
+
+    def _apply_deduplication(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        plan: FeaturePlan,
+    ) -> nw.LazyFrame[Any]:
+        """Apply read-time deduplication configured by FeatureSpec.deduplication."""
+        deduplication = plan.feature.deduplication
+        if deduplication is None:
+            return lazy_frame
+
+        deduplicate_by = sorted(deduplication.by)
+        if deduplication.keep == "latest":
+            return self.versioning_engine_cls.keep_latest_by_group(
+                df=lazy_frame,
+                group_columns=deduplicate_by,
+                timestamp_columns=[METAXY_UPDATED_AT],
+            )
+
+        return lazy_frame.unique(subset=deduplicate_by)
+
+    def _apply_current_feature_view(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        plan: FeaturePlan,
+        filter_deleted: bool,
+    ) -> nw.LazyFrame[Any]:
+        """Return the current-sample view for a feature read."""
+        current_rows = self.versioning_engine_cls.keep_latest_by_group(
+            df=lazy_frame,
+            group_columns=list(plan.feature.id_columns),
+            timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
+        )
+
+        if filter_deleted:
+            current_rows = current_rows.filter(nw.col(METAXY_DELETED_AT).is_null())
+            current_rows = self._apply_deduplication(current_rows, plan=plan)
+
+        return current_rows
 
     # ========== Core CRUD Operations ==========
 

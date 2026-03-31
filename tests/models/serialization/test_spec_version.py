@@ -7,7 +7,7 @@ from pathlib import Path
 from metaxy_testing.models import SampleFeatureSpec
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy import Deduplication, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 
@@ -120,6 +120,34 @@ def test_feature_spec_version_changes_with_any_property() -> None:
     )
     assert spec_field_added.feature_spec_version != base_version
 
+    # Change deduplication
+    spec_deduplication_changed = SampleFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        deduplication=Deduplication(by=("content_hash",)),  # Added!
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
+        ],
+    )
+    assert spec_deduplication_changed.feature_spec_version != base_version
+
+
+def test_feature_spec_version_ignores_inactive_deduplication_config() -> None:
+    base_spec = SampleFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
+        ],
+    )
+    explicit_default_spec = SampleFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        deduplication=None,
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
+        ],
+    )
+
+    assert explicit_default_spec.feature_spec_version == base_spec.feature_spec_version
+
 
 def test_feature_spec_version_consistent_ordering() -> None:
     """Test that feature_spec_version is consistent regardless of field order."""
@@ -169,6 +197,7 @@ def test_feature_spec_version_manual_verification() -> None:
 
     # Manually compute what it should be
     spec_dict = spec.model_dump(mode="json")
+    spec_dict.pop("deduplication", None)
     spec_json = json.dumps(spec_dict, sort_keys=True)
     expected_hash = hashlib.sha256(spec_json.encode("utf-8")).hexdigest()[:8]
 

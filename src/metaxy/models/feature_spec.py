@@ -4,7 +4,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, overload
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias, overload
 
 import narwhals as nw
 import pydantic
@@ -171,12 +171,13 @@ class FeatureDep(pydantic.BaseModel):
 IDColumns: TypeAlias = Sequence[str]  # non-bound, should be used for feature specs with arbitrary id columns
 
 CoercibleToFeatureDep: TypeAlias = FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
+DeduplicationKeep: TypeAlias = Literal["any", "latest"]
 
 
 def _validate_id_columns(value: Any) -> tuple[str, ...]:
-    """Coerce id_columns to tuple."""
-    if isinstance(value, tuple):
-        return value
+    """Reject bare strings to prevent silent character splitting."""
+    if isinstance(value, str):
+        raise TypeError("id_columns must be a sequence of column names, not a bare string")
     return tuple(value)
 
 
@@ -207,10 +208,40 @@ def _validate_deps(value: Any) -> list[FeatureDep]:
 
 
 @public
+class Deduplication(FrozenBaseModel):
+    """Read-time deduplication settings for a feature."""
+
+    by: frozenset[str] = pydantic.Field(
+        ...,
+        min_length=1,
+        description="Columns used to deduplicate records. Records with identical values in these columns are considered duplicates.",
+    )
+    keep: DeduplicationKeep = pydantic.Field(
+        default="any",
+        description=(
+            "Strategy for choosing which row to keep among duplicates. "
+            '"any" picks an arbitrary representative (non-deterministic, suitable for identity resolution). '
+            '"latest" keeps the most recently updated row based on the update timestamp; when multiple rows '
+            "share the same timestamp, the chosen row is unspecified and may be non-deterministic."
+        ),
+    )
+
+    if TYPE_CHECKING:
+
+        def __init__(self, *, by: Sequence[str], keep: DeduplicationKeep = "any") -> None: ...
+
+    @pydantic.field_serializer("by")
+    @staticmethod
+    def _serialize_by(value: frozenset[str]) -> list[str]:
+        return sorted(value)
+
+
+@public
 class FeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = pydantic.Field(
         ...,
+        min_length=1,
         description="Columns that uniquely identify a sample in this feature.",
     )
     deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(default_factory=list)
@@ -232,6 +263,10 @@ class FeatureSpec(FrozenBaseModel):
         default=None,
         description="Human-readable description of this feature.",
     )
+    deduplication: Deduplication | None = pydantic.Field(
+        default=None,
+        description="Read-time deduplication settings applied after resolving the current feature view.",
+    )
 
     if TYPE_CHECKING:
         # Overload for common case: list of FeatureDep instances
@@ -245,6 +280,7 @@ class FeatureSpec(FrozenBaseModel):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
             description: str | None = None,
+            deduplication: Deduplication | Mapping[str, Any] | None = None,
         ) -> None: ...
 
         # Overload for flexible case: list of coercible types
@@ -258,6 +294,7 @@ class FeatureSpec(FrozenBaseModel):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
             description: str | None = None,
+            deduplication: Deduplication | Mapping[str, Any] | None = None,
         ) -> None: ...
 
         # Implementation signature
@@ -270,6 +307,7 @@ class FeatureSpec(FrozenBaseModel):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
             description: str | None = None,
+            deduplication: Deduplication | Mapping[str, Any] | None = None,
         ) -> None: ...
 
     @cached_property
@@ -311,13 +349,6 @@ class FeatureSpec(FrozenBaseModel):
             seen_keys.add(key_tuple)
         return self
 
-    @pydantic.model_validator(mode="after")
-    def validate_id_columns(self) -> Self:
-        """Validate that id_columns is non-empty if specified."""
-        if self.id_columns is not None and len(self.id_columns) == 0:
-            raise ValueError("id_columns must be non-empty if specified. Use None for default.")
-        return self
-
     @property
     def feature_spec_version(self) -> str:
         """Compute SHA256 hash of the complete feature specification.
@@ -347,6 +378,8 @@ class FeatureSpec(FrozenBaseModel):
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
         spec_dict = self.model_dump(mode="json")
+        if self.deduplication is None:
+            spec_dict.pop("deduplication", None)
 
         # Sort keys to ensure deterministic ordering
         spec_json = json.dumps(spec_dict, sort_keys=True)
