@@ -58,6 +58,110 @@ That's it! Easy.
 
     You may now use `VideoFeature.spec()` class method to access the original feature spec: it's bound to the class.
 
+### Read-Time Uniqueness
+
+Use `FeatureSpec.unique` when multiple samples should appear once in the resolved
+read view. To collapse equal values, group by a content digest:
+
+```py
+class DocumentBlob(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="documents/blobs",
+        id_columns=["blob_id"],
+        unique=mx.Unique(subset=["content_hash"]),
+    ),
+):
+    blob_id: str
+    content_hash: str
+    path: str
+```
+
+When the digest should also define a field's data identity, provide it through
+`metaxy_data_version_by_field`; Metaxy preserves caller-provided values on
+write. See [Data Versioning](../versioning.md).
+
+A content hash identifies a value: it changes when that value changes. An entity
+key instead identifies something whose payload may change. Keep the latest state
+for each entity by naming an explicit monotonic ordering column:
+
+```py
+class EntityBinding(
+    mx.BaseFeature,
+    spec=mx.FeatureSpec(
+        key="registry/entity_bindings",
+        id_columns=["entity_id", "revision"],
+        unique=mx.Unique(
+            subset=["entity_id"],
+            keep="latest",
+            order_by=["revision"],
+        ),
+    ),
+):
+    entity_id: str
+    revision: int
+    payload_digest: str
+    status: str
+```
+
+For `keep="latest"`, the `order_by` columns followed by the feature's
+`id_columns` must define a total logical order within each `subset` group. Rows
+tied on that full key should be identical re-appends. Metaxy resolves conflicting
+ties by physical metadata; rejecting them is currently the writer's
+responsibility. NULL order values sort before non-NULL values.
+
+Default reads first choose the physically current row for each `id_columns`
+group. `order_by` only breaks a physical timestamp tie at this stage. When a
+logical ordinal must dominate write order, include it in `id_columns`, as in
+`EntityBinding`. Each revision then reaches the uniqueness step, where
+`order_by` is the primary order.
+
+Do not use a content hash as the entity key: changing the payload would silently
+create a different entity. Re-appending an identical record leaves its
+user-defined values unchanged in the resolved view, but system audit columns
+may change: `metaxy_updated_at` is rewritten and
+`metaxy_materialization_id` may differ. Those columns are not
+re-append-stable watermarks.
+
+Metaxy soft deletes and domain tombstones have different contracts. Default
+current reads remove a Metaxy-soft-deleted sample before uniqueness. With
+`include_soft_deleted=True`, deleted current rows participate normally and may
+win. A domain tombstone is an ordinary highest-order record, such as
+`status="tombstone"`, removed by a user filter after uniqueness:
+
+<!-- skip next -->
+```py
+import narwhals as nw
+
+store.read(
+    EntityBinding,
+    filters=[nw.col("status") != "tombstone"],
+)
+```
+
+For downstream dependency resolution, place the same policy on the dependency
+edge because direct read filters are not inherited:
+
+<!-- skip next -->
+```py
+mx.FeatureDep(
+    feature=EntityBinding,
+    filters=["status != 'tombstone'"],
+)
+```
+
+Pass `apply_unique=False` when unresolved rows are needed. Raw history for a
+feature that is not registered in the current graph requires
+`with_feature_history=True`, `with_sample_history=True`, and
+`apply_unique=False`; Metaxy otherwise fails rather than silently skipping
+uniqueness.
+
+A latest-only retention process must keep Metaxy's current winner for every
+`(id_columns, feature_version)` group, including the same tie and soft-delete
+semantics. The default deduplicated view can be reconstructed from those rows;
+retaining a naive `max(metaxy_updated_at)` row is not the contract. Explicit
+history reads are outside this invariant.
+
 Now let's define a child feature.
 
 ```py

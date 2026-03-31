@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
 from types import TracebackType
@@ -52,6 +52,7 @@ from metaxy.models.types import (
     FeatureKey,
     ValidatedFeatureKeyAdapter,
 )
+from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.utils.dataframes import switch_implementation_to_polars
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
@@ -439,7 +440,7 @@ class MetadataStore(ABC):
             *target_filter_list,
         ]
 
-        # Read current metadata with deduplication (with_sample_history=False by default)
+        # Read physical current metadata so hidden duplicates do not reappear as new samples.
         # Use allow_fallback=False since we only want metadata from THIS store
         # to determine what needs to be updated locally
         try:
@@ -449,6 +450,7 @@ class MetadataStore(ABC):
                 allow_fallback=False,
                 with_feature_history=False,  # filters by current feature_version
                 with_sample_history=False,  # deduplicates by id_columns, keeping latest
+                apply_unique=False,
             )
         except FeatureNotFoundError:
             current_metadata = None
@@ -732,6 +734,7 @@ class MetadataStore(ABC):
         with_feature_history: bool = False,
         with_sample_history: bool = False,
         include_soft_deleted: bool = False,
+        apply_unique: bool = True,
         with_store_info: Literal[False] = False,
     ) -> nw.LazyFrame[Any]: ...
 
@@ -747,6 +750,7 @@ class MetadataStore(ABC):
         with_feature_history: bool = False,
         with_sample_history: bool = False,
         include_soft_deleted: bool = False,
+        apply_unique: bool = True,
         with_store_info: Literal[True],
     ) -> tuple[nw.LazyFrame[Any], MetadataStore]: ...
 
@@ -761,6 +765,7 @@ class MetadataStore(ABC):
         with_feature_history: bool = False,
         with_sample_history: bool = False,
         include_soft_deleted: bool = False,
+        apply_unique: bool = True,
         with_store_info: bool = False,
     ) -> nw.LazyFrame[Any] | tuple[nw.LazyFrame[Any], MetadataStore]:
         """
@@ -776,13 +781,24 @@ class MetadataStore(ABC):
             feature_version: Explicit feature_version to filter by (mutually exclusive with with_feature_history=False)
             filters: Sequence of Narwhals filter expressions to apply to this feature.
                 Example: `[nw.col("x") > 10, nw.col("y") < 5]`
-            columns: Subset of columns to include. Metaxy's system columns are always included.
+            columns: Exact subset of columns to return. Internal columns needed to resolve the
+                read are loaded automatically and omitted from the result.
             allow_fallback: Whether to allow fallback to upstream stores if the requested feature is not found in the current store.
             with_feature_history: If True, include rows from all historical feature versions.
                 By default (False), only returns rows with the currently registered feature version.
             with_sample_history: If True, include all historical materializations per sample.
-                By default (False), deduplicates samples within `id_columns` groups ordered by `metaxy_created_at`.
-            include_soft_deleted: If `True`, include soft-deleted rows in the result. Previous historical materializations of the same feature version will be effectively removed from the output otherwise.
+                By default (False), deduplicates samples within `id_columns` groups ordered by
+                `coalesce(metaxy_deleted_at, metaxy_updated_at)`, keeping the row with the latest
+                timestamp. Feature-history reads resolve each feature version independently. For
+                `unique.keep="latest"`, `unique.order_by` breaks physical timestamp ties.
+            include_soft_deleted: If `True`, include soft-deleted rows in the result. These rows
+                participate normally in `FeatureSpec.unique` and may be selected. Default current
+                reads resolve and remove soft-deleted samples before applying feature-level uniqueness.
+            apply_unique: If `True`, apply `FeatureSpec.unique` within the selected feature-version
+                scope. Default reads first resolve the current row and soft-delete state for each
+                sample; sample-history reads apply uniqueness across the selected history. Set to
+                `False` to return the read mode without feature-level uniqueness. A resolvable
+                feature definition is required when this option is enabled.
             with_store_info: If `True`, return a tuple of (LazyFrame, MetadataStore) where
                 the MetadataStore is the store that actually contained the feature (which
                 may be a fallback store if allow_fallback=True).
@@ -794,11 +810,14 @@ class MetadataStore(ABC):
             FeatureNotFoundError: If feature not found in any store
             SystemDataNotFoundError: When attempting to read non-existent Metaxy system data
             ValueError: If both feature_version and with_feature_history=False are provided
+            RuntimeError: If the feature plan needed for current-view or uniqueness resolution
+                is not registered.
 
         !!! info
-            When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
-            metadata for the current feature version excluding soft-deleted rows. Therefore, it's perfectly suitable
-            for most use cases.
+            When this method is called with default arguments, it returns the current metadata for the
+            active feature version, excluding soft-deleted rows. The current row for each `id_columns`
+            group is selected by ordering on `coalesce(metaxy_deleted_at, metaxy_updated_at)` and keeping
+            the latest timestamp. Therefore, it's perfectly suitable for most use cases.
 
         !!! warning
             The order of rows is not guaranteed.
@@ -813,6 +832,7 @@ class MetadataStore(ABC):
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
+        feature_plan: FeaturePlan | None = None
 
         # Sync external features if auto-sync is enabled (default)
         # This call is a no-op most of the time and is very lightweight when it's not
@@ -830,9 +850,10 @@ class MetadataStore(ABC):
                 "Use with_feature_history=True with feature_version parameter."
             )
 
-        # Separate system filters (applied before dedup) from user filters (applied after dedup)
+        # Separate system filters (applied before read-mode resolution) from user filters
+        # (applied after read-mode resolution)
         # System filters like feature_version need to be applied early to reduce data volume
-        # User filters should see the deduplicated view of the data
+        # User filters should see the resolved view of the data
         system_filters: list[nw.Expr] = []
         user_filters = list(filters) if filters else []
 
@@ -849,17 +870,31 @@ class MetadataStore(ABC):
         if user_filters:
             read_columns = None
         elif columns and not is_system_table:
-            # Add only system columns that aren't already in the user's columns list
-            columns_set = set(columns)
-            missing_system_cols = [c for c in ALL_SYSTEM_COLUMNS if c not in columns_set]
-            read_columns = [*columns, *missing_system_cols]
+            additional_columns: Iterable[str] | None = None
+            if apply_unique or not with_sample_history:
+                graph = current_graph()
+                definition = graph.feature_definitions_by_key.get(feature_key)
+                if definition is not None:
+                    feature_plan = graph.get_feature_plan(feature_key)
+
+                extra: list[str] = []
+                if not with_sample_history and feature_plan is not None:
+                    extra.extend(feature_plan.feature.id_columns)
+                    if feature_plan.feature.unique is not None and feature_plan.feature.unique.keep == "latest":
+                        extra.extend(feature_plan.feature.unique.order_by or ())
+                if apply_unique and feature_plan is not None and feature_plan.feature.unique is not None:
+                    extra.extend(feature_plan.feature.unique.subset)
+                    extra.extend(feature_plan.feature.unique.order_by or ())
+                    extra.extend(feature_plan.feature.id_columns)
+                additional_columns = extra or None
+            read_columns = self._internal_read_columns(columns, additional_columns=additional_columns)
         else:
             read_columns = None
 
         lazy_frame = None
         try:
             # Only pass system filters to _read_feature
-            # User filters will be applied after deduplication
+            # User filters will be applied after uniqueness resolution
             lazy_frame = self._read_feature(
                 feature, filters=system_filters if system_filters else None, columns=read_columns
             )
@@ -877,21 +912,46 @@ class MetadataStore(ABC):
             )
 
         if lazy_frame is not None and not is_system_table:
-            # Deduplicate first, then filter soft-deleted rows
-            if not with_sample_history:
-                id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
-                # Treat soft-deletes like hard deletes by ordering on the
-                # most recent lifecycle timestamp.
-                lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
-                    df=lazy_frame,
-                    group_columns=id_cols,
-                    timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
+            resolved_feature_plan = feature_plan
+            if resolved_feature_plan is None and (apply_unique or not with_sample_history):
+                graph = current_graph()
+                if feature_key in graph.feature_definitions_by_key:
+                    resolved_feature_plan = graph.get_feature_plan(feature_key)
+
+            if resolved_feature_plan is None and apply_unique:
+                raise RuntimeError(
+                    f"Cannot apply FeatureSpec.unique for {feature_key.to_string()} without a registered "
+                    "feature plan. Register the feature or set apply_unique=False."
                 )
 
-            if filter_deleted:
+            if resolved_feature_plan is None and not with_sample_history:
+                raise RuntimeError(
+                    f"Failed to resolve feature plan for {feature_key.to_string()}. "
+                    "Register the feature or use with_sample_history=True."
+                )
+
+            if not with_sample_history:
+                assert resolved_feature_plan is not None
+                current_tie_breakers: Sequence[str] = ()
+                if (
+                    resolved_feature_plan.feature.unique is not None
+                    and resolved_feature_plan.feature.unique.keep == "latest"
+                ):
+                    current_tie_breakers = resolved_feature_plan.feature.unique.order_by or ()
+                lazy_frame = self._apply_current_feature_view(
+                    lazy_frame,
+                    plan=resolved_feature_plan,
+                    filter_deleted=filter_deleted,
+                    tie_breakers=current_tie_breakers,
+                    with_feature_history=with_feature_history,
+                )
+            elif filter_deleted:
                 lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
 
-            # Apply user filters AFTER deduplication so they see the latest version of each row
+            if apply_unique and resolved_feature_plan is not None:
+                lazy_frame = self._apply_unique(lazy_frame, plan=resolved_feature_plan)
+
+            # Apply user filters AFTER read-mode resolution so they see the final row set.
             for user_filter in user_filters:
                 lazy_frame = lazy_frame.filter(user_filter)
 
@@ -926,6 +986,7 @@ class MetadataStore(ABC):
                                 with_feature_history=with_feature_history,
                                 with_sample_history=with_sample_history,
                                 include_soft_deleted=include_soft_deleted,
+                                apply_unique=apply_unique,
                                 with_store_info=True,
                             )
                         return store.read(
@@ -937,6 +998,7 @@ class MetadataStore(ABC):
                             with_feature_history=with_feature_history,
                             with_sample_history=with_sample_history,
                             include_soft_deleted=include_soft_deleted,
+                            apply_unique=apply_unique,
                         )
                 except FeatureNotFoundError:
                     # Try next fallback store
@@ -1451,6 +1513,131 @@ class MetadataStore(ABC):
         graph = current_graph()
         return graph.get_feature_plan(feature_key)
 
+    @staticmethod
+    def _internal_read_columns(
+        columns: Sequence[str],
+        *,
+        additional_columns: Iterable[str] | None = None,
+    ) -> list[str]:
+        """Add internal columns required for read-time filtering and uniqueness resolution."""
+        normalized_columns = list(dict.fromkeys(columns))
+        columns_set = set(normalized_columns)
+        missing_system_columns = [column for column in ALL_SYSTEM_COLUMNS if column not in columns_set]
+        columns_set.update(missing_system_columns)
+        normalized_additional_columns = list(dict.fromkeys(additional_columns or ()))
+        missing_additional_columns = [column for column in normalized_additional_columns if column not in columns_set]
+        columns_set.update(missing_additional_columns)
+        return [*normalized_columns, *missing_system_columns, *missing_additional_columns]
+
+    def _apply_unique(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        plan: FeaturePlan,
+    ) -> nw.LazyFrame[Any]:
+        """Apply read-time uniqueness configured by FeatureSpec.unique."""
+        unique = plan.feature.unique
+        if unique is None:
+            return lazy_frame
+
+        physical_tie_breakers = [
+            TEMP_TABLE_NAME,
+            METAXY_DELETED_AT,
+            METAXY_UPDATED_AT,
+            METAXY_DATA_VERSION,
+            METAXY_PROVENANCE,
+            METAXY_FEATURE_VERSION,
+            METAXY_PROJECT_VERSION,
+            METAXY_CREATED_AT,
+            METAXY_MATERIALIZATION_ID,
+        ]
+        if unique.keep == "latest":
+            if unique.order_by is None:
+                raise ValueError('unique.order_by is required when unique.keep="latest"')
+            order_by = list(
+                dict.fromkeys(
+                    [
+                        *unique.order_by,
+                        *plan.feature.id_columns,
+                        *physical_tie_breakers,
+                    ]
+                )
+            )
+        elif unique.keep == "any":
+            order_by = list(dict.fromkeys([*plan.feature.id_columns, *physical_tie_breakers]))
+        else:
+            raise ValueError(f"Unsupported unique.keep value: {unique.keep!r}")
+
+        return (
+            lazy_frame.with_columns(
+                nw.coalesce(
+                    nw.col(METAXY_DELETED_AT),
+                    nw.col(METAXY_UPDATED_AT),
+                ).alias(TEMP_TABLE_NAME)
+            )
+            .unique(
+                subset=list(unique.subset),
+                keep="last",
+                order_by=order_by,
+            )
+            .drop(TEMP_TABLE_NAME)
+        )
+
+    def _apply_current_feature_view(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        plan: FeaturePlan,
+        filter_deleted: bool,
+        tie_breakers: Sequence[str] = (),
+        with_feature_history: bool = False,
+    ) -> nw.LazyFrame[Any]:
+        """Return the current-sample view for a feature read."""
+        id_columns = list(
+            dict.fromkeys(
+                [
+                    *plan.feature.id_columns,
+                    *([METAXY_FEATURE_VERSION] if with_feature_history else []),
+                ]
+            )
+        )
+
+        order_by = list(
+            dict.fromkeys(
+                [
+                    TEMP_TABLE_NAME,
+                    *tie_breakers,
+                    METAXY_DELETED_AT,
+                    METAXY_UPDATED_AT,
+                    METAXY_DATA_VERSION,
+                    METAXY_PROVENANCE,
+                    METAXY_FEATURE_VERSION,
+                    METAXY_PROJECT_VERSION,
+                    METAXY_CREATED_AT,
+                    METAXY_MATERIALIZATION_ID,
+                ]
+            )
+        )
+        current_rows = (
+            lazy_frame.with_columns(
+                nw.coalesce(
+                    nw.col(METAXY_DELETED_AT),
+                    nw.col(METAXY_UPDATED_AT),
+                ).alias(TEMP_TABLE_NAME)
+            )
+            .unique(
+                subset=id_columns,
+                keep="last",
+                order_by=order_by,
+            )
+            .drop(TEMP_TABLE_NAME)
+        )
+
+        if filter_deleted:
+            current_rows = current_rows.filter(nw.col(METAXY_DELETED_AT).is_null())
+
+        return current_rows
+
     # ========== Core CRUD Operations ==========
 
     @contextmanager
@@ -1806,6 +1993,7 @@ class MetadataStore(ABC):
                 with_feature_history=with_feature_history,
                 with_sample_history=with_sample_history,
                 allow_fallback=True,
+                apply_unique=False,
             )
             with self._shared_transaction_timestamp(soft_delete=True) as ts:
                 soft_deletion_marked = lazy.with_columns(
@@ -1982,6 +2170,7 @@ class MetadataStore(ABC):
         lazy = self.read(
             feature,
             allow_fallback=False,
+            apply_unique=False,
         )
         return lazy.collect_schema()
 
@@ -2339,6 +2528,7 @@ class MetadataStore(ABC):
                     allow_fallback=False,
                     with_feature_history=with_feature_history,
                     with_sample_history=with_sample_history,
+                    apply_unique=False,
                 )
 
                 # Collect to narwhals DataFrame to get row count

@@ -371,6 +371,7 @@ def generate_materialize_results(
                     filters=[
                         nw.col(METAXY_MATERIALIZATION_ID) == store.materialization_id  # ty: ignore[unresolved-attribute]
                     ],
+                    apply_unique=False,
                 )
                 metadata["metaxy/materialized_in_run"] = mat_df.select(nw.len()).collect().item(0, 0)
 

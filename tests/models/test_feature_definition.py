@@ -49,6 +49,42 @@ def test_feature_definition_project_field():
     assert definition.project == "myproject"
 
 
+def test_feature_definition_warns_for_missing_unique_columns():
+    """FeatureDefinition validates unique.subset against its own schema."""
+    spec = FeatureSpec(
+        key=FeatureKey(["ns", "feat"]),
+        id_columns=("id",),
+        fields=[FieldSpec(key=FieldKey(["val"]))],
+        unique={"subset": ["missing"]},
+    )
+
+    with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+        _ = FeatureDefinition(
+            spec=spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}, "val": {"type": "string"}}},
+            feature_class_path="myproject.features.MyFeature",
+            project="myproject",
+        )
+
+
+def test_feature_definition_warns_for_missing_unique_order_columns():
+    """FeatureDefinition validates unique.order_by against its own schema."""
+    spec = FeatureSpec(
+        key=FeatureKey(["ns", "ordered_feat"]),
+        id_columns=("id",),
+        fields=[FieldSpec(key=FieldKey(["val"]))],
+        unique={"subset": ["id"], "keep": "latest", "order_by": ["missing_revision"]},
+    )
+
+    with pytest.warns(UserWarning, match="unique.order_by columns.*not found"):
+        _ = FeatureDefinition(
+            spec=spec,
+            feature_schema={"type": "object", "properties": {"id": {"type": "string"}, "val": {"type": "string"}}},
+            feature_class_path="myproject.features.MyFeature",
+            project="myproject",
+        )
+
+
 def test_feature_definition_convenience_properties():
     """Test key, table_name, id_columns properties."""
     spec = FeatureSpec(

@@ -20,6 +20,7 @@ from tests.metadata_stores.shared import (
     FilterTests,
     MapDtypeTests,
     ResolveUpdateTests,
+    UniqueTests,
     VersioningTests,
     WriteTests,
 )
@@ -50,6 +51,7 @@ class TestDelta(
     FilterTests,
     MapDtypeTests,
     ResolveUpdateTests,
+    UniqueTests,
     VersioningTests,
     WriteTests,
 ):

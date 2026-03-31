@@ -488,6 +488,7 @@ def _count_rows_to_delete(
                     with_feature_history=with_feature_history,
                     with_sample_history=False,  # matches delete default
                     allow_fallback=soft,  # soft deletes use fallback, hard deletes don't
+                    apply_unique=False,
                 )
                 # Pre-aggregate to count per feature
                 count_frame = lazy.select(nw.len().alias("count"))
@@ -594,7 +595,6 @@ def rebase(
     """
     from metaxy.cli.context import AppContext
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
-    from metaxy.models.constants import METAXY_FEATURE_VERSION
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
@@ -603,9 +603,10 @@ def rebase(
         try:
             existing = metadata_store.read(
                 feature,
+                feature_version=from_version,
                 with_feature_history=True,
-                filters=[nw.col(METAXY_FEATURE_VERSION) == from_version],
                 allow_fallback=False,
+                apply_unique=False,
             )
         except FeatureNotFoundError:
             console.print(f"[yellow]Warning:[/yellow] Feature '{feature}' not found in store.")

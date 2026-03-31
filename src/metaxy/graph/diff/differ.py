@@ -626,11 +626,14 @@ class GraphDiffer:
             feature_key_str = feature_key.to_string()
             feature_version = graph.get_feature_version(feature_key)
             field_versions = graph.get_feature_version_by_field(feature_key)
+            feature_spec = definition.spec.model_dump(mode="json")
+            if definition.spec.unique is None:
+                feature_spec.pop("unique", None)
 
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
                 "fields": field_versions,
-                "feature_spec": definition.spec.model_dump(mode="json"),
+                "feature_spec": feature_spec,
                 "metaxy_definition_version": definition.feature_definition_version,
             }
 

@@ -11,6 +11,7 @@ from .filters import FilterTests
 from .ibis_map import IbisMapTests
 from .map_dtype import MapDtypeTests
 from .resolve_update import ResolveUpdateTests
+from .unique import UniqueTests
 from .versioning import VersioningTests
 from .write import WriteTests
 
@@ -22,6 +23,7 @@ __all__ = [
     "IbisMapTests",
     "MapDtypeTests",
     "ResolveUpdateTests",
+    "UniqueTests",
     "VersioningTests",
     "WriteTests",
 ]

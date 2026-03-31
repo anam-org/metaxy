@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import metaxy as mx
 import narwhals as nw
@@ -168,6 +169,27 @@ def test_datasource_stores_config(
 
     assert datasource.store is delta_store
     assert datasource.config is ray_config
+
+
+def test_datasource_forwards_apply_unique(
+    ray_config: mx.MetaxyConfig,
+    delta_store: DeltaMetadataStore,
+):
+    """The Ray wrapper exposes MetadataStore.read's uniqueness escape hatch."""
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    lazy_frame = nw.from_native(pl.DataFrame({"sample_uid": []}).lazy())
+    datasource = MetaxyDatasource(
+        feature=FEATURE_KEY,
+        store=delta_store,
+        config=ray_config,
+        apply_unique=False,
+    )
+
+    with patch.object(delta_store, "read", return_value=lazy_frame) as read:
+        assert datasource._read_lazy() is lazy_frame
+
+    assert read.call_args.kwargs["apply_unique"] is False
 
 
 def test_datasource_with_filters(

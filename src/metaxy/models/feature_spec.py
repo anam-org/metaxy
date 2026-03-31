@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, Set
 from functools import cached_property
-from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, overload
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias, overload
 
 import narwhals as nw
 import pydantic
@@ -171,13 +171,33 @@ class FeatureDep(pydantic.BaseModel):
 IDColumns: TypeAlias = Sequence[str]  # non-bound, should be used for feature specs with arbitrary id columns
 
 CoercibleToFeatureDep: TypeAlias = FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
+UniqueKeep: TypeAlias = Literal["any", "latest"]
+
+
+def _validate_column_sequence(value: Any, field_name: str) -> tuple[str, ...]:
+    """Validate column names and preserve the user-provided order."""
+    if isinstance(value, str):
+        raise ValueError(f"{field_name} must be a sequence of column names, not a bare string")
+    if isinstance(value, Mapping):
+        raise ValueError(f"{field_name} must be a sequence of column names, not a mapping")
+    if isinstance(value, Set):
+        raise ValueError(f"{field_name} must be an ordered sequence of column names, not a set")
+    try:
+        return tuple(dict.fromkeys(value))
+    except TypeError as exc:
+        raise ValueError(f"{field_name} must be a sequence of column names") from exc
 
 
 def _validate_id_columns(value: Any) -> tuple[str, ...]:
-    """Coerce id_columns to tuple."""
-    if isinstance(value, tuple):
-        return value
-    return tuple(value)
+    return _validate_column_sequence(value, "id_columns")
+
+
+def _validate_unique_subset(value: Any) -> tuple[str, ...]:
+    return _validate_column_sequence(value, "unique.subset")
+
+
+def _validate_unique_order_by(value: Any) -> tuple[str, ...]:
+    return _validate_column_sequence(value, "unique.order_by")
 
 
 def _validate_deps(value: Any) -> list[FeatureDep]:
@@ -207,10 +227,67 @@ def _validate_deps(value: Any) -> list[FeatureDep]:
 
 
 @public
+class Unique(FrozenBaseModel):
+    """Read-time uniqueness settings for a feature."""
+
+    subset: Annotated[tuple[str, ...], BeforeValidator(_validate_unique_subset)] = pydantic.Field(
+        ...,
+        min_length=1,
+        description=(
+            "Columns used to determine uniqueness. Records with identical values in these columns "
+            "are considered duplicates. Repeated column names are ignored after their first occurrence."
+        ),
+    )
+    keep: UniqueKeep = pydantic.Field(
+        default="any",
+        description=(
+            "Strategy for choosing which row to keep among duplicates. "
+            '"any" picks the row with the lexicographically greatest feature ID. '
+            '"latest" keeps the row with the lexicographically greatest order_by values.'
+        ),
+    )
+    order_by: Annotated[tuple[str, ...], BeforeValidator(_validate_unique_order_by)] | None = pydantic.Field(
+        default=None,
+        min_length=1,
+        description=(
+            'Columns defining the logical order of duplicates when keep="latest". '
+            "The lexicographically greatest values win, with feature ID columns as final logical tie-breakers. "
+            "NULL sorts before every non-NULL value. Physical metadata breaks remaining ties; rejecting "
+            "conflicting ties is the writer's responsibility. Repeated column names are ignored after "
+            "their first occurrence."
+        ),
+    )
+
+    @pydantic.model_validator(mode="after")
+    def validate_latest_has_order_by(self) -> Self:
+        if self.keep == "latest" and self.order_by is None:
+            raise ValueError('unique.order_by is required when unique.keep="latest"')
+        if self.keep == "any" and self.order_by is not None:
+            raise ValueError('unique.order_by is only supported when unique.keep="latest"')
+        return self
+
+    if TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *,
+            subset: Sequence[str],
+            keep: UniqueKeep = "any",
+            order_by: Sequence[str] | None = None,
+        ) -> None: ...
+
+    @pydantic.field_serializer("subset", "order_by")
+    @staticmethod
+    def _serialize_columns(value: tuple[str, ...] | None) -> list[str] | None:
+        return list(value) if value is not None else None
+
+
+@public
 class FeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     id_columns: Annotated[tuple[str, ...], BeforeValidator(_validate_id_columns)] = pydantic.Field(
         ...,
+        min_length=1,
         description="Columns that uniquely identify a sample in this feature.",
     )
     deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(default_factory=list)
@@ -232,6 +309,13 @@ class FeatureSpec(FrozenBaseModel):
         default=None,
         description="Human-readable description of this feature.",
     )
+    unique: Unique | None = pydantic.Field(
+        default=None,
+        description=(
+            "Read-time uniqueness settings applied within the selected feature-version candidate set, "
+            "after read-mode history and soft-deletion resolution and before user filters."
+        ),
+    )
 
     if TYPE_CHECKING:
         # Overload for common case: list of FeatureDep instances
@@ -245,6 +329,7 @@ class FeatureSpec(FrozenBaseModel):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
             description: str | None = None,
+            unique: Unique | Mapping[str, Any] | None = None,
         ) -> None: ...
 
         # Overload for flexible case: list of coercible types
@@ -258,6 +343,7 @@ class FeatureSpec(FrozenBaseModel):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
             description: str | None = None,
+            unique: Unique | Mapping[str, Any] | None = None,
         ) -> None: ...
 
         # Implementation signature
@@ -270,6 +356,7 @@ class FeatureSpec(FrozenBaseModel):
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: dict[str, Any] | None = None,
             description: str | None = None,
+            unique: Unique | Mapping[str, Any] | None = None,
         ) -> None: ...
 
     @cached_property
@@ -311,13 +398,6 @@ class FeatureSpec(FrozenBaseModel):
             seen_keys.add(key_tuple)
         return self
 
-    @pydantic.model_validator(mode="after")
-    def validate_id_columns(self) -> Self:
-        """Validate that id_columns is non-empty if specified."""
-        if self.id_columns is not None and len(self.id_columns) == 0:
-            raise ValueError("id_columns must be non-empty if specified. Use None for default.")
-        return self
-
     @property
     def feature_spec_version(self) -> str:
         """Compute SHA256 hash of the complete feature specification.
@@ -347,6 +427,8 @@ class FeatureSpec(FrozenBaseModel):
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
         spec_dict = self.model_dump(mode="json")
+        if self.unique is None:
+            spec_dict.pop("unique", None)
 
         # Sort keys to ensure deterministic ordering
         spec_json = json.dumps(spec_dict, sort_keys=True)

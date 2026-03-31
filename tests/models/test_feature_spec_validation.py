@@ -2,9 +2,11 @@
 
 import pytest
 from metaxy import BaseFeature
+from metaxy.models.feature_spec import FeatureDep, FeatureSpec, Unique
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 from metaxy_testing.models import SampleFeatureSpec
+from pydantic import ValidationError
 
 
 def test_duplicate_field_keys_raises_error():
@@ -60,6 +62,20 @@ def test_unique_field_keys_pass_validation():
     assert spec.fields[0].key == FieldKey(["predictions"])
     assert spec.fields[1].key == FieldKey(["embeddings"])
     assert spec.fields[2].key == FieldKey(["metadata"])
+
+
+def test_id_columns_bare_string_raises_validation_error() -> None:
+    with pytest.raises(ValidationError, match="id_columns must be a sequence"):
+        FeatureSpec(key="test/feature", id_columns="sample_uid")
+
+
+def test_id_columns_preserve_order_and_deduplicate() -> None:
+    assert FeatureSpec(key="test/feature", id_columns=("b", "a", "b")).id_columns == ("b", "a")
+
+
+def test_id_columns_set_raises_validation_error() -> None:
+    with pytest.raises(ValidationError, match="ordered sequence"):
+        FeatureSpec(key="test/feature", id_columns={"a", "b"})  # ty: ignore[no-matching-overload]
 
 
 def test_default_field_is_unique():
@@ -131,9 +147,16 @@ def test_feature_spec_requires_id_columns():
     assert spec.id_columns == ("sample_uid",)
 
 
+def test_feature_spec_empty_id_columns_raises_validation_error():
+    """Test that FeatureSpec uses field constraints for empty id_columns."""
+    from metaxy.models.feature_spec import FeatureSpec
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        FeatureSpec(key="test/feature", id_columns=[])
+
+
 def test_feature_dep_from_feature_class():
     """Test that FeatureDep can be created directly from a Feature class."""
-    from metaxy.models.feature_spec import FeatureDep
     from metaxy.models.types import FeatureKey
 
     # Create a parent feature
@@ -174,7 +197,7 @@ def test_feature_dep_from_feature_class():
 
 def test_feature_spec_deps_mixed_types():
     """Test that FeatureSpec.deps accepts all coercible types in a single list."""
-    from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.types import FeatureKey
 
     # Create a Feature class
@@ -209,3 +232,198 @@ def test_feature_spec_deps_mixed_types():
     assert spec.deps[1].feature == FeatureKey(["my", "feature", "key"])
     assert spec.deps[2].feature == FeatureKey(["another", "key"])
     assert spec.deps[3].feature == FeatureKey(["very", "nice"])
+
+
+class TestUniqueValidation:
+    """Tests for the unique field on FeatureSpec."""
+
+    def test_unique_default_is_none(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature")
+        assert spec.unique is None
+
+    def test_unique_model_round_trips(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", unique=Unique(subset=("col1", "col2")))
+        assert spec.unique == Unique(subset=("col1", "col2"))
+
+    def test_unique_dict_list_is_coerced(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", unique={"subset": ["col1"]})
+        assert spec.unique == Unique(subset=("col1",))
+
+    def test_unique_subset_bare_string_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SampleFeatureSpec(key="test/feature", unique={"subset": "col1"})
+
+    def test_unique_subset_mapping_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset={"col1": True})  # ty: ignore[invalid-argument-type]
+
+    def test_unique_subset_set_raises(self) -> None:
+        with pytest.raises(ValidationError, match="ordered sequence"):
+            Unique(subset={"col1", "col2"})  # ty: ignore[invalid-argument-type]
+
+    def test_unique_subset_non_sequence_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset=42)  # ty: ignore[invalid-argument-type]
+
+    def test_unique_subset_empty_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset=())
+
+    def test_unique_subset_duplicate_columns_deduplicates(self) -> None:
+        u = Unique(subset=("col2", "col1", "col2"))
+        assert u.subset == ("col2", "col1")
+
+    def test_unique_latest_requires_order_by(self) -> None:
+        with pytest.raises(ValidationError, match="unique.order_by is required"):
+            Unique(subset=("entity_id",), keep="latest")
+
+    def test_unique_order_by_empty_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset=("entity_id",), keep="latest", order_by=())
+
+    def test_unique_any_rejects_order_by(self) -> None:
+        with pytest.raises(ValidationError, match="only supported"):
+            Unique(subset=("content_hash",), order_by=("revision",))
+
+    def test_unique_order_by_bare_string_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset=("entity_id",), keep="latest", order_by="revision")
+
+    def test_unique_order_by_set_raises(self) -> None:
+        with pytest.raises(ValidationError, match="ordered sequence"):
+            Unique(
+                subset=("entity_id",),
+                keep="latest",
+                order_by={"revision", "source_priority"},  # ty: ignore[invalid-argument-type]
+            )
+
+    def test_unique_order_by_preserves_order_and_deduplicates(self) -> None:
+        unique = Unique(
+            subset=("entity_id",),
+            keep="latest",
+            order_by=("revision", "source_priority", "revision"),
+        )
+        assert unique.order_by == ("revision", "source_priority")
+
+    def test_unique_serializes_correctly(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", unique=Unique(subset=("content_hash_2", "content_hash_1")))
+        dumped = spec.model_dump(mode="json")
+        assert dumped["unique"] == {
+            "subset": ["content_hash_2", "content_hash_1"],
+            "keep": "any",
+            "order_by": None,
+        }
+
+    def test_unique_latest_serializes_order_by(self) -> None:
+        spec = SampleFeatureSpec(
+            key="test/feature",
+            unique=Unique(subset=("entity_id",), keep="latest", order_by=("revision", "source_priority")),
+        )
+        dumped = spec.model_dump(mode="json")
+        assert dumped["unique"] == {
+            "subset": ["entity_id"],
+            "keep": "latest",
+            "order_by": ["revision", "source_priority"],
+        }
+
+    def test_unique_none_serializes_correctly(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature")
+        dumped = spec.model_dump(mode="json")
+        assert dumped["unique"] is None
+
+    def test_unique_missing_column_warns_on_feature(self) -> None:
+        with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+
+            class _BadFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/bad_dedup",
+                    unique=Unique(subset=("missing",)),
+                ),
+            ):
+                pass
+
+    def test_unique_missing_order_by_column_warns_on_feature(self) -> None:
+        with pytest.warns(UserWarning, match="unique.order_by columns.*not found"):
+
+            class _BadOrderFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/bad_unique_order",
+                    unique=Unique(subset=("sample_uid",), keep="latest", order_by=("missing_revision",)),
+                ),
+            ):
+                pass
+
+    def test_unique_current_feature_column_allowed(self) -> None:
+        class _Feature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/current_feature_dedup",
+                unique=Unique(subset=("content_hash",)),
+            ),
+        ):
+            content_hash: str | None = None
+
+        assert _Feature.spec().unique == Unique(subset=("content_hash",))
+
+    def test_unique_current_feature_order_by_column_allowed(self) -> None:
+        class _Feature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/current_feature_unique_order",
+                unique=Unique(subset=("entity_id",), keep="latest", order_by=("revision",)),
+            ),
+        ):
+            entity_id: str
+            revision: int
+
+        assert _Feature.spec().unique == Unique(
+            subset=("entity_id",),
+            keep="latest",
+            order_by=("revision",),
+        )
+
+    def test_unique_system_column_allowed(self) -> None:
+        class _SysColFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/sys_dedup",
+                unique=Unique(subset=("metaxy_data_version",)),
+            ),
+        ):
+            pass
+
+        assert _SysColFeature.spec().unique == Unique(subset=("metaxy_data_version",))
+
+    def test_unique_upstream_column_warns(self) -> None:
+        class _Parent(BaseFeature, spec=SampleFeatureSpec(key="test/dedup_parent")):
+            content_hash: str | None = None
+
+        with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+
+            class _Child(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/dedup_child",
+                    deps=[FeatureDep(feature="test/dedup_parent", select=("content_hash",))],
+                    unique=Unique(subset=("content_hash",)),
+                ),
+            ):
+                pass
+
+    def test_unique_renamed_upstream_column_warns(self) -> None:
+        class _Parent(BaseFeature, spec=SampleFeatureSpec(key="test/dedup_rename_parent")):
+            content_hash: str | None = None
+
+        with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+
+            class _Child(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/dedup_rename_child",
+                    deps=[FeatureDep(feature="test/dedup_rename_parent", rename={"content_hash": "chash"})],
+                    unique=Unique(subset=("chash",)),
+                ),
+            ):
+                pass

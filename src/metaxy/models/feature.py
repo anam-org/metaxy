@@ -600,6 +600,8 @@ class FeatureGraph:
 
             feature_key_str = feature_key.to_string()
             feature_spec_dict = definition.spec.model_dump(mode="json")
+            if definition.spec.unique is None:
+                feature_spec_dict.pop("unique", None)
             feature_schema_dict = definition.feature_schema
             feature_version = self.get_feature_version(feature_key)
             definition_version = definition.feature_definition_version

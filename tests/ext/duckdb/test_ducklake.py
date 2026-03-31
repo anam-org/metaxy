@@ -15,6 +15,7 @@ from tests.metadata_stores.shared import (
     IbisMapTests,
     MapDtypeTests,
     ResolveUpdateTests,
+    UniqueTests,
     VersioningTests,
     WriteTests,
 )
@@ -32,6 +33,7 @@ class TestDuckDBDuckLake(
     IbisMapTests,
     MapDtypeTests,
     ResolveUpdateTests,
+    UniqueTests,
     VersioningTests,
     WriteTests,
 ):

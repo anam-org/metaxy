@@ -25,6 +25,7 @@ from tests.metadata_stores.shared import (
     DisplayTests,
     FilterTests,
     ResolveUpdateTests,
+    UniqueTests,
     VersioningTests,
     WriteTests,
 )
@@ -39,6 +40,7 @@ class TestPostgreSQL(
     DisplayTests,
     FilterTests,
     ResolveUpdateTests,
+    UniqueTests,
     VersioningTests,
     WriteTests,
 ):
@@ -1096,6 +1098,7 @@ def test_postgresql_read_missing_feature_schema_decodes_system_columns(
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
         ).sort("sample_uid")
 
@@ -1143,6 +1146,7 @@ def test_postgresql_read_missing_feature_schema_fails_fast_on_invalid_system_jso
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
 
 
@@ -1179,6 +1183,7 @@ def test_postgresql_read_missing_feature_schema_allows_all_null_system_json(
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
         ).sort("sample_uid")
 
@@ -1221,6 +1226,7 @@ def test_postgresql_read_missing_feature_schema_all_null_system_json_auto_cast_m
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
         ).sort("sample_uid")
         assert result["sample_uid"].to_list() == [1, 2]
@@ -1312,6 +1318,7 @@ def test_postgresql_read_missing_feature_schema_empty_result_returns_empty(
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
         )
         assert result.is_empty()
@@ -1350,6 +1357,7 @@ def test_postgresql_read_missing_feature_schema_filter_to_zero_rows_returns_empt
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
         )
         assert result.is_empty()
@@ -1379,6 +1387,7 @@ def test_postgresql_read_missing_required_system_columns_raises_schema_error(
                 with_feature_history=True,
                 with_sample_history=True,
                 include_soft_deleted=True,
+                apply_unique=False,
             )
 
 
