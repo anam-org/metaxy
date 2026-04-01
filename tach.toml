@@ -23,7 +23,7 @@ utility = true
 
 [[modules]]
 path = "metaxy.ext.metadata_stores"
-depends_on = ["metaxy.metadata_store", "metaxy.config", "metaxy.models"]
+depends_on = []
 
 [[modules]]
 path = "metaxy._warnings"
@@ -100,3 +100,35 @@ utility = true
 [[modules]]
 path = "metaxy"
 depends_on = ["metaxy.metadata_store", "metaxy.entrypoints", "metaxy.config", "metaxy.models"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.iceberg"
+depends_on = ["metaxy.config", "metaxy.models", "metaxy.metadata_store"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.duckdb"
+depends_on = ["metaxy.config", "metaxy.metadata_store", "metaxy.ext.metadata_stores.ducklake"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.postgresql"
+depends_on = ["metaxy.models", "metaxy.metadata_store"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.delta"
+depends_on = ["metaxy.models", "metaxy.metadata_store", "metaxy.config"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.clickhouse"
+depends_on = ["metaxy.metadata_store", "metaxy.models", "metaxy.config"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.ducklake"
+depends_on = []
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.bigquery"
+depends_on = ["metaxy.metadata_store"]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores.lancedb"
+depends_on = ["metaxy.models", "metaxy.metadata_store"]
