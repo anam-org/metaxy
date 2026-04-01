@@ -89,6 +89,14 @@ We use `pytest` for testing.
 uv run pytest
 ```
 
+Use `pytest --tach` to automatically skip tests that are unaffected by your changes. This uses tach's module dependency graph to determine which tests need to run based on the files you've modified.
+
+```shell
+uv run pytest --tach
+```
+
+This is especially useful during development to get faster feedback. CI uses this by default on pull requests, while the full test suite runs on releases.
+
 ### Snapshot-testing
 
 Many of the tests snapshot some data that is likely to change (such as data versions) via [syrupy](https://github.com/syrupy-project/syrupy).

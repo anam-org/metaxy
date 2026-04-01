@@ -25,6 +25,16 @@ from metaxy.models.feature import FeatureGraph
 assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Treat 'no tests collected' as success when tach deselected everything."""
+    if exitstatus == pytest.ExitCode.NO_TESTS_COLLECTED:
+        from tach.pytest_plugin import tach_state_key
+
+        state = session.config.stash.get(tach_state_key, None)
+        if state is not None and state.skip_enabled:
+            session.exitstatus = pytest.ExitCode.OK
+
+
 def require_fixture(request: pytest.FixtureRequest, name: str) -> Any:
     """Resolve a pytest fixture by name at runtime, bypassing static dependency analysis.
 
