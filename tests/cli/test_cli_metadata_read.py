@@ -113,10 +113,7 @@ def test_metadata_read_parquet(project_with_data, tmp_path, capsys):
 def test_metadata_read_filtering(project_with_data, capsys, options, expected_count, check_fn):
     """Test reading with selection, filtering, and queries."""
     cmd = ["metadata", "read", "files_root", "-f", "json"] + options
-    result = project_with_data.run_cli(cmd, capsys=capsys, check=False)
-    if result.returncode != 0:
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
+    result = project_with_data.run_cli(cmd, capsys=capsys)
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert len(data) == expected_count
