@@ -418,3 +418,54 @@ def test_datasink_writes_user_map_columns(
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         df = df.sort("sample_uid")
         assert df["tags"].map.get("env").to_list() == ["prod", "dev", "staging", "prod", "dev"]  # ty: ignore[unresolved-attribute]
+
+
+def test_datasink_map_columns_survive_map_batches(
+    ray_map_config: mx.MetaxyConfig,
+    ray_context,
+    tmp_path: Path,
+    test_data: pl.DataFrame,
+):
+    """Map columns survive a datasource → map_batches → datasink pipeline."""
+    from metaxy.ext.ray.datasink import MetaxyDatasink
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    with ray_map_config.use():
+        mx.init(ray_map_config)
+
+        source_store = DeltaMetadataStore(root_path=tmp_path / "source")
+        dest_store = DeltaMetadataStore(root_path=tmp_path / "dest")
+
+        # Seed the source store
+        with source_store.open("w"):
+            source_store.write(FEATURE_KEY, test_data)
+
+        # Read → transform via map_batches → write to dest
+        source = MetaxyDatasource(
+            feature=FEATURE_KEY,
+            store=source_store,
+            config=ray_map_config,
+        )
+        ds = ray.data.read_datasource(source)
+
+        def double_values(batch: pa.Table) -> pa.Table:
+            return batch
+
+        transformed = ds.map_batches(double_values, batch_format="pyarrow")
+
+        sink = MetaxyDatasink(
+            feature=FEATURE_KEY,
+            store=dest_store,
+            config=ray_map_config,
+        )
+        transformed.write_datasink(sink)
+
+        # Verify: data was written with correct Map dtype and transformed values
+        with dest_store:
+            result_df = collect_to_polars(dest_store.read(FEATURE_KEY))
+
+        result_df = result_df.sort("sample_uid")
+        assert len(result_df) == 5
+        assert set(result_df["value"].to_list()) == {1, 2, 3, 4, 5}
+        assert result_df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+        assert result_df.schema["metaxy_data_version_by_field"] == MAP_STR_STR
