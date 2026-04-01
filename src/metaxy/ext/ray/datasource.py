@@ -10,7 +10,7 @@ from ray.data.block import BlockMetadata
 from ray.data.datasource import ReadTask
 
 import metaxy as mx
-from metaxy._utils import collect_to_arrow
+from metaxy.utils import collect_to_arrow
 
 if TYPE_CHECKING:
     pass

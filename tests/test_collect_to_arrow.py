@@ -4,7 +4,7 @@ import polars as pl
 import pyarrow as pa
 import pytest
 
-from metaxy._utils import collect_to_arrow
+from metaxy.utils import collect_to_arrow
 
 
 def test_polars_dataframe() -> None:

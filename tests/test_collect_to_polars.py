@@ -3,7 +3,7 @@ import pandas as pd
 import polars as pl
 import pytest
 
-from metaxy._utils import collect_to_polars
+from metaxy.utils import collect_to_polars
 
 
 class _FakeLazyFrame:

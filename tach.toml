@@ -70,11 +70,6 @@ path = "metaxy.ext.ray"
 depends_on = ["metaxy"]
 
 [[modules]]
-path = "metaxy._utils"
-depends_on = ["metaxy.config"]
-utility = true
-
-[[modules]]
 path = "metaxy.ext.mcp"
 depends_on = ["metaxy.models", "metaxy"]
 

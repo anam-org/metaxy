@@ -12,8 +12,8 @@ from metaxy_testing import RAY_FEATURES_MODULE
 from polars_map import Map
 
 import metaxy as mx
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.utils import collect_to_polars
 
 from .conftest import FEATURE_KEY, make_test_data
 

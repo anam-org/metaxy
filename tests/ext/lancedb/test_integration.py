@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import polars as pl
 
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.utils import collect_to_polars
 
 
 def test_lancedb_s3_roundtrip_with_moto(

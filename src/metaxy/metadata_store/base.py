@@ -16,7 +16,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 from metaxy._decorators import public
-from metaxy._utils import switch_implementation_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
@@ -53,6 +52,7 @@ from metaxy.models.types import (
     FeatureKey,
     ValidatedFeatureKeyAdapter,
 )
+from metaxy.utils.dataframes import switch_implementation_to_polars
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
@@ -70,7 +70,7 @@ def _is_map_column(df: Frame, col_name: str) -> bool:
     if not MetaxyConfig.get().enable_map_datatype:
         return False
 
-    from metaxy._utils import find_map_columns
+    from metaxy.utils.dataframes import find_map_columns
 
     return col_name in find_map_columns(df)
 

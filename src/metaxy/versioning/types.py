@@ -8,7 +8,8 @@ import narwhals as nw
 import polars as pl
 
 from metaxy._decorators import public
-from metaxy._utils import collect_to_polars, lazy_frame_to_polars
+from metaxy.utils import collect_to_polars
+from metaxy.utils.dataframes import lazy_frame_to_polars
 
 
 @public

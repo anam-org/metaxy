@@ -381,7 +381,7 @@ def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         A DataFrame with complex/temporal types converted to strings.
     """
-    from metaxy._utils import _is_polars_map_dtype
+    from metaxy.utils.dataframes import _is_polars_map_dtype
 
     exprs: list[pl.Expr] = []
 

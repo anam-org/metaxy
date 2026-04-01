@@ -332,11 +332,11 @@ The following metadata stores support `Map` columns when `enable_map_datatype` i
 !!! tip "Collecting results with `Map` columns"
 
     Standard `narwhals.DataFrame.to_polars()` and other conversion methods are not aware of the `polars_map.Map` datatype and will lose `Map` columns from other dataframe backends.
-    Use `collect_to_polars` or `collect_to_arrow` to materialize lazy frames while preserving `Map` columns.
+    Use [`collect_to_polars`][metaxy.utils.collect_to_polars] or [`collect_to_arrow`][metaxy.utils.collect_to_arrow] to materialize lazy frames while preserving `Map` columns.
 
     <!-- skip next -->
     ```py
-    from metaxy._utils import collect_to_polars, collect_to_arrow
+    from metaxy.utils import collect_to_polars, collect_to_arrow
 
     df = collect_to_polars(lazy_frame)    # -> pl.DataFrame with `polars_map.Map` columns
     table = collect_to_arrow(lazy_frame)  # -> pa.Table with native `MapArray` columns

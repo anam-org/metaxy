@@ -13,11 +13,11 @@ from narwhals.typing import Frame
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path, sanitize_uri
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 

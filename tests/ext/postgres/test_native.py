@@ -9,13 +9,13 @@ import polars as pl
 import polars.testing
 import pytest
 
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.types import FeatureKey
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 from tests.ext.postgres.conftest import _with_search_path

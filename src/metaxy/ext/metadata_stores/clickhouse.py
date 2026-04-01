@@ -510,7 +510,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         """
         import polars as pl
 
-        from metaxy._utils import collect_to_polars
+        from metaxy.utils import collect_to_polars
 
         # Get native Polars DataFrame
         pl_df = collect_to_polars(df)

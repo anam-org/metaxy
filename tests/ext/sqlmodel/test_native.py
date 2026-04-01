@@ -29,10 +29,10 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.models.feature import FeatureGraph
+from metaxy.utils import collect_to_polars
 
 # Basic Creation and Registration Tests
 

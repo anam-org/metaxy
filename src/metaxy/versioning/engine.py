@@ -290,7 +290,7 @@ class VersioningEngine(ABC):
             col_name: Name of the metadata column (Struct or Map).
             field_mapping: Mapping from field names to output column names.
         """
-        from metaxy._utils import find_map_columns
+        from metaxy.utils.dataframes import find_map_columns
 
         if col_name not in find_map_columns(df):
             exprs = [

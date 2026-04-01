@@ -10,7 +10,6 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,
@@ -19,6 +18,7 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
+from metaxy.utils import collect_to_polars
 
 # Context Manager Tests
 

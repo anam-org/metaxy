@@ -1,6 +1,7 @@
 .dagger/sdk
 .coverage
 .test-timing
+.tach
 
 # Python-generated files
 __pycache__/

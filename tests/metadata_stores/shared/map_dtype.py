@@ -19,10 +19,10 @@ from polars.testing.parametric.strategies.data import data as pl_data
 from polars_map import Map
 
 import metaxy as mx
-from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.utils import collect_to_polars
 
 MAP_STR_STR = Map(pl.String(), pl.String())
 
