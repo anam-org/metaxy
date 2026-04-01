@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
+import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
 from polars_map import Map
 
+from metaxy.config import MetaxyConfig
+from metaxy.utils.dataframes import lazy_frame_to_polars
 from metaxy.versioning._arrow_map import (
     convert_extension_maps_to_native,
     convert_maps_to_polars_map,
     convert_structs_to_maps,
 )
+from metaxy.versioning.types import Increment, LazyIncrement
+
+MAP_STR_STR = Map(pl.String(), pl.String())
 
 
 @pytest.fixture
@@ -81,3 +88,97 @@ class TestMapRoundtrip:
 
         assert result["sample_uid"].to_list() == ["s1", "s2", "s3"]
         assert result["value"].to_list() == [10, 20, 30]
+
+
+# ── Map preservation through conversion helpers ─────────────────────
+
+
+@pytest.fixture
+def polars_map_config() -> Iterator[MetaxyConfig]:
+    """Activate enable_map_datatype for the duration of the test."""
+    config = MetaxyConfig(enable_map_datatype=True)
+    with config.use():
+        yield config
+
+
+@pytest.fixture
+def arrow_table_with_map() -> pa.Table:
+    """PyArrow table with a native Map column."""
+    return pa.table(
+        {
+            "sample_uid": pa.array([1, 2]),
+            "tags": pa.array(
+                [
+                    [("env", "prod"), ("region", "us")],
+                    [("env", "dev"), ("region", "eu")],
+                ],
+                type=pa.map_(pa.string(), pa.string()),
+            ),
+        }
+    )
+
+
+class TestMapPreservationInConversions:
+    """Map columns survive lazy_frame_to_polars, Increment.to_polars, and LazyIncrement.to_polars."""
+
+    def test_lazy_frame_to_polars_preserves_map_from_pyarrow(
+        self,
+        polars_map_config: MetaxyConfig,
+        arrow_table_with_map: pa.Table,
+    ) -> None:
+        """PyArrow Map columns become polars_map.Map after lazy_frame_to_polars."""
+        nw_lazy = nw.from_native(arrow_table_with_map).lazy()
+        result = lazy_frame_to_polars(nw_lazy)
+
+        assert isinstance(result, pl.LazyFrame)
+        assert result.collect_schema()["tags"] == MAP_STR_STR
+
+    def test_lazy_frame_to_polars_noop_for_polars_map(
+        self,
+        polars_map_config: MetaxyConfig,
+    ) -> None:
+        """Polars-backed LazyFrame with polars_map.Map is returned as-is."""
+        tags = pl.Series(
+            "tags",
+            [[("env", "prod")], [("env", "dev")]],
+            dtype=MAP_STR_STR,
+        )
+        pl_lf = pl.DataFrame({"sample_uid": [1, 2]}).with_columns(tags).lazy()
+        nw_lazy = nw.from_native(pl_lf)
+
+        result = lazy_frame_to_polars(nw_lazy)
+
+        assert result is pl_lf
+        assert result.collect_schema()["tags"] == MAP_STR_STR
+
+    def test_increment_to_polars_preserves_map_from_pyarrow(
+        self,
+        polars_map_config: MetaxyConfig,
+        arrow_table_with_map: pa.Table,
+    ) -> None:
+        """Increment.to_polars() preserves Map columns from PyArrow-backed frames."""
+        nw_df = nw.from_native(arrow_table_with_map)
+        empty = nw.from_native(arrow_table_with_map.slice(0, 0))
+        increment = Increment(new=nw_df, stale=empty, orphaned=empty)
+
+        polars_inc = increment.to_polars()
+
+        assert polars_inc.new.schema["tags"] == MAP_STR_STR
+        assert polars_inc.new["tags"].map.get("env").to_list() == ["prod", "dev"]  # ty: ignore[unresolved-attribute]
+
+    def test_lazy_increment_to_polars_preserves_map_from_pyarrow(
+        self,
+        polars_map_config: MetaxyConfig,
+        arrow_table_with_map: pa.Table,
+    ) -> None:
+        """LazyIncrement.to_polars() preserves Map columns from PyArrow-backed frames."""
+        nw_lazy = nw.from_native(arrow_table_with_map).lazy()
+        empty = nw.from_native(arrow_table_with_map.slice(0, 0)).lazy()
+        lazy_inc = LazyIncrement(new=nw_lazy, stale=empty, orphaned=empty)
+
+        polars_inc = lazy_inc.to_polars()
+
+        assert polars_inc.new.collect_schema()["tags"] == MAP_STR_STR
+        collected = polars_inc.new.collect()
+        assert isinstance(collected, pl.DataFrame)
+        assert collected["tags"].map.get("env").to_list() == ["prod", "dev"]  # ty: ignore[unresolved-attribute]

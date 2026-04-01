@@ -1,5 +1,6 @@
 """Tests for configuration system."""
 
+import warnings
 from pathlib import Path
 
 import pytest
@@ -860,14 +861,14 @@ def test_config_file_attribute_none_when_created_directly() -> None:
 
 
 def test_metaxy_lock_path_default() -> None:
-    """Test that metaxy_lock_path defaults to 'metaxy.lock'."""
+    """Test that metaxy_lock_path defaults to None."""
     config = MetaxyConfig()
 
-    assert config.metaxy_lock_path == "metaxy.lock"
+    assert config.metaxy_lock_path is None
 
 
-def test_lock_file_with_config_file_relative_path(tmp_path: Path) -> None:
-    """Test lock_file resolves relative path from config file directory."""
+def test_lock_file_convention_with_config_file(tmp_path: Path) -> None:
+    """Test lock_file checks metaxy.lock next to config file when metaxy_lock_path is None."""
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text('project = "test"')
 
@@ -888,18 +889,37 @@ def test_lock_file_with_config_file_custom_relative_path(tmp_path: Path) -> None
 
 def test_lock_file_with_absolute_path(tmp_path: Path) -> None:
     """Test lock_file returns absolute path directly when metaxy_lock_path is absolute."""
-    # Use an actual absolute path that works on any platform
     absolute_lock_path = tmp_path / "metaxy.lock"
     config = MetaxyConfig(metaxy_lock_path=str(absolute_lock_path))
 
     assert config.lock_file == absolute_lock_path
 
 
-def test_lock_file_none_when_no_config_file_and_relative_path() -> None:
-    """Test lock_file returns None when no config file and path is relative."""
+def test_lock_file_none_when_no_config_file() -> None:
+    """Test lock_file returns None when no config file and metaxy_lock_path is not set."""
     config = MetaxyConfig()
 
     assert config.lock_file is None
+
+
+def test_lock_file_none_when_no_config_file_and_relative_path() -> None:
+    """Test lock_file returns None when no config file and metaxy_lock_path is relative."""
+    config = MetaxyConfig(metaxy_lock_path="custom.lock")
+
+    assert config.lock_file is None
+
+
+def test_load_lock_file_no_warning_for_default_config() -> None:
+    """load_lock_file does not warn when config has no config file and default lock path."""
+    from metaxy.utils.lock_file import load_lock_file
+
+    config = MetaxyConfig()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = load_lock_file(config)
+
+    assert result == []
 
 
 def test_get_store_error_includes_config_file_path(tmp_path: Path) -> None:

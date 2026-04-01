@@ -8,7 +8,8 @@ import narwhals as nw
 import polars as pl
 
 from metaxy._decorators import public
-from metaxy._utils import lazy_frame_to_polars
+from metaxy.utils import collect_to_polars
+from metaxy.utils.dataframes import lazy_frame_to_polars
 
 
 @public
@@ -16,8 +17,11 @@ class HashAlgorithm(Enum):
     """Supported hash algorithms for field provenance calculation.
 
     These algorithms are chosen for:
+
     - Speed (non-cryptographic hashes preferred)
+
     - Cross-database availability
+
     - Good collision resistance for field provenance calculation
     """
 
@@ -101,11 +105,14 @@ class Increment(NamedTuple):
         return self
 
     def to_polars(self) -> PolarsIncrement:
-        """Convert to Polars."""
+        """Convert to Polars.
+
+        Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
+        """
         return PolarsIncrement(
-            new=self.new.to_polars(),
-            stale=self.stale.to_polars(),
-            orphaned=self.orphaned.to_polars(),
+            new=collect_to_polars(self.new),
+            stale=collect_to_polars(self.stale),
+            orphaned=collect_to_polars(self.orphaned),
         )
 
 

@@ -6,14 +6,18 @@ from pathlib import Path
 
 import narwhals as nw
 import polars as pl
+import pyarrow as pa
 import pytest
 import ray
 from metaxy_testing import RAY_FEATURES_MODULE
+from polars_map import Map
 
 import metaxy as mx
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
 
 from .conftest import DERIVED_FEATURE_KEY, FEATURE_KEY, make_test_data
+
+MAP_STR_STR = Map(pl.String(), pl.String())
 
 
 def test_datasource_reads_metadata(
@@ -446,3 +450,105 @@ def test_datasource_incremental_up_to_date(
     result = pl.from_pandas(ds.to_pandas())
 
     assert len(result) == 0
+
+
+# ── enable_map_datatype tests ─────────────────────────────────────────
+
+
+def _ray_dataset_to_arrow(ds: ray.data.Dataset) -> pa.Table:
+    """Collect a Ray Dataset into a single Arrow table, preserving map columns."""
+    batches = list(ds.iter_batches(batch_format="pyarrow"))
+    return pa.concat_tables(batches)
+
+
+def test_datasource_reads_map_columns(
+    ray_map_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data: pl.DataFrame,
+):
+    """With enable_map_datatype, datasource returns metaxy_provenance_by_field as Map."""
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    with ray_map_config.use():
+        mx.init(ray_map_config)
+
+        with delta_store.open("w"):
+            delta_store.write(FEATURE_KEY, test_data.to_arrow())
+
+        datasource = MetaxyDatasource(
+            feature=FEATURE_KEY,
+            store=delta_store,
+            config=ray_map_config,
+        )
+
+        ds = ray.data.read_datasource(datasource)
+        arrow_table = _ray_dataset_to_arrow(ds)
+        result: pl.DataFrame = pl.from_arrow(arrow_table)  # ty: ignore[invalid-assignment]
+
+    assert len(result) == 5
+    assert set(result["sample_uid"].to_list()) == {"a", "b", "c", "d", "e"}
+    prov_field = arrow_table.schema.field("metaxy_provenance_by_field")
+    assert pa.types.is_map(prov_field.type)
+
+
+def test_datasource_reads_user_map_columns(
+    ray_map_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data_with_tags: pa.Table,
+):
+    """User-defined Map columns survive the datasource read path."""
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    with ray_map_config.use():
+        mx.init(ray_map_config)
+
+        with delta_store.open("w"):
+            delta_store.write(FEATURE_KEY, test_data_with_tags)
+
+        datasource = MetaxyDatasource(
+            feature=FEATURE_KEY,
+            store=delta_store,
+            config=ray_map_config,
+        )
+
+        ds = ray.data.read_datasource(datasource)
+        arrow_table = _ray_dataset_to_arrow(ds)
+
+    assert pa.types.is_map(arrow_table.schema.field("tags").type)
+    assert pa.types.is_map(arrow_table.schema.field("metaxy_provenance_by_field").type)
+    assert arrow_table.num_rows == 5
+
+
+def test_datasource_incremental_with_map_columns(
+    ray_map_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data: pl.DataFrame,
+):
+    """Incremental datasource returns Map columns when enable_map_datatype is set."""
+    from metaxy.ext.ray.datasource import MetaxyDatasource
+
+    with ray_map_config.use():
+        mx.init(ray_map_config)
+
+        with delta_store.open("w"):
+            delta_store.write(FEATURE_KEY, test_data.to_arrow())
+
+        datasource = MetaxyDatasource(
+            feature=DERIVED_FEATURE_KEY,
+            store=delta_store,
+            config=ray_map_config,
+            incremental=True,
+        )
+
+        ds = ray.data.read_datasource(datasource)
+        arrow_table = _ray_dataset_to_arrow(ds)
+        result: pl.DataFrame = pl.from_arrow(arrow_table)  # ty: ignore[invalid-assignment]
+
+    assert len(result) == 5
+    assert set(result["metaxy_status"].to_list()) == {"new"}
+
+    prov_field = arrow_table.schema.field("metaxy_provenance_by_field")
+    assert pa.types.is_map(prov_field.type)

@@ -27,7 +27,7 @@ from metaxy import (
     FieldSpec,
     MetadataStore,
 )
-from metaxy._utils import collect_to_polars
+from metaxy.utils import collect_to_polars
 
 
 @pytest.fixture

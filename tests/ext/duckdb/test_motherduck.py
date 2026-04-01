@@ -7,13 +7,13 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.metadata_stores.ducklake import (
     DuckLakeAttachmentManager,
     DuckLakeConfig,
 )
 from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.utils import collect_to_polars
 
 pytestmark = pytest.mark.motherduck
 

@@ -6,10 +6,10 @@ import polars as pl
 import pytest
 
 from metaxy import FeatureDefinition, HashAlgorithm
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature import FeatureGraph
+from metaxy.utils import collect_to_polars
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,

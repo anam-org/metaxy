@@ -16,7 +16,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 from metaxy._decorators import public
-from metaxy._utils import switch_implementation_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
@@ -53,6 +52,7 @@ from metaxy.models.types import (
     FeatureKey,
     ValidatedFeatureKeyAdapter,
 )
+from metaxy.utils.dataframes import switch_implementation_to_polars
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
@@ -70,7 +70,7 @@ def _is_map_column(df: Frame, col_name: str) -> bool:
     if not MetaxyConfig.get().enable_map_datatype:
         return False
 
-    from metaxy._utils import find_map_columns
+    from metaxy.utils.dataframes import find_map_columns
 
     return col_name in find_map_columns(df)
 
@@ -555,6 +555,22 @@ class MetadataStore(ABC):
                 samples_nw = switch_implementation_to_polars(samples_nw)
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
+
+        # Convert _by_field Struct columns to Map when enable_map_datatype is set.
+        # User-provided samples may have these as Struct (the natural Polars literal form);
+        # the store normalizes them to Map so downstream processing and output are consistent.
+        if MetaxyConfig.get().enable_map_datatype and samples_nw is not None:
+            import polars as pl
+
+            native = samples_nw.to_native()
+            if isinstance(native, (pl.DataFrame, pl.LazyFrame)):
+                from metaxy.versioning._arrow_map import convert_structs_to_maps
+
+                native = convert_structs_to_maps(
+                    native,
+                    columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
+                )
+                samples_nw = nw.from_native(native)
 
         with self.create_versioning_engine(plan=plan, implementation=implementation) as engine:
             if skip_comparison:

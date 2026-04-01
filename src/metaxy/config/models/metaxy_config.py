@@ -3,6 +3,7 @@ import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
@@ -219,9 +220,9 @@ class MetaxyConfig(BaseSettings):
         description="Extra features to load from the metadata store when calling [`sync_external_features`][metaxy.sync_external_features]. Each entry is a [`FeatureSelection`][metaxy.FeatureSelection]. All entries are combined together. Learn more [here](/guide/concepts/definitions/external-features.md/#loading-extra-features).",
     )
 
-    metaxy_lock_path: str = PydanticField(
-        default="metaxy.lock",
-        description="Relative or absolute path to the lock file, resolved from the config file's location.",
+    metaxy_lock_path: str | None = PydanticField(
+        default=None,
+        description="Relative or absolute path to the lock file, resolved from the config file's location. Defaults to `metaxy.lock` next to the config file.",
     )
 
     # Private attribute to track which config file was used (set by load())
@@ -235,21 +236,30 @@ class MetaxyConfig(BaseSettings):
         """
         return self._config_file
 
-    @property
+    @cached_property
     def lock_file(self) -> Path | None:
         """The resolved lock file path.
 
-        Returns the absolute path if `metaxy_lock_path` is absolute, otherwise
-        resolves it relative to the config file's directory.
+        When ``metaxy_lock_path`` is set, returns the resolved path (absolute
+        paths are returned directly, relative paths are resolved from the
+        config file's directory).
 
-        Returns `None` if the path is relative and no config file is set.
+        When ``metaxy_lock_path`` is ``None`` (the default), checks for
+        ``metaxy.lock`` next to the config file.
+
+        Returns ``None`` if no config file is set and the path is relative.
         """
-        lock_path = Path(self.metaxy_lock_path)
-        if lock_path.is_absolute():
-            return lock_path
+        if self.metaxy_lock_path is not None:
+            lock_path = Path(self.metaxy_lock_path)
+            if lock_path.is_absolute():
+                return lock_path
+            if self._config_file is None:
+                return None
+            return self._config_file.parent / lock_path
+
         if self._config_file is None:
             return None
-        return self._config_file.parent / lock_path
+        return self._config_file.parent / "metaxy.lock"
 
     def _load_plugins(self) -> None:
         """Load enabled plugins. Must be called after config is set."""

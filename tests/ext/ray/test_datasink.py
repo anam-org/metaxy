@@ -5,14 +5,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import polars as pl
+import pyarrow as pa
 import pytest
 import ray
 from metaxy_testing import RAY_FEATURES_MODULE
+from polars_map import Map
 
 import metaxy as mx
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.utils import collect_to_polars
 
 from .conftest import FEATURE_KEY, make_test_data
+
+MAP_STR_STR = Map(pl.String(), pl.String())
 
 
 def test_datasink_writes_metadata(
@@ -345,3 +350,71 @@ def test_datasink_result_not_available_before_write(
 
     with pytest.raises(RuntimeError, match="Write operation has not completed yet"):
         _ = datasink.result
+
+
+# ── enable_map_datatype tests ─────────────────────────────────────────
+
+
+def test_datasink_writes_map_columns(
+    ray_map_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data: pl.DataFrame,
+):
+    """With enable_map_datatype, datasink writes provenance as Map type."""
+    from metaxy.ext.ray.datasink import MetaxyDatasink
+
+    with ray_map_config.use():
+        mx.init(ray_map_config)
+
+        ds = ray.data.from_arrow(test_data.to_arrow())
+
+        datasink = MetaxyDatasink(
+            feature=FEATURE_KEY,
+            store=delta_store,
+            config=ray_map_config,
+        )
+
+        ds.write_datasink(datasink)
+
+        with delta_store:
+            result = delta_store.read(FEATURE_KEY)
+            assert result is not None
+            df = collect_to_polars(result)
+
+        assert len(df) == 5
+        assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+
+
+def test_datasink_writes_user_map_columns(
+    ray_map_config: mx.MetaxyConfig,
+    ray_context,
+    delta_store: DeltaMetadataStore,
+    test_data_with_tags: pa.Table,
+):
+    """User-defined native Arrow Map columns survive the datasink write path."""
+    from metaxy.ext.ray.datasink import MetaxyDatasink
+
+    with ray_map_config.use():
+        mx.init(ray_map_config)
+
+        ds = ray.data.from_arrow(test_data_with_tags)
+
+        datasink = MetaxyDatasink(
+            feature=FEATURE_KEY,
+            store=delta_store,
+            config=ray_map_config,
+        )
+
+        ds.write_datasink(datasink)
+
+        with delta_store:
+            result = delta_store.read(FEATURE_KEY)
+            assert result is not None
+            df = collect_to_polars(result)
+
+        assert len(df) == 5
+        assert df.schema["tags"] == MAP_STR_STR
+        assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+        df = df.sort("sample_uid")
+        assert df["tags"].map.get("env").to_list() == ["prod", "dev", "staging", "prod", "dev"]  # ty: ignore[unresolved-attribute]

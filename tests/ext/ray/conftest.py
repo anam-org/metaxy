@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import polars as pl
+import pyarrow as pa
 import pytest
 import ray  # noqa: F401
 from metaxy_testing import RAY_FEATURES_MODULE
@@ -80,6 +81,22 @@ def ray_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConf
     )
 
 
+@pytest.fixture
+def ray_map_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConfig:
+    """Create a MetaxyConfig with enable_map_datatype=True."""
+    return mx.MetaxyConfig(
+        project="test",
+        entrypoints=[RAY_FEATURES_MODULE],
+        enable_map_datatype=True,
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+                config={"root_path": str(delta_store._root_uri)},
+            )
+        },
+    )
+
+
 def make_test_data(sample_uids: list[str], values: list[int]) -> pl.DataFrame:
     """Create test data with required Metaxy system columns.
 
@@ -107,4 +124,45 @@ def test_data() -> pl.DataFrame:
     return make_test_data(
         sample_uids=["a", "b", "c", "d", "e"],
         values=[1, 2, 3, 4, 5],
+    )
+
+
+def make_test_data_with_tags(
+    sample_uids: list[str],
+    values: list[int],
+    tags: list[list[tuple[str, str]]],
+) -> pa.Table:
+    """Create test data as a native Arrow table with a user-defined Map column.
+
+    Uses native Arrow ``pa.map_`` for the ``tags`` and ``metaxy_provenance_by_field``
+    columns so that Map types survive Ray's Arrow serialization boundary
+    (Ray strips Polars extension types like ``polars_map.Map``).
+    """
+    return pa.table(
+        {
+            "sample_uid": pa.array(sample_uids),
+            "value": pa.array(values),
+            "metaxy_provenance_by_field": pa.array(
+                [[("value", f"hash_{v}")] for v in values],
+                type=pa.map_(pa.string(), pa.string()),
+            ),
+            "metaxy_provenance": pa.array([f"combined_hash_{v}" for v in values]),
+            "tags": pa.array(tags, type=pa.map_(pa.string(), pa.string())),
+        }
+    )
+
+
+@pytest.fixture
+def test_data_with_tags() -> pa.Table:
+    """Create test dataset with 5 samples including a user-defined Map ``tags`` column."""
+    return make_test_data_with_tags(
+        sample_uids=["a", "b", "c", "d", "e"],
+        values=[1, 2, 3, 4, 5],
+        tags=[
+            [("env", "prod"), ("region", "us")],
+            [("env", "dev"), ("region", "eu")],
+            [("env", "staging"), ("region", "ap")],
+            [("env", "prod"), ("region", "eu")],
+            [("env", "dev"), ("region", "us")],
+        ],
     )

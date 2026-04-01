@@ -10,7 +10,6 @@ from hypothesis import strategies as st
 from polars.testing import assert_frame_equal
 from polars.testing.parametric import column, dataframes
 
-from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.ext.metadata_stores.ducklake import (
     DuckLakeAttachmentManager,
@@ -24,6 +23,7 @@ from metaxy.ext.metadata_stores.ducklake import (
 )
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.utils import collect_to_polars
 
 
 # Hypothesis strategies for generating metadata dataframes using Polars parametric testing

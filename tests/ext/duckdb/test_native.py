@@ -7,7 +7,6 @@ import polars as pl
 import pytest
 
 from metaxy import HashAlgorithm
-from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
@@ -16,6 +15,7 @@ from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorag
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey
+from metaxy.utils import collect_to_polars
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -87,8 +87,8 @@ class TestDuckDBPreCreatedMapTable:
         """Writing to a table pre-created with MAP(VARCHAR, VARCHAR) columns works."""
         import duckdb
 
-        from metaxy._utils import collect_to_polars
         from metaxy.config import MetaxyConfig
+        from metaxy.utils import collect_to_polars
 
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
@@ -142,8 +142,8 @@ class TestDuckDBPreCreatedMapTable:
         import duckdb
         from polars_map import Map
 
-        from metaxy._utils import collect_to_polars
         from metaxy.config import MetaxyConfig
+        from metaxy.utils import collect_to_polars
 
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
@@ -206,8 +206,8 @@ class TestDuckDBPreCreatedMapTable:
         """Writing an Ibis-backed frame to a MAP table stays lazy (no materialization)."""
         import duckdb
 
-        from metaxy._utils import collect_to_polars
         from metaxy.config import MetaxyConfig
+        from metaxy.utils import collect_to_polars
 
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=True)

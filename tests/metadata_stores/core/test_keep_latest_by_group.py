@@ -13,7 +13,7 @@ from typing import Any
 import pytest_cases
 from pytest_cases import parametrize_with_cases
 
-from metaxy._utils import collect_to_polars
+from metaxy.utils import collect_to_polars
 
 
 class KeepLatestTestDataCases:

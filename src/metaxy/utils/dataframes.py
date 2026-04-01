@@ -1,14 +1,18 @@
+"""DataFrame conversion utilities."""
+
+from __future__ import annotations
+
 import warnings
 from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
-
-if TYPE_CHECKING:
-    import pyarrow as pa
 
 import narwhals as nw
 import polars as pl
 from narwhals.typing import DataFrameT, Frame, FrameT, LazyFrameT
 
 from metaxy._decorators import public
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 PolarsCompatibleFrame: TypeAlias = Frame | pl.DataFrame | pl.LazyFrame
 
@@ -63,7 +67,7 @@ def has_polars_map_columns(df: pl.DataFrame | pl.LazyFrame) -> bool:
 def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
     """Helper to convert a frame into an eager Polars DataFrame.
 
-    Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
+    Preserves `Map` columns as `polars_map.Map` when `MetaxyConfig.enable_map_datatype` is set.
 
     Args:
         frame: The Narwhals frame to convert.
@@ -96,14 +100,12 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
 
 
 @public
-def collect_to_arrow(frame: PolarsCompatibleFrame) -> "pa.Table":
+def collect_to_arrow(frame: PolarsCompatibleFrame) -> pa.Table:
     """Convert a frame into a PyArrow Table.
 
     If the dataframe is a Polars dataframe, it converts `polars_map.Map`
-        extension columns to native Arrow `MapArray`.
+        extension columns to native Arrow `MapArray` when `MetaxyConfig.enable_map_datatype` is set.
     """
-    import pyarrow as pa
-
     nw_frame = nw.from_native(frame) if isinstance(frame, (pl.DataFrame, pl.LazyFrame)) else frame
     collected = nw_frame.collect() if isinstance(nw_frame, nw.LazyFrame) else nw_frame
     table: pa.Table = collected.to_arrow()
@@ -120,10 +122,12 @@ def collect_to_arrow(frame: PolarsCompatibleFrame) -> "pa.Table":
 def lazy_frame_to_polars(frame: nw.LazyFrame[Any]) -> pl.LazyFrame:
     """Helper to convert a Narwhals lazy frame into a Polars lazy frame.
 
-    If the Narwhals LazyFrame is already backed by Polars, this is a no-op."""
+    Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
+    If the Narwhals LazyFrame is already backed by Polars, this is a no-op.
+    """
     if frame.implementation == nw.Implementation.POLARS:
         return frame.to_native()
-    return frame.collect().to_polars().lazy()
+    return collect_to_polars(frame).lazy()
 
 
 @overload
@@ -161,6 +165,3 @@ def switch_implementation_to_polars(frame: FrameT) -> FrameT:
         result = nw.from_native(native)
 
     return result
-
-
-__all__ = ["collect_to_arrow", "collect_to_polars"]

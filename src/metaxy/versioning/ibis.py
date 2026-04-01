@@ -147,7 +147,7 @@ class IbisVersioningEngine(VersioningEngine):
         """Extract fields from a metadata column (Struct or Map) using Ibis expressions."""
         import ibis.expr.types
 
-        from metaxy._utils import find_map_columns
+        from metaxy.utils.dataframes import find_map_columns
 
         if col_name not in find_map_columns(df):
             return super()._extract_metadata_fields(df, col_name, field_mapping)

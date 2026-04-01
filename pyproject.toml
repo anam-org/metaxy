@@ -48,7 +48,7 @@ dependencies = [
 
 [project.optional-dependencies]
 polars-map = [
-  "polars-map>=0.1.1",
+  "polars-map>=0.2.0",
 ]
 ibis = [
   "pyarrow>=18.0.0",
@@ -155,8 +155,8 @@ dev = [
   "mermaid-py>=0.8.0",
   "mkdocs-metaxy",
   "pytest-postgresql>=8.0.0",
-  "polars-map>=0.1.1",
   "tach>=0.34.0",
+  "polars-map>=0.2.0",
 ]
 
 examples = [

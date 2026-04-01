@@ -27,7 +27,6 @@ from metaxy import (
     FieldSpec,
     LineageRelationship,
 )
-from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -36,6 +35,7 @@ from metaxy.metadata_store import (
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm, Increment
 
 if TYPE_CHECKING:
