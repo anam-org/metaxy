@@ -231,9 +231,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Fetch main branch for tach impact analysis
-        if: ${{ !inputs.run-all-checks }}
-        run: git fetch origin main:main
+      - name: Fetch main branch
+        run: git fetch origin main
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
@@ -247,7 +246,7 @@ jobs:
         run: |
           SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
-          TACH_FLAGS=${{ inputs.run-all-checks && '""' || '"--tach --tach-base main"' }}
+          TACH_FLAGS=${{ inputs.run-all-checks && '""' || '"--tach"' }}
           uv run pytest --ignore=tests/ext $TACH_FLAGS --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
 
       - name: Combine Coverage Data
@@ -291,9 +290,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Fetch main branch for tach impact analysis
-        if: ${{ !inputs.run-all-checks }}
-        run: git fetch origin main:main
+      - name: Fetch main branch
+        run: git fetch origin main
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
@@ -306,7 +304,7 @@ jobs:
         run: >
           uv run nox -s "integration(integration='${{ matrix.integration }}')"
           -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
-          ${{ inputs.run-all-checks && ' ' || '--tach --tach-base main' }}
+          ${{ inputs.run-all-checks && ' ' || '--tach' }}
 
       - name: Upload Coverage to Codecov
         if: ${{ !cancelled() }}
@@ -394,9 +392,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Fetch main branch for tach impact analysis
-        if: ${{ !inputs.run-all-checks }}
-        run: git fetch origin main:main
+      - name: Fetch main branch
+        run: git fetch origin main
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6.2.0
@@ -426,7 +423,7 @@ jobs:
           --ignore=tests/project
           --durations=15
           --snapshot-warn-unused
-          ${{ inputs.run-all-checks && ' ' || '--tach --tach-base main' }}
+          ${{ inputs.run-all-checks && ' ' || '--tach' }}
 
   test-macos:
     needs: filter
@@ -443,9 +440,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Fetch main branch for tach impact analysis
-        if: ${{ !inputs.run-all-checks }}
-        run: git fetch origin main:main
+      - name: Fetch main branch
+        run: git fetch origin main
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6.2.0
@@ -472,7 +468,7 @@ jobs:
           --ignore=tests/ext/clickhouse
           --durations=15
           --snapshot-warn-unused
-          ${{ inputs.run-all-checks && ' ' || '--tach --tach-base main' }}
+          ${{ inputs.run-all-checks && ' ' || '--tach' }}
 
   docs:
     permissions:
