@@ -81,16 +81,16 @@ def load_lock_file(config: MetaxyConfig) -> list[FeatureDefinition]:
 
     lock_path = config.lock_file
     if lock_path is None:
-        import warnings
-
-        warnings.warn(
-            "Cannot load lock file: no config file path available and metaxy_lock_path is relative. "
-            "External features from metaxy.lock will not be loaded.",
-            stacklevel=2,
-        )
         return []
 
     if not lock_path.exists():
+        if config.metaxy_lock_path is not None:
+            warnings.warn(
+                f"Lock file not found at {lock_path}. "
+                "External features from the lock file will not be loaded. "
+                "Run `metaxy lock` to generate it.",
+                stacklevel=2,
+            )
         return []
 
     lock_file = LockFile.from_toml(lock_path.read_text())

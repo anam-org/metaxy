@@ -74,7 +74,7 @@ def lock(
     elif config.lock_file:
         output_path = config.lock_file
     else:
-        output_path = Path.cwd() / config.metaxy_lock_path
+        output_path = Path.cwd() / (config.metaxy_lock_path or "metaxy.lock")
 
     metadata_store = context.get_store(store)
     relative_path = output_path.relative_to(Path.cwd()) if output_path.is_relative_to(Path.cwd()) else output_path
