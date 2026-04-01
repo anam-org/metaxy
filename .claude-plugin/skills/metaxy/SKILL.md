@@ -64,10 +64,6 @@ with config.use() as cfg:
 
 Supported backends: DuckDB, ClickHouse, BigQuery, LanceDB, Delta Lake.
 
-#### Map Datatype (Experimental)
-
-To enable native Arrow Map column support (recommended for stores that support it), set `enable_map_datatype = true` in `metaxy.toml`. Requires the `polars-map` package. See https://docs.metaxy.io/latest/guide/concepts/metadata-stores/#map-datatype
-
 ### Feature Graph
 
 To visualize and manage the feature dependency graph, use the CLI:
@@ -114,6 +110,12 @@ def metaxy_env(tmp_path):
         ).use() as config:
             yield config
 ```
+
+#### Map Datatype (Experimental)
+
+To enable native Arrow Map column support (recommended for stores that support it), set `enable_map_datatype = true` in `metaxy.toml`. Requires the `polars-map` package. See https://docs.metaxy.io/latest/guide/concepts/metadata-stores/#map-datatype
+
+When working with Map columns, use `metaxy._utils.collect_to_polars`, `metaxy._utils.collect_to_arrow`, or `metaxy._utils.switch_implementation_to_polars` to materialize or convert frames. These utilities preserve Map column types that would otherwise be lost with standard Polars `.collect()` or Narwhals backend conversions. See https://docs.metaxy.io/latest/guide/concepts/metadata-stores/#map-datatype
 
 ## Examples
 
