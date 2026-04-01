@@ -798,11 +798,10 @@ def read(
         ```
     """
     import duckdb
-    from metaxy._utils import collect_to_arrow  # type: ignore
 
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
-    from metaxy.metadata_store.ibis import IbisMetadataStore
+    from metaxy.utils import collect_to_arrow
 
     filters = filters or []
     context = AppContext.get()
@@ -830,24 +829,22 @@ def read(
                 if select:
                     df = df.select(*select)
 
-                if query and isinstance(metadata_store, IbisMetadataStore):
-                    import ibis
+                arrow_table = collect_to_arrow(df)
 
-                    ibis_expr = df.to_native()
-                    base_sql = ibis.to_sql(ibis_expr)
-                    wrapped_query = (
-                        f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
-                    )
-                    res = metadata_store.conn.sql(wrapped_query)
-                    arrow_table = collect_to_arrow(res)
-                else:
-                    arrow_table = collect_to_arrow(df)
-
-            if query and not isinstance(metadata_store, IbisMetadataStore):
-                con = duckdb.connect()
-                con.register(table_name, arrow_table)
-                con.register("metadata", arrow_table)
-                arrow_table = con.query(query).fetch_arrow_table()
+                if query:
+                    con = duckdb.connect()
+                    con.register(table_name, arrow_table)
+                    con.register("metadata", arrow_table)
+                    try:
+                        arrow_table = con.sql(query).arrow()
+                    except Exception as e:
+                        exit_with_error(
+                            CLIError(
+                                code=CLIErrorCode.GENERIC_ERROR,
+                                message=f"Error executing SQL query: {e}",
+                            ),
+                            "plain",
+                        )
                 if hasattr(arrow_table, "read_all"):
                     arrow_table = arrow_table.read_all()
 

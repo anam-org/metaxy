@@ -11,11 +11,11 @@ from collections.abc import Iterator
 import ibis
 import pyarrow as pa
 import pytest
-from metaxy._utils import collect_to_arrow  # type: ignore
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
+from metaxy.utils import collect_to_arrow
 
 
 class IbisMapTests:
