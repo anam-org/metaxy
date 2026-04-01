@@ -82,14 +82,14 @@ def test_metadata_read_parquet(project_with_data, tmp_path, capsys):
     """Test outputting metadata to a parquet file."""
     output_file = tmp_path / "output.parquet"
     result = project_with_data.run_cli(
-        ["metadata", "read", "files_root", "-f", "parquet", "-o", str(output_file)],
-        capsys=capsys
+        ["metadata", "read", "files_root", "-f", "parquet", "-o", str(output_file)], capsys=capsys
     )
     assert result.returncode == 0
     assert output_file.exists()
-    
+
     # Verify content using PyArrow (avoid Polars)
     import pyarrow.parquet as pq
+
     table = pq.read_table(output_file)
     assert table.num_rows == 3
     assert "value" in table.column_names
@@ -138,9 +138,7 @@ def test_metadata_read_explicit_store(project_with_data, capsys):
 
 def test_metadata_read_invalid_format(project_with_data, capsys):
     """Test that an unsupported format returns an error."""
-    result = project_with_data.run_cli(
-        ["metadata", "read", "files_root", "-f", "invalid"], capsys=capsys, check=False
-    )
+    result = project_with_data.run_cli(["metadata", "read", "files_root", "-f", "invalid"], capsys=capsys, check=False)
     assert result.returncode != 0
 
 
@@ -148,8 +146,7 @@ def test_metadata_read_output_file_csv(project_with_data, tmp_path, capsys):
     """Test redirecting CSV output to a file."""
     output_file = tmp_path / "output.csv"
     result = project_with_data.run_cli(
-        ["metadata", "read", "files_root", "-f", "csv", "-o", str(output_file)],
-        capsys=capsys
+        ["metadata", "read", "files_root", "-f", "csv", "-o", str(output_file)], capsys=capsys
     )
     assert result.returncode == 0
     assert output_file.exists()

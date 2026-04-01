@@ -839,6 +839,7 @@ def read(
                         f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
                     )
                     import narwhals as nw
+
                     res = metadata_store.conn.sql(wrapped_query)
                     arrow_table = collect_to_arrow(nw.from_native(res, eager_only=False))
                 else:
