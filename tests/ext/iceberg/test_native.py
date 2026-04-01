@@ -68,9 +68,12 @@ class TestIceberg(
 
 def test_iceberg_table_identifier(iceberg_store: IcebergMetadataStore) -> None:
     """Verify _table_identifier maps feature keys to (namespace, table_name) tuples."""
-    assert iceberg_store._table_identifier(FeatureKey("feature")) == ("metaxy", "feature")
-    assert iceberg_store._table_identifier(FeatureKey("a/b/c")) == ("metaxy", "a__b__c")
-    assert iceberg_store._table_identifier(FeatureKey("my_feature/v1")) == ("metaxy", "my_feature__v1")
+    assert iceberg_store._table_identifier(iceberg_store._to_table_id(FeatureKey("feature"))) == ("metaxy", "feature")
+    assert iceberg_store._table_identifier(iceberg_store._to_table_id(FeatureKey("a/b/c"))) == ("metaxy", "a__b__c")
+    assert iceberg_store._table_identifier(iceberg_store._to_table_id(FeatureKey("my_feature/v1"))) == (
+        "metaxy",
+        "my_feature__v1",
+    )
 
 
 def test_iceberg_schema_evolution(

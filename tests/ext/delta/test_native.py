@@ -67,7 +67,7 @@ class TestDelta(
         a different key/value type would silently coerce data to the old schema.
         """
         assert isinstance(store, DeltaMetadataStore)
-        table_path = Path(store._feature_uri(feature.spec.key))
+        table_path = Path(store._feature_uri(store._to_table_id(feature.spec.key)))
         if table_path.exists():
             shutil.rmtree(table_path)
 
@@ -124,7 +124,7 @@ def test_delta_feature_uri_generation(delta_store: DeltaMetadataStore) -> None:
 
     for key_str, expected_suffix in test_cases:
         key = FeatureKey(key_str)
-        uri = delta_store._feature_uri(key)
+        uri = delta_store._feature_uri(delta_store._to_table_id(key))
         expected_uri = f"{delta_store._root_uri}/{expected_suffix}"
         assert uri == expected_uri, f"For key '{key_str}' (parts={key.parts}), expected '{expected_uri}', got '{uri}'"
 

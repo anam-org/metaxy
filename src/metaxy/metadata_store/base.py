@@ -24,8 +24,7 @@ from metaxy.metadata_store.exceptions import (
     SystemDataNotFoundError,
     VersioningEngineMismatchError,
 )
-from metaxy.metadata_store.system.keys import METAXY_SYSTEM_KEY_PREFIX
-from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.types import AccessMode, TableIdentifier
 from metaxy.metadata_store.utils import (
     empty_frame_like,
 )
@@ -419,7 +418,7 @@ class MetadataStore(ABC):
         target_filter_list = list(target_filters) if target_filters else []
 
         feature_key = self._resolve_feature_key(feature)
-        if self._is_system_table(feature_key):
+        if self._to_table_id(feature_key).is_system_table:
             raise NotImplementedError("Delete operations are not yet supported for system tables.")
         graph = current_graph()
         plan = graph.get_feature_plan(feature_key)
@@ -797,7 +796,8 @@ class MetadataStore(ABC):
         columns = columns or []
 
         feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
+        table_id = self._to_table_id(feature_key)
+        is_system_table = table_id.is_system_table
 
         # Sync external features if auto-sync is enabled (default)
         # This call is a no-op most of the time and is very lightweight when it's not
@@ -846,7 +846,7 @@ class MetadataStore(ABC):
             # Only pass system filters to _read_feature
             # User filters will be applied after deduplication
             lazy_frame = self._read_feature(
-                feature, filters=system_filters if system_filters else None, columns=read_columns
+                table_id, filters=system_filters if system_filters else None, columns=read_columns
             )
         except FeatureNotFoundError as e:
             # do not read system features from fallback stores
@@ -971,7 +971,7 @@ class MetadataStore(ABC):
         self._check_write_mode()
 
         feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
+        table_id = self._to_table_id(feature_key)
 
         # Convert Polars to Narwhals to Polars if needed
         # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
@@ -980,9 +980,9 @@ class MetadataStore(ABC):
         assert isinstance(df_nw, (nw.DataFrame, nw.LazyFrame)), f"df must be a Narwhals DataFrame, got {type(df_nw)}"
 
         # For system tables, write directly without feature_version tracking
-        if is_system_table:
+        if table_id.is_system_table:
             self._validate_schema_system_table(df_nw)
-            self._write_feature(feature_key, df_nw)
+            self._write_feature(table_id, df_nw)
             return
 
         # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
@@ -1000,7 +1000,7 @@ class MetadataStore(ABC):
         )
 
         self._validate_schema(df_nw)
-        self._write_feature(feature_key, df_nw)
+        self._write_feature(table_id, df_nw)
 
     def write_multi(
         self,
@@ -1407,9 +1407,41 @@ class MetadataStore(ABC):
 
     # ========== Helper Methods ==========
 
-    def _is_system_table(self, feature_key: FeatureKey) -> bool:
-        """Check if feature key is a system table."""
-        return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
+    def _is_system_table(self, table_id: TableIdentifier) -> bool:
+        """Check if an identifier refers to a system table."""
+        return table_id.is_system_table
+
+    @staticmethod
+    def _to_table_id(feature_key: FeatureKey) -> TableIdentifier:
+        """Convert a FeatureKey to a storage-layer TableIdentifier."""
+        return TableIdentifier(parts=feature_key.parts)
+
+    @staticmethod
+    def _feature_key_from_table_id(table_id: TableIdentifier) -> FeatureKey:
+        """Convert a storage-layer TableIdentifier back to a FeatureKey when needed."""
+        return FeatureKey(table_id.parts)
+
+    def _resolve_table_id(self, feature: CoercibleToFeatureKey) -> TableIdentifier:
+        """Resolve a feature reference to a storage-layer TableIdentifier."""
+        return self._to_table_id(self._resolve_feature_key(feature))
+
+    def _get_table_field_struct_keys(self, table_id: TableIdentifier) -> list[str] | None:
+        """Return struct field names when a table identifier maps to an active feature."""
+        try:
+            graph = current_graph()
+        except RuntimeError:
+            return None
+
+        try:
+            feature_key = self._feature_key_from_table_id(table_id)
+        except ValueError:
+            return None
+
+        definition = graph.feature_definitions_by_key.get(feature_key)
+        if definition is None:
+            return None
+
+        return [field_spec.key.to_struct_key() for field_spec in definition.spec.fields]
 
     def _resolve_feature_key(self, feature: CoercibleToFeatureKey) -> FeatureKey:
         """Resolve various types to FeatureKey.
@@ -1469,7 +1501,7 @@ class MetadataStore(ABC):
     @abstractmethod
     def _write_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         df: Frame,
         **kwargs: Any,
     ) -> None:
@@ -1479,7 +1511,7 @@ class MetadataStore(ABC):
         Backends may convert to their specific type if needed (e.g., Polars, Ibis).
 
         Args:
-            feature_key: Feature key to write to
+            table_id: Storage-layer table identifier
             df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
             **kwargs: Backend-specific parameters
 
@@ -1688,20 +1720,20 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
-    def _drop_feature(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, table_id: TableIdentifier) -> None:
         """Drop/delete all metadata for a feature.
 
         Backend-specific implementation for dropping feature metadata.
 
         Args:
-            feature_key: The feature key to drop metadata for
+            table_id: Storage-layer table identifier
         """
         pass
 
     @abstractmethod
     def _delete_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         filters: Sequence[nw.Expr] | None,
         *,
         with_feature_history: bool,
@@ -1709,7 +1741,7 @@ class MetadataStore(ABC):
         """Backend-specific hard delete implementation.
 
         Args:
-            feature_key: Feature to delete from
+            table_id: Storage-layer table identifier
             filters: Optional Narwhals expressions to filter records; None or empty deletes all
             with_feature_history: If True, delete across all feature versions. If False, only current version.
         """
@@ -1736,9 +1768,10 @@ class MetadataStore(ABC):
         """
         self._check_write_mode()
         feature_key = self._resolve_feature_key(feature)
-        if self._is_system_table(feature_key):
+        table_id = self._to_table_id(feature_key)
+        if table_id.is_system_table:
             raise NotImplementedError(f"{self.__class__.__name__} does not support deletes for system tables")
-        self._drop_feature(feature_key)
+        self._drop_feature(table_id)
 
     def delete(
         self,
@@ -1769,6 +1802,7 @@ class MetadataStore(ABC):
         """
         self._check_write_mode()
         feature_key = self._resolve_feature_key(feature)
+        table_id = self._to_table_id(feature_key)
 
         # Normalize filters to list
         if filters is None:
@@ -1795,11 +1829,11 @@ class MetadataStore(ABC):
                 self.write(feature_key, soft_deletion_marked.to_native())
         else:
             # Hard delete: add version filter if needed, then delegate to backend
-            if not with_feature_history and not self._is_system_table(feature_key):
+            if not with_feature_history and not table_id.is_system_table:
                 version_filter = nw.col(METAXY_FEATURE_VERSION) == current_graph().get_feature_version(feature_key)
                 filter_list = [version_filter, *filter_list]
 
-            self._delete_feature(feature_key, filter_list, with_feature_history=with_feature_history)
+            self._delete_feature(table_id, filter_list, with_feature_history=with_feature_history)
 
     @public
     def rebase(
@@ -1925,7 +1959,7 @@ class MetadataStore(ABC):
     @abstractmethod
     def _read_feature(
         self,
-        feature: CoercibleToFeatureKey,
+        table_id: TableIdentifier,
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
@@ -1935,7 +1969,7 @@ class MetadataStore(ABC):
         Read metadata from THIS store only without using any fallbacks stores.
 
         Args:
-            feature: Feature to read metadata for
+            table_id: Storage-layer table identifier
             filters: List of Narwhals filter expressions for this specific feature.
             columns: Subset of columns to return
             **kwargs: Backend-specific parameters
@@ -1960,10 +1994,16 @@ class MetadataStore(ABC):
         Raises:
             FeatureNotFoundError: If feature not found in the store
         """
-        lazy = self.read(
-            feature,
-            allow_fallback=False,
-        )
+        return self._read_table_schema_from_store(self._resolve_table_id(feature))
+
+    def _read_table_schema_from_store(self, table_id: TableIdentifier) -> nw.Schema:
+        """Read the raw stored schema for a table identifier from this store only."""
+        self._check_open()
+
+        lazy = self._read_feature(table_id)
+        if lazy is None:
+            raise FeatureNotFoundError(f"Table {table_id.to_string()} not found in store")
+
         return lazy.collect_schema()
 
     # ========== Feature Existence ==========
@@ -1986,12 +2026,13 @@ class MetadataStore(ABC):
         """
         self._check_open()
 
-        if self._read_feature(feature) is not None:
+        table_id = self._to_table_id(self._resolve_feature_key(feature))
+        if self._read_feature(table_id) is not None:
             return True
 
         # Check fallback stores
         if not check_fallback:
-            return self._has_feature_impl(feature)
+            return self._has_feature_impl(table_id)
         else:
             for store in self.fallback_stores:
                 if store.has_feature(feature, check_fallback=True):
@@ -2000,11 +2041,11 @@ class MetadataStore(ABC):
         return False
 
     @abstractmethod
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
-        """Implementation of _has_feature.
+    def _has_feature_impl(self, table_id: TableIdentifier) -> bool:
+        """Check if a table exists in the store.
 
         Args:
-            feature: Feature to check
+            table_id: Storage-layer table identifier
 
         Returns:
             True if feature exists, False otherwise

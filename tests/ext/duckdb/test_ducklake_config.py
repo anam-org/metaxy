@@ -448,7 +448,7 @@ def test_ducklake_e2e_with_dependencies(
                 # Verify DuckLake tracks data files (not plain DuckDB)
                 raw_conn = store._duckdb_raw_connection()
                 for feat in (upstream_a, upstream_b, downstream):
-                    tbl = store.get_table_name(feat.spec.key)
+                    tbl = store.get_table_name(store._to_table_id(feat.spec.key))
                     files = raw_conn.execute(f"FROM ducklake_list_files('e2e_lake', '{tbl}')").fetchall()
                     assert files, f"ducklake_list_files should return data files for {tbl}"
 
@@ -609,7 +609,7 @@ def test_ducklake_s3_storage_roundtrip(
             assert_frame_equal(actual, payload.sort("sample_uid"))
 
             # Verify DuckLake tracks data files for the written table
-            table_name = store.get_table_name(feature.spec.key)
+            table_name = store.get_table_name(store._to_table_id(feature.spec.key))
             raw_conn = store._duckdb_raw_connection()
             files = raw_conn.execute(f"FROM ducklake_list_files('s3_lake', '{table_name}')").fetchall()
             assert files, f"ducklake_list_files should return data files for {table_name}"

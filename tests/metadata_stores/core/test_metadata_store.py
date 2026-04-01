@@ -20,10 +20,12 @@ from metaxy import (
 )
 from metaxy._utils import collect_to_polars
 from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,
     StoreNotOpenError,
+    TableIdentifier,
 )
 
 
@@ -159,6 +161,39 @@ def multi_env_stores(
 
 
 # Basic CRUD Tests
+
+
+def test_get_table_name_accepts_feature_keys_and_table_ids(tmp_path: Path) -> None:
+    """Ibis stores should keep the public naming API ergonomic."""
+    store = DuckDBMetadataStore(tmp_path / "metadata.duckdb", table_prefix="prod_")
+    feature_key = FeatureKey(["project", "events"])
+    table_id = TableIdentifier(parts=("project", "events"))
+
+    assert store.get_table_name(feature_key) == "prod_project__events"
+    assert store.get_table_name(table_id) == "prod_project__events"
+
+
+def test_low_level_table_schema_supports_generic_table_identifiers(tmp_path: Path) -> None:
+    """Raw table operations should not require a matching feature graph entry."""
+    store = DeltaMetadataStore(root_path=tmp_path / "delta_generic")
+    table_id = TableIdentifier(parts=("ops", "events"))
+
+    with store.open("w"):
+        store._write_feature(
+            table_id,
+            nw.from_native(
+                pl.DataFrame(
+                    {
+                        "event_id": [1],
+                        "payload": ["created"],
+                    }
+                )
+            ),
+        )
+
+        schema = store._read_table_schema_from_store(table_id)
+
+    assert schema.names() == ["event_id", "payload"]
 
 
 def test_write_and_read(

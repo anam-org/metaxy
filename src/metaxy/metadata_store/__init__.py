@@ -13,7 +13,7 @@ from metaxy.metadata_store.exceptions import (
 from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
 )
-from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.types import AccessMode, TableIdentifier
 
 __all__ = [
     "MetadataStore",
@@ -26,4 +26,5 @@ __all__ = [
     "HashAlgorithmNotSupportedError",
     "FEATURE_VERSIONS_KEY",
     "AccessMode",
+    "TableIdentifier",
 ]

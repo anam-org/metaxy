@@ -26,12 +26,12 @@ from metaxy._decorators import experimental, public
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.exceptions import TableNotFoundError
 from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
+from metaxy.metadata_store.types import TableIdentifier
 from metaxy.models.constants import (
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE_BY_FIELD,
 )
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -268,7 +268,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
         with raw_connection.cursor() as cursor:
             cursor.executemany(query, rows)
 
-    def transform_before_write(self, df: Frame, feature_key: FeatureKey, table_name: str) -> Frame:
+    def transform_before_write(self, df: Frame, table_id: TableIdentifier, table_name: str) -> Frame:
         """Convert Struct columns to JSON strings using Polars.
 
         Uses Polars' struct.json_encode() to serialize structs to JSON strings.
@@ -279,19 +279,19 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
 
     def _write_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         df: Frame,
         **kwargs: Any,
     ) -> None:
         """Write feature metadata, preserving JSONB for auto-created Struct columns."""
-        table_name = self.get_table_name(feature_key)
+        table_name = self.get_table_name(table_id)
         original_pl_df = collect_to_polars(df)
         transformed_pl_df = self._encode_struct_columns(original_pl_df)
 
         if table_name not in self.conn.list_tables():
             if not self.auto_create_tables:
                 raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
+                    f"Table '{table_name}' does not exist for table {table_id.to_string()}. "
                     "Enable auto_create_tables=True to automatically create tables, "
                     "or use proper database migration tools like Alembic to create the table first."
                 )
@@ -329,7 +329,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
                 json_columns.append(col_name)
         return json_columns
 
-    def transform_after_read(self, table: "ibis.Table", feature_key: FeatureKey) -> "ibis.Table":
+    def transform_after_read(self, table: "ibis.Table", table_id: TableIdentifier) -> "ibis.Table":
         """Cast JSONB columns to String so Polars can parse them back to Structs.
 
         PostgreSQL JSONB columns appear as JSON type in Ibis. We cast to String
@@ -343,14 +343,11 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
             return table.mutate(**mutations)
         return table
 
-    def _parse_json_to_struct_columns(
-        self, pl_df: pl.DataFrame, feature_key: FeatureKey, json_columns: list[str]
-    ) -> pl.DataFrame:
+    def _parse_json_to_struct_columns(self, pl_df: pl.DataFrame, json_columns: list[str]) -> pl.DataFrame:
         """Parse JSON string columns back to Polars Structs on a per-column basis.
 
         Args:
             pl_df: Polars DataFrame with JSON string columns
-            feature_key: Feature key for Metaxy system column schema lookup
             json_columns: List of column names to parse from JSON to Struct
 
         Returns:
@@ -391,7 +388,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
     def _cast_empty_system_struct_columns(
         self,
         pl_df: pl.DataFrame,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         json_columns: list[str],
     ) -> pl.DataFrame:
         """Restore known Metaxy Struct schemas for empty result sets.
@@ -401,15 +398,13 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
         Polars leaves those columns as strings. For feature-backed reads we can
         still recover the expected struct schema from the active graph.
         """
-        if pl_df.height != 0 or self._is_system_table(feature_key):
+        if pl_df.height != 0 or table_id.is_system_table:
             return pl_df
 
-        try:
-            plan = self._resolve_feature_plan(feature_key)
-        except (KeyError, RuntimeError):
+        field_names = self._get_table_field_struct_keys(table_id)
+        if field_names is None:
             return pl_df
 
-        field_names = [field_spec.key.to_struct_key() for field_spec in plan.feature.fields]
         expected_struct_dtype = pl.Struct({field_name: pl.String for field_name in field_names})
 
         casts = []
@@ -428,7 +423,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
     def _validate_required_system_struct_columns(
         self,
         pl_df: pl.DataFrame,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         json_columns: list[str],
         *,
         require_all_system_columns: bool = False,
@@ -446,7 +441,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
                 missing_columns_csv = ", ".join(sorted(missing_required_columns))
                 raise ValueError(
                     "Failed to decode or validate required Metaxy system JSON columns for "
-                    f"feature {feature_key.to_string()}: {missing_columns_csv}. "
+                    f"table {table_id.to_string()}: {missing_columns_csv}. "
                     "Required system columns are missing from the result set."
                 )
 
@@ -485,13 +480,13 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
             invalid_columns_csv = ", ".join(sorted(set(invalid_columns)))
             raise ValueError(
                 "Failed to decode or validate required Metaxy system JSON columns for "
-                f"feature {feature_key.to_string()}: {invalid_columns_csv}. "
+                f"table {table_id.to_string()}: {invalid_columns_csv}. "
                 "Required system columns must contain decodable JSON object payloads."
             )
 
     def _read_feature(
         self,
-        feature: CoercibleToFeatureKey,
+        table_id: TableIdentifier,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -508,12 +503,11 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
             columns eagerly, and then returns a Polars-backed LazyFrame over that
             in-memory snapshot (not a deferred database query).
         """
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self.get_table_name(feature_key)
+        table_name = self.get_table_name(table_id)
 
         # Delegate to Ibis base (applies SQL filters, column selection, transform_after_read)
         ibis_lazy_frame = super()._read_feature(
-            feature, feature_version=feature_version, filters=filters, columns=columns, **kwargs
+            table_id, feature_version=feature_version, filters=filters, columns=columns, **kwargs
         )
         if ibis_lazy_frame is None:
             return None
@@ -524,13 +518,13 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
 
         # Materialize to Polars and parse JSONB strings back to Structs
         pl_df = collect_to_polars(ibis_lazy_frame)
-        pl_df = self._parse_json_to_struct_columns(pl_df, feature_key, json_columns_to_parse)
-        pl_df = self._cast_empty_system_struct_columns(pl_df, feature_key, json_columns_to_parse)
+        pl_df = self._parse_json_to_struct_columns(pl_df, json_columns_to_parse)
+        pl_df = self._cast_empty_system_struct_columns(pl_df, table_id, json_columns_to_parse)
         self._validate_required_system_struct_columns(
             pl_df,
-            feature_key,
+            table_id,
             json_columns_to_parse,
-            require_all_system_columns=columns is None and not self._is_system_table(feature_key),
+            require_all_system_columns=columns is None and not table_id.is_system_table,
         )
 
         return nw.from_native(pl_df.lazy())

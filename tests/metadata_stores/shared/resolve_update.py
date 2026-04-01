@@ -1599,7 +1599,7 @@ class ResolveUpdateTests:
             from metaxy.models.constants import METAXY_FEATURE_VERSION
 
             raw_metadata = store._read_feature(
-                Downstream,
+                store._resolve_table_id(Downstream),
                 filters=[nw.col(METAXY_FEATURE_VERSION) == Downstream.feature_version()],
             )
             raw_count = len(raw_metadata.collect()) if raw_metadata else 0
@@ -1729,8 +1729,8 @@ class ResolveUpdateTests:
             local_only_store = DeltaMetadataStore(root_path=tmp_path / "delta_local_only")
             with local_only_store.open("w"):
                 # Copy upstream and downstream from local_store to local_only_store
-                upstream_data = local_store._read_feature(Upstream)
-                downstream_data = local_store._read_feature(Downstream)
+                upstream_data = local_store._read_feature(local_store._resolve_table_id(Upstream))
+                downstream_data = local_store._read_feature(local_store._resolve_table_id(Downstream))
                 assert upstream_data is not None
                 assert downstream_data is not None
                 local_only_store.write(Upstream, upstream_data.collect())

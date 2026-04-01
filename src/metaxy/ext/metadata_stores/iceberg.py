@@ -23,13 +23,14 @@ from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.types import TableIdentifier as MetaxyTableIdentifier
 from metaxy.metadata_store.utils import is_local_path
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
-TableIdentifier = NewType("TableIdentifier", tuple[str, str])
+IcebergTableIdentifier = NewType("IcebergTableIdentifier", tuple[str, str])
 """A ``(namespace, table_name)`` pair used by PyIceberg to locate a table within a catalog."""
 
 
@@ -174,10 +175,9 @@ class IcebergMetadataStore(MetadataStore):
 
     # ===== MetadataStore abstract methods =====
 
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+    def _has_feature_impl(self, table_id: MetaxyTableIdentifier) -> bool:
         """Check if feature exists in Iceberg catalog."""
-        feature_key = self._resolve_feature_key(feature)
-        return self.catalog.table_exists(self._table_identifier(feature_key))
+        return self.catalog.table_exists(self._table_identifier(table_id))
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Use XXHASH32 by default."""
@@ -211,8 +211,8 @@ class IcebergMetadataStore(MetadataStore):
             raise RuntimeError(msg)
         return self._catalog
 
-    def _table_identifier(self, feature_key: FeatureKey) -> TableIdentifier:
-        return TableIdentifier((self.namespace, feature_key.table_name))
+    def _table_identifier(self, table_id: MetaxyTableIdentifier) -> IcebergTableIdentifier:
+        return IcebergTableIdentifier((self.namespace, table_id.table_name))
 
     def _ensure_namespace(self) -> None:
         """Create the namespace if auto_create_namespace is enabled."""
@@ -229,7 +229,7 @@ class IcebergMetadataStore(MetadataStore):
         """Cast Enum columns to String to avoid Arrow Utf8View incompatibility."""
         return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
 
-    def _ensure_table(self, identifier: TableIdentifier, arrow_schema: Any) -> Table:
+    def _ensure_table(self, identifier: IcebergTableIdentifier, arrow_schema: Any) -> Table:
         """Create or evolve an Iceberg table to match the given Arrow schema."""
 
         table: Table = self.catalog.create_table_if_not_exists(identifier, schema=arrow_schema)
@@ -242,14 +242,14 @@ class IcebergMetadataStore(MetadataStore):
 
     def _write_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: MetaxyTableIdentifier,
         df: Frame,
         **kwargs: Any,
     ) -> None:
         """Append metadata to the Iceberg table for a feature.
 
         Args:
-            feature_key: Feature key to write to
+            table_id: Storage-layer table identifier
             df: DataFrame with metadata
             **kwargs: Forwarded to `sink_iceberg` or `Table.append`.
 
@@ -258,7 +258,7 @@ class IcebergMetadataStore(MetadataStore):
             `LazyFrame.sink_iceberg`, avoiding unnecessary materialization.
         """
         self._ensure_namespace()
-        identifier = self._table_identifier(feature_key)
+        identifier = self._table_identifier(table_id)
 
         can_sink = (
             df.implementation == nw.Implementation.POLARS
@@ -286,7 +286,7 @@ class IcebergMetadataStore(MetadataStore):
 
     def _read_feature(
         self,
-        feature: CoercibleToFeatureKey,
+        table_id: MetaxyTableIdentifier,
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
@@ -295,15 +295,14 @@ class IcebergMetadataStore(MetadataStore):
         """Read metadata stored in Iceberg for a single feature using lazy evaluation.
 
         Args:
-            feature: Feature to read metadata for
+            table_id: Storage-layer table identifier
             filters: List of Narwhals filter expressions
             columns: Subset of columns to return
             **kwargs: Backend-specific parameters (currently unused)
         """
         self._check_open()
 
-        feature_key = self._resolve_feature_key(feature)
-        identifier = self._table_identifier(feature_key)
+        identifier = self._table_identifier(table_id)
         if not self.catalog.table_exists(identifier):
             return None
 
@@ -326,7 +325,7 @@ class IcebergMetadataStore(MetadataStore):
     def _write_with_map_columns(
         self,
         df: Frame,
-        identifier: TableIdentifier,
+        identifier: IcebergTableIdentifier,
         **kwargs: Any,
     ) -> None:
         """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
@@ -350,22 +349,22 @@ class IcebergMetadataStore(MetadataStore):
             return convert_maps_to_polars_map(lf, columns=map_columns)
         return lf
 
-    def _drop_feature(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, table_id: MetaxyTableIdentifier) -> None:
         """Drop the Iceberg table for the specified feature from the catalog."""
-        identifier = self._table_identifier(feature_key)
+        identifier = self._table_identifier(table_id)
         if self.catalog.table_exists(identifier):
             self.catalog.drop_table(identifier)
 
     def _delete_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: MetaxyTableIdentifier,
         filters: Sequence[nw.Expr] | None,
         *,
         with_feature_history: bool,
     ) -> None:
         """Delete rows from an Iceberg table using PyIceberg's `row filter syntax
         <https://py.iceberg.apache.org/row-filter-syntax/>`_."""
-        identifier = self._table_identifier(feature_key)
+        identifier = self._table_identifier(table_id)
         if not self.catalog.table_exists(identifier):
             return
 
@@ -377,7 +376,7 @@ class IcebergMetadataStore(MetadataStore):
 
         from metaxy.metadata_store.utils import narwhals_expr_to_sql_predicate
 
-        schema = self.read_feature_schema_from_store(feature_key)
+        schema = self._read_table_schema_from_store(table_id)
         predicate = narwhals_expr_to_sql_predicate(
             filters,
             schema,
@@ -391,8 +390,9 @@ class IcebergMetadataStore(MetadataStore):
         return f"IcebergMetadataStore(warehouse={self._warehouse_uri})"
 
     def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
-        resolved = self._resolve_feature_key(feature_key)
-        return {"identifier": ".".join(self._table_identifier(resolved))}
+        return {
+            "identifier": ".".join(self._table_identifier(self._to_table_id(self._resolve_feature_key(feature_key))))
+        }
 
     @classmethod
     def config_model(cls) -> type[IcebergMetadataStoreConfig]:

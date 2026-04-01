@@ -59,7 +59,7 @@ def test_write_in_write_mode(tmp_path: Path, test_graph: FeatureGraph, test_feat
 
     # Verify data was written
     with store:
-        df = store._read_feature(test_features["UpstreamFeatureA"])
+        df = store._read_feature(store._resolve_table_id(test_features["UpstreamFeatureA"]))
         assert df is not None
         result = df.collect().to_polars()
         assert result.height == 1
@@ -82,7 +82,7 @@ def test_read_in_read_mode(tmp_path: Path, test_graph: FeatureGraph, test_featur
     # Now open in READ mode and read
     store = DuckDBMetadataStore(db_path, auto_create_tables=False)
     with store:
-        df = store._read_feature(test_features["UpstreamFeatureA"])
+        df = store._read_feature(store._resolve_table_id(test_features["UpstreamFeatureA"]))
         assert df is not None
 
 

@@ -20,7 +20,7 @@ from metaxy.metadata_store.ibis import (
     IbisMetadataStore,
     IbisMetadataStoreConfig,
 )
-from metaxy.models.types import FeatureKey
+from metaxy.metadata_store.types import TableIdentifier
 from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -268,7 +268,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             self._ch_schema_cache[table_name] = self.conn.table(table_name).schema()
         return self._ch_schema_cache[table_name]
 
-    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
+    def transform_after_read(self, table: "ibis.Table", table_id: TableIdentifier) -> "ibis.Table":
         """Transform ClickHouse-specific column types for PyArrow compatibility.
 
         Handles:
@@ -299,7 +299,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 )
 
                 if col_name in {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}:
-                    mutations[col_name] = self._map_to_struct_expr(table, col_name, dtype, feature_key)
+                    mutations[col_name] = self._map_to_struct_expr(table, col_name, dtype, table_id)
 
         if not mutations:
             return table
@@ -311,7 +311,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         table: "ibis.Table",
         col_name: str,
         map_dtype: Any,  # dt.Map - avoid generic type param issues
-        feature_key: "FeatureKey",
+        table_id: TableIdentifier,
     ) -> Any:
         """Convert a Map column to Struct expression.
 
@@ -322,25 +322,17 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             table: Ibis table
             col_name: Map column name
             map_dtype: Map data type (has key_type, value_type)
-            feature_key: Feature key to get field names from
+            table_id: Storage-layer table identifier (used for feature graph lookup)
 
         Returns:
             Ibis expression that produces a Struct
         """
         import ibis
 
-        from metaxy.models.feature import FeatureGraph
-
-        # Get field names from the feature spec
-        graph = FeatureGraph.get_active()
-        definition = graph.feature_definitions_by_key.get(feature_key)
-        if definition is None:
+        field_names = self._get_table_field_struct_keys(table_id)
+        if field_names is None:
             # Feature not in graph - fall back to String cast
             return table[col_name].cast("string")
-
-        # Use to_struct_key() for struct field names (uses "_" separator, not "/")
-        # This matches how provenance/data_version fields are accessed elsewhere
-        field_names = [f.key.to_struct_key() for f in definition.spec.fields]
 
         if not field_names:
             return table[col_name].cast("string")
@@ -365,7 +357,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             return False
         return isinstance(e, DatabaseError) and "UNKNOWN_TABLE" in str(e)
 
-    def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
+    def transform_before_write(self, df: Frame, table_id: TableIdentifier, table_name: str) -> Frame:
         """Transform Polars Struct columns to Map format for ClickHouse.
 
         When `enable_map_datatype` is set, the base `IbisMetadataStore._write_feature`

@@ -317,7 +317,7 @@ def test_clickhouse_json_column_type(
 
     with clickhouse_store_no_autocreate as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -369,7 +369,7 @@ def test_clickhouse_json_column_type(
         # This uses transform_after_read internally
         # Without the fix, this would raise:
         # "pyarrow.lib.ArrowTypeError: Expected bytes, got a 'dict' object"
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -406,7 +406,7 @@ def test_clickhouse_map_column_type(
 
     with clickhouse_store_no_autocreate as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -454,7 +454,7 @@ def test_clickhouse_map_column_type(
 
         # Read via _read_feature
         # This uses transform_after_read which should convert Map to Struct
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -496,7 +496,7 @@ def test_clickhouse_map_column_empty_table_read(
 
     with clickhouse_store_no_autocreate as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -525,7 +525,7 @@ def test_clickhouse_map_column_empty_table_read(
         # This should NOT raise KeyError even though the Map is empty
         # The error was: KeyError: 'frames'
         # Because the Map->Struct conversion couldn't handle empty maps
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
 
         # Reading from an empty table should return None or empty result
         if read_result is not None:
@@ -557,7 +557,7 @@ def test_clickhouse_map_column_resolve_update_write(
 
     with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -606,7 +606,7 @@ def test_clickhouse_map_column_resolve_update_write(
         store.write(feature_cls, samples)
 
         # Read back and verify
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -656,7 +656,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
 
     with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -721,7 +721,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
         store.write(feature_cls, nw_df)
 
         # Read back and verify
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -765,7 +765,7 @@ def test_clickhouse_user_defined_map_column(
 
     with clickhouse_store_no_autocreate as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -815,7 +815,7 @@ def test_clickhouse_user_defined_map_column(
         # This uses transform_after_read which should:
         # - Convert metaxy Map columns to Struct (dict)
         # - Leave user_metadata Map column as-is (List[Struct{key,value}])
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -856,7 +856,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
     # auto_cast_struct_for_map=True is the default
     with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -901,7 +901,7 @@ def test_clickhouse_auto_cast_struct_for_map_true(
         store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -936,7 +936,7 @@ def test_clickhouse_auto_cast_struct_for_map_false(
         "w"
     ) as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -999,7 +999,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
 
     with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -1058,7 +1058,7 @@ def test_clickhouse_auto_cast_struct_for_map_ibis_dataframe(
         store.write(feature_cls, nw_df)
 
         # Read back and verify
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1096,7 +1096,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
 
     with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -1141,7 +1141,7 @@ def test_clickhouse_auto_cast_struct_for_map_non_string_values(
         store.write(feature_cls, samples)
 
         # Read back and verify
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1173,7 +1173,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
 
     with clickhouse_store_no_autocreate.open("w") as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -1221,7 +1221,7 @@ def test_clickhouse_auto_cast_struct_for_map_empty_struct(
         store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 
@@ -1253,7 +1253,7 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
         "w"
     ) as store:
         conn = store.conn
-        table_name = store.get_table_name(feature_key)
+        table_name = store.get_table_name(store._to_table_id(feature_key))
 
         # Clean up if exists
         if table_name in conn.list_tables():
@@ -1311,7 +1311,7 @@ def test_clickhouse_auto_cast_struct_for_map_null_values(
         store.write(feature_cls, samples)
 
         # Read back and verify data was written
-        read_result = store._read_feature(feature_cls)
+        read_result = store._read_feature(store._resolve_table_id(feature_cls))
         assert read_result is not None
         result = collect_to_polars(read_result)
 

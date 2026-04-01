@@ -466,7 +466,7 @@ class WriteTests:
 
         # Use _write_feature to bypass timestamp auto-generation
         with store.open("w"):
-            store._write_feature(key, nw.from_native(data))
+            store._write_feature(store._to_table_id(key), nw.from_native(data))
 
         # Read and verify
         with store:

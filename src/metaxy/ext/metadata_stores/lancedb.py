@@ -15,9 +15,8 @@ from pydantic import Field
 from metaxy._decorators import public
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
-from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.types import AccessMode, TableIdentifier
 from metaxy.metadata_store.utils import is_local_path, sanitize_uri
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -194,8 +193,8 @@ class LanceDBMetadataStore(MetadataStore):
 
     # Helpers -----------------------------------------------------------------
 
-    def _table_name(self, feature_key: FeatureKey) -> str:
-        return feature_key.table_name
+    def _table_name(self, table_id: TableIdentifier) -> str:
+        return table_id.table_name
 
     def _table_exists(self, table_name: str) -> bool:
         """Check if a table exists without listing all tables.
@@ -221,18 +220,16 @@ class LanceDBMetadataStore(MetadataStore):
 
     # ===== MetadataStore abstract methods =====
 
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+    def _has_feature_impl(self, table_id: TableIdentifier) -> bool:
         """Check if feature exists in LanceDB store.
 
         Args:
-            feature: Feature to check
+            table_id: Storage-layer table identifier
 
         Returns:
             True if feature exists, False otherwise
         """
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self._table_name(feature_key)
-        return self._table_exists(table_name)
+        return self._table_exists(self._table_name(table_id))
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Use XXHASH32 by default."""
@@ -242,7 +239,7 @@ class LanceDBMetadataStore(MetadataStore):
 
     def _write_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         df: Frame,
         **kwargs: Any,
     ) -> None:
@@ -252,13 +249,13 @@ class LanceDBMetadataStore(MetadataStore):
         Uses LanceDB's native Polars/Arrow integration for efficient storage.
 
         Args:
-            feature_key: Feature key to write to
+            table_id: Storage-layer table identifier
             df: Narwhals Frame with metadata (already validated by base class)
         """
         # Convert Narwhals frame to Polars DataFrame
         df_polars = collect_to_polars(df)
 
-        table_name = self._table_name(feature_key)
+        table_name = self._table_name(table_id)
 
         if self._table_exists(table_name):
             table = self._get_table(table_name)
@@ -266,22 +263,22 @@ class LanceDBMetadataStore(MetadataStore):
         else:
             self.conn.create_table(table_name, data=df_polars)
 
-    def _drop_feature(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, table_id: TableIdentifier) -> None:
         """Drop Lance table for feature.
 
         Permanently removes the Lance table from the database directory.
         Safe to call even if table doesn't exist (no-op).
 
         Args:
-            feature_key: Feature key to drop metadata for
+            table_id: Storage-layer table identifier
         """
-        table_name = self._table_name(feature_key)
+        table_name = self._table_name(table_id)
         if self._table_exists(table_name):
             self.conn.drop_table(table_name)
 
     def _delete_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         filters: Sequence[nw.Expr] | None,
         *,
         with_feature_history: bool,
@@ -289,10 +286,10 @@ class LanceDBMetadataStore(MetadataStore):
         """Hard deletion for LanceDB. Calls the delete method on the Lance table.
 
         Args:
-            feature_key: Feature to delete from
-            filter_expr: Narwhals expression to select rows to delete
+            table_id: Storage-layer table identifier
+            filters: Narwhals expression to select rows to delete
         """
-        table_name = self._table_name(feature_key)
+        table_name = self._table_name(table_id)
         table = self._get_table(table_name)
 
         # If no filters provided, delete all rows
@@ -311,7 +308,7 @@ class LanceDBMetadataStore(MetadataStore):
             unquote_identifiers,
         )
 
-        schema = self.read_feature_schema_from_store(feature_key)
+        schema = self._read_table_schema_from_store(table_id)
         filter_str = narwhals_expr_to_sql_predicate(
             combined_filter,
             schema,
@@ -324,7 +321,7 @@ class LanceDBMetadataStore(MetadataStore):
 
     def _read_feature(
         self,
-        feature: CoercibleToFeatureKey,
+        table_id: TableIdentifier,
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
@@ -336,7 +333,7 @@ class LanceDBMetadataStore(MetadataStore):
         Applies filters and column selection in memory.
 
         Args:
-            feature: Feature to read
+            table_id: Storage-layer table identifier
             filters: List of Narwhals filter expressions
             columns: Optional list of columns to select
             **kwargs: Backend-specific parameters (unused)
@@ -345,8 +342,7 @@ class LanceDBMetadataStore(MetadataStore):
             Narwhals LazyFrame with metadata, or None if table not found
         """
         self._check_open()
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self._table_name(feature_key)
+        table_name = self._table_name(table_id)
         if not self._table_exists(table_name):
             return None
 

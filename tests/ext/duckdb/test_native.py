@@ -93,7 +93,7 @@ class TestDuckDBPreCreatedMapTable:
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
         feature = test_features["UpstreamFeatureA"]
-        table_name = store.get_table_name(store._resolve_feature_key(feature))
+        table_name = store.get_table_name(store._resolve_table_id(feature))
 
         con = duckdb.connect(str(db_path))
         con.execute(f"""
@@ -148,7 +148,7 @@ class TestDuckDBPreCreatedMapTable:
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
         feature = test_features["UpstreamFeatureA"]
-        table_name = store.get_table_name(store._resolve_feature_key(feature))
+        table_name = store.get_table_name(store._resolve_table_id(feature))
 
         con = duckdb.connect(str(db_path))
         con.execute(f"""
@@ -212,7 +212,7 @@ class TestDuckDBPreCreatedMapTable:
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=True)
         feature = test_features["UpstreamFeatureA"]
-        table_name = store.get_table_name(store._resolve_feature_key(feature))
+        table_name = store.get_table_name(store._resolve_table_id(feature))
 
         # First write Polars data so the table exists with Struct columns
         config = MetaxyConfig(auto_create_tables=True)
@@ -324,8 +324,8 @@ def test_duckdb_table_prefix_applied(tmp_path: Path, test_graph: FeatureGraph, t
 
         table_names = set(store.conn.list_tables())
         assert expected_feature_table in table_names
-        assert store.get_table_name(feature.spec.key) == expected_feature_table
-        assert store.get_table_name(FEATURE_VERSIONS_KEY) == expected_system_table
+        assert store.get_table_name(store._resolve_table_id(feature)) == expected_feature_table
+        assert store.get_table_name(store._to_table_id(FEATURE_VERSIONS_KEY)) == expected_system_table
 
 
 def test_duckdb_with_custom_config(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
@@ -503,12 +503,12 @@ def test_duckdb_get_filtered_lazy_does_not_require_list_tables(
 
         monkeypatch.setattr(type(store.conn), "list_tables", _fail_list_tables)
 
-        existing = store._get_filtered_ibis_lazy(feature)
+        existing = store._get_filtered_ibis_lazy(store._resolve_table_id(feature))
         assert existing is not None
         existing_df = existing.collect().to_polars().sort("sample_uid")
         assert existing_df["sample_uid"].to_list() == [1, 2]
 
-        missing = store._get_filtered_ibis_lazy(FeatureKey(["test_stores", "missing_feature"]))
+        missing = store._get_filtered_ibis_lazy(store._to_table_id(FeatureKey(["test_stores", "missing_feature"])))
         assert missing is None
 
 

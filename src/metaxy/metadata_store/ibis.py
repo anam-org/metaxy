@@ -6,10 +6,12 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 import narwhals as nw
 from narwhals.typing import Frame
@@ -27,9 +29,9 @@ from metaxy.metadata_store.exceptions import (
     StoreNotOpenError,
     TableNotFoundError,
 )
-from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.types import AccessMode, TableIdentifier
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey
 from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -159,7 +161,6 @@ class IbisMetadataStore(MetadataStore, ABC):
             store = IbisMetadataStore(backend="clickhouse", connection_params={"host": "localhost", "port": 9000})
             ```
         """
-        from ibis.backends.sql import SQLBackend
 
         self.connection_string = connection_string
         self.backend = backend
@@ -172,29 +173,34 @@ class IbisMetadataStore(MetadataStore, ABC):
             versioning_engine=versioning_engine,
         )
 
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self.get_table_name(feature_key)
-        return table_name in self.conn.list_tables()
+    def _has_feature_impl(self, table_id: TableIdentifier) -> bool:
+        return self.get_table_name(table_id) in self.conn.list_tables()
+
+    @overload
+    def get_table_name(self, table_id: TableIdentifier) -> str: ...
+
+    @overload
+    def get_table_name(self, table_id: CoercibleToFeatureKey) -> str: ...
 
     def get_table_name(
         self,
-        key: FeatureKey,
+        table_id: TableIdentifier | CoercibleToFeatureKey,
     ) -> str:
-        """Generate the storage table name for a feature or system table.
+        """Generate the storage table name for a table identifier.
 
-        Applies the configured table_prefix (if any) to the feature key's table name.
+        Applies the configured table_prefix (if any) to the identifier's table name.
         Subclasses can override this method to implement custom naming logic.
 
         Args:
-            key: Feature key to convert to storage table name.
+            table_id: Storage-layer table identifier or feature reference.
 
         Returns:
             Storage table name with optional prefix applied.
         """
-        base_name = key.table_name
+        if not isinstance(table_id, TableIdentifier):
+            table_id = self._resolve_table_id(table_id)
 
-        return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
+        return f"{self._table_prefix}{table_id.table_name}" if self._table_prefix else table_id.table_name
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for Ibis stores.
@@ -267,7 +273,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             )
 
     @property
-    def conn(self) -> "SQLBackend":
+    def conn(self) -> SQLBackend:
         """Get Ibis backend connection.
 
         Returns:
@@ -330,7 +336,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def _write_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         df: Frame,
         **kwargs: Any,
     ) -> None:
@@ -338,17 +344,17 @@ class IbisMetadataStore(MetadataStore, ABC):
         Internal write implementation using Ibis.
 
         Args:
-            feature_key: Feature key to write to
+            table_id: Storage-layer table identifier
             df: DataFrame with metadata (already validated)
             **kwargs: Backend-specific parameters (currently unused)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        table_name = self.get_table_name(feature_key)
+        table_name = self.get_table_name(table_id)
 
         # Apply backend-specific transformations before writing
-        df = self.transform_before_write(df, feature_key, table_name)
+        df = self.transform_before_write(df, table_id, table_name)
 
         from metaxy.config import MetaxyConfig
 
@@ -383,18 +389,18 @@ class IbisMetadataStore(MetadataStore, ABC):
                 self.conn.create_table(table_name, obj=df_to_insert)
             else:
                 raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
+                    f"Table '{table_name}' does not exist for table {table_id.to_string()}. "
                     f"Enable auto_create_tables=True to automatically create tables, "
                     f"or use proper database migration tools like Alembic to create the table first."
                 ) from e
 
-    def _drop_feature(self, feature_key: FeatureKey) -> None:
+    def _drop_feature(self, table_id: TableIdentifier) -> None:
         """Drop the table for a feature.
 
         Args:
-            feature_key: Feature key to drop metadata for
+            table_id: Storage-layer table identifier
         """
-        table_name = self.get_table_name(feature_key)
+        table_name = self.get_table_name(table_id)
 
         # Check if table exists
         if table_name in self.conn.list_tables():
@@ -402,7 +408,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def _get_filtered_ibis_lazy(
         self,
-        feature: CoercibleToFeatureKey,
+        table_id: TableIdentifier,
         *,
         filters: Sequence[nw.Expr] | None = None,
     ) -> nw.LazyFrame[Any] | None:
@@ -411,14 +417,13 @@ class IbisMetadataStore(MetadataStore, ABC):
         Always returns Ibis-backed frames regardless of subclass overrides.
 
         Args:
-            feature: Feature to read
+            table_id: Storage-layer table identifier
             filters: Narwhals filter expressions (converted to WHERE clauses)
 
         Returns:
             Ibis-backed Narwhals LazyFrame, or None if table doesn't exist
         """
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self.get_table_name(feature_key)
+        table_name = self.get_table_name(table_id)
 
         import ibis.common.exceptions
 
@@ -427,7 +432,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         except ibis.common.exceptions.TableNotFound:
             return None
 
-        table = self.transform_after_read(table, feature_key)
+        table = self.transform_after_read(table, table_id)
 
         nw_frame = nw.from_native(table, eager_only=False)
         if not isinstance(nw_frame, nw.LazyFrame):
@@ -441,7 +446,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def _delete_feature(
         self,
-        feature_key: FeatureKey,
+        table_id: TableIdentifier,
         filters: Sequence[nw.Expr] | None,
         *,
         with_feature_history: bool,  # noqa: ARG002 - version filtering handled by base class
@@ -451,7 +456,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Translates Narwhals filter expression to Ibis and executes DELETE in database.
 
         Args:
-            feature_key: Feature to delete from
+            table_id: Storage-layer table identifier
             filters: Narwhals expressions to filter records
             with_feature_history: Not used here - version filtering handled by base class
         """
@@ -460,19 +465,19 @@ class IbisMetadataStore(MetadataStore, ABC):
             _strip_table_qualifiers,
         )
 
-        table_name = self.get_table_name(feature_key)
+        table_name = self.get_table_name(table_id)
         filter_list = list(filters or [])
 
         # Handle empty filters - truncate entire table
         if not filter_list:
             if table_name not in self.conn.list_tables():
-                raise TableNotFoundError(f"Table '{table_name}' does not exist for feature {feature_key.to_string()}.")
+                raise TableNotFoundError(f"Table '{table_name}' does not exist for table {table_id.to_string()}.")
             self.conn.truncate_table(table_name)
             return
 
-        nw_lazy = self._get_filtered_ibis_lazy(feature_key, filters=filter_list or None)
+        nw_lazy = self._get_filtered_ibis_lazy(table_id, filters=filter_list or None)
         if nw_lazy is None:
-            raise FeatureNotFoundError(f"Feature {feature_key.to_string()} not found in store")
+            raise FeatureNotFoundError(f"Table {table_id.to_string()} not found in store")
 
         # Extract WHERE clause from compiled SELECT statement
         import ibis
@@ -500,7 +505,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def _read_feature(
         self,
-        feature: CoercibleToFeatureKey,
+        table_id: TableIdentifier,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -511,7 +516,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Read metadata from this store only (no fallback).
 
         Args:
-            feature: Feature to read
+            table_id: Storage-layer table identifier
             feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
             filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
             columns: Optional list of columns to select
@@ -524,7 +529,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         if feature_version is not None:
             all_filters.append(nw.col("metaxy_feature_version") == feature_version)
 
-        nw_lazy = self._get_filtered_ibis_lazy(feature, filters=all_filters or None)
+        nw_lazy = self._get_filtered_ibis_lazy(table_id, filters=all_filters or None)
         if nw_lazy is None:
             return None
 
@@ -579,7 +584,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             else:
                 raise
 
-    def transform_after_read(self, table: "ibis.Table", feature_key: "FeatureKey") -> "ibis.Table":
+    def transform_after_read(self, table: ibis.Table, table_id: TableIdentifier) -> ibis.Table:
         """Transform Ibis table before wrapping with Narwhals.
 
         Override in subclasses to apply backend-specific transformations.
@@ -590,21 +595,21 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         Args:
             table: Ibis table reference
-            feature_key: The feature key being read (use to get field names)
+            table_id: Storage-layer table identifier
 
         Returns:
             Transformed Ibis table (default: unchanged)
         """
         return table
 
-    def transform_before_write(self, df: Frame, feature_key: "FeatureKey", table_name: str) -> Frame:
+    def transform_before_write(self, df: Frame, table_id: TableIdentifier, table_name: str) -> Frame:
         """Transform DataFrame before writing to the store.
 
         Override in subclasses to apply backend-specific transformations.
 
         Args:
             df: Narwhals DataFrame to be written
-            feature_key: The feature key being written to
+            table_id: Storage-layer table identifier
             table_name: The target table name
 
         Returns:
@@ -648,7 +653,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return self._handle_polars_map_columns(df, map_columns)
 
     def _handle_ibis_map_columns(
-        self, df: Frame, map_columns: set[str], table_schema: dict[str, "ibis.expr.datatypes.DataType"]
+        self, df: Frame, map_columns: set[str], table_schema: dict[str, ibis.expr.datatypes.DataType]
     ) -> Frame:
         """Convert Ibis Struct columns to Map(String, value_type) expressions (stays lazy).
 
@@ -734,8 +739,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Returns:
             Dictionary with `table_name` key.
         """
-        resolved_key = self._resolve_feature_key(feature_key)
-        return {"table_name": self.get_table_name(resolved_key)}
+        return {"table_name": self.get_table_name(self._to_table_id(self._resolve_feature_key(feature_key)))}
 
     @classmethod
     def config_model(cls) -> type[IbisMetadataStoreConfig]:
