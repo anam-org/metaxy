@@ -29,6 +29,10 @@ on:
         description: "Run dependency version compatibility tests"
         type: boolean
         default: false
+      use-tach:
+        description: "Use tach to skip unaffected tests"
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -247,7 +251,7 @@ jobs:
         run: |
           SITE_PACKAGES=$(uv run python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
-          TACH_FLAGS=${{ inputs.run-all-checks && '""' || '"--tach"' }}
+          TACH_FLAGS=${{ inputs.use-tach && '"--tach"' || '""' }}
           uv run pytest --ignore=tests/ext $TACH_FLAGS --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
 
       - name: Combine Coverage Data
@@ -306,7 +310,7 @@ jobs:
         run: >
           uv run nox -s "integration(integration='${{ matrix.integration }}')"
           -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
-          ${{ inputs.run-all-checks && ' ' || '--tach' }}
+          ${{ inputs.use-tach && '--tach' || ' ' }}
 
       - name: Upload Coverage to Codecov
         if: ${{ !cancelled() }}
@@ -426,7 +430,7 @@ jobs:
           --ignore=tests/project
           --durations=15
           --snapshot-warn-unused
-          ${{ inputs.run-all-checks && ' ' || '--tach' }}
+          ${{ inputs.use-tach && '--tach' || ' ' }}
 
   test-macos:
     needs: filter
@@ -472,7 +476,7 @@ jobs:
           --ignore=tests/ext/clickhouse
           --durations=15
           --snapshot-warn-unused
-          ${{ inputs.run-all-checks && ' ' || '--tach' }}
+          ${{ inputs.use-tach && '--tach' || ' ' }}
 
   docs:
     permissions:

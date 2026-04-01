@@ -34,6 +34,7 @@ jobs:
       run-windows: true
       run-macos: true
       run-all-checks: true
+      use-tach: false
       dependency-matrix: true
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
