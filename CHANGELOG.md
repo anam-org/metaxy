@@ -21,9 +21,55 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## v0.1.8 (01-04-2026)
+
+### :sparkles: Features
+
+#### Claude
+
+- more info on working with `Map` columns ([#1141](https://github.com/anam-org/metaxy/pull/1141) by [@danielgafni](https://github.com/danielgafni))
+
+#### Cli
+
+- more detailed and user-friendly output for `metaxy lock` ([#1135](https://github.com/anam-org/metaxy/pull/1135) by [@danielgafni](https://github.com/danielgafni))
+
+#### Ray
+
+- support `Map` datatype ([#1142](https://github.com/anam-org/metaxy/pull/1142) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :bug: Bug Fixes
+
+- remove missing lock file warning when `metaxy_lock_path` is not configured ([#1143](https://github.com/anam-org/metaxy/pull/1143) by [@danielgafni](https://github.com/danielgafni))
+- improve `Map` datatype support in `MetadataStore.resolve_update` ([#1139](https://github.com/anam-org/metaxy/pull/1139) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :book: Docs
+
+- more info on working with `Map` columns ([#1140](https://github.com/anam-org/metaxy/pull/1140) by [@danielgafni](https://github.com/danielgafni))
+
+#### Sqlmode
+
+- add docstrings for `SQLModelFeatureConfig` ([#1127](https://github.com/anam-org/metaxy/pull/1127) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :hammer_and_wrench: Other Improvements
+
+- fix tach setup in `main` branch ([#1149](https://github.com/anam-org/metaxy/pull/1149) by [@danielgafni](https://github.com/danielgafni))
+- enable Tach pytest plugin ([#1146](https://github.com/anam-org/metaxy/pull/1146) by [@danielgafni](https://github.com/danielgafni))
+- move metaxy._utils to metaxy.utils ([#1144](https://github.com/anam-org/metaxy/pull/1144) by [@danielgafni](https://github.com/danielgafni))
+- adopt Tach to enforce API boundaries ([#1128](https://github.com/anam-org/metaxy/pull/1128) by [@danielgafni](https://github.com/danielgafni))
+- rename and move _collect_to_arrow to `metaxy._utils.collect_to_arrow` ([#1130](https://github.com/anam-org/metaxy/pull/1130) by [@danielgafni](https://github.com/danielgafni))
+
+#### Ray
+
+- ensure `Map` type works with `day.data.Dataset.map_batches` ([#1148](https://github.com/anam-org/metaxy/pull/1148) by [@danielgafni](https://github.com/danielgafni))
+
+
 ## v0.1.7 (28-03-2026)
 
-This release adds experimental support for the [`Map` datatype](https://arrow.apache.org/docs/python/generated/pyarrow.map_.html#pyarrow.map_) and a new [Apache Iceberg](https://iceberg.apache.org/) metadata store.
+This release adds experimental support for the `Map` datatype and a new Apache Iceberg metadata store.
+
 
 ### :sparkles: Features
 
@@ -79,6 +125,7 @@ This release adds experimental support for the [`Map` datatype](https://arrow.ap
 
 ### :hammer_and_wrench: Other Improvements
 
+- release 0.1.7 ([#1124](https://github.com/anam-org/metaxy/pull/1124) by [@danielgafni](https://github.com/danielgafni))
 - fix full test suite for windows and macos ([#1125](https://github.com/anam-org/metaxy/pull/1125) by [@danielgafni](https://github.com/danielgafni))
 - run all integration tests on core changes ([#1122](https://github.com/anam-org/metaxy/pull/1122) by [@danielgafni](https://github.com/danielgafni))
 - add test case for fallback stores with `Map` enabled ([#1119](https://github.com/anam-org/metaxy/pull/1119) by [@danielgafni](https://github.com/danielgafni))

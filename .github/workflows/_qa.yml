@@ -232,7 +232,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
       - name: Fetch main branch
-        run: git fetch origin main
+        if: github.ref != 'refs/heads/main'
+        run: git fetch origin main:main
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
@@ -244,7 +245,7 @@ jobs:
           COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
           COVERAGE_FILE: ${{ github.workspace }}/.coverage
         run: |
-          SITE_PACKAGES=$(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
+          SITE_PACKAGES=$(uv run python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
           TACH_FLAGS=${{ inputs.run-all-checks && '""' || '"--tach"' }}
           uv run pytest --ignore=tests/ext $TACH_FLAGS --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
@@ -291,7 +292,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
       - name: Fetch main branch
-        run: git fetch origin main
+        if: github.ref != 'refs/heads/main'
+        run: git fetch origin main:main
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
@@ -393,7 +395,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
       - name: Fetch main branch
-        run: git fetch origin main
+        if: github.ref != 'refs/heads/main'
+        run: git fetch origin main:main
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6.2.0
@@ -441,7 +444,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
       - name: Fetch main branch
-        run: git fetch origin main
+        if: github.ref != 'refs/heads/main'
+        run: git fetch origin main:main
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6.2.0
