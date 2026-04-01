@@ -556,6 +556,22 @@ class MetadataStore(ABC):
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
+        # Convert _by_field Struct columns to Map when enable_map_datatype is set.
+        # User-provided samples may have these as Struct (the natural Polars literal form);
+        # the store normalizes them to Map so downstream processing and output are consistent.
+        if MetaxyConfig.get().enable_map_datatype and samples_nw is not None:
+            import polars as pl
+
+            native = samples_nw.to_native()
+            if isinstance(native, (pl.DataFrame, pl.LazyFrame)):
+                from metaxy.versioning._arrow_map import convert_structs_to_maps
+
+                native = convert_structs_to_maps(
+                    native,
+                    columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
+                )
+                samples_nw = nw.from_native(native)
+
         with self.create_versioning_engine(plan=plan, implementation=implementation) as engine:
             if skip_comparison:
                 # Skip comparison: return all upstream samples as added

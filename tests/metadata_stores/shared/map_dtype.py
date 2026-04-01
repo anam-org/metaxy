@@ -465,6 +465,92 @@ class MapDtypeTests:
         for actual, expected in zip(df["user_map"].to_list(), user_map.to_list()):
             assert sorted(actual, key=lambda e: e["key"]) == sorted(expected, key=lambda e: e["key"])
 
+    # ── resolve_update: user-defined Map columns ────────────────────
+
+    def test_resolve_update_with_user_map_columns(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+    ) -> None:
+        """User-defined Map columns survive resolve_update on root features via the samples argument."""
+        import narwhals as nw
+
+        feature = test_features["UpstreamFeatureA"]
+
+        user_map = pl.Series(
+            "tags",
+            [
+                [("env", "prod"), ("region", "us")],
+                [("env", "dev"), ("region", "eu")],
+                [("env", "staging"), ("region", "ap")],
+            ],
+            dtype=MAP_STR_STR,
+        )
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"frames": "h1", "audio": "h2"},
+                    {"frames": "h3", "audio": "h4"},
+                    {"frames": "h5", "audio": "h6"},
+                ],
+            }
+        ).with_columns(user_map)
+
+        with store.open("w") as s:
+            increment = s.resolve_update(feature, samples=nw.from_native(samples), lazy=False)
+
+        # All 3 samples are new (nothing written yet)
+        assert len(increment.new) == 3
+        result = collect_to_polars(increment.new).sort("sample_uid")
+
+        assert result.schema["tags"] == MAP_STR_STR
+        assert result["tags"].map.get("env").to_list() == ["prod", "dev", "staging"]  # ty: ignore[unresolved-attribute]
+
+        # metaxy-managed columns are also Map
+        assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+
+    def test_resolve_update_lazy_with_user_map_columns(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+    ) -> None:
+        """User-defined Map columns survive LazyIncrement.to_polars() from resolve_update."""
+        import narwhals as nw
+
+        feature = test_features["UpstreamFeatureA"]
+
+        user_map = pl.Series(
+            "tags",
+            [
+                [("env", "prod"), ("region", "us")],
+                [("env", "dev"), ("region", "eu")],
+            ],
+            dtype=MAP_STR_STR,
+        )
+        samples = pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "metaxy_provenance_by_field": [
+                    {"frames": "h1", "audio": "h2"},
+                    {"frames": "h3", "audio": "h4"},
+                ],
+            }
+        ).with_columns(user_map)
+
+        with store.open("w") as s:
+            lazy_increment = s.resolve_update(feature, samples=nw.from_native(samples), lazy=True)
+
+        polars_inc = lazy_increment.to_polars()
+        collected = polars_inc.new.collect()
+        assert isinstance(collected, pl.DataFrame)
+        result = collected.sort("sample_uid")
+
+        assert result.schema["tags"] == MAP_STR_STR
+        assert result["tags"].map.get("env").to_list() == ["prod", "dev"]  # ty: ignore[unresolved-attribute]
+
     # ── Fallback store: resolve_update with Map columns ──────────────
 
     def test_resolve_update_with_map_columns_from_fallback_store(

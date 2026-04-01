@@ -3082,7 +3082,7 @@ requires-dist = [
     { name = "polars", marker = "extra == 'iceberg'", specifier = ">=1.39.0" },
     { name = "polars", marker = "extra == 'lancedb'", specifier = ">=1.36.1" },
     { name = "polars-hash", specifier = ">=0.5.1" },
-    { name = "polars-map", marker = "extra == 'polars-map'", specifier = ">=0.1.1" },
+    { name = "polars-map", marker = "extra == 'polars-map'", specifier = ">=0.2.0" },
     { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
@@ -3128,7 +3128,7 @@ dev = [
     { name = "nox-uv", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pandas", specifier = ">=2.3.3" },
-    { name = "polars-map", specifier = ">=0.1.1" },
+    { name = "polars-map", specifier = ">=0.2.0" },
     { name = "prek", specifier = ">=0.2.11" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
@@ -4526,14 +4526,14 @@ wheels = [
 
 [[package]]
 name = "polars-map"
-version = "0.1.1"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/5b/1338353452f27a1436061627e010c07bf6ab8d8a7c71ffe3f51eb7f4115e/polars_map-0.1.1.tar.gz", hash = "sha256:36e2557db5b5fe630d3c6458a1a1213dde3fea01f892c067a958aee2352a077c", size = 30945, upload-time = "2026-03-26T02:52:10.555Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/f7/30e5fff227a9e1b02a037020f60c4cfeb491816e3718f1b642054baa2b21/polars_map-0.2.0.tar.gz", hash = "sha256:bdb4071d25c14e98257d9909771e51e8716a61074b1886ec75ea1d5074d782c1", size = 31019, upload-time = "2026-03-29T14:22:16.195Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/9e/ff007df1f889e8d62151dd7ddae011be99b74a6015fb1cdbe767a62d38be/polars_map-0.1.1-py3-none-any.whl", hash = "sha256:73fb1aa78022da73720c768b967c792fb147296df0824cd50dd09c87c55924f9", size = 8738, upload-time = "2026-03-26T02:52:09.239Z" },
+    { url = "https://files.pythonhosted.org/packages/95/5d/9c9d10fa4a069efca8b32e38ebe8785f2714458a4db5f890909891fc820c/polars_map-0.2.0-py3-none-any.whl", hash = "sha256:92106633c653d0b5025a1777f55ea9ac7000519c16e6853d1eed2fb0714098bb", size = 8762, upload-time = "2026-03-29T14:22:15.156Z" },
 ]
 
 [[package]]
