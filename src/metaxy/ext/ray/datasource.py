@@ -10,6 +10,7 @@ from ray.data.block import BlockMetadata
 from ray.data.datasource import ReadTask
 
 import metaxy as mx
+from metaxy._utils import collect_to_arrow
 
 if TYPE_CHECKING:
     pass
@@ -189,7 +190,7 @@ class MetaxyDatasource(Datasource):
 
             with datasource.store:
                 lf = datasource._read_lazy()
-                table = lf.collect(backend="pyarrow").to_arrow()
+                table = collect_to_arrow(lf)
                 batches = table.to_batches(max_chunksize=row_limit)
                 return [pa.Table.from_batches([b]) for b in batches]
 
