@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+import sys
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 import cyclopts
 import narwhals as nw
@@ -12,8 +13,10 @@ from rich.table import Table
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat, StalenessPredicateArgs
 
+WriteFormat: TypeAlias = Literal["csv", "json", "parquet", "markdown"]
+
 if TYPE_CHECKING:
-    import polars as pl
+    import pyarrow as pa
 
     from metaxy import FeatureDefinition
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
@@ -113,20 +116,14 @@ def status(
         selector.resolve(format, graph=graph, error_missing=assert_in_sync)
         missing_keys = selector.missing_keys
 
-        # Handle empty result
+        # Handle empty result for --all-features
+        if selector.all_features and not selector:
+            _output_no_features_warning(format, project_version)
+            return
+
+        # If no valid features remain
         if not selector:
-            if selector.all_features:
-                _output_no_features_warning(format, project_version)
-            else:
-                if format == "json":
-                    data_console.print_json(
-                        data={
-                            "warning": "No valid features to check",
-                            "features": {},
-                        }
-                    )
-                else:
-                    data_console.print("[yellow]Warning:[/yellow] No valid features to check.")
+            _output_no_features_warning(format, project_version)
             return
 
         # Print header for plain format only when using a snapshot
@@ -635,7 +632,7 @@ def rebase(
     if dry_run:
         console.print(f"[bold cyan]Dry run[/bold cyan]: {rows_affected} row(s) would be rebased")
     else:
-        console.print(f"[green]SUCCESS:[/green] Rebased {rows_affected} row(s)")
+        console.print(f"[green]✓[/green] Rebased {rows_affected} row(s)")
 
 
 @app.command()
@@ -712,7 +709,7 @@ def copy(
     dest_store = context.get_store(to_store)
 
     # Resolve feature keys
-    selector.resolve("plain")
+    selector.resolve("plain", error_missing=False)
 
     # Handle no valid features
     if not selector:
@@ -737,7 +734,7 @@ def copy(
             )
 
     data_console.print(
-        f"[green]SUCCESS:[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
+        f"[green]✓[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
     )
 
 
@@ -760,13 +757,6 @@ def read(
             help="Columns to select. Can be repeated.",
         ),
     ] = None,
-    format: Annotated[
-        Literal["csv", "json", "parquet", "markdown"],
-        cyclopts.Parameter(
-            name=["--format", "-f"],
-            help="Output format: markdown, json, csv, parquet.",
-        ),
-    ] = "markdown",
     query: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -785,6 +775,12 @@ def read(
             help="Output file path (default: print to stdout).",
         ),
     ] = None,
+    format: Annotated[
+        WriteFormat,
+        cyclopts.Parameter(
+            name=["--format", "-f"],
+        ),
+    ] = "markdown",
 ) -> None:
     """Read feature metadata and optionally execute arbitrary SQL against it.
 
@@ -801,11 +797,9 @@ def read(
         $ metaxy metadata read my/feature --query "SELECT * FROM my__feature WHERE status = 'active'" -f csv
         ```
     """
-    import sys
+    import duckdb
+    from metaxy._utils import collect_to_arrow  # type: ignore
 
-    import polars as pl
-
-    from metaxy._utils import collect_to_polars
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
     from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -814,7 +808,6 @@ def read(
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
-    # Load graph before resolution. We use "plain" format for read command's resolution phase.
     graph = load_graph_for_command(context, None, metadata_store, "plain")
     selector.resolve("plain", graph=graph)
 
@@ -837,7 +830,6 @@ def read(
                 if select:
                     df = df.select(*select)
 
-                # Execute SQL natively in Ibis using a CTE to extend the lazy evaluation pipeline.
                 if query and isinstance(metadata_store, IbisMetadataStore):
                     import ibis
 
@@ -847,48 +839,23 @@ def read(
                         f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
                     )
                     res = metadata_store.conn.sql(wrapped_query)
-                    pl_df = res.to_polars()
+                    arrow_table = collect_to_arrow(res)
                 else:
-                    # Collect to Polars using the project utility
-                    pl_df = collect_to_polars(df)
+                    arrow_table = collect_to_arrow(df)
 
-            # Fallback SQL execution for non-Ibis stores using Polars SQLContext
             if query and not isinstance(metadata_store, IbisMetadataStore):
-                ctx = pl.SQLContext()
-                ctx.register(table_name, pl_df.lazy())
-                ctx.register("metadata", pl_df.lazy())
-                pl_df = ctx.execute(query, eager=True)
+                con = duckdb.connect()
+                con.register(table_name, arrow_table)
+                con.register("metadata", arrow_table)
+                arrow_table = con.query(query).fetch_arrow_table()
+                if hasattr(arrow_table, "read_all"):
+                    arrow_table = arrow_table.read_all()
 
             # --- Output ---
-            import typing
-
-            fmt = typing.cast(Literal["csv", "json", "parquet", "markdown"], format.lower())
-
-            from contextlib import contextmanager
-
-            @contextmanager
-            def _get_output_stream(path: str | None, out_fmt: Literal["csv", "json", "parquet", "markdown"]):
-                if path:
-                    # Enforce UTF-8 for text formats to avoid Windows charmap errors
-                    if out_fmt in ("parquet", "csv"):
-                        f = open(path, "wb")
-                    else:
-                        f = open(path, "w", encoding="utf-8")
-                    try:
-                        yield f
-                    finally:
-                        f.close()
-                else:
-                    if out_fmt in ("parquet", "csv"):
-                        yield sys.stdout.buffer
-                    else:
-                        yield sys.stdout
-
-            with _get_output_stream(output, fmt) as out_stream:
-                _write_output(pl_df, fmt, out_stream)
+            _write_output(arrow_table, format, output)
 
             if output:
-                console.print(f"[green]SUCCESS:[/green] Wrote to {output}")
+                console.print(f"[green]✓[/green] Wrote to {output}")
 
         except Exception as e:
             error_msg = str(e)
@@ -896,18 +863,53 @@ def read(
             raise SystemExit(1)
 
 
-def _write_output(df: pl.DataFrame, fmt: Literal["csv", "json", "parquet", "markdown"], out: Any) -> None:  # noqa: F821
-    """Write a Polars DataFrame to a file-like stream in the given format."""
-    import polars as pl
+def _write_output(table: pa.Table, fmt: WriteFormat, output: str | None) -> None:  # noqa: F821
+    """Write a PyArrow Table in the given format."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.register("_output", table)
 
     if fmt == "csv":
-        df.write_csv(out)
+        if output:
+            con.execute(f"COPY _output TO '{output}' (FORMAT CSV, HEADER)")
+        else:
+            sys.stdout.write(con.query("SELECT * FROM _output").df().to_csv(index=False))
     elif fmt == "parquet":
-        df.write_parquet(out)
+        if output:
+            con.execute(f"COPY _output TO '{output}' (FORMAT PARQUET)")
+        else:
+            import pyarrow.parquet as pq
+
+            pq.write_table(table, sys.stdout.buffer)
     elif fmt == "json":
-        out.write(df.write_json())
+        result = con.query("SELECT * FROM _output").fetch_arrow_table()
+        if hasattr(result, "read_all"):
+            result = result.read_all()
+        rows = result.to_pydict()
+        # Convert to list of dicts
+        keys = list(rows.keys())
+        records = [{k: rows[k][i] for k in keys} for i in range(result.num_rows)]
+        content = json.dumps(records, default=str)
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(content)
+        else:
+            sys.stdout.write(content)
     elif fmt == "markdown":
-        with pl.Config(tbl_formatting="MARKDOWN", tbl_rows=-1, tbl_cols=-1, tbl_width_chars=1000):
-            out.write(str(df))
+        try:
+            con.install_extension("markdown")
+            con.load_extension("markdown")
+            md = con.query("SELECT * FROM _output").fetchdf().to_markdown(index=False)
+            if md is None:
+                md = ""
+        except Exception:
+            # Fallback: use DuckDB's built-in display
+            md = str(con.query("SELECT * FROM _output"))
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(md)
+        else:
+            sys.stdout.write(md)
     else:
         raise NotImplementedError(f"Unsupported format: {fmt}")
