@@ -35,7 +35,7 @@ from metaxy.models.types import ValidatedFeatureKey
 if TYPE_CHECKING:
     from sqlalchemy import MetaData
 
-    from metaxy.metadata_store.ibis import IbisMetadataStore
+    from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 
 RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
     set(ALL_SYSTEM_COLUMNS)

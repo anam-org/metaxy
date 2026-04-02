@@ -21,7 +21,7 @@ Bring your own... really everything. Metaxy is a universal glue for metadata. Us
 
 </div>
 
-1. while we don't (yet) ship native support for all these databases, the base [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] can be easily extended to handle additional databases
+1. while we don't (yet) ship native support for all these databases, the base [`IbisMetadataStore`][metaxy.ext.ibis.metadata_store.IbisMetadataStore] can be easily extended to handle additional databases
 2. so not the tables but the actual stuff: images, videos, texts, etc.
 3. from naive `sha256` to more sophisticated [semantic hashing](https://github.com/MinishLab/semhash)
 

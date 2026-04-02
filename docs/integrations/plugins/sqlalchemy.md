@@ -22,7 +22,7 @@ This integration is convenient for setting up [Alembic](https://alembic.sqlalche
 
 [Alembic](https://alembic.sqlalchemy.org/en/latest/) is a database migration toolkit for SQLAlchemy.
 
-The two helper functions: [`filter_feature_sqla_metadata`][metaxy.ext.sqlalchemy.filter_feature_sqla_metadata] and [`get_system_slqa_metadata`][metaxy.ext.sqlalchemy.get_system_slqa_metadata] can be used to retrieve an SQLAlchemy URL and `MetaData` object for a given [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore].
+The two helper functions: [`filter_feature_sqla_metadata`][metaxy.ext.sqlalchemy.filter_feature_sqla_metadata] and [`get_system_slqa_metadata`][metaxy.ext.sqlalchemy.get_system_slqa_metadata] can be used to retrieve an SQLAlchemy URL and `MetaData` object for a given [`IbisMetadataStore`][metaxy.ext.ibis.metadata_store.IbisMetadataStore].
 
 `filter_feature_sqla_metadata` returns table metadata for the user-defined tables, while `get_system_slqa_metadata` returns metadata for Metaxy's system tables.
 

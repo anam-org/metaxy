@@ -1,4 +1,4 @@
-"""This module implements [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore] for ClickHouse.
+"""This module implements [`IbisMetadataStore`][metaxy.ext.ibis.metadata_store.IbisMetadataStore] for ClickHouse.
 
 It takes care of some ClickHouse-specific logic such as `nw.Struct` type conversion against ClickHouse types such as `Map(K,V)`."""
 
@@ -15,13 +15,13 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy._decorators import public
-from metaxy.metadata_store.ibis import (
+from metaxy.ext.ibis.metadata_store import (
     Frame,
     IbisMetadataStore,
     IbisMetadataStoreConfig,
 )
+from metaxy.ext.ibis.versioning import IbisVersioningEngine
 from metaxy.models.types import FeatureKey
-from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -157,7 +157,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
             auto_cast_struct_for_map: whether to auto-convert DataFrame user-defined Struct columns to Map format on write when the ClickHouse column is Map type. Metaxy system columns are always converted.
 
-            **kwargs: Passed to [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore]`
+            **kwargs: Passed to [`IbisMetadataStore`][metaxy.ext.ibis.metadata_store.IbisMetadataStore]`
 
         Raises:
             ImportError: If ibis-clickhouse not installed

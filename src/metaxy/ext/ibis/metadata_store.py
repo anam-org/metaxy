@@ -16,6 +16,7 @@ from narwhals.typing import Frame
 from pydantic import Field
 
 from metaxy._decorators import public
+from metaxy.ext.ibis.versioning import IbisVersioningEngine
 from metaxy.metadata_store.base import (
     MetadataStore,
     MetadataStoreConfig,
@@ -30,7 +31,6 @@ from metaxy.metadata_store.exceptions import (
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
-from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:

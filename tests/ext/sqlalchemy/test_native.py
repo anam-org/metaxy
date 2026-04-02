@@ -13,12 +13,12 @@ from sqlalchemy import Column, MetaData, String, Table
 
 from metaxy import BaseFeature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 from metaxy.ext.sqlalchemy import (
     filter_feature_sqla_metadata,
     get_system_slqa_metadata,
 )
 from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
-from metaxy.metadata_store.ibis import IbisMetadataStore
 
 # Test fixtures
 

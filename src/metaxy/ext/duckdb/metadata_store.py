@@ -19,7 +19,7 @@ from metaxy.ext.duckdb import (
     DuckLakeConfig,
     MotherDuckCatalogConfig,
 )
-from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.versioning.types import HashAlgorithm
 

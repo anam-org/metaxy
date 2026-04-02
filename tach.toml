@@ -14,7 +14,7 @@ depends_on = ["metaxy.models"]
 
 [[modules]]
 path = "metaxy.ext.dagster"
-depends_on = ["metaxy.models", "metaxy.metadata_store", "metaxy"]
+depends_on = ["metaxy.models", "metaxy"]
 
 [[modules]]
 path = "metaxy._hashing"
@@ -28,19 +28,19 @@ utility = true
 
 [[modules]]
 path = "metaxy.models"
-depends_on = ["metaxy.config"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.sqlalchemy"
-depends_on = ["metaxy.config", "metaxy.models", "metaxy.metadata_store"]
+depends_on = ["metaxy.models", "metaxy.metadata_store"]
 
 [[modules]]
 path = "metaxy.ext.sqlmodel"
-depends_on = ["metaxy.ext.sqlalchemy", "metaxy.models", "metaxy.config", "metaxy"]
+depends_on = ["metaxy.ext.sqlalchemy", "metaxy.models", "metaxy"]
 
 [[modules]]
 path = "metaxy.versioning"
-depends_on = ["metaxy.config", "metaxy.models"]
+depends_on = ["metaxy.models"]
 utility = true
 
 [[modules]]
@@ -50,15 +50,15 @@ utility = true
 
 [[modules]]
 path = "metaxy.metadata_store"
-depends_on = ["metaxy.models", "metaxy.config", "metaxy"]
+depends_on = ["metaxy.models"]
 
 [[modules]]
 path = "metaxy.cli"
-depends_on = ["metaxy.ext.mcp", "metaxy.models", "metaxy.metadata_store", "metaxy.config", "metaxy"]
+depends_on = ["metaxy.ext.mcp", "metaxy.models", "metaxy.metadata_store", "metaxy"]
 
 [[modules]]
 path = "metaxy.utils"
-depends_on = ["metaxy.config", "metaxy.metadata_store", "metaxy.models", "metaxy"]
+depends_on = ["metaxy.metadata_store", "metaxy.models", "metaxy"]
 utility = true
 
 [[modules]]
@@ -72,6 +72,7 @@ depends_on = ["metaxy.models", "metaxy"]
 [[modules]]
 path = "metaxy.config"
 depends_on = ["metaxy.models"]
+utility = true
 
 [[modules]]
 path = "metaxy._version"
@@ -98,7 +99,6 @@ path = "metaxy"
 depends_on = [
   "metaxy.metadata_store",
   "metaxy.entrypoints",
-  "metaxy.config",
   "metaxy.models",
   "metaxy.ext.polars.handlers.iceberg",
   "metaxy.ext.duckdb",
@@ -111,15 +111,15 @@ depends_on = [
 
 [[modules]]
 path = "metaxy.ext.bigquery"
-depends_on = ["metaxy.metadata_store"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.polars.handlers.delta"
-depends_on = ["metaxy.config", "metaxy.metadata_store", "metaxy.models"]
+depends_on = ["metaxy.models"]
 
 [[modules]]
 path = "metaxy.ext.duckdb"
-depends_on = ["metaxy.config", "metaxy.metadata_store"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.polars"
@@ -127,16 +127,61 @@ depends_on = ["metaxy.ext.polars.handlers.iceberg", "metaxy.ext.polars.handlers.
 
 [[modules]]
 path = "metaxy.ext.polars.handlers.iceberg"
-depends_on = ["metaxy.metadata_store", "metaxy.config", "metaxy.models"]
+depends_on = ["metaxy.models"]
 
 [[modules]]
 path = "metaxy.ext.clickhouse"
-depends_on = ["metaxy.metadata_store", "metaxy.config", "metaxy.models"]
+depends_on = ["metaxy.models"]
 
 [[modules]]
 path = "metaxy.ext.postgresql"
-depends_on = ["metaxy.models", "metaxy.metadata_store"]
+depends_on = ["metaxy.models"]
 
 [[modules]]
 path = "metaxy.ext.lancedb"
-depends_on = ["metaxy.metadata_store", "metaxy.models"]
+depends_on = []
+
+[[modules]]
+path = "metaxy.ext.ibis"
+depends_on = ["metaxy.models"]
+utility = true
+
+[[modules]]
+path = "metaxy.models.constants"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.models.types"
+depends_on = ["metaxy.models"]
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store.exceptions"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store.fallback"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store.base"
+depends_on = ["metaxy", "metaxy.metadata_store", "metaxy.models"]
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store.utils"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store.warnings"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "metaxy.metadata_store.types"
+depends_on = []
+utility = true

@@ -9,8 +9,8 @@ import pytest
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.duckdb import DuckDBMetadataStore
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph

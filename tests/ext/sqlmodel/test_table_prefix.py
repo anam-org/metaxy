@@ -5,11 +5,11 @@ from sqlmodel import Field, SQLModel
 
 from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig, StoreConfig
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 from metaxy.ext.sqlmodel import (
     BaseSQLModelFeature,
     filter_feature_sqlmodel_metadata,
 )
-from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
 @pytest.fixture(scope="function", autouse=True)

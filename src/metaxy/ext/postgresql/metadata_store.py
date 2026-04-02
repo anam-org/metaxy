@@ -23,8 +23,8 @@ from narwhals.typing import Frame
 from pydantic import Field
 
 from metaxy._decorators import experimental, public
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.metadata_store.exceptions import TableNotFoundError
-from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.models.constants import (
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE_BY_FIELD,

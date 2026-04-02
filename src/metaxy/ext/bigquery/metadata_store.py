@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -123,7 +123,7 @@ class BigQueryMetadataStore(IbisMetadataStore):
             connection_params: Additional Ibis BigQuery connection parameters.
                 Overrides individual parameters if provided.
             fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Passed to [`IbisMetadataStore`][metaxy.metadata_store.ibis.IbisMetadataStore]
+            **kwargs: Passed to [`IbisMetadataStore`][metaxy.ext.ibis.metadata_store.IbisMetadataStore]
 
         Raises:
             ImportError: If ibis-bigquery not installed

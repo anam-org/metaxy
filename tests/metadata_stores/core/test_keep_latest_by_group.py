@@ -35,7 +35,7 @@ class KeepLatestTestDataCases:
         import ibis
         import narwhals as nw
 
-        from metaxy.versioning.ibis import IbisVersioningEngine
+        from metaxy.ext.ibis.versioning import IbisVersioningEngine
 
         base_time = datetime(2024, 1, 1, 12, 0, 0)
 
