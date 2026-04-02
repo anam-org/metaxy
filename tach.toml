@@ -29,6 +29,7 @@ depends_on = [
   "metaxy.versioning",
   "metaxy._decorators",
   "metaxy._exceptions",
+  "metaxy._hashing",
 ]
 
 [[modules]]
@@ -41,7 +42,7 @@ depends_on = ["metaxy.utils"]
 
 [[modules]]
 path = "metaxy._hashing"
-depends_on = ["metaxy.config"]
+depends_on = ["metaxy._decorators", "metaxy.config"]
 
 [[modules]]
 path = "metaxy._packaging"
@@ -170,7 +171,7 @@ depends_on = [
 [[modules]]
 path = "metaxy.config"
 layer = "core"
-depends_on = ["metaxy._decorators", "metaxy.models", "metaxy.versioning"]
+depends_on = ["metaxy._decorators", "metaxy._hashing", "metaxy.models"]
 
 [[modules]]
 path = "metaxy.entrypoints"
@@ -259,7 +260,6 @@ depends_on = [
   "metaxy._decorators",
   "metaxy.config",
   "metaxy.models.types",
-  "metaxy.versioning",
   "metaxy.utils",
 ]
 
@@ -278,7 +278,6 @@ path = "metaxy.utils"
 layer = "core"
 depends_on = [
   "metaxy.metadata_store",
-  "metaxy.versioning",
   "metaxy._exceptions",
   "metaxy._warnings",
   "metaxy.metadata_store.exceptions",

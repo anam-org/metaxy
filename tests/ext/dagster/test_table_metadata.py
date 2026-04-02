@@ -413,7 +413,7 @@ def test_build_table_preview_list_truncation() -> None:
 
 def test_build_table_preview_map_columns() -> None:
     """Test that Map extension type columns are converted to JSON object strings."""
-    from metaxy.versioning._arrow_map import convert_structs_to_maps
+    from metaxy.utils._arrow_map import convert_structs_to_maps
 
     df = convert_structs_to_maps(
         pl.DataFrame({"id": [1], "mapping": [{"a": "1", "b": "2"}]}),

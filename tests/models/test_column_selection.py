@@ -12,6 +12,7 @@ from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
+from metaxy.versioning.validation import validate_column_configuration
 
 
 # Simple test joiner that uses VersioningEngine
@@ -614,7 +615,7 @@ class TestColumnSelection:
             ValueError,
             match="Cannot rename column.*to system column name.*provenance_by_field",
         ):
-            graph.get_feature_plan(FeatureKey(["test", "bad1"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad1"])))
 
         # Renaming to feature_version should raise an error
         class BadFeature2(
@@ -635,7 +636,7 @@ class TestColumnSelection:
             ValueError,
             match="Cannot rename column.*to system column name.*feature_version",
         ):
-            graph.get_feature_plan(FeatureKey(["test", "bad2"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad2"])))
 
         # Renaming to sample_uid should raise an error because upstream has sample_uid as its ID column
         class BadFeature3(
@@ -656,7 +657,7 @@ class TestColumnSelection:
             ValueError,
             match="Cannot rename column.*to ID column.*sample_uid",
         ):
-            graph.get_feature_plan(FeatureKey(["test", "bad3"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad3"])))
 
     def test_rename_to_sample_uid_allowed_when_not_id_column(self):
         """Test that renaming to sample_uid is allowed when it's not an upstream ID column."""
@@ -1138,7 +1139,7 @@ class TestColumnSelection:
             pass
 
         with pytest.raises(ValueError, match="Duplicate column names after renaming"):
-            graph.get_feature_plan(FeatureKey(["test", "bad"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad"])))
 
     def test_duplicate_columns_across_dependencies_validation(self, graph: FeatureGraph):
         """Test that duplicate columns across dependencies are detected at plan creation time."""
@@ -1183,7 +1184,7 @@ class TestColumnSelection:
             pass
 
         with pytest.raises(ValueError, match="would have duplicate column names"):
-            graph.get_feature_plan(FeatureKey(["test", "bad_downstream"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad_downstream"])))
 
     def test_duplicate_columns_with_selected_columns(self, graph: FeatureGraph):
         """Test that duplicate detection works with column selection at plan creation time."""
@@ -1229,7 +1230,7 @@ class TestColumnSelection:
             pass
 
         with pytest.raises(ValueError, match="would have duplicate column names"):
-            graph.get_feature_plan(FeatureKey(["test", "bad_downstream"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad_downstream"])))
 
     def test_renaming_to_upstream_id_columns_forbidden(self, graph: FeatureGraph):
         """Test that renaming to upstream's ID columns is forbidden at plan creation time."""
@@ -1263,7 +1264,7 @@ class TestColumnSelection:
             pass
 
         with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*user_id"):
-            graph.get_feature_plan(FeatureKey(["test", "bad1"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad1"])))
 
         # Renaming to another upstream ID column should also raise an error
         class BadFeature2(
@@ -1284,7 +1285,7 @@ class TestColumnSelection:
             pass
 
         with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*session_id"):
-            graph.get_feature_plan(FeatureKey(["test", "bad2"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "bad2"])))
 
     def test_renaming_to_system_columns_forbidden(self, graph: FeatureGraph):
         """Test that renaming to system columns and ID columns is forbidden at plan creation time."""
@@ -1319,7 +1320,7 @@ class TestColumnSelection:
             ValueError,
             match="Cannot rename column.*to system column name.*provenance_by_field",
         ):
-            graph.get_feature_plan(FeatureKey(["test", "downstream1"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "downstream1"])))
 
         # Renaming to ID column sample_uid should raise an error
         class DownstreamFeature2(
@@ -1339,7 +1340,7 @@ class TestColumnSelection:
             pass
 
         with pytest.raises(ValueError, match="Cannot rename column.*to ID column.*sample_uid"):
-            graph.get_feature_plan(FeatureKey(["test", "downstream2"]))
+            validate_column_configuration(graph.get_feature_plan(FeatureKey(["test", "downstream2"])))
 
     def test_aggregation_lineage_column_selection_drops_non_join_id_columns(self):
         """Test that aggregation lineage drops upstream ID columns not in the aggregation key.

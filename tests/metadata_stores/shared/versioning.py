@@ -1292,7 +1292,7 @@ class VersioningTests:
         assert len(result_off) > 0, "Expected non-empty versioning result"
 
         from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.versioning._arrow_map import convert_structs_to_maps
+        from metaxy.utils._arrow_map import convert_structs_to_maps
 
         # Normalize result_off's Struct _by_field columns to polars_map.Map so
         # both frames have the same type and values can be compared.

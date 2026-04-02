@@ -7,6 +7,18 @@ from metaxy.models.field import FieldKey, FieldSpec
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
+from metaxy.versioning.validation import validate_column_configuration
+
+
+def _make_plan(
+    downstream_spec: FeatureSpec,
+    deps: list[FeatureSpec],
+) -> FeaturePlan:
+    return FeaturePlan(
+        feature=downstream_spec,
+        deps=deps,
+        feature_deps=downstream_spec.deps,
+    )
 
 
 @pytest.fixture
@@ -46,11 +58,7 @@ class TestRenameToSystemColumn:
         )
 
         with pytest.raises(ValueError, match="system column name"):
-            FeaturePlan(
-                feature=downstream_spec,
-                deps=[upstream_spec],
-                feature_deps=downstream_spec.deps,
-            )
+            validate_column_configuration(_make_plan(downstream_spec, [upstream_spec]))
 
     def test_rename_to_metaxy_data_version_rejected(self, upstream_spec: FeatureSpec) -> None:
         downstream_spec = FeatureSpec(
@@ -66,11 +74,7 @@ class TestRenameToSystemColumn:
         )
 
         with pytest.raises(ValueError, match="system column name"):
-            FeaturePlan(
-                feature=downstream_spec,
-                deps=[upstream_spec],
-                feature_deps=downstream_spec.deps,
-            )
+            validate_column_configuration(_make_plan(downstream_spec, [upstream_spec]))
 
 
 class TestRenameToUpstreamIdColumn:
@@ -90,11 +94,7 @@ class TestRenameToUpstreamIdColumn:
         )
 
         with pytest.raises(ValueError, match="ID column"):
-            FeaturePlan(
-                feature=downstream_spec,
-                deps=[upstream_spec],
-                feature_deps=downstream_spec.deps,
-            )
+            validate_column_configuration(_make_plan(downstream_spec, [upstream_spec]))
 
 
 class TestDuplicateRenameTargets:
@@ -123,11 +123,7 @@ class TestDuplicateRenameTargets:
         )
 
         with pytest.raises(ValueError, match="Duplicate column names after renaming"):
-            FeaturePlan(
-                feature=downstream_spec,
-                deps=[upstream_spec],
-                feature_deps=downstream_spec.deps,
-            )
+            validate_column_configuration(_make_plan(downstream_spec, [upstream_spec]))
 
 
 class TestCrossDepColumnCollisions:
@@ -158,11 +154,7 @@ class TestCrossDepColumnCollisions:
         )
 
         with pytest.raises(ValueError, match="duplicate column names"):
-            FeaturePlan(
-                feature=downstream_spec,
-                deps=[upstream_spec, another_upstream_spec],
-                feature_deps=downstream_spec.deps,
-            )
+            validate_column_configuration(_make_plan(downstream_spec, [upstream_spec, another_upstream_spec]))
 
     def test_id_columns_allowed_to_repeat(
         self,
@@ -181,12 +173,7 @@ class TestCrossDepColumnCollisions:
         )
 
         # Should not raise - 'id' column repeating is fine
-        plan = FeaturePlan(
-            feature=downstream_spec,
-            deps=[upstream_spec, another_upstream_spec],
-            feature_deps=downstream_spec.deps,
-        )
-        assert plan is not None
+        validate_column_configuration(_make_plan(downstream_spec, [upstream_spec, another_upstream_spec]))
 
 
 class TestAggregationLineageValidation:
@@ -224,12 +211,7 @@ class TestAggregationLineageValidation:
         )
 
         # Should not raise - aggregation 'on' columns are ID columns
-        plan = FeaturePlan(
-            feature=downstream_spec,
-            deps=[upstream1, upstream2],
-            feature_deps=downstream_spec.deps,
-        )
-        assert plan is not None
+        validate_column_configuration(_make_plan(downstream_spec, [upstream1, upstream2]))
 
 
 class TestValidConfigurationsPassing:
@@ -243,12 +225,7 @@ class TestValidConfigurationsPassing:
             fields=[FieldSpec(key=FieldKey(["out"]), code_version="1")],
         )
 
-        plan = FeaturePlan(
-            feature=downstream_spec,
-            deps=[upstream_spec],
-            feature_deps=downstream_spec.deps,
-        )
-        assert plan is not None
+        validate_column_configuration(_make_plan(downstream_spec, [upstream_spec]))
 
     def test_rename_to_non_conflicting_name(self, upstream_spec: FeatureSpec) -> None:
         downstream_spec = FeatureSpec(
@@ -263,12 +240,7 @@ class TestValidConfigurationsPassing:
             fields=[FieldSpec(key=FieldKey(["out"]), code_version="1")],
         )
 
-        plan = FeaturePlan(
-            feature=downstream_spec,
-            deps=[upstream_spec],
-            feature_deps=downstream_spec.deps,
-        )
-        assert plan is not None
+        validate_column_configuration(_make_plan(downstream_spec, [upstream_spec]))
 
     def test_columns_selection_avoids_collision(
         self,
@@ -292,9 +264,4 @@ class TestValidConfigurationsPassing:
             fields=[FieldSpec(key=FieldKey(["out"]), code_version="1")],
         )
 
-        plan = FeaturePlan(
-            feature=downstream_spec,
-            deps=[upstream_spec, another_upstream_spec],
-            feature_deps=downstream_spec.deps,
-        )
-        assert plan is not None
+        validate_column_configuration(_make_plan(downstream_spec, [upstream_spec, another_upstream_spec]))

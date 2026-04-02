@@ -563,7 +563,7 @@ class MetadataStore(ABC):
 
             native = samples_nw.to_native()
             if isinstance(native, (pl.DataFrame, pl.LazyFrame)):
-                from metaxy.versioning._arrow_map import convert_structs_to_maps
+                from metaxy.utils._arrow_map import convert_structs_to_maps
 
                 native = convert_structs_to_maps(
                     native,

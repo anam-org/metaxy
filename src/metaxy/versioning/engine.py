@@ -22,6 +22,7 @@ from metaxy.models.types import FeatureKey
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 from metaxy.versioning.renamed_df import RenamedDataFrame
 from metaxy.versioning.types import HashAlgorithm
+from metaxy.versioning.validation import validate_column_configuration
 
 # Lazy imports to avoid circular dependencies
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ class VersioningEngine(ABC):
     """
 
     def __init__(self, plan: FeaturePlan):
+        validate_column_configuration(plan)
         self.plan = plan
 
     @classmethod

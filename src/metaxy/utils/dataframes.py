@@ -88,7 +88,7 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
         map_cols = find_map_columns(frame)
         result = frame.collect().to_polars() if isinstance(frame, nw.LazyFrame) else frame.to_polars()
         if map_cols:
-            from metaxy.versioning._arrow_map import convert_maps_to_polars_map
+            from metaxy.utils._arrow_map import convert_maps_to_polars_map
 
             result = convert_maps_to_polars_map(result, columns=map_cols)
         return result
@@ -111,7 +111,7 @@ def collect_to_arrow(frame: PolarsCompatibleFrame) -> pa.Table:
     table: pa.Table = collected.to_arrow()
 
     if collected.implementation == nw.Implementation.POLARS:
-        from metaxy.versioning._arrow_map import convert_extension_maps_to_native, has_extension_map_columns
+        from metaxy.utils._arrow_map import convert_extension_maps_to_native, has_extension_map_columns
 
         if has_extension_map_columns(table):
             table = convert_extension_maps_to_native(table)
@@ -158,7 +158,7 @@ def switch_implementation_to_polars(frame: FrameT) -> FrameT:
 
     # Reconstruct polars_map.Map columns that were lost during conversion
     if map_columns:
-        from metaxy.versioning._arrow_map import convert_maps_to_polars_map
+        from metaxy.utils._arrow_map import convert_maps_to_polars_map
 
         native = result.to_native()
         native = convert_maps_to_polars_map(native, columns=map_columns)

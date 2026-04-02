@@ -7,7 +7,7 @@ import pyarrow as pa
 import pytest
 from polars_map import Map
 
-from metaxy.versioning._arrow_map import (
+from metaxy.utils._arrow_map import (
     convert_extension_maps_to_native,
     convert_maps_to_polars_map,
     convert_structs_to_maps,

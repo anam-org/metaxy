@@ -12,12 +12,12 @@ import pytest
 from polars_map import Map
 
 from metaxy.config import MetaxyConfig
-from metaxy.utils.dataframes import lazy_frame_to_polars
-from metaxy.versioning._arrow_map import (
+from metaxy.utils._arrow_map import (
     convert_extension_maps_to_native,
     convert_maps_to_polars_map,
     convert_structs_to_maps,
 )
+from metaxy.utils.dataframes import lazy_frame_to_polars
 from metaxy.versioning.types import Increment, LazyIncrement
 
 MAP_STR_STR = Map(pl.String(), pl.String())

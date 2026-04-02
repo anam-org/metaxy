@@ -526,7 +526,7 @@ class MetaxyConfig(BaseSettings):
             store = config.get_store()
             ```
         """
-        from metaxy.versioning.types import HashAlgorithm
+        from metaxy._hashing import HashAlgorithm
 
         if len(self.stores) == 0:
             raise InvalidConfigError.from_config(

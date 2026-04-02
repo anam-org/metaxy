@@ -1,36 +1,15 @@
-"""Hash algorithms supported for field provenance calculation."""
+"""Types for versioning increments and hash algorithms."""
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, NamedTuple, cast
 
 import narwhals as nw
 import polars as pl
 
 from metaxy._decorators import public
+from metaxy._hashing import HashAlgorithm as HashAlgorithm
 from metaxy.utils import collect_to_polars
 from metaxy.utils.dataframes import lazy_frame_to_polars
-
-
-@public
-class HashAlgorithm(Enum):
-    """Supported hash algorithms for field provenance calculation.
-
-    These algorithms are chosen for:
-
-    - Speed (non-cryptographic hashes preferred)
-
-    - Cross-database availability
-
-    - Good collision resistance for field provenance calculation
-    """
-
-    XXHASH64 = "xxhash64"  # Fast, available in DuckDB, ClickHouse, Polars
-    XXHASH32 = "xxhash32"  # Faster for small data, less collision resistant
-    WYHASH = "wyhash"  # Very fast, Polars-specific
-    SHA256 = "sha256"  # Cryptographic, slower, universally available
-    MD5 = "md5"  # Legacy, widely available, not recommended for new code
-    FARMHASH = "farmhash"  # Better than MD5, available in BigQuery
 
 
 @public

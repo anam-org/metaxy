@@ -1,17 +1,41 @@
-"""Hash truncation utilities for Metaxy.
+"""Hash utilities for Metaxy.
 
-This module provides utilities for globally truncating hash outputs to reduce
-storage requirements and improve readability. Hash truncation is configured
-through the global MetaxyConfig.
+This module provides the hash algorithm enum and utilities for globally
+truncating hash outputs to reduce storage requirements and improve readability.
+Hash truncation is configured through the global MetaxyConfig.
 """
 
+from enum import Enum
 from typing import Any, TypeVar, overload
 
 import narwhals as nw
 import polars as pl
 
+from metaxy._decorators import public
+
 # Minimum allowed truncation length
 MIN_TRUNCATION_LENGTH = 8
+
+
+@public
+class HashAlgorithm(Enum):
+    """Supported hash algorithms for field provenance calculation.
+
+    These algorithms are chosen for:
+
+    - Speed (non-cryptographic hashes preferred)
+
+    - Cross-database availability
+
+    - Good collision resistance for field provenance calculation
+    """
+
+    XXHASH64 = "xxhash64"
+    XXHASH32 = "xxhash32"
+    WYHASH = "wyhash"
+    SHA256 = "sha256"
+    MD5 = "md5"
+    FARMHASH = "farmhash"
 
 
 def truncate_hash(hash_str: str) -> str:
