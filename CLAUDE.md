@@ -10,9 +10,9 @@ Start each task with the planner agent. Use python-dev to write code, python-tes
 
 ## Project Status
 
-**Early Development - No Stable API**
+**Active Development - Stable Public API**
 
-No users yet. Breaking changes are encouraged. Prioritize better design over backward compatibility. Refactor freely.
+The project has users. APIs marked with `@public` cannot have breaking changes between minor releases. Non-public internals can be refactored freely. Deprecated APIs must be preserved until a minor release.
 
 ## Project Overview
 

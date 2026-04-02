@@ -9,8 +9,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Literal
 
-from metaxy import experimental
-from metaxy._decorators import public
+from metaxy._decorators import experimental, public
 from metaxy._exceptions import ExternalFeatureVersionMismatchError
 from metaxy._warnings import (
     ExternalFeatureVersionMismatchWarning,

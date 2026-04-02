@@ -164,12 +164,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7.5.0
-        with:
-          enable-cache: true
+      - name: Setup devenv
+        uses: ./.github/actions/setup-devenv
       - name: Run Tach
-        run: uv run --no-sync --with tach tach check
+        run: uv run tach check
 
   deadcode:
     runs-on: depot-ubuntu-latest

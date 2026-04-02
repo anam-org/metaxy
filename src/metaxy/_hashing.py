@@ -53,7 +53,7 @@ def truncate_hash(hash_str: str) -> str:
 
 
 def get_hash_truncation_length() -> int:
-    from metaxy import MetaxyConfig
+    from metaxy.config import MetaxyConfig
 
     return MetaxyConfig.get().hash_truncation_length
 

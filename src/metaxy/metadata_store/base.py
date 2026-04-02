@@ -386,8 +386,8 @@ class MetadataStore(ABC):
         """
         import narwhals as nw
 
-        import metaxy as mx
         from metaxy.config import MetaxyConfig
+        from metaxy.utils.external_features import sync_external_features
 
         # Sync external feature definitions from the store to replace any external feature placeholders.
         # This ensures version hashes are computed correctly against actual stored definitions.
@@ -396,7 +396,7 @@ class MetadataStore(ABC):
         # 2. `resolve_update` is already doing heavy computations so an extra little call won't hurt performance
         # 3. it is extremely important to get the result right
         if MetaxyConfig.get(_allow_default_config=True).sync:
-            mx.sync_external_features(self)
+            sync_external_features(self)
 
         # Convert samples to Narwhals frame if not already
         samples_nw: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None
@@ -803,8 +803,8 @@ class MetadataStore(ABC):
         !!! warning
             The order of rows is not guaranteed.
         """
-        import metaxy as mx
         from metaxy.config import MetaxyConfig
+        from metaxy.utils.external_features import sync_external_features
 
         self._check_open()
 
@@ -818,7 +818,7 @@ class MetadataStore(ABC):
         # This call is a no-op most of the time and is very lightweight when it's not
         # Skip for system tables to avoid infinite recursion (sync_external_features reads system tables)
         if not is_system_table and MetaxyConfig.get(_allow_default_config=True).sync:
-            mx.sync_external_features(self)
+            sync_external_features(self)
 
         # If caller wants soft-deleted records, do not filter them out later
         filter_deleted = not include_soft_deleted and not is_system_table

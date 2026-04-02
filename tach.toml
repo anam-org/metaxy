@@ -20,12 +20,6 @@ path = "metaxy"
 depends_on = [
   "metaxy.metadata_store",
   "metaxy.entrypoints",
-  "metaxy.ext.duckdb",
-  "metaxy.ext.bigquery",
-  "metaxy.ext.clickhouse",
-  "metaxy.ext.lancedb",
-  "metaxy.ext.postgresql",
-  "metaxy.ext.polars",
   "metaxy.models.types",
   "metaxy.utils",
   "metaxy._warnings",
@@ -47,7 +41,7 @@ depends_on = ["metaxy.utils"]
 
 [[modules]]
 path = "metaxy._hashing"
-depends_on = ["metaxy"]
+depends_on = ["metaxy.config"]
 
 [[modules]]
 path = "metaxy._packaging"
@@ -115,6 +109,19 @@ path = "metaxy.ext.lancedb"
 layer = "ext"
 depends_on = [
   "metaxy._decorators",
+]
+
+[[modules]]
+path = "metaxy.ext.metadata_stores"
+layer = "ext"
+depends_on = [
+  "metaxy._warnings",
+  "metaxy.ext.bigquery",
+  "metaxy.ext.clickhouse",
+  "metaxy.ext.duckdb",
+  "metaxy.ext.lancedb",
+  "metaxy.ext.polars",
+  "metaxy.ext.postgresql",
 ]
 
 [[modules]]
@@ -201,7 +208,6 @@ depends_on = [
 path = "metaxy.metadata_store.base"
 layer = "core"
 depends_on = [
-  "metaxy",
   "metaxy.metadata_store",
   "metaxy._decorators",
   "metaxy.models.types",
@@ -272,7 +278,6 @@ path = "metaxy.utils"
 layer = "core"
 depends_on = [
   "metaxy.metadata_store",
-  "metaxy",
   "metaxy.versioning",
   "metaxy._exceptions",
   "metaxy._warnings",
