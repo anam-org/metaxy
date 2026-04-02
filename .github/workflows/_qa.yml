@@ -101,26 +101,25 @@ jobs:
               - 'src/**'
               - tach.toml
             duckdb:
-              - 'src/metaxy/ext/metadata_stores/duckdb.py'
-              - 'src/metaxy/ext/metadata_stores/ducklake.py'
+              - 'src/metaxy/ext/duckdb/**'
               - 'tests/ext/duckdb/**'
             clickhouse:
-              - 'src/metaxy/ext/metadata_stores/clickhouse.py'
+              - 'src/metaxy/ext/clickhouse/**'
               - 'tests/ext/clickhouse/**'
             postgres:
-              - 'src/metaxy/ext/metadata_stores/postgresql.py'
+              - 'src/metaxy/ext/postgres/**'
               - 'tests/ext/postgres/**'
             delta:
-              - 'src/metaxy/ext/metadata_stores/delta.py'
+              - 'src/metaxy/ext/polars/handlers/delta.py'
               - 'tests/ext/delta/**'
             iceberg:
-              - 'src/metaxy/ext/metadata_stores/iceberg.py'
+              - 'src/metaxy/ext/polars/handlers/iceberg.py'
               - 'tests/ext/iceberg/**'
             lancedb:
-              - 'src/metaxy/ext/metadata_stores/lancedb.py'
+              - 'src/metaxy/ext/lancedb/**'
               - 'tests/ext/lancedb/**'
             bigquery:
-              - 'src/metaxy/ext/metadata_stores/bigquery.py'
+              - 'src/metaxy/ext/bigquery/**'
               - 'tests/ext/bigquery/**'
             dagster:
               - 'src/metaxy/ext/dagster/**'
