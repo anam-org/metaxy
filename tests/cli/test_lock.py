@@ -28,7 +28,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -59,7 +59,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -123,7 +123,7 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{store_path}"
@@ -153,7 +153,7 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{store_path}"
@@ -194,7 +194,7 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{store_path}"
@@ -238,7 +238,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -278,7 +278,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -329,7 +329,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -383,7 +383,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -432,7 +432,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -461,7 +461,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -509,7 +509,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -538,7 +538,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -602,7 +602,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
@@ -632,7 +632,7 @@ store = "shared"
 auto_create_tables = true
 
 [stores.shared]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.shared.config]
 database = "{store_path}"
