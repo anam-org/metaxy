@@ -35,12 +35,12 @@ For example:
 
 ```toml title="metaxy.toml"
 [stores.branch]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "s3://branch-bucket/${PULL_REQUEST_ID}"
 fallback_stores = ["prod"]
 
 [stores.prod] title="metaxy.toml"
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "s3://my-prod-bucket/metaxy"
 ```
 

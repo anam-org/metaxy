@@ -1,7 +1,6 @@
-"""Deprecated: use metaxy.ext.duckdb instead."""
+"""DuckDB metadata store extension."""
 
-from metaxy._warnings import _warn_deprecated_module
-from metaxy.ext.duckdb import (
+from metaxy.ext.duckdb.handlers.ducklake import (
     DuckDBCatalogConfig,
     DuckDBPyConnection,
     DuckLakeAttachmentManager,
@@ -16,14 +15,16 @@ from metaxy.ext.duckdb import (
     build_secret_sql,
     format_attach_options,
 )
-
-_warn_deprecated_module("metaxy.ext.metadata_stores.ducklake", "metaxy.ext.duckdb")
+from metaxy.ext.duckdb.metadata_store import DuckDBMetadataStore, DuckDBMetadataStoreConfig, ExtensionSpec
 
 __all__ = [
     "DuckDBCatalogConfig",
+    "DuckDBMetadataStore",
+    "DuckDBMetadataStoreConfig",
     "DuckDBPyConnection",
     "DuckLakeAttachmentManager",
     "DuckLakeConfig",
+    "ExtensionSpec",
     "GCSStorageConfig",
     "LocalStorageConfig",
     "MotherDuckCatalogConfig",

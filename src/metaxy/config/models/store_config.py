@@ -32,7 +32,7 @@ class StoreConfig(BaseSettings):
     # Uses alias="type" so TOML and constructor use "type"
     # Annotated as str | type to allow passing class objects directly
     type: str = PydanticField(
-        description='Full import path to metadata store class (e.g., `"metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"`)',
+        description='Full import path to metadata store class (e.g., `"metaxy.ext.duckdb.DuckDBMetadataStore"`)',
     )
 
     config: dict[str, Any] = PydanticField(

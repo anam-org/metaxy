@@ -22,7 +22,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 1. Using the Python API directly:
 
     ```py
-    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+    from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
     store = DeltaMetadataStore(root_path="/path/to/directory")
     ```
@@ -33,7 +33,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
     ```toml title="metaxy.toml"
     [stores.dev]
-    type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+    type = "metaxy.ext.polars.DeltaMetadataStore"
     root_path = "/path/to/directory"
     ```
 
@@ -275,12 +275,12 @@ Example Metaxy configuration:
 
 ```toml title="metaxy.toml"
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "${HOME}/.metaxy/dev"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "s3://my-prod-bucket/metaxy"
 ```
 

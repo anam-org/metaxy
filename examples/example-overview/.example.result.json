@@ -206,7 +206,7 @@
         "command": "metaxy push",
         "returncode": 0,
         "stdout": "2f02765d\n",
-        "stderr": "Recorded at: {'name': 'dev', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1922/test_example_snapshot_ex\nample_3/example-overview)', 'resolved_from': {'name': 'dev', 'type': \n'metaxy.ext.metadata_stores.delta.DeltaMetadataStore', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1922/test_example_snapshot_ex\nample_3/example-overview)', 'uri': \n'/tmp/pytest-of-dan/pytest-1922/test_example_snapshot_example_3/example-overview\n/metaxy-system/feature_versions.delta'}}\n✓ Snapshot already recorded (no changes)\n",
+        "stderr": "Recorded at: {'name': 'dev', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1922/test_example_snapshot_ex\nample_3/example-overview)', 'resolved_from': {'name': 'dev', 'type': \n'metaxy.ext.polars.DeltaMetadataStore', 'display': \n'DeltaMetadataStore(path=/tmp/pytest-of-dan/pytest-1922/test_example_snapshot_ex\nample_3/example-overview)', 'uri': \n'/tmp/pytest-of-dan/pytest-1922/test_example_snapshot_example_3/example-overview\n/metaxy-system/feature_versions.delta'}}\n✓ Snapshot already recorded (no changes)\n",
         "timestamp": "2026-03-26T15:00:45.411126",
         "scenario_name": "Initial feature graph",
         "step_name": "push_graph"

@@ -89,7 +89,7 @@ class MetadataStoreConfig(BaseSettings):
     Example:
         ```toml title="metaxy.toml"
         [stores.dev]
-        type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+        type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
         [stores.dev.config]
         database = "metadata.db"
@@ -1120,7 +1120,7 @@ class MetadataStore(ABC):
         Example:
             <!-- skip next -->
             ```python
-            from metaxy.ext.metadata_stores.duckdb import (
+            from metaxy.ext.duckdb import (
                 DuckDBMetadataStore,
                 DuckDBMetadataStoreConfig,
             )

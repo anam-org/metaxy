@@ -21,13 +21,13 @@ entrypoints = ["src/my_project/features"]
 
 # Development store
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 [stores.dev.config]
 root_path = "${HOME}/.metaxy/metadata"
 
 # Production store with S3
 [stores.prod]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 [stores.prod.config]
 root_path = "s3://my-bucket/metadata"
 ```
@@ -40,7 +40,7 @@ store = "dev"
 entrypoints = ["src/my_project/features"]
 
 [tool.metaxy.stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 [tool.metaxy.stores.dev.config]
 root_path = "/tmp/metaxy/metadata"
 ```
@@ -49,7 +49,7 @@ root_path = "/tmp/metaxy/metadata"
 
 ```toml
 [stores.branch]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 [stores.branch.config]
 root_path = "s3://my-bucket/${BRANCH_NAME}/metadata"
 ```
@@ -59,7 +59,7 @@ root_path = "s3://my-bucket/${BRANCH_NAME}/metadata"
 ```toml
 # base.toml (shared store definitions)
 [stores.dev]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 [stores.dev.config]
 database = "${HOME}/.metaxy/shared.duckdb"
 ```
@@ -92,7 +92,7 @@ import metaxy as mx
 
 with mx.MetaxyConfig(
     stores={"dev": mx.StoreConfig(
-        type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+        type="metaxy.ext.polars.DeltaMetadataStore",
         config={"root_path": "/tmp/metaxy"},
     )}
 ).use() as config:

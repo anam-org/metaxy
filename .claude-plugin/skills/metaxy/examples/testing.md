@@ -37,7 +37,7 @@ import metaxy as mx
 def test_with_custom_config(tmp_path):
     with mx.MetaxyConfig(
         stores={"test": mx.StoreConfig(
-            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+            type="metaxy.ext.polars.DeltaMetadataStore",
             config={"root_path": str(tmp_path / "delta_test")},
         )}
     ).use() as config:
@@ -57,7 +57,7 @@ def metaxy_env(tmp_path):
     with mx.FeatureGraph().use():
         with mx.MetaxyConfig(
             stores={"test": mx.StoreConfig(
-                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+                type="metaxy.ext.polars.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_test")},
             )}
         ).use() as config:

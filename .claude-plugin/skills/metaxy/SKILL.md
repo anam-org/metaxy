@@ -54,7 +54,7 @@ To configure a metadata store, create a `metaxy.toml` file or use programmatic c
 ```python
 config = mx.MetaxyConfig(
     stores={"dev": mx.StoreConfig(
-        type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+        type="metaxy.ext.polars.DeltaMetadataStore",
         config={"root_path": "/tmp/metaxy"},
     )}
 )
@@ -104,7 +104,7 @@ def metaxy_env(tmp_path):
     with mx.FeatureGraph().use():
         with mx.MetaxyConfig(
             stores={"test": mx.StoreConfig(
-                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+                type="metaxy.ext.polars.DeltaMetadataStore",
                 config={"root_path": str(tmp_path / "delta_test")},
             )}
         ).use() as config:

@@ -65,11 +65,11 @@ You can configure separate metadata stores for different environments:
 
 ```toml title="metaxy.toml"
 [stores.dev]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 config = { database = "dev_metadata.duckdb" }
 
 [stores.prod]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 config = { database = "prod_metadata.duckdb" }
 ```
 

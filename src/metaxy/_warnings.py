@@ -3,6 +3,17 @@
 This module contains all warning classes used by the Metaxy framework.
 """
 
+import warnings
+
+
+def _warn_deprecated_module(old: str, new: str) -> None:
+    """Emit a DeprecationWarning for a relocated module."""
+    warnings.warn(
+        f"{old} is deprecated and will be removed in 0.2.0; use {new} instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
 
 class UnresolvedExternalFeatureWarning(UserWarning):
     """Warning raised when external features could not be resolved from the metadata store."""

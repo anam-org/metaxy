@@ -22,10 +22,6 @@ depends_on = ["metaxy"]
 utility = true
 
 [[modules]]
-path = "metaxy.ext.metadata_stores"
-depends_on = []
-
-[[modules]]
 path = "metaxy._warnings"
 depends_on = []
 utility = true
@@ -99,36 +95,48 @@ utility = true
 
 [[modules]]
 path = "metaxy"
-depends_on = ["metaxy.metadata_store", "metaxy.entrypoints", "metaxy.config", "metaxy.models"]
+depends_on = [
+  "metaxy.metadata_store",
+  "metaxy.entrypoints",
+  "metaxy.config",
+  "metaxy.models",
+  "metaxy.ext.polars.handlers.iceberg",
+  "metaxy.ext.duckdb",
+  "metaxy.ext.polars.handlers.delta",
+  "metaxy.ext.bigquery",
+  "metaxy.ext.clickhouse",
+  "metaxy.ext.lancedb",
+  "metaxy.ext.postgresql",
+]
 
 [[modules]]
-path = "metaxy.ext.metadata_stores.iceberg"
-depends_on = ["metaxy.config", "metaxy.models", "metaxy.metadata_store"]
-
-[[modules]]
-path = "metaxy.ext.metadata_stores.duckdb"
-depends_on = ["metaxy.config", "metaxy.metadata_store", "metaxy.ext.metadata_stores.ducklake"]
-
-[[modules]]
-path = "metaxy.ext.metadata_stores.postgresql"
-depends_on = ["metaxy.models", "metaxy.metadata_store"]
-
-[[modules]]
-path = "metaxy.ext.metadata_stores.delta"
-depends_on = ["metaxy.models", "metaxy.metadata_store", "metaxy.config"]
-
-[[modules]]
-path = "metaxy.ext.metadata_stores.clickhouse"
-depends_on = ["metaxy.metadata_store", "metaxy.models", "metaxy.config"]
-
-[[modules]]
-path = "metaxy.ext.metadata_stores.ducklake"
-depends_on = []
-
-[[modules]]
-path = "metaxy.ext.metadata_stores.bigquery"
+path = "metaxy.ext.bigquery"
 depends_on = ["metaxy.metadata_store"]
 
 [[modules]]
-path = "metaxy.ext.metadata_stores.lancedb"
+path = "metaxy.ext.polars.handlers.delta"
+depends_on = ["metaxy.config", "metaxy.metadata_store", "metaxy.models"]
+
+[[modules]]
+path = "metaxy.ext.duckdb"
+depends_on = ["metaxy.config", "metaxy.metadata_store"]
+
+[[modules]]
+path = "metaxy.ext.polars"
+depends_on = ["metaxy.ext.polars.handlers.iceberg", "metaxy.ext.polars.handlers.delta"]
+
+[[modules]]
+path = "metaxy.ext.polars.handlers.iceberg"
+depends_on = ["metaxy.metadata_store", "metaxy.config", "metaxy.models"]
+
+[[modules]]
+path = "metaxy.ext.clickhouse"
+depends_on = ["metaxy.metadata_store", "metaxy.config", "metaxy.models"]
+
+[[modules]]
+path = "metaxy.ext.postgresql"
 depends_on = ["metaxy.models", "metaxy.metadata_store"]
+
+[[modules]]
+path = "metaxy.ext.lancedb"
+depends_on = ["metaxy.metadata_store", "metaxy.models"]

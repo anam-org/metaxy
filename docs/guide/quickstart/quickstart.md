@@ -23,7 +23,7 @@ pip install 'metaxy[delta]'
 Now the metadata store can be created as:
 
 ```py
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
 store = DeltaMetadataStore("/tmp/quickstart.delta")
 ```

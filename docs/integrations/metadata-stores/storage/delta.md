@@ -5,7 +5,7 @@ description: "Learn how to use Delta Lake to store Metaxy metadata."
 
 # Metaxy + Delta Lake
 
-[Delta Lake](https://delta.io/) is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure [`DeltaMetadataStore`][metaxy.ext.metadata_stores.delta.DeltaMetadataStore]. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.
+[Delta Lake](https://delta.io/) is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure [`DeltaMetadataStore`][metaxy.ext.polars.DeltaMetadataStore]. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.
 
 It supports the local filesystem and remote object stores.
 
@@ -27,13 +27,13 @@ pip install 'metaxy[delta]'
 ## API Reference
 
 <!-- dprint-ignore-start -->
-::: metaxy.ext.metadata_stores.delta
+::: metaxy.ext.polars.handlers.delta
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.ext.metadata_stores.delta.DeltaMetadataStore
+::: metaxy.ext.polars.DeltaMetadataStore
     options:
       members: false
       heading_level: 2
@@ -43,7 +43,7 @@ pip install 'metaxy[delta]'
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.delta.DeltaMetadataStoreConfig
+    class: metaxy.ext.polars.handlers.delta.DeltaMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 3
 <!-- dprint-ignore-end -->

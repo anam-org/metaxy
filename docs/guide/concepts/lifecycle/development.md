@@ -16,7 +16,7 @@ It all starts from the [metadata store](../metadata-stores.md). The default meta
 
 ```toml title="metaxy.toml"
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "${HOME}/.metaxy/dev"
 ```
 
@@ -44,11 +44,11 @@ You'll probably want to configure the `dev` store to [pull missing data from pro
 
 ```toml title="metaxy.toml"
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "${HOME}/.metaxy/dev"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.DeltaMetadataStore"
 root_path = "s3://my-prod-bucket/metaxy"
 ```
