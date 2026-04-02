@@ -210,13 +210,13 @@ class TestListStores:
 class TestGetStore:
     """Tests for get_store tool."""
 
-    async def test_returns_display_string(self, mcp_client: Client) -> None:
+    async def test_returns_display_string(self, mcp_client: Client, config: MetaxyConfig) -> None:
         _create_test_features()
 
         result = await _call_tool(mcp_client, "get_store", store_name="dev")
+        store = config.get_store("dev")
 
-        assert isinstance(result, str)
-        assert "DuckDBMetadataStore" in result
+        assert result == str(store)
 
     async def test_raises_for_unknown_store(self, mcp_client: Client) -> None:
         _create_test_features()

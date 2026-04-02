@@ -8,6 +8,7 @@ from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     MetadataSchemaError,
     MetadataStoreError,
+    NoHandlerError,
     StoreNotOpenError,
 )
 from metaxy.metadata_store.system import (
@@ -24,6 +25,7 @@ __all__ = [
     "DependencyError",
     "StoreNotOpenError",
     "HashAlgorithmNotSupportedError",
+    "NoHandlerError",
     "FEATURE_VERSIONS_KEY",
     "AccessMode",
 ]

@@ -1,6 +1,9 @@
 """Shared DuckLake configuration helpers."""
 
-from collections.abc import Mapping
+from __future__ import annotations
+
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from typing import Annotated, Any, Literal
 
 from duckdb import DuckDBPyConnection  # noqa: TID252
@@ -13,6 +16,9 @@ from pydantic import (
 from typing_extensions import Self
 
 from metaxy._decorators import public
+from metaxy.ext.ibis.engine import IbisSQLHandler
+from metaxy.metadata_store.storage_config import StorageConfig
+from metaxy.metadata_store.types import AccessMode
 
 # ---------------------------------------------------------------------------
 # Metadata backend configs
@@ -485,3 +491,58 @@ class DuckLakeAttachmentManager:
     def preview_sql(self) -> list[str]:
         """Return the SQL statements that would be executed during configure()."""
         return self._build_sql_statements()
+
+
+class DuckDBDuckLakeHandler(IbisSQLHandler):
+    """Storage handler for DuckLake tables accessed through a DuckDB connection.
+
+    Attachment happens via the ``open()`` context manager -- the engine
+    calls it around each operation, ATTACHing the DuckLake catalog for the
+    duration of that operation.
+    """
+
+    def __init__(
+        self,
+        ducklake_config: DuckLakeConfig,
+        *,
+        auto_create_tables: bool = False,
+        store_name: str | None = None,
+    ) -> None:
+        super().__init__(auto_create_tables=auto_create_tables)
+        self._config = ducklake_config
+        self._attachment = DuckLakeAttachmentManager(ducklake_config, store_name=store_name)
+
+    # -- capability: only handles DuckLakeStorageConfig -----------------------
+
+    def can_handle(self, storage_config: StorageConfig) -> bool:
+        from metaxy.ext.ibis.engine import DuckLakeStorageConfig
+
+        return isinstance(storage_config, DuckLakeStorageConfig)
+
+    # -- lifecycle ------------------------------------------------------------
+
+    @contextmanager
+    def open(self, conn: Any, mode: AccessMode) -> Iterator[Self]:  # noqa: ARG002
+        """ATTACH the DuckLake catalog for the duration of this operation."""
+        self._attachment._attached = False
+        self._attachment.configure(conn.con)
+        yield self
+
+    # -- public DuckLake API -------------------------------------------------
+
+    @property
+    def ducklake_config(self) -> DuckLakeConfig:
+        return self._config
+
+    @property
+    def attachment_manager(self) -> DuckLakeAttachmentManager:
+        return self._attachment
+
+    def preview_ducklake_sql(self) -> list[str]:
+        return self._attachment.preview_sql()
+
+    def required_extensions(self) -> list:
+        """Extensions this handler needs loaded on the DuckDB connection."""
+        from metaxy.ext.duckdb.engine import ExtensionSpec
+
+        return [ExtensionSpec(name="ducklake")]

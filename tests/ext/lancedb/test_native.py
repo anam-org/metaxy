@@ -44,14 +44,6 @@ class TestLanceDB(
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.fixture
-    def named_store(self, tmp_path: Path) -> MetadataStore:
-        return LanceDBMetadataStore(
-            uri=tmp_path / "lancedb_store",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="dev",
-        )
-
 
 @pytest.fixture(autouse=True)
 def _lancedb_project(config: MetaxyConfig):
