@@ -97,6 +97,7 @@ jobs:
       environment: github-pages
       docs-version: ${{ needs.check-stable-release.outputs.version }}
       docs-alias: 'stable'
+      docs-default: 'stable'
 
   github-release:
     needs: pypi

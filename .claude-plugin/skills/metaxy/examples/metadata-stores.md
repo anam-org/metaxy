@@ -1,6 +1,6 @@
 # Metadata Stores
 
-See full documentation: https://docs.metaxy.io/latest/guide/concepts/metadata-stores/
+See full documentation: https://docs.metaxy.io/stable/guide/concepts/metadata-stores/
 
 ## Store Operations
 

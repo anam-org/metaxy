@@ -113,9 +113,9 @@ def metaxy_env(tmp_path):
 
 #### Map Datatype (Experimental)
 
-To enable native Arrow Map column support (recommended for stores that support it), set `enable_map_datatype = true` in `metaxy.toml`. Requires the `polars-map` package. See https://docs.metaxy.io/latest/guide/concepts/metadata-stores/#map-datatype
+To enable native Arrow Map column support (recommended for stores that support it), set `enable_map_datatype = true` in `metaxy.toml`. Requires the `polars-map` package. See https://docs.metaxy.io/stable/guide/concepts/metadata-stores/#map-datatype
 
-When working with Map columns, use `metaxy.utils.collect_to_polars`, `metaxy.utils.collect_to_arrow`, or `metaxy.utils.switch_implementation_to_polars` to materialize or convert frames. These utilities preserve Map column types that would otherwise be lost with standard Narwhals backend conversions. See https://docs.metaxy.io/latest/guide/concepts/metadata-stores/#map-datatype
+When working with Map columns, use `metaxy.utils.collect_to_polars`, `metaxy.utils.collect_to_arrow`, or `metaxy.utils.switch_implementation_to_polars` to materialize or convert frames. These utilities preserve Map column types that would otherwise be lost with standard Narwhals backend conversions. See https://docs.metaxy.io/stable/guide/concepts/metadata-stores/#map-datatype
 
 ## Examples
 
@@ -129,15 +129,15 @@ For complete code examples, see:
 
 ## Documentation
 
-For comprehensive documentation: https://docs.metaxy.io/latest/
+For comprehensive documentation: https://docs.metaxy.io/stable/
 
 Key pages:
 
-- **Quickstart**: https://docs.metaxy.io/latest/guide/quickstart/quickstart/
-- **Feature Definitions**: https://docs.metaxy.io/latest/guide/concepts/definitions/features/
-- **Data Versioning**: https://docs.metaxy.io/latest/guide/concepts/versioning/
-- **Metadata Stores**: https://docs.metaxy.io/latest/guide/concepts/metadata-stores/
-- **Projects**: https://docs.metaxy.io/latest/guide/concepts/projects/
-- **External Features**: https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/
-- **CLI Reference**: https://docs.metaxy.io/latest/reference/cli/
-- **API Reference**: https://docs.metaxy.io/latest/reference/api/
+- **Quickstart**: https://docs.metaxy.io/stable/guide/quickstart/quickstart/
+- **Feature Definitions**: https://docs.metaxy.io/stable/guide/concepts/definitions/features/
+- **Data Versioning**: https://docs.metaxy.io/stable/guide/concepts/versioning/
+- **Metadata Stores**: https://docs.metaxy.io/stable/guide/concepts/metadata-stores/
+- **Projects**: https://docs.metaxy.io/stable/guide/concepts/projects/
+- **External Features**: https://docs.metaxy.io/stable/guide/concepts/definitions/external-features/
+- **CLI Reference**: https://docs.metaxy.io/stable/reference/cli/
+- **API Reference**: https://docs.metaxy.io/stable/reference/api/

@@ -1,3 +1,3 @@
 # DuckLake
 
-View this example in [Metaxy docs](https://docs.metaxy.io/main/examples/ducklake/).
+View this example in [Metaxy docs](https://docs.metaxy.io/stable/examples/ducklake/).

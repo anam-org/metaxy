@@ -27,6 +27,10 @@ on:
         description: 'Set this as the default version redirect (e.g., latest)'
         type: string
         default: ''
+      docs-prerelease:
+        description: 'Mark this version as pre-release (shows unstable banner)'
+        type: boolean
+        default: false
 
 jobs:
   docs:
@@ -49,6 +53,7 @@ jobs:
       - name: Build documentation
         env:
           METAXY_SYNC_DOCS_MOUNTS: "1"
+          DOCS_PRERELEASE: ${{ inputs.docs-prerelease && 'true' || '' }}
         run: uv run mkdocs build --strict
 
       - name: Configure Git for Mike

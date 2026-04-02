@@ -318,6 +318,9 @@ extra:
       link: https://github.com/anam-org/metaxy
   version:
     provider: mike
+    default:
+      - stable
+  pre_release: !ENV [DOCS_PRERELEASE, false]
 
 validation:
   omitted_files: warn

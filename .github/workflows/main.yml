@@ -52,4 +52,4 @@ jobs:
       environment: github-pages
       docs-version: ${{ github.ref_name }}
       docs-alias: 'latest'
-      docs-default: 'latest'
+      docs-prerelease: true

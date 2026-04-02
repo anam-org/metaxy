@@ -1,6 +1,6 @@
 # Configuration
 
-See full documentation: https://docs.metaxy.io/latest/reference/configuration/
+See full documentation: https://docs.metaxy.io/stable/reference/configuration/
 
 ## TOML Configuration
 

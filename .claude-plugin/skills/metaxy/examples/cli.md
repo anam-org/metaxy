@@ -2,7 +2,7 @@
 
 Metaxy provides a CLI (`metaxy` or `mx`) for managing features, metadata, and migrations. Explore the CLI with `--help` for more information.
 
-See full documentation: https://docs.metaxy.io/latest/reference/cli/
+See full documentation: https://docs.metaxy.io/stable/reference/cli/
 
 ## Common Commands
 

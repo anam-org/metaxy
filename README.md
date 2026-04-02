@@ -52,9 +52,9 @@ uv add metaxy
 
 Metaxy is highly pluggable and generally can be used with any kind of incremental pipelines, storage, metadata storage, and dataframe libraries.
 
-Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/latest/integrations/orchestration/dagster), [Ray](https://docs.metaxy.io/latest/integrations/compute/ray), [ClickHouse](https://docs.metaxy.io/latest/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/latest/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/latest/integrations/plugins/sqlmodel/).
+Metaxy provides integrations with popular tools such as [Dagster](https://docs.metaxy.io/stable/integrations/orchestration/dagster), [Ray](https://docs.metaxy.io/stable/integrations/compute/ray), [ClickHouse](https://docs.metaxy.io/stable/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://docs.metaxy.io/stable/integrations/metadata-stores/storage/delta/), [SQLModel](https://docs.metaxy.io/stable/integrations/plugins/sqlmodel/).
 
-The full list can be found [here](https://docs.metaxy.io/latest/integrations).
+The full list can be found [here](https://docs.metaxy.io/stable/integrations).
 
 ## Blog Posts
 

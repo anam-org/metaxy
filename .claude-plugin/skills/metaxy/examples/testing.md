@@ -1,6 +1,6 @@
 # Testing Metaxy Code
 
-See full documentation: https://docs.metaxy.io/latest/guide/concepts/lifecycle/testing/
+See full documentation: https://docs.metaxy.io/stable/guide/concepts/lifecycle/testing/
 
 ## Graph Isolation
 

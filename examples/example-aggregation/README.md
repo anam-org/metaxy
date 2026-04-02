@@ -1,3 +1,3 @@
 # Aggregation
 
-View this example in [Metaxy docs](https://docs.metaxy.io/latest/examples/aggregation/).
+View this example in [Metaxy docs](https://docs.metaxy.io/stable/examples/aggregation/).
