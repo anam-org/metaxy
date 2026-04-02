@@ -10,7 +10,7 @@ import pytest
 
 from metaxy import FeatureKey, HashAlgorithm
 from metaxy.config import MetaxyConfig
-from metaxy.ext.metadata_stores.lancedb import LanceDBMetadataStore
+from metaxy.ext.lancedb import LanceDBMetadataStore
 from metaxy.metadata_store import MetadataStore, StoreNotOpenError
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_definition import FeatureDefinition

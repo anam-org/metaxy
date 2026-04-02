@@ -10,8 +10,8 @@ from hypothesis import strategies as st
 from polars.testing import assert_frame_equal
 from polars.testing.parametric import column, dataframes
 
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
-from metaxy.ext.metadata_stores.ducklake import (
+from metaxy.ext.duckdb import (
+    DuckDBMetadataStore,
     DuckLakeAttachmentManager,
     DuckLakeConfig,
     GCSStorageConfig,

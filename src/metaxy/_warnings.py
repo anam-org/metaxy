@@ -6,11 +6,15 @@ This module contains all warning classes used by the Metaxy framework.
 import warnings
 
 
+class MovedMetadataStoreWarning(DeprecationWarning):
+    """Warning raised when a metadata store has been moved to a different module."""
+
+
 def _warn_deprecated_module(old: str, new: str) -> None:
     """Emit a DeprecationWarning for a relocated module."""
     warnings.warn(
         f"{old} is deprecated and will be removed in 0.2.0; use {new} instead.",
-        DeprecationWarning,
+        MovedMetadataStoreWarning,
         stacklevel=3,
     )
 

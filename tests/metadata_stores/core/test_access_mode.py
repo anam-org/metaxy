@@ -9,8 +9,8 @@ from typing import Any
 import polars as pl
 import pytest
 
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.exceptions import StoreNotOpenError
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph

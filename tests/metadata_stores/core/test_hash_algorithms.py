@@ -26,7 +26,7 @@ from pytest_cases import parametrize_with_cases
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
 from metaxy.config import MetaxyConfig
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.versioning.types import HashAlgorithm
 
 # ============= TEST: HASH ALGORITHM CORRECTNESS =============

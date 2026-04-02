@@ -29,8 +29,8 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     MetadataStore,
@@ -604,7 +604,7 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path: Path, graph: Fe
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+    from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -655,7 +655,7 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path: Path, graph: Feat
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+    from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -728,7 +728,7 @@ def test_get_store_metadata_prefers_current_store(tmp_path: Path, graph: Feature
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+    from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,
@@ -788,7 +788,7 @@ def test_read_with_store_info(tmp_path: Path, graph: FeatureGraph) -> None:
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+    from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
     class TestFeature(
         BaseFeature,

@@ -1,6 +1,6 @@
 """Tests for DuckDB-specific SQL dialect detection."""
 
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
 
 
 def test_sql_dialect_uses_connection(ibis_store: DuckDBMetadataStore) -> None:

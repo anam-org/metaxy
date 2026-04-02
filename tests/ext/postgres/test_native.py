@@ -9,7 +9,7 @@ import polars as pl
 import polars.testing
 import pytest
 
-from metaxy.ext.metadata_stores.postgresql import PostgreSQLMetadataStore
+from metaxy.ext.postgresql import PostgreSQLMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD

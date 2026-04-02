@@ -9,7 +9,7 @@ import polars as pl
 import pytest
 
 from metaxy import HashAlgorithm
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey

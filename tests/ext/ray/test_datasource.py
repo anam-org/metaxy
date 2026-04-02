@@ -13,7 +13,7 @@ from metaxy_testing import RAY_FEATURES_MODULE
 from polars_map import Map
 
 import metaxy as mx
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
 from .conftest import DERIVED_FEATURE_KEY, FEATURE_KEY, make_test_data
 
@@ -289,7 +289,7 @@ auto_create_tables = true
 entrypoints = ["{RAY_FEATURES_MODULE}"]
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_root}"

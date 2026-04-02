@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,

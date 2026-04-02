@@ -10,7 +10,7 @@ from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
 
 

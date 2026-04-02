@@ -18,7 +18,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,

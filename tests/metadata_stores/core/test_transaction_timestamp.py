@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
 
 
 @pytest.fixture

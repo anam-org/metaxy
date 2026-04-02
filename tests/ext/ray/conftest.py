@@ -11,7 +11,7 @@ from metaxy_testing import RAY_FEATURES_MODULE
 
 import metaxy as mx
 from metaxy.config import StoreConfig
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
 # NOTE: Do NOT import RayTestFeature at module level!
 # It must be imported AFTER init() to pick up the correct project.
@@ -74,7 +74,7 @@ def ray_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConf
         entrypoints=[RAY_FEATURES_MODULE],
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+                type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
                 config={"root_path": str(delta_store._root_uri)},
             )
         },
@@ -90,7 +90,7 @@ def ray_map_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.Metaxy
         enable_map_datatype=True,
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+                type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
                 config={"root_path": str(delta_store._root_uri)},
             )
         },

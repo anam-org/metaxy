@@ -1523,7 +1523,7 @@ class ResolveUpdateTests:
         - DeltaMetadataStore uses append mode, preserving duplicates
         """
         from metaxy import FieldKey, FieldSpec
-        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
         class Upstream(
             SampleFeature,
@@ -1644,7 +1644,7 @@ class ResolveUpdateTests:
         - So 755755 samples in downstream have no matching upstream in local store
         """
         from metaxy import FieldKey, FieldSpec
-        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
         class Upstream(
             SampleFeature,

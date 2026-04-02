@@ -571,7 +571,7 @@ class MapDtypeTests:
 
         from metaxy import FeatureDep, FeatureKey
         from metaxy.config import MetaxyConfig
-        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
         from metaxy.models.field import FieldSpec
         from metaxy.models.types import FieldKey
 

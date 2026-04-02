@@ -20,7 +20,7 @@ from metaxy import (
     MetadataStore,
 )
 from metaxy.config import MetaxyConfig
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system.storage import SystemTableStorage
 
 UPSTREAM_KEY = FeatureKey(["test", "upstream"])

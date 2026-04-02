@@ -1054,7 +1054,7 @@ def test_sync_external_features_warns_on_invalid_stored_feature(tmp_path: Path) 
     import warnings
 
     from metaxy._warnings import InvalidStoredFeatureWarning
-    from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+    from metaxy.ext.duckdb import DuckDBMetadataStore
 
     store_path = tmp_path / "store.duckdb"
 

@@ -9,7 +9,7 @@ import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.pytest_helpers import add_metaxy_system_columns
 
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )

@@ -272,7 +272,7 @@ class TestMetaxyIOManagerLoadInput:
         metadata to the LOADED_INPUT event.
         """
         import metaxy.ext.dagster as mxd
-        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
         # Create fallback and primary stores
         fallback_path = tmp_path / "fallback"
@@ -297,11 +297,11 @@ class TestMetaxyIOManagerLoadInput:
 
         # Configure MetaxyConfig with primary store having fallback
         fallback_store_config = mx.StoreConfig(
-            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+            type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
             config={"root_path": str(fallback_path)},
         )
         primary_store_config = mx.StoreConfig(
-            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+            type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
             config={
                 "root_path": str(primary_path),
                 "fallback_stores": ["fallback"],

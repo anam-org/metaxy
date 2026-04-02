@@ -100,7 +100,7 @@ def config(tmp_path_factory):
         project="test",
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={"database": data_dir / "test.duckdb"},
             )
         },
