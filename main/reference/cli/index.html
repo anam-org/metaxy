@@ -112,6 +112,16 @@
     
       <div data-md-color-scheme="default" data-md-component="outdated" hidden>
         
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              You're viewing documentation for an <strong>outdated version</strong>.
+    <a href="../../..">
+      <strong>Switch to the latest stable release</strong>
+    </a>
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
       </div>
     
     
@@ -4261,7 +4271,7 @@
 </span></code></pre></div>
 <p>Metaxy CLI.</p>
 <p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
-Feature definitions are collected via <a href="https://docs.metaxy.io/latest/learn/feature-discovery/"><abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr></a>.
+Feature definitions are collected via <a href="https://docs.metaxy.io/stable/learn/feature-discovery/"><abbr title="Automatic searching for feature definitions in the current environment. | /guide/concepts/projects/#feature-discovery">feature discovery</abbr></a>.
 Supports loading environment variables from a <code>.env</code> file in the current directory.</p>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ul>
@@ -4298,12 +4308,12 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 </ul>
 <p><strong>Commands</strong>:</p>
 <ul>
-<li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy <a href="https://docs.metaxy.io/latest/reference/configuration/">configuration</a></li>
+<li><a href="#metaxy-config"><code>config</code></a>: Manage Metaxy <a href="https://docs.metaxy.io/stable/reference/configuration/">configuration</a></li>
 <li><a href="#metaxy-describe"><code>describe</code></a>: Describe Metaxy entities in detail</li>
 <li><a href="#metaxy-graph"><code>graph</code></a>: Manage feature graphs</li>
 <li><a href="#metaxy-history"><code>history</code></a>: Show history of recorded graph snapshots from the metadata store.</li>
 <li><a href="#metaxy-list"><code>list</code></a>: List Metaxy entities</li>
-<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</li>
+<li><a href="#metaxy-lock"><code>lock</code></a>: Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/stable/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</li>
 <li><a href="#metaxy-mcp"><code>mcp</code></a>: <a href="https://modelcontextprotocol.io/docs/getting-started/intro">MCP</a> server commands.</li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a>: Manage Metaxy metadata in metadata stores.</li>
 <li><a href="#metaxy-push"><code>push</code></a>: Push feature definitions to the metadata store</li>
@@ -4330,7 +4340,7 @@ Supports loading environment variables from a <code>.env</code> file in the curr
 <li><code>--locked, --no-locked</code>: When used with --sync, raise an error if <abbr title="Feature definition referencing an Metaxy feature defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature</abbr> versions don't match the actual versions from the metadata store.  <em>[env: METAXY_LOCKED]</em>  <em>[default: False]</em></li>
 </ul>
 <h2 id="metaxy-config">metaxy config<a class="headerlink" href="#metaxy-config" title="Permanent link">&para;</a></h2>
-<p>Manage Metaxy <a href="https://docs.metaxy.io/latest/reference/configuration/">configuration</a></p>
+<p>Manage Metaxy <a href="https://docs.metaxy.io/stable/reference/configuration/">configuration</a></p>
 <p><strong>Global</strong>:</p>
 <ul>
 <li><code>--config-file</code>: Path to the <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
@@ -4491,8 +4501,8 @@ version, description, fields with their versions and dependencies.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
-<li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/stable/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--global-filter, --empty-global-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/stable/guide/concepts/filters/">filter</a> applied to all features being selected (including upstream). Can be repeated.</li>
 <li><code>--stale-if, --empty-stale-if</code>: SQL WHERE clause predicate that marks matching records as stale regardless of version. Can be repeated.</li>
 <li><code>--snapshot-id</code>: Check metadata against a specific project version.</li>
 <li><code>--assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: False]</em></li>
@@ -4513,7 +4523,7 @@ version, description, fields with their versions and dependencies.</p>
 <p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--store</code>: Metadata store name (defaults to configured default store).</li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/stable/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--soft, --hard</code>: Whether to mark records with deletion timestamps vs physically remove them.  <em>[default: True]</em></li>
 <li><code>--with-feature-history, --no-with-feature-history</code>: Include rows from all historical feature versions (by default, only current version is affected).  <em>[default: False]</em></li>
 <li><code>--yes, --no-yes</code>: Confirm deletion without prompting (required for hard deletes without filters).  <em>[default: False]</em></li>
@@ -4547,7 +4557,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <ul>
 <li><code>--from</code>: Source store name to copy metadata from.  <strong>[required]</strong></li>
 <li><code>--to</code>: Destination store name to copy metadata to.  <strong>[required]</strong></li>
-<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/latest/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
+<li><code>--filter, --empty-filter</code>: SQL WHERE clause <a href="https://docs.metaxy.io/stable/guide/concepts/filters/">filter</a> applied to the result of the status increment. Can be repeated.</li>
 <li><code>--with-feature-history, --no-with-feature-history</code>: Include rows from all historical feature versions (by default, only current version is copied).  <em>[default: True]</em></li>
 <li><code>--with-sample-history, --no-with-sample-history</code>: Include all historical materializations per sample (by default, deduplicates by id_columns).  <em>[default: False]</em></li>
 </ul>
@@ -4588,7 +4598,7 @@ keeping only the latest row per sample (--no-with-sample-history).</p>
 <h2 id="metaxy-lock">metaxy lock<a class="headerlink" href="#metaxy-lock" title="Permanent link">&para;</a></h2>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="go">metaxy lock [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
-<p>Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</p>
+<p>Generate <code>metaxy.lock</code> file with <a href="https://docs.metaxy.io/stable/guide/concepts/definitions/external-features/"><abbr title="Feature definitions referencing Metaxy features defined in other Metaxy projects, typically not available in the current Python environment. | /guide/concepts/definitions/features/#external-features">external feature definitions</abbr></a> fetched from the metadata store.</p>
 <p>Analyzes the current feature graph to find external dependencies, then fetches
 those feature definitions (and their transitive dependencies) from the metadata store.</p>
 <p>Distribution entry points are automatically filtered to only load features from
@@ -4684,7 +4694,7 @@ unrelated packages from polluting the lock file.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": ["stable"], "provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>

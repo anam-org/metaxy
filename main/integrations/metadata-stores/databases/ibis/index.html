@@ -112,6 +112,16 @@
     
       <div data-md-color-scheme="default" data-md-component="outdated" hidden>
         
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              You're viewing documentation for an <strong>outdated version</strong>.
+    <a href="../../../../..">
+      <strong>Switch to the latest stable release</strong>
+    </a>
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../../../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
       </div>
     
     
@@ -1836,19 +1846,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#metaxy.metadata_store.ibis" class="md-nav__link">
+  <a href="#metaxy.ext.ibis.metadata_store" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;ibis
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;metadata_store
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" ibis">
+    <nav class="md-nav" aria-label=" metadata_store">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy.metadata_store.ibis.IbisMetadataStore" class="md-nav__link">
+  <a href="#metaxy.ext.ibis.metadata_store.IbisMetadataStore" class="md-nav__link">
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;IbisMetadataStore
@@ -3742,19 +3752,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#metaxy.metadata_store.ibis" class="md-nav__link">
+  <a href="#metaxy.ext.ibis.metadata_store" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;ibis
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;metadata_store
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" ibis">
+    <nav class="md-nav" aria-label=" metadata_store">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy.metadata_store.ibis.IbisMetadataStore" class="md-nav__link">
+  <a href="#metaxy.ext.ibis.metadata_store.IbisMetadataStore" class="md-nav__link">
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;IbisMetadataStore
@@ -3881,18 +3891,18 @@
 
 
 <h1 id="metaxy-ibis">Metaxy + Ibis<a class="headerlink" href="#metaxy-ibis" title="Permanent link">&para;</a></h1>
-<p>Metaxy uses <a href="https://ibis-project.org/">Ibis</a> as a portable dataframe abstraction for SQL-based metadata stores. The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.metadata_store.ibis.IbisMetadataStore&lt;/span&gt;" href="#metaxy.metadata_store.ibis.IbisMetadataStore"><code>IbisMetadataStore</code></a> is the base class for all SQL-backed stores.</p>
+<p>Metaxy uses <a href="https://ibis-project.org/">Ibis</a> as a portable dataframe abstraction for SQL-based metadata stores. The <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.ibis.metadata_store.IbisMetadataStore&lt;/span&gt;" href="#metaxy.ext.ibis.metadata_store.IbisMetadataStore"><code>IbisMetadataStore</code></a> is the base class for all SQL-backed stores.</p>
 
 
 <div class="doc doc-object doc-module">
 
 
 
-<h2 id="metaxy.metadata_store.ibis" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">metaxy.metadata_store.ibis</span>
+<h2 id="metaxy.ext.ibis.metadata_store" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">metaxy.ext.ibis.metadata_store</span>
 
 
-<a href="#metaxy.metadata_store.ibis" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#metaxy.ext.ibis.metadata_store" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
 
@@ -3934,11 +3944,11 @@
 
 
 
-<h3 id="metaxy.metadata_store.ibis.IbisMetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.metadata_store.ibis.IbisMetadataStore</span>
+<h3 id="metaxy.ext.ibis.metadata_store.IbisMetadataStore" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.ext.ibis.metadata_store.IbisMetadataStore</span>
 
 
-<a href="#metaxy.metadata_store.ibis.IbisMetadataStore" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#metaxy.ext.ibis.metadata_store.IbisMetadataStore" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">IbisMetadataStore</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">versioning_engine</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;metaxy.metadata_store.base.VersioningEngineOptions&lt;/span&gt;
 
@@ -4111,7 +4121,7 @@ identifier when combined with the generated table name.</p>
 
 
                   <details class="mkdocstrings-source">
-                    <summary>Source code in <code>src/metaxy/metadata_store/ibis.py</code></summary>
+                    <summary>Source code in <code>src/metaxy/ext/ibis/metadata_store.py</code></summary>
                     <div class="language-python highlight"><pre><span></span><code><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a>    <span class="n">versioning_engine</span><span class="p">:</span> <span class="n">VersioningEngineOptions</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
@@ -4267,7 +4277,7 @@ identifier when combined with the generated table name.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": ["stable"], "provider": "mike"}}</script>
     
     
       <script src="../../../../assets/javascripts/bundle.e71a0d61.min.js"></script>

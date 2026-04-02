@@ -112,6 +112,16 @@
     
       <div data-md-color-scheme="default" data-md-component="outdated" hidden>
         
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              You're viewing documentation for an <strong>outdated version</strong>.
+    <a href="../../../../..">
+      <strong>Switch to the latest stable release</strong>
+    </a>
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../../../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
       </div>
     
     
@@ -7023,13 +7033,13 @@ metadata on at least one spec.</p>
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;dagster.ConfigurableResource&lt;/code&gt;" href="https://docs.dagster.io/api/dagster/resources/#dagster.ConfigurableResource">ConfigurableResource</a>[<a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.MetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/base/#metaxy.MetadataStore">MetadataStore</a>]</code></p>
 
-        <p>This resource creates a <a href="https://docs.metaxy.io/latest/guide/concepts/metadata-stores/"><code>metaxy.MetadataStore</code></a> based on the current <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> (<code>metaxy.toml</code>).</p>
+        <p>This resource creates a <a href="https://docs.metaxy.io/stable/guide/concepts/metadata-stores/"><code>metaxy.MetadataStore</code></a> based on the current <abbr title="Settings via metaxy.toml, pyproject.toml, or environment variables. | /reference/configuration/">Metaxy configuration</abbr> (<code>metaxy.toml</code>).</p>
 <p>If <code>name</code> is not provided, the default store will be used.
 The default store name can be set with <code>store = "my_name"</code> in <code>metaxy.toml</code> or with<code>$METAXY_STORE</code> environment variable.</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="language-json highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;This resource creates a [`metaxy.MetadataStore`](https://docs.metaxy.io/latest/guide/concepts/metadata-stores/) based on the current Metaxy configuration (`metaxy.toml`).\n\nIf `name` is not provided, the default store will be used.\nThe default store name can be set with `store = \&quot;my_name\&quot;` in `metaxy.toml` or with` $METAXY_STORE` environment variable.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;This resource creates a [`metaxy.MetadataStore`](https://docs.metaxy.io/stable/guide/concepts/metadata-stores/) based on the current Metaxy configuration (`metaxy.toml`).\n\nIf `name` is not provided, the default store will be used.\nThe default store name can be set with `store = \&quot;my_name\&quot;` in `metaxy.toml` or with` $METAXY_STORE` environment variable.&quot;</span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -7562,7 +7572,7 @@ The default store name can be set with <code>store = "my_name"</code> in <code>m
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": ["stable"], "provider": "mike"}}</script>
     
     
       <script src="../../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
