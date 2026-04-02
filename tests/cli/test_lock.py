@@ -669,7 +669,7 @@ def test_load_all_features_from_store_warns_on_invalid_feature(tmp_path: Path):
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureGraph, FeatureKey, FieldKey, FieldSpec
-    from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+    from metaxy.ext.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.utils.lock_file import _load_all_features_from_store
 
@@ -1054,7 +1054,7 @@ def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Pa
     from metaxy_testing.models import SampleFeatureSpec
 
     from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey, FieldKey, FieldSpec
-    from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+    from metaxy.ext.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.utils.lock_file import generate_lock_file

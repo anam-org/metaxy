@@ -22,7 +22,7 @@ class KeepLatestTestDataCases:
     def case_polars(self) -> tuple[Any, Any, datetime]:
         import narwhals as nw
 
-        from metaxy.versioning.polars import PolarsVersioningEngine
+        from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
         base_time = datetime(2024, 1, 1, 12, 0, 0)
 

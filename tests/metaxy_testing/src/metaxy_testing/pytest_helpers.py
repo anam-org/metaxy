@@ -93,8 +93,8 @@ def add_metaxy_provenance_column(
         Polars DataFrame with metaxy_provenance column added
     """
     from metaxy import coerce_to_feature_key
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.feature import current_graph
-    from metaxy.versioning.polars import PolarsVersioningEngine
     from metaxy.versioning.types import HashAlgorithm as HashAlgo
 
     if hash_algorithm is None:

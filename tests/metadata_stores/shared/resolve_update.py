@@ -367,7 +367,7 @@ def _compute_golden_increment_for_optional_deps(
     hash_algorithm: HashAlgorithm,
 ) -> Increment:
     """Compute golden increment using PolarsVersioningEngine for optional dependency tests."""
-    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
     engine = PolarsVersioningEngine(plan=child_plan)
 

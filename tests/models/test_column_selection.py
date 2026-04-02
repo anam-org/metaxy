@@ -9,9 +9,9 @@ from metaxy_testing.models import SampleFeatureSpec
 from metaxy_testing.pytest_helpers import add_metaxy_system_columns
 
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
+from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.polars import PolarsVersioningEngine
 
 
 # Simple test joiner that uses VersioningEngine

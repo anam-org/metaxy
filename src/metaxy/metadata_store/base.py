@@ -54,11 +54,10 @@ from metaxy.models.types import (
 )
 from metaxy.utils.dataframes import switch_implementation_to_polars
 from metaxy.versioning import VersioningEngine
-from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
-    pass
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
 
 def _is_map_column(df: Frame, col_name: str) -> bool:
@@ -1216,6 +1215,8 @@ class MetadataStore(ABC):
 
     @contextmanager
     def _create_polars_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
+        from metaxy.ext.polars.versioning import PolarsVersioningEngine
+
         yield PolarsVersioningEngine(plan=plan)
 
     @contextmanager
@@ -1253,6 +1254,8 @@ class MetadataStore(ABC):
         hash_column: str,
     ) -> Frame:
         with self.create_versioning_engine(plan, df.implementation) as engine:
+            from metaxy.ext.polars.versioning import PolarsVersioningEngine
+
             if isinstance(engine, PolarsVersioningEngine) and df.implementation != nw.Implementation.POLARS:
                 PolarsMaterializationWarning.warn_on_implementation_mismatch(
                     self.native_implementation(),

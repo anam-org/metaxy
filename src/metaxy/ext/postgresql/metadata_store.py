@@ -24,6 +24,7 @@ from pydantic import Field
 
 from metaxy._decorators import experimental, public
 from metaxy.ext.ibis.metadata_store import IbisMetadataStore, IbisMetadataStoreConfig
+from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.exceptions import TableNotFoundError
 from metaxy.models.constants import (
     METAXY_DATA_VERSION_BY_FIELD,
@@ -32,7 +33,6 @@ from metaxy.models.constants import (
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.utils import collect_to_polars
-from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:

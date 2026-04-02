@@ -453,11 +453,11 @@ def generate_plan_data(
     """
     import narwhals as nw
 
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.constants import (
         METAXY_CREATED_AT,
         METAXY_FEATURE_VERSION,
     )
-    from metaxy.versioning.polars import PolarsVersioningEngine
 
     graph, upstream_features, child_feature_plan = feature_plan_config
 
@@ -716,7 +716,7 @@ def compute_golden_increment(
     """
     import narwhals as nw
 
-    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
     engine = PolarsVersioningEngine(plan=child_feature_plan)
 

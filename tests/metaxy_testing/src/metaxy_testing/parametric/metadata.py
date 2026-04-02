@@ -724,7 +724,7 @@ def downstream_metadata_strategy(
     # Use the new PolarsVersioningEngine to calculate provenance
     import narwhals as nw
 
-    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
     # Create engine (only accepts plan parameter)
     engine = PolarsVersioningEngine(plan=feature_plan)

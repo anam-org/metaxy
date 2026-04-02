@@ -17,13 +17,13 @@ from pydantic import Field
 
 from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
+from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import is_local_path
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.utils import collect_to_polars
-from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 

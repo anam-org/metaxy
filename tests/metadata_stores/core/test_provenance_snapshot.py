@@ -45,6 +45,7 @@ def test_provenance_snapshot(
     import narwhals as nw
     from metaxy_testing.models import SampleFeatureSpec
 
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.constants import (
         METAXY_CREATED_AT,
         METAXY_DATA_VERSION,
@@ -54,7 +55,6 @@ def test_provenance_snapshot(
         METAXY_PROVENANCE,
         METAXY_PROVENANCE_BY_FIELD,
     )
-    from metaxy.versioning.polars import PolarsVersioningEngine
     from metaxy.versioning.types import HashAlgorithm
 
     graph = FeatureGraph()

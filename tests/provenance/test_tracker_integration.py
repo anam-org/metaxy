@@ -11,11 +11,11 @@ import polars as pl
 import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
+from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
