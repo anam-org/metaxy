@@ -21,6 +21,53 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## v0.1.9 (03-04-2026)
+
+### :wastebasket: Deprecated
+
+- `MetadataStore` implementations have been moved from `metaxy.ext.metadata_stores.<store>` to `metaxy.ext.<store>`. Old import paths are deprecated and will be removed in `0.2.0`.
+
+- `HashAlgorithm` has been moved from `metaxy.versioning.types` to `metaxy._hashing` (is available as `metaxy.HashAlgorithm`). The old import path is deprecated and will be removed in `0.2.0`.
+
+### :sparkles: Features
+
+#### Map datatype
+
+- [`narwhals-map`](https://pypi.org/project/narwhals-map/) is now used for `Map` datatype operations in Narwhals. This changes the Narwhals datatype from `Unknown` to `narwhals_map.Map` and exposes `nw.Expr.map` namespace for these columns. ([#1167](https://github.com/anam-org/metaxy/pull/1167) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :book: Docs
+
+- default to `stable` docs version and updatge all links ([#1156](https://github.com/anam-org/metaxy/pull/1156) by [@danielgafni](https://github.com/danielgafni))
+
+#### Map datatype
+
+- document `narwhals-map` usage for `Map` datatype ([#1171](https://github.com/anam-org/metaxy/pull/1171) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :hammer_and_wrench: Other Improvements
+
+- fix random old analysis script ([#1168](https://github.com/anam-org/metaxy/pull/1168) by [@danielgafni](https://github.com/danielgafni))
+- improve internal dependency structure ([#1166](https://github.com/anam-org/metaxy/pull/1166) by [@danielgafni](https://github.com/danielgafni))
+- remove a few circular deps ([#1164](https://github.com/anam-org/metaxy/pull/1164) by [@danielgafni](https://github.com/danielgafni))
+- introduce Tach layers ([#1163](https://github.com/anam-org/metaxy/pull/1163) by [@danielgafni](https://github.com/danielgafni))
+- fix `source_roots` and remove utility modules in  `tach.toml` ([#1162](https://github.com/anam-org/metaxy/pull/1162) by [@danielgafni](https://github.com/danielgafni))
+- run all integration tests in `main` ([#1161](https://github.com/anam-org/metaxy/pull/1161) by [@danielgafni](https://github.com/danielgafni))
+- fix duckdb tests referring old paths ([#1160](https://github.com/anam-org/metaxy/pull/1160) by [@danielgafni](https://github.com/danielgafni))
+- move `PolarsVersioningEngine` to `metaxy.ext.polars.versioning` ([#1159](https://github.com/anam-org/metaxy/pull/1159) by [@danielgafni](https://github.com/danielgafni))
+- update old extension paths ([#1158](https://github.com/anam-org/metaxy/pull/1158) by [@danielgafni](https://github.com/danielgafni))
+- move ibis code to `metaxy.ext.ibis` ([#1157](https://github.com/anam-org/metaxy/pull/1157) by [@danielgafni](https://github.com/danielgafni))
+- migrate tests to use new metadata store imports ([#1155](https://github.com/anam-org/metaxy/pull/1155) by [@danielgafni](https://github.com/danielgafni))
+- Metadata stores have been moved from `metaxy.ext.metadata_stores.<store>` to `metaxy.ext.<store>`. DeltaLake and Iceberg stores are additionally nested under `metaxy.ext.polars.handlers.`. Old locations have been kept for backwards compatibility but will be removed in `0.2.0`. ([#1153](https://github.com/anam-org/metaxy/pull/1153) by [@danielgafni](https://github.com/danielgafni))
+- update tach modules for integrations ([#1152](https://github.com/anam-org/metaxy/pull/1152) by [@danielgafni](https://github.com/danielgafni))
+- fix coverage for `main` branch ([#1151](https://github.com/anam-org/metaxy/pull/1151) by [@danielgafni](https://github.com/danielgafni))
+- fix coverage for release PRs by testing `metaxy.__version__` ([#1150](https://github.com/anam-org/metaxy/pull/1150) by [@danielgafni](https://github.com/danielgafni))
+
+#### Claude
+
+- add Tach skill ([#1165](https://github.com/anam-org/metaxy/pull/1165) by [@danielgafni](https://github.com/danielgafni))
+
+
 ## v0.1.8 (01-04-2026)
 
 ### :sparkles: Features
@@ -55,6 +102,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 ### :hammer_and_wrench: Other Improvements
 
+- release v0.1.8 ([#1147](https://github.com/anam-org/metaxy/pull/1147) by [@danielgafni](https://github.com/danielgafni))
 - fix tach setup in `main` branch ([#1149](https://github.com/anam-org/metaxy/pull/1149) by [@danielgafni](https://github.com/danielgafni))
 - enable Tach pytest plugin ([#1146](https://github.com/anam-org/metaxy/pull/1146) by [@danielgafni](https://github.com/danielgafni))
 - move metaxy._utils to metaxy.utils ([#1144](https://github.com/anam-org/metaxy/pull/1144) by [@danielgafni](https://github.com/danielgafni))

@@ -109,6 +109,17 @@ release bump="" message="":
         git cliff --tag "$version" -o CHANGELOG.md
     fi
 
+# Create an annotated tag for the current version, opening the editor for the message
+tag message="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="v$(uv version --short)"
+    if [ -n "{{message}}" ]; then
+        git tag --annotate --cleanup=verbatim --message "{{message}}" --edit "$version"
+    else
+        git tag --annotate --cleanup=verbatim --message "" --edit "$version"
+    fi
+
 # Update snapshots for all examples or specific examples
 example-snapshot-update *EXAMPLES:
     #!/usr/bin/env bash
