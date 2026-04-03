@@ -26,7 +26,7 @@ class PatternRegistry(BaseModel):
         stores = _parse_pyproject_markers(project_root / "pyproject.toml")
         stores |= _list_metadata_store_tests(project_root / "tests" / "metadata_stores")
 
-        hash_algorithms = _parse_hash_algorithm_enum(project_root / "src" / "metaxy" / "versioning" / "types.py")
+        hash_algorithms = _parse_hash_algorithm_enum(project_root / "src" / "metaxy" / "_hashing.py")
 
         technologies = _list_ext_technologies(project_root / "tests" / "ext")
         technologies |= stores
