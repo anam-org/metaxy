@@ -2,6 +2,7 @@
 
 import warnings
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -1609,3 +1610,12 @@ def test_env_var_store_config_merged_with_parent_via_extend(tmp_path: Path, monk
 
     assert config.stores["prod"].type == store_type
     assert config.stores["prod"].config["root_path"] == "/from-env"
+
+
+def test_use_calls_apply_extensions() -> None:
+    """MetaxyConfig.use() calls _apply_extensions, same as set()."""
+    config = MetaxyConfig(enable_map_datatype=True)
+    with patch.object(MetaxyConfig, "_apply_extensions") as mock:
+        with config.use():
+            pass
+    mock.assert_called_once()

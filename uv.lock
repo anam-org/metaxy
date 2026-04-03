@@ -2969,14 +2969,15 @@ lancedb = [
     { name = "lancedb" },
     { name = "polars" },
 ]
+map = [
+    { name = "narwhals-map" },
+    { name = "polars-map" },
+]
 mcp = [
     { name = "fastmcp" },
 ]
 mermaid = [
     { name = "mermaid-py" },
-]
-polars-map = [
-    { name = "polars-map" },
 ]
 postgres = [
     { name = "ibis-framework", extra = ["postgres"] },
@@ -3012,6 +3013,7 @@ dev = [
     { name = "mistune" },
     { name = "mkdocs-metaxy" },
     { name = "moto", extra = ["s3", "server"] },
+    { name = "narwhals-map" },
     { name = "nox" },
     { name = "nox-uv" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -3076,13 +3078,14 @@ requires-dist = [
     { name = "ibis-framework", extras = ["postgres"], marker = "extra == 'postgres'", specifier = ">=11.0.0" },
     { name = "lancedb", marker = "extra == 'lancedb'", specifier = ">=0.15.0" },
     { name = "mermaid-py", marker = "extra == 'mermaid'", specifier = ">=0.8.0" },
-    { name = "narwhals", specifier = ">=2.14.0" },
+    { name = "narwhals", specifier = ">=2.18.1" },
+    { name = "narwhals-map", marker = "extra == 'map'", specifier = ">=0.1.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "polars", specifier = ">=1.35.0" },
     { name = "polars", marker = "extra == 'iceberg'", specifier = ">=1.39.0" },
     { name = "polars", marker = "extra == 'lancedb'", specifier = ">=1.36.1" },
     { name = "polars-hash", specifier = ">=0.5.1" },
-    { name = "polars-map", marker = "extra == 'polars-map'", specifier = ">=0.2.0" },
+    { name = "polars-map", marker = "extra == 'map'", specifier = ">=0.2.0" },
     { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
@@ -3104,7 +3107,7 @@ requires-dist = [
     { name = "tomlkit", specifier = ">=0.13.2" },
     { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
-provides-extras = ["polars-map", "ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
+provides-extras = ["map", "ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3124,6 +3127,7 @@ dev = [
     { name = "mistune", specifier = ">=3.1.4" },
     { name = "mkdocs-metaxy", editable = "docs/.mkdocs-metaxy" },
     { name = "moto", extras = ["s3", "server"], specifier = ">=5.1.16" },
+    { name = "narwhals-map", specifier = ">=0.1.0" },
     { name = "nox", specifier = ">=2025.2.9" },
     { name = "nox-uv", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=2.2.6" },
@@ -3848,11 +3852,20 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "2.14.0"
+version = "2.18.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4a/84/897fe7b6406d436ef312e57e5a1a13b4a5e7e36d1844e8d934ce8880e3d3/narwhals-2.14.0.tar.gz", hash = "sha256:98be155c3599db4d5c211e565c3190c398c87e7bf5b3cdb157dece67641946e0", size = 600648, upload-time = "2025-12-16T11:29:13.458Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/96/45218c2fdec4c9f22178f905086e85ef1a6d63862dcc3cd68eb60f1867f5/narwhals-2.18.1.tar.gz", hash = "sha256:652a1fcc9d432bbf114846688884c215f17eb118aa640b7419295d2f910d2a8b", size = 620578, upload-time = "2026-03-24T15:11:25.456Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/79/3e/b8ecc67e178919671695f64374a7ba916cf0adbf86efedc6054f38b5b8ae/narwhals-2.14.0-py3-none-any.whl", hash = "sha256:b56796c9a00179bd757d15282c540024e1d5c910b19b8c9944d836566c030acf", size = 430788, upload-time = "2025-12-16T11:29:11.699Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/c3/06490e98393dcb4d6ce2bf331a39335375c300afaef526897881fbeae6ab/narwhals-2.18.1-py3-none-any.whl", hash = "sha256:a0a8bb80205323851338888ba3a12b4f65d352362c8a94be591244faf36504ad", size = 444952, upload-time = "2026-03-24T15:11:23.801Z" },
+]
+
+[[package]]
+name = "narwhals-map"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/bb/48df5de6ae6f5234a5b6cc47e5d49bffa64644a5628e88b5cc6dc87a2433/narwhals_map-0.1.0.tar.gz", hash = "sha256:2946f18cb0d3321bf361292c32e2c10180327fb87f213165bba75f8ddf02b588", size = 4217, upload-time = "2026-04-03T11:22:34.03Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/e6/c737b469d7776720ea61910ef3c8af7e813c2733583c7345e5dd6f05b4aa/narwhals_map-0.1.0-py3-none-any.whl", hash = "sha256:777c4818bcbb758df2ddd9554327f62a8dd90bf493d37ae3ffd3e2315265c66a", size = 8985, upload-time = "2026-04-03T11:22:34.736Z" },
 ]
 
 [[package]]

@@ -301,16 +301,14 @@ class VersioningEngine(ABC):
             ]
             return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
 
-        # Map path: use native polars-map expressions (preserves laziness)
-        import polars as pl
-        import polars_map  # noqa: F401  # registers .map accessor
+        # Map path: use narwhals-map expressions (works across Polars, Arrow, Ibis)
+        import narwhals_map  # noqa: F401  # registers .map namespace on nw.Expr
 
-        native = df.to_native()  # ty: ignore[invalid-argument-type]
         exprs = [
-            pl.col(col_name).map.get(field_name).cast(pl.String).alias(out_col)  # ty: ignore[unresolved-attribute]
+            nw.col(col_name).map.get(field_name).cast(nw.String).alias(out_col)  # ty: ignore[unresolved-attribute]
             for field_name, out_col in field_mapping.items()
         ]
-        return cast(FrameT, nw.from_native(native.with_columns(exprs)))
+        return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
 
     def aggregate_metadata_columns(
         self,

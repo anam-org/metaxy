@@ -143,25 +143,6 @@ class IbisVersioningEngine(VersioningEngine):
         values = ibis.array([ibis_table[src_col].cast("string") for src_col in field_columns.values()])
         return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: ibis.map(keys, values)})))
 
-    def _extract_metadata_fields(self, df: FrameT, col_name: str, field_mapping: dict[str, str]) -> FrameT:
-        """Extract fields from a metadata column (Struct or Map) using Ibis expressions."""
-        import ibis.expr.types
-
-        from metaxy.utils.dataframes import find_map_columns
-
-        if col_name not in find_map_columns(df):
-            return super()._extract_metadata_fields(df, col_name, field_mapping)
-
-        # Map path: use Ibis-native map element access
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
-        result_table = ibis_table.mutate(
-            **{
-                out_col: ibis_table[col_name].get(field_name).cast("string")
-                for field_name, out_col in field_mapping.items()
-            }
-        )
-        return cast(FrameT, nw.from_native(result_table))
-
     def concat_strings_over_groups(
         self,
         df: FrameT,

@@ -383,6 +383,9 @@ class MetaxyConfig(BaseSettings):
         global _global_config
         _global_config = config
 
+        if config is not None:
+            config._apply_extensions()
+
     @classmethod
     def is_set(cls) -> bool:
         """Check if the current Metaxy configuration is set."""
@@ -393,6 +396,11 @@ class MetaxyConfig(BaseSettings):
         """Reset the current Metaxy configuration to None."""
         global _global_config
         _global_config = None
+
+    def _apply_extensions(self) -> None:
+        """Register optional narwhals extensions based on config."""
+        if self.enable_map_datatype:
+            import narwhals_map  # noqa: F401  # registers Map dtype and .map namespace on narwhals
 
     @contextmanager
     def use(self) -> Iterator[Self]:
@@ -407,6 +415,7 @@ class MetaxyConfig(BaseSettings):
             # Previous config restored
             ```
         """
+        self._apply_extensions()
         token = _config_override.set(self)
         try:
             yield self

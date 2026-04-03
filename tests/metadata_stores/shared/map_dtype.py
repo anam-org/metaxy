@@ -1,7 +1,7 @@
 """Map dtype test pack for metadata stores.
 
-Tests that stores correctly handle polars-map Map columns on both read and write,
-for both metaxy-managed (*_by_field) and user-defined Map columns.
+Tests that stores correctly handle polars-map and narwhals-map Map columns on both
+read and write, for both metaxy-managed (*_by_field) and user-defined Map columns.
 """
 
 from __future__ import annotations
@@ -11,10 +11,12 @@ from datetime import date
 from pathlib import Path
 
 import hypothesis.strategies as st
+import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
 from hypothesis import HealthCheck, given, settings
+from narwhals_map import Map as NwMap
 from polars.testing.parametric.strategies.data import data as pl_data
 from polars_map import Map
 
@@ -474,7 +476,6 @@ class MapDtypeTests:
         test_features: dict[str, FeatureDefinition],
     ) -> None:
         """User-defined Map columns survive resolve_update on root features via the samples argument."""
-        import narwhals as nw
 
         feature = test_features["UpstreamFeatureA"]
 
@@ -518,7 +519,6 @@ class MapDtypeTests:
         test_features: dict[str, FeatureDefinition],
     ) -> None:
         """User-defined Map columns survive LazyIncrement.to_polars() from resolve_update."""
-        import narwhals as nw
 
         feature = test_features["UpstreamFeatureA"]
 
@@ -550,6 +550,96 @@ class MapDtypeTests:
 
         assert result.schema["tags"] == MAP_STR_STR
         assert result["tags"].map.get("env").to_list() == ["prod", "dev"]  # ty: ignore[unresolved-attribute]
+
+    # ── narwhals-map: write narwhals DataFrames with Map columns ─────
+
+    @pytest.fixture
+    def arrow_map_table(self) -> pa.Table:
+        """A PyArrow table with Map-typed provenance, a user Map column, and sample_uid."""
+        return pa.table(
+            {
+                "sample_uid": pa.array([1, 2]),
+                "metaxy_provenance_by_field": pa.array(
+                    [
+                        [("frames", "f1"), ("audio", "a1")],
+                        [("frames", "f2"), ("audio", "a2")],
+                    ],
+                    type=pa.map_(pa.string(), pa.string()),
+                ),
+                "tags": pa.array(
+                    [
+                        [("env", "prod"), ("region", "us")],
+                        [("env", "dev"), ("region", "eu")],
+                    ],
+                    type=pa.map_(pa.string(), pa.string()),
+                ),
+            }
+        )
+
+    def test_write_narwhals_arrow_backed_with_map_columns(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+        arrow_map_table: pa.Table,
+    ) -> None:
+        """A narwhals DataFrame (PyArrow-backed) with metaxy and user Map columns survives write→read."""
+        feature = test_features["UpstreamFeatureA"]
+
+        df_nw = nw.from_native(arrow_map_table)
+        assert isinstance(df_nw.schema["tags"], NwMap)
+        assert isinstance(df_nw.schema["metaxy_provenance_by_field"], NwMap)
+
+        with store.open("w") as s:
+            s.write(feature, df_nw)
+
+        with store.open("r") as s:
+            result = s.read(feature)
+            assert result is not None
+            df = collect_to_polars(result).sort("sample_uid")
+
+        assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+        assert df.schema["tags"] == MAP_STR_STR
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        assert frames == ["f1", "f2"]
+        envs = df["tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
+        assert envs == ["prod", "dev"]
+
+    def test_write_narwhals_arrow_backed_with_non_string_map(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+        arrow_map_table: pa.Table,
+    ) -> None:
+        """A narwhals DataFrame (PyArrow-backed) with Map(int32, float32) user columns survives write→read."""
+        feature = test_features["UpstreamFeatureA"]
+
+        table = arrow_map_table.append_column(
+            "scores",
+            pa.array(
+                [
+                    [(1, 0.95), (2, 0.87)],
+                    [(1, 0.91), (2, 0.82)],
+                ],
+                type=pa.map_(pa.int32(), pa.float32()),
+            ),
+        )
+        df_nw = nw.from_native(table)
+        assert isinstance(df_nw.schema["scores"], NwMap)
+
+        with store.open("w") as s:
+            s.write(feature, df_nw)
+
+        with store.open("r") as s:
+            result = s.read(feature)
+            assert result is not None
+            df = collect_to_polars(result).sort("sample_uid")
+
+        map_int_float = Map(pl.Int32(), pl.Float32())
+        assert df.schema["scores"] == map_int_float
+        assert df["scores"].map.get(1).to_list() == [pytest.approx(0.95), pytest.approx(0.91)]  # ty: ignore[unresolved-attribute]
+        assert df["scores"].map.get(2).to_list() == [pytest.approx(0.87), pytest.approx(0.82)]  # ty: ignore[unresolved-attribute]
 
     # ── Fallback store: resolve_update with Map columns ──────────────
 
@@ -650,8 +740,6 @@ class MapDtypeTests:
                     ),
                     on="sample_uid",
                 )
-
-                import narwhals as nw
 
                 downstream_with_prov = local_store.compute_provenance(DownstreamMap, nw.from_native(downstream_joined))
                 local_store.write(DownstreamMap, downstream_with_prov)
