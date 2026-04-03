@@ -135,6 +135,7 @@ body = """
 """
 postprocessors = [
   { pattern = 'a new `extends` config field', replace = "a new `extend` config field" },
+  { pattern = 'referrring', replace = "referring" },
   # deltalake Map support was bundled with the iceberg PR; add a separate changelog section
   { pattern = '(#### Iceberg\n\n- `Map` type support)', replace = "#### Deltalake\n\n- `Map` type support (experimental) ([#1108](https://github.com/anam-org/metaxy/pull/1108) by [@danielgafni](https://github.com/danielgafni))\n\n$1" },
 ]
