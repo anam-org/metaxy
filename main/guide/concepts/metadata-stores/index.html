@@ -4397,9 +4397,9 @@ Instead, Metaxy stores can automatically pull missing metadata from production.<
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Experimental</p>
-<p><code>Map</code> datatype support requires the <a href="https://pypi.org/project/polars-map/"><code>polars-map</code></a> package to be installed and is experimental.</p>
+<p><code>Map</code> datatype support is experimental and requires the <a href="https://pypi.org/project/narwhals-map/"><code>narwhals-map</code></a> and <a href="https://pypi.org/project/polars-map/"><code>polars-map</code></a> packages to be installed. They are shipped with <code>metaxy[map]</code> extra.</p>
 </div>
-<p>When enabled, Metaxy keeps Arrow <code>Map</code> columns intact across operations (including reads and writes), avoiding unnecessary conversions and preserving user-defined <code>Map</code> columns.</p>
+<p>When enabled, Metaxy uses <a href="https://pypi.org/project/narwhals-map/"><code>narwhals-map</code></a> to represent <code>Map</code> columns as <code>narwhals_map.Map</code> across all dataframe backends. Metadata stores consume and return Narwhals frames with <code>narwhals_map.Map</code> and <code>polars_map.Map</code> columns, keeping <code>Map</code> columns intact across operations and preserving user-defined <code>Map</code> columns.</p>
 <p>The following metadata stores support <code>Map</code> columns when <code>enable_map_datatype</code> is enabled:</p>
 <ul>
 <li><a href="../../../integrations/metadata-stores/databases/duckdb/">DuckDB</a></li>
@@ -4409,11 +4409,11 @@ Instead, Metaxy stores can automatically pull missing metadata from production.<
 </ul>
 <div class="admonition info">
 <p class="admonition-title"><code>Map</code> support in Narwhals</p>
-<p>It's not there yet. See the <a href="https://github.com/narwhals-dev/narwhals/issues/3525">Narwhals tracking issue</a> for more details.</p>
+<p>Narwhals does not have native <code>Map</code> support yet (see the <a href="https://github.com/narwhals-dev/narwhals/issues/3525">tracking issue</a>). Metaxy uses <a href="https://pypi.org/project/narwhals-map/"><code>narwhals-map</code></a> to bridge this gap, providing a <code>narwhals_map.Map</code> datatype and the <code>nw.Expr.map</code> namespace for working with <code>Map</code> columns across backends.</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Collecting results with <code>Map</code> columns</p>
-<p>Standard <code>narwhals.DataFrame.to_polars()</code> and other conversion methods are not aware of the <code>polars_map.Map</code> datatype and will lose <code>Map</code> columns from other dataframe backends.
+<p>Standard <code>narwhals.DataFrame.to_polars()</code> and other conversion methods are not aware of <code>narwhals_map.Map</code> columns and will lose them when converting from other dataframe backends.
 Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.utils.collect_to_polars&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.collect_to_polars"><code>collect_to_polars</code></a> or <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.utils.collect_to_arrow&lt;/span&gt;" href="../../../reference/api/utils/#metaxy.utils.collect_to_arrow"><code>collect_to_arrow</code></a> to materialize lazy frames while preserving <code>Map</code> columns.</p>
 <p><!-- skip next -->
 <div class="language-py highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">collect_to_polars</span><span class="p">,</span> <span class="n">collect_to_arrow</span>
