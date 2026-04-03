@@ -74,6 +74,7 @@ jobs:
         env:
           DOCS_VERSION: ${{ inputs.docs-version }}
           DOCS_ALIAS: ${{ inputs.docs-alias }}
+          DOCS_PRERELEASE: ${{ inputs.docs-prerelease && 'true' || '' }}
         run: |
           if [ -n "$DOCS_ALIAS" ]; then
             uv run mike deploy --push --update-aliases --ignore-remote-status "$DOCS_VERSION" "$DOCS_ALIAS"
