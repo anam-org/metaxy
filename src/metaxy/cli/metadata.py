@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Annotated, Any
+import sys
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 import cyclopts
 import narwhals as nw
@@ -12,7 +13,11 @@ from rich.table import Table
 from metaxy.cli.console import console, data_console, error_console
 from metaxy.cli.utils import FeatureSelector, FilterArgs, GlobalFilterArgs, OutputFormat, StalenessPredicateArgs
 
+WriteFormat: TypeAlias = Literal["csv", "json", "parquet", "markdown"]
+
 if TYPE_CHECKING:
+    import pyarrow as pa
+
     from metaxy import FeatureDefinition
     from metaxy.graph.status import FeatureMetadataStatusWithIncrement
     from metaxy.metadata_store.base import MetadataStore
@@ -704,7 +709,7 @@ def copy(
     dest_store = context.get_store(to_store)
 
     # Resolve feature keys
-    selector.resolve("plain")
+    selector.resolve("plain", error_missing=False)
 
     # Handle no valid features
     if not selector:
@@ -731,3 +736,182 @@ def copy(
     data_console.print(
         f"[green]✓[/green] Copy complete: {stats['features_copied']} feature(s), {stats['rows_copied']} row(s) copied"
     )
+
+
+@app.command()
+def read(
+    selector: FeatureSelector = FeatureSelector(),
+    *,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Metadata store name (defaults to configured default store).",
+        ),
+    ] = None,
+    filters: FilterArgs | None = None,
+    select: Annotated[
+        list[str] | None,
+        cyclopts.Parameter(
+            name=["--select"],
+            help="Columns to select. Can be repeated.",
+        ),
+    ] = None,
+    query: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--query"],
+            help=(
+                "Arbitrary SQL query to execute against the metadata. "
+                "The table is available as both its specific table name (e.g., 'files_root') "
+                "and under the generic alias 'metadata'."
+            ),
+        ),
+    ] = None,
+    output: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--output", "-o"],
+            help="Output file path (default: print to stdout).",
+        ),
+    ] = None,
+    format: Annotated[
+        WriteFormat,
+        cyclopts.Parameter(
+            name=["--format", "-f"],
+        ),
+    ] = "markdown",
+) -> None:
+    """Read feature metadata and optionally execute arbitrary SQL against it.
+
+    Examples:
+        ```console
+        $ metaxy metadata read my/feature
+        ```
+
+        ```console
+        $ metaxy metadata read my/feature --select id --select status
+        ```
+
+        ```console
+        $ metaxy metadata read my/feature --query "SELECT * FROM my__feature WHERE status = 'active'" -f csv
+        ```
+    """
+    import duckdb
+
+    from metaxy.cli.context import AppContext
+    from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
+    from metaxy.metadata_store.ibis import IbisMetadataStore
+    from metaxy.utils import collect_to_arrow
+
+    filters = filters or []
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+
+    graph = load_graph_for_command(context, None, metadata_store, "plain")
+    selector.resolve("plain", graph=graph)
+
+    if not selector:
+        exit_with_error(
+            CLIError(
+                code=CLIErrorCode.NO_FEATURES,
+                message="No valid features selected for reading.",
+            ),
+            "plain",
+        )
+
+    for feature_key in selector:
+        try:
+            table_name = feature_key.table_name
+
+            with metadata_store:
+                df = metadata_store.read(feature_key, filters=filters, allow_fallback=True)
+
+                if select:
+                    df = df.select(*select)
+
+                if query and isinstance(metadata_store, IbisMetadataStore):
+                    import ibis
+
+                    ibis_expr = df.to_native()
+                    base_sql = ibis.to_sql(ibis_expr)
+                    wrapped_query = (
+                        f"WITH {table_name} AS ({base_sql}), metadata AS (SELECT * FROM {table_name}) {query}"
+                    )
+                    import narwhals as nw
+
+                    res = metadata_store.conn.sql(wrapped_query)
+                    arrow_table = collect_to_arrow(nw.from_native(res, eager_only=False))
+                else:
+                    arrow_table = collect_to_arrow(df)
+
+            if query and not isinstance(metadata_store, IbisMetadataStore):
+                con = duckdb.connect()
+                con.register(table_name, arrow_table)
+                con.register("metadata", arrow_table)
+                arrow_table = con.query(query).fetch_arrow_table()
+                if hasattr(arrow_table, "read_all"):
+                    arrow_table = arrow_table.read_all()
+
+            # --- Output ---
+            _write_output(arrow_table, format, output)
+
+            if output:
+                console.print(f"[green]✓[/green] Wrote to {output}")
+
+        except Exception as e:
+            error_msg = str(e)
+            error_console.print(f"[red]Error reading {feature_key.to_string()}:[/red] {error_msg}")
+            raise SystemExit(1)
+
+
+def _write_output(table: pa.Table, fmt: WriteFormat, output: str | None) -> None:  # noqa: F821
+    """Write a PyArrow Table in the given format."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.register("_output", table)
+
+    if fmt == "csv":
+        if output:
+            con.execute(f"COPY _output TO '{output}' (FORMAT CSV, HEADER)")
+        else:
+            sys.stdout.write(con.query("SELECT * FROM _output").df().to_csv(index=False))
+    elif fmt == "parquet":
+        if output:
+            con.execute(f"COPY _output TO '{output}' (FORMAT PARQUET)")
+        else:
+            import pyarrow.parquet as pq
+
+            pq.write_table(table, sys.stdout.buffer)
+    elif fmt == "json":
+        result = con.query("SELECT * FROM _output").fetch_arrow_table()
+        if hasattr(result, "read_all"):
+            result = result.read_all()
+        rows = result.to_pydict()
+        # Convert to list of dicts
+        keys = list(rows.keys())
+        records = [{k: rows[k][i] for k in keys} for i in range(result.num_rows)]
+        content = json.dumps(records, default=str)
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(content)
+        else:
+            sys.stdout.write(content)
+    elif fmt == "markdown":
+        try:
+            con.install_extension("markdown")
+            con.load_extension("markdown")
+            md = con.query("SELECT * FROM _output").fetchdf().to_markdown(index=False)
+            if md is None:
+                md = ""
+        except Exception:
+            # Fallback: use DuckDB's built-in display
+            md = str(con.query("SELECT * FROM _output"))
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(md)
+        else:
+            sys.stdout.write(md)
+    else:
+        raise NotImplementedError(f"Unsupported format: {fmt}")
