@@ -8,6 +8,7 @@ import polars as pl
 import pytest
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.pytest_helpers import add_metaxy_system_columns
+from pydantic import ValidationError
 
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
@@ -64,36 +65,33 @@ class TestJoiner:
 
 
 def test_feature_spec_id_columns_list_only():
-    """Test that SampleFeatureSpec only accepts list of column names."""
-    # List of columns (only supported format now)
+    """Test that SampleFeatureSpec accepts list inputs and normalizes to tuple."""
     spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "timestamp"],
     )
-    assert spec.id_columns == ["user_id", "timestamp"]
-    assert spec.id_columns == ["user_id", "timestamp"]
+    assert spec.id_columns == ("user_id", "timestamp")
 
 
 def test_feature_spec_id_columns_backward_compat():
-    """Test backward compatibility with list-based id_columns."""
+    """Test backward compatibility with list inputs for id_columns."""
     # List format
     spec_list = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "session_id"],
     )
-    assert spec_list.id_columns == ["user_id", "session_id"]
-    assert spec_list.id_columns == ["user_id", "session_id"]
+    assert spec_list.id_columns == ("user_id", "session_id")
 
     # None (default) - should use sample_uid
     spec_none = SampleFeatureSpec(
         key=FeatureKey(["test"]),
     )
-    assert spec_none.id_columns == ["sample_uid"]
+    assert spec_none.id_columns == ("sample_uid",)
 
 
 def test_feature_spec_empty_list_validation():
     """Test that empty list for id_columns raises validation error."""
-    with pytest.raises(ValueError, match="id_columns must be non-empty"):
+    with pytest.raises(ValidationError, match="at least 1 item"):
         SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error

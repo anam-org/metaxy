@@ -1,4 +1,5 @@
 import hashlib
+import warnings
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -12,6 +13,7 @@ from typing_extensions import Self
 from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
 from metaxy.models.constants import (
+    ALL_SYSTEM_COLUMNS,
     METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_VERSION,
 )
@@ -115,6 +117,8 @@ class FeatureGraph:
                 f"New: {definition.feature_class_path}. "
                 f"Each feature key must be unique within a graph."
             )
+
+        _validate_deduplication_columns(definition.spec, self)
 
     def get_feature_definition(self, key: CoercibleToFeatureKey) -> FeatureDefinition:
         """Get a FeatureDefinition by its key.
@@ -600,6 +604,8 @@ class FeatureGraph:
 
             feature_key_str = feature_key.to_string()
             feature_spec_dict = definition.spec.model_dump(mode="json")
+            if definition.spec.deduplication is None:
+                feature_spec_dict.pop("deduplication", None)
             feature_schema_dict = definition.feature_schema
             feature_version = self.get_feature_version(feature_key)
             definition_version = definition.feature_definition_version
@@ -761,6 +767,32 @@ class FeatureConfig(TypedDict, total=False):
     """
 
     ext: dict[str, Any]
+
+
+def _validate_deduplication_columns(spec: FeatureSpec, graph: "FeatureGraph") -> None:
+    """Warn if deduplication.by references missing columns.
+
+    Uses a warning rather than an error because the metadata store allows extra
+    columns beyond the feature definition at write time.
+    """
+    deduplication = spec.deduplication
+    if deduplication is None:
+        return
+
+    definition = graph.feature_definitions_by_key.get(spec.key)
+    if definition is None:
+        return
+
+    available = set(definition.columns) | ALL_SYSTEM_COLUMNS
+    missing = set(deduplication.by) - available
+    if missing:
+        warnings.warn(
+            f"Feature '{spec.key}': deduplication.by columns {sorted(missing)} not found in "
+            f"feature columns or system columns. "
+            f"They must exist at read time or a ColumnNotFoundError will occur.",
+            UserWarning,
+            stacklevel=2,
+        )
 
 
 class MetaxyMeta(ModelMetaclass):

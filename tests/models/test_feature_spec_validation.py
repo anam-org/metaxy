@@ -2,8 +2,10 @@
 
 import pytest
 from metaxy_testing.models import SampleFeatureSpec
+from pydantic import ValidationError
 
 from metaxy import BaseFeature
+from metaxy.models.feature_spec import Deduplication, FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 
@@ -120,8 +122,6 @@ def test_field_keys_with_similar_names():
 
 def test_feature_spec_requires_id_columns():
     """Test that FeatureSpec (production API) requires id_columns parameter."""
-    from pydantic import ValidationError
-
     from metaxy.models.feature_spec import FeatureSpec
 
     # This should fail - id_columns is required
@@ -133,9 +133,16 @@ def test_feature_spec_requires_id_columns():
     assert spec.id_columns == ("sample_uid",)
 
 
+def test_feature_spec_empty_id_columns_raises_validation_error():
+    """Test that FeatureSpec uses field constraints for empty id_columns."""
+    from metaxy.models.feature_spec import FeatureSpec
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        FeatureSpec(key="test/feature", id_columns=[])
+
+
 def test_feature_dep_from_feature_class():
     """Test that FeatureDep can be created directly from a Feature class."""
-    from metaxy.models.feature_spec import FeatureDep
     from metaxy.models.types import FeatureKey
 
     # Create a parent feature
@@ -176,7 +183,7 @@ def test_feature_dep_from_feature_class():
 
 def test_feature_spec_deps_mixed_types():
     """Test that FeatureSpec.deps accepts all coercible types in a single list."""
-    from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.types import FeatureKey
 
     # Create a Feature class
@@ -211,3 +218,117 @@ def test_feature_spec_deps_mixed_types():
     assert spec.deps[1].feature == FeatureKey(["my", "feature", "key"])
     assert spec.deps[2].feature == FeatureKey(["another", "key"])
     assert spec.deps[3].feature == FeatureKey(["very", "nice"])
+
+
+class TestDeduplicationValidation:
+    """Tests for the deduplication field on FeatureSpec."""
+
+    def test_deduplication_default_is_none(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature")
+        assert spec.deduplication is None
+
+    def test_deduplication_model_round_trips(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", deduplication=Deduplication(by=("col1", "col2")))
+        assert spec.deduplication == Deduplication(by=("col1", "col2"))
+
+    def test_deduplication_dict_list_is_coerced(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", deduplication={"by": ["col1"]})
+        assert spec.deduplication == Deduplication(by=("col1",))
+
+    def test_deduplication_by_bare_string_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SampleFeatureSpec(key="test/feature", deduplication={"by": "col1"})
+
+    def test_deduplication_by_mapping_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Deduplication(by={"col1": True})  # ty: ignore[invalid-argument-type]
+
+    def test_deduplication_by_non_sequence_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Deduplication(by=42)  # ty: ignore[invalid-argument-type]
+
+    def test_deduplication_by_empty_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Deduplication(by=())
+
+    def test_deduplication_by_duplicate_columns_deduplicates(self) -> None:
+        dedup = Deduplication(by=("col1", "col1"))
+        assert dedup.by == frozenset({"col1"})
+
+    def test_deduplication_serializes_correctly(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", deduplication=Deduplication(by=("content_hash",)))
+        dumped = spec.model_dump(mode="json")
+        assert dumped["deduplication"] == {"by": ["content_hash"], "keep": "any"}
+
+    def test_deduplication_none_serializes_correctly(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature")
+        dumped = spec.model_dump(mode="json")
+        assert dumped["deduplication"] is None
+
+    def test_deduplication_missing_column_warns_on_feature(self) -> None:
+        with pytest.warns(UserWarning, match="deduplication.by columns.*not found"):
+
+            class _BadFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/bad_dedup",
+                    deduplication=Deduplication(by=("missing",)),
+                ),
+            ):
+                pass
+
+    def test_deduplication_current_feature_column_allowed(self) -> None:
+        class _Feature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/current_feature_dedup",
+                deduplication=Deduplication(by=("content_hash",)),
+            ),
+        ):
+            content_hash: str | None = None
+
+        assert _Feature.spec().deduplication == Deduplication(by=("content_hash",))
+
+    def test_deduplication_system_column_allowed(self) -> None:
+        class _SysColFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/sys_dedup",
+                deduplication=Deduplication(by=("metaxy_data_version",)),
+            ),
+        ):
+            pass
+
+        assert _SysColFeature.spec().deduplication == Deduplication(by=("metaxy_data_version",))
+
+    def test_deduplication_upstream_column_warns(self) -> None:
+        class _Parent(BaseFeature, spec=SampleFeatureSpec(key="test/dedup_parent")):
+            content_hash: str | None = None
+
+        with pytest.warns(UserWarning, match="deduplication.by columns.*not found"):
+
+            class _Child(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/dedup_child",
+                    deps=[FeatureDep(feature="test/dedup_parent", select=("content_hash",))],
+                    deduplication=Deduplication(by=("content_hash",)),
+                ),
+            ):
+                pass
+
+    def test_deduplication_renamed_upstream_column_warns(self) -> None:
+        class _Parent(BaseFeature, spec=SampleFeatureSpec(key="test/dedup_rename_parent")):
+            content_hash: str | None = None
+
+        with pytest.warns(UserWarning, match="deduplication.by columns.*not found"):
+
+            class _Child(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/dedup_rename_child",
+                    deps=[FeatureDep(feature="test/dedup_rename_parent", rename={"content_hash": "chash"})],
+                    deduplication=Deduplication(by=("chash",)),
+                ),
+            ):
+                pass

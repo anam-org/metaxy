@@ -26,6 +26,8 @@ from metaxy.models.feature import (
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.feature_selection import FeatureSelection
 from metaxy.models.feature_spec import (
+    Deduplication,
+    DeduplicationKeep,
     FeatureDep,
     FeatureSpec,
     FeatureSpecWithIDColumns,
@@ -155,6 +157,8 @@ __all__ = [
     "graph",
     "FeatureSpec",
     "FeatureDep",
+    "Deduplication",
+    "DeduplicationKeep",
     "FeatureDepMetadata",
     "FeatureSpec",
     "FeatureSpecWithIDColumns",
