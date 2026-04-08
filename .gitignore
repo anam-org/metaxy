@@ -55,3 +55,9 @@ devenv.local.yaml
 .devenv/
 .devenv.flake.nix
 slides/*/.node_modules/*
+publications/2026-metaxy-field-level-versioning/paper.aux
+publications/2026-metaxy-field-level-versioning/paper.bbl
+publications/2026-metaxy-field-level-versioning/paper.blg
+publications/2026-metaxy-field-level-versioning/paper.log
+publications/2026-metaxy-field-level-versioning/paper.out
+publications/2026-metaxy-field-level-versioning/paper.pdf
