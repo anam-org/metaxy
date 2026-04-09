@@ -6,9 +6,8 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
-import deltalake
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
@@ -25,6 +24,9 @@ from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    import deltalake
 
 
 def _map_columns_from_delta_schema(schema: deltalake.Schema) -> list[str]:
@@ -242,6 +244,8 @@ class DeltaMetadataStore(MetadataStore):
         return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
 
     def _open_delta_table(self, feature: CoercibleToFeatureKey, *, without_files: bool = False) -> deltalake.DeltaTable:
+        import deltalake
+
         feature_key = self._resolve_feature_key(feature)
         table_uri = self._feature_uri(feature_key)
         return deltalake.DeltaTable(
@@ -316,6 +320,7 @@ class DeltaMetadataStore(MetadataStore):
         write_opts: dict[str, Any],
     ) -> None:
         """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
+        import deltalake
         import polars_map
 
         from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD

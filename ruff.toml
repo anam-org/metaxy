@@ -21,7 +21,7 @@ known-first-party = ["metaxy"]
 [lint.flake8-tidy-imports]
 # Ban certain modules from being imported at module level, instead requiring
 # that they're imported lazily (e.g., within a function definition).
-banned-module-level-imports = ["ibis", "duckdb", "narwhals_map", "polars_map"]
+banned-module-level-imports = ["ibis", "duckdb", "deltalake", "pyiceberg", "narwhals_map", "polars_map"]
 
 [lint.flake8-import-conventions]
 # Declare the banned `from` imports.
