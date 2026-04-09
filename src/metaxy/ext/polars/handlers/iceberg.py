@@ -62,7 +62,7 @@ class IcebergMetadataStoreConfig(MetadataStoreConfig):
     Example:
         ```toml title="metaxy.toml"
         [stores.dev]
-        type = "metaxy.ext.polars.IcebergMetadataStore"
+        type = "metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore"
 
         [stores.dev.config]
         warehouse = "/path/to/warehouse"

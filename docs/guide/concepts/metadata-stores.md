@@ -33,7 +33,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
     ```toml title="metaxy.toml"
     [stores.dev]
-    type = "metaxy.ext.polars.DeltaMetadataStore"
+    type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
     root_path = "/path/to/directory"
     ```
 
@@ -275,12 +275,12 @@ Example Metaxy configuration:
 
 ```toml title="metaxy.toml"
 [stores.dev]
-type = "metaxy.ext.polars.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 root_path = "${HOME}/.metaxy/dev"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.ext.polars.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 root_path = "s3://my-prod-bucket/metaxy"
 ```
 

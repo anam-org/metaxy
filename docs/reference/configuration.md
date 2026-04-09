@@ -17,7 +17,7 @@ Either TOML-based or environment-based configuration is **required** to use the 
     project = "my_package"
 
     [stores.dev]
-    type = "metaxy.ext.polars.DeltaMetadataStore"
+    type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
     [stores.dev.config]
     root_path = "${HOME}/.metaxy/metadata"
     ```

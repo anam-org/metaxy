@@ -43,7 +43,7 @@ class DeltaMetadataStoreConfig(MetadataStoreConfig):
     Example:
         ```toml title="metaxy.toml"
         [stores.dev]
-        type = "metaxy.ext.polars.DeltaMetadataStore"
+        type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 
         [stores.dev.config]
         root_path = "s3://my-bucket/metaxy"

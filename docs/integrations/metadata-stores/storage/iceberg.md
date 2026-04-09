@@ -5,7 +5,7 @@ description: "Learn how to use Apache Iceberg to store Metaxy metadata."
 
 # Metaxy + Apache Iceberg
 
-[Apache Iceberg](https://iceberg.apache.org/) is an open table format for large analytic datasets supporting ACID transactions and schema evolution. Use [`IcebergMetadataStore`][metaxy.ext.polars.IcebergMetadataStore] to read and write Metaxy metadata from and to Iceberg tables. This metadata store is built on top of [PyIceberg](https://py.iceberg.apache.org/) and uses the in-memory Polars versioning engine for versioning computations.
+[Apache Iceberg](https://iceberg.apache.org/) is an open table format for large analytic datasets supporting ACID transactions and schema evolution. Use [`IcebergMetadataStore`][metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore] to read and write Metaxy metadata from and to Iceberg tables. This metadata store is built on top of [PyIceberg](https://py.iceberg.apache.org/) and uses the in-memory Polars versioning engine for versioning computations.
 
 !!! note
     By default, it uses a SQLite-backed SQL catalog for local development. You can configure any PyIceberg-supported catalog (REST, Glue, Hive) via [`catalog_properties`](#metaxy.ext.polars.handlers.iceberg.IcebergMetadataStoreConfig.catalog_properties).
@@ -29,7 +29,7 @@ pip install 'metaxy[iceberg]'
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.ext.polars.IcebergMetadataStore
+::: metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore
     options:
       members: false
       heading_level: 2

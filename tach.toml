@@ -17,20 +17,7 @@ layers = [
 
 [[modules]]
 path = "metaxy"
-depends_on = [
-  "metaxy.metadata_store",
-  "metaxy.entrypoints",
-  "metaxy.models.types",
-  "metaxy.utils",
-  "metaxy._warnings",
-  "metaxy.models",
-  "metaxy.config",
-  "metaxy._version",
-  "metaxy.versioning",
-  "metaxy._decorators",
-  "metaxy._exceptions",
-  "metaxy._hashing",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy._decorators"
@@ -38,11 +25,11 @@ depends_on = []
 
 [[modules]]
 path = "metaxy._exceptions"
-depends_on = ["metaxy.utils"]
+depends_on = []
 
 [[modules]]
 path = "metaxy._hashing"
-depends_on = ["metaxy._decorators", "metaxy.config"]
+depends_on = []
 
 [[modules]]
 path = "metaxy._packaging"
@@ -61,174 +48,106 @@ depends_on = []
 [[modules]]
 path = "metaxy.cli"
 layer = "cli"
-depends_on = [
-  "metaxy",
-  "metaxy._version",
-]
+depends_on = []
 
 # --- Ext layer ---
 
 [[modules]]
 path = "metaxy.ext.bigquery"
 layer = "ext"
-depends_on = ["metaxy._decorators", "metaxy.ext.ibis"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.clickhouse"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-  "metaxy.ext.ibis",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.dagster"
 layer = "ext"
-depends_on = [
-  "metaxy",
-  "metaxy._version",
-  "metaxy._decorators",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.duckdb"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-  "metaxy.ext.ibis",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.ibis"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.lancedb"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.metadata_stores"
 layer = "ext"
-depends_on = [
-  "metaxy._warnings",
-  "metaxy.ext.bigquery",
-  "metaxy.ext.clickhouse",
-  "metaxy.ext.duckdb",
-  "metaxy.ext.lancedb",
-  "metaxy.ext.polars",
-  "metaxy.ext.postgresql",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.mcp"
 layer = "ext"
-depends_on = ["metaxy"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.polars"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.postgresql"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-  "metaxy.ext.ibis",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.ray"
 layer = "ext"
-depends_on = ["metaxy"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.sqlalchemy"
 layer = "ext"
-depends_on = [
-  "metaxy._decorators",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.ext.sqlmodel"
 layer = "ext"
-depends_on = [
-  "metaxy.ext.sqlalchemy",
-  "metaxy",
-  "metaxy._decorators",
-]
+depends_on = []
 
 # --- Core layer ---
 
 [[modules]]
 path = "metaxy.config"
 layer = "core"
-depends_on = ["metaxy._decorators", "metaxy._hashing", "metaxy.models"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.entrypoints"
 layer = "core"
-depends_on = ["metaxy.models"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.graph"
 layer = "core"
-depends_on = [
-  "metaxy.metadata_store",
-  "metaxy.metadata_store.base",
-  "metaxy.models.types",
-  "metaxy.metadata_store.exceptions",
-  "metaxy.models",
-  "metaxy.utils",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.metadata_store"
 layer = "core"
-depends_on = [
-  "metaxy.models",
-  "metaxy.config",
-  "metaxy._version",
-  "metaxy.metadata_store.base",
-  "metaxy.metadata_store.exceptions",
-  "metaxy.metadata_store.types",
-  "metaxy.models.constants",
-  "metaxy._warnings",
-  "metaxy.models.types",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.metadata_store.base"
 layer = "core"
-depends_on = [
-  "metaxy.metadata_store",
-  "metaxy._decorators",
-  "metaxy.models.types",
-  "metaxy.metadata_store.types",
-  "metaxy.metadata_store.exceptions",
-  "metaxy.config",
-  "metaxy.metadata_store.warnings",
-  "metaxy.ext.polars.versioning",
-  "metaxy.utils",
-  "metaxy.metadata_store.utils",
-  "metaxy.metadata_store.fallback",
-  "metaxy.models",
-  "metaxy.versioning",
-  "metaxy.models.constants",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.metadata_store.exceptions"
 layer = "core"
-depends_on = ["metaxy._decorators"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.metadata_store.fallback"
@@ -243,7 +162,7 @@ depends_on = []
 [[modules]]
 path = "metaxy.metadata_store.utils"
 layer = "core"
-depends_on = ["metaxy.utils"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.metadata_store.warnings"
@@ -253,15 +172,7 @@ depends_on = []
 [[modules]]
 path = "metaxy.models"
 layer = "core"
-depends_on = [
-  "metaxy._hashing",
-  "metaxy._packaging",
-  "metaxy.models.constants",
-  "metaxy._decorators",
-  "metaxy.config",
-  "metaxy.models.types",
-  "metaxy.utils",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.models.constants"
@@ -271,37 +182,20 @@ depends_on = []
 [[modules]]
 path = "metaxy.models.types"
 layer = "core"
-depends_on = ["metaxy.models", "metaxy._decorators"]
+depends_on = []
 
 [[modules]]
 path = "metaxy.utils"
 layer = "core"
-depends_on = [
-  "metaxy.metadata_store",
-  "metaxy._exceptions",
-  "metaxy._warnings",
-  "metaxy.metadata_store.exceptions",
-  "metaxy._decorators",
-  "metaxy.models.types",
-  "metaxy.config",
-  "metaxy.models",
-]
+depends_on = []
 
 [[modules]]
 path = "metaxy.versioning"
 layer = "core"
-depends_on = [
-  "metaxy.models",
-  "metaxy.utils",
-  "metaxy.config",
-  "metaxy.models.constants",
-  "metaxy._decorators",
-  "metaxy.models.types",
-  "metaxy._hashing",
-]
+depends_on = []
 
 [[modules]]
 # TODO: get this one of core!
 path = "metaxy.ext.polars.versioning"
 layer = "core"
-depends_on = ["metaxy.config", "metaxy.utils", "metaxy.versioning"]
+depends_on = []
