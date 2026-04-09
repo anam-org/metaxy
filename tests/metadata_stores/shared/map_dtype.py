@@ -19,12 +19,13 @@ from hypothesis import HealthCheck, given, settings
 from narwhals_map import Map as NwMap
 from polars.testing.parametric.strategies.data import data as pl_data
 from polars_map import Map
+from syrupy.assertion import SnapshotAssertion
 
 import metaxy as mx
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
-from metaxy.utils import collect_to_polars
+from metaxy.utils import collect_to_arrow, collect_to_polars
 
 MAP_STR_STR = Map(pl.String(), pl.String())
 
@@ -348,6 +349,29 @@ class MapDtypeTests:
 
         envs = df["user_tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
         assert envs == ["prod", "dev"]
+
+    def test_arrow_schema_after_roundtrip(
+        self,
+        polars_map_config: MetaxyConfig,
+        store: MetadataStore,
+        test_features: dict[str, FeatureDefinition],
+        arrow_map_table: pa.Table,
+        snapshot: SnapshotAssertion,
+    ) -> None:
+        """Arrow schema of Map columns is stable after a write-read roundtrip."""
+        feature = test_features["UpstreamFeatureA"]
+
+        with store.open("w") as s:
+            s.write(feature, arrow_map_table)
+
+        with store.open("r") as s:
+            result = s.read(feature)
+            assert result is not None
+            arrow_table = collect_to_arrow(result)
+
+        # Sort by field name for deterministic ordering across backends
+        schema_dict = {field.name: str(field.type) for field in arrow_table.schema}
+        assert dict(sorted(schema_dict.items())) == snapshot
 
     # ── User struct columns are not converted ──────────────────────────
 

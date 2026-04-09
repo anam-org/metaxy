@@ -1,0 +1,17 @@
+# serializer version: 1
+# name: TestIceberg.test_arrow_schema_after_roundtrip
+  dict({
+    'metaxy_created_at': 'timestamp[us, tz=UTC]',
+    'metaxy_data_version': 'large_string',
+    'metaxy_data_version_by_field': 'map<large_string, large_string>',
+    'metaxy_deleted_at': 'timestamp[us, tz=UTC]',
+    'metaxy_feature_version': 'large_string',
+    'metaxy_materialization_id': 'large_string',
+    'metaxy_project_version': 'large_string',
+    'metaxy_provenance': 'large_string',
+    'metaxy_provenance_by_field': 'map<large_string, large_string>',
+    'metaxy_updated_at': 'timestamp[us, tz=UTC]',
+    'sample_uid': 'int64',
+    'tags': 'map<large_string, large_string>',
+  })
+# ---
