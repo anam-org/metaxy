@@ -18,6 +18,7 @@ commit_preprocessors = [
   { pattern = '^:zap: ', replace = "perf: " },
   { pattern = '^:robot: ', replace = "ci: " },
   { pattern = '^:bomb: ', replace = "refactor!: " },
+  { pattern = '^fix: update devenv.lock', replace = "chore: update devenv.lock" },
   # Strip PR references from messages (handled in template with author links)
   { pattern = ' \(#\d+\)', replace = "" },
 ]
