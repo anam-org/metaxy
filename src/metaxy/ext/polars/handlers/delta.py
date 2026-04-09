@@ -316,14 +316,16 @@ class DeltaMetadataStore(MetadataStore):
         write_opts: dict[str, Any],
     ) -> None:
         """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
+        import polars_map
+
         from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.utils._arrow_map import convert_extension_maps_to_native, convert_structs_to_maps
+        from metaxy.utils._arrow_map import convert_structs_to_maps
 
         df_native = self._cast_enum_to_string(collect_to_polars(df))
         df_native = convert_structs_to_maps(
             df_native, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
         )
-        arrow_table = convert_extension_maps_to_native(df_native.to_arrow())
+        arrow_table = polars_map.to_arrow(df_native)
         deltalake.write_deltalake(
             table_uri,
             arrow_table,

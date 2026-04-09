@@ -81,22 +81,10 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
 
 @public
 def collect_to_arrow(frame: PolarsCompatibleFrame) -> pa.Table:
-    """Convert a frame into a PyArrow Table.
-
-    If the dataframe is a Polars dataframe, it converts `polars_map.Map`
-        extension columns to native Arrow `MapArray` when `MetaxyConfig.enable_map_datatype` is set.
-    """
+    """Convert a frame into a PyArrow Table."""
     nw_frame = nw.from_native(frame) if isinstance(frame, (pl.DataFrame, pl.LazyFrame)) else frame
     collected = nw_frame.collect() if isinstance(nw_frame, nw.LazyFrame) else nw_frame
-    table: pa.Table = collected.to_arrow()
-
-    if collected.implementation == nw.Implementation.POLARS:
-        from metaxy.utils._arrow_map import convert_extension_maps_to_native, has_extension_map_columns
-
-        if has_extension_map_columns(table):
-            table = convert_extension_maps_to_native(table)
-
-    return table
+    return collected.to_arrow()
 
 
 def lazy_frame_to_polars(frame: nw.LazyFrame[Any]) -> pl.LazyFrame:

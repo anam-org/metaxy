@@ -330,14 +330,16 @@ class IcebergMetadataStore(MetadataStore):
         **kwargs: Any,
     ) -> None:
         """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
+        import polars_map
+
         from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.utils._arrow_map import convert_extension_maps_to_native, convert_structs_to_maps
+        from metaxy.utils._arrow_map import convert_structs_to_maps
 
         df_polars = self._cast_enum_to_string(collect_to_polars(df))
         df_polars = convert_structs_to_maps(
             df_polars, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
         )
-        arrow_table = convert_extension_maps_to_native(df_polars.to_arrow())
+        arrow_table = polars_map.to_arrow(df_polars)
         iceberg_table = self._ensure_table(identifier, arrow_table.schema)
         iceberg_table.append(arrow_table, **kwargs)
 

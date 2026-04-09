@@ -7,13 +7,13 @@ from pathlib import Path
 
 import narwhals as nw
 import polars as pl
+import polars_map
 import pyarrow as pa
 import pytest
 from polars_map import Map
 
 from metaxy.config import MetaxyConfig
 from metaxy.utils._arrow_map import (
-    convert_extension_maps_to_native,
     convert_maps_to_polars_map,
     convert_structs_to_maps,
 )
@@ -43,14 +43,14 @@ class TestMapRoundtrip:
     """Full write-to-read roundtrip through Delta Lake with Arrow Map columns."""
 
     def test_struct_to_native_arrow_map(self, provenance_df: pl.DataFrame) -> None:
-        """Struct → polars_map.Map → Arrow extension → native Arrow MapArray."""
+        """Struct → polars_map.Map → native Arrow MapArray via polars_map.to_arrow()."""
         converted = convert_structs_to_maps(provenance_df, columns=["metaxy_provenance_by_field"])
-        arrow_table = convert_extension_maps_to_native(converted.to_arrow())
+        arrow_table = polars_map.to_arrow(converted)
 
         map_field = arrow_table.schema.field("metaxy_provenance_by_field")
         assert pa.types.is_map(map_field.type)
-        assert pa.types.is_string(map_field.type.key_type)
-        assert pa.types.is_string(map_field.type.item_type)
+        assert pa.types.is_string(map_field.type.key_type) or pa.types.is_large_string(map_field.type.key_type)
+        assert pa.types.is_string(map_field.type.item_type) or pa.types.is_large_string(map_field.type.item_type)
 
     def test_delta_roundtrip(self, provenance_df: pl.DataFrame, tmp_path: Path) -> None:
         """Write Arrow Map to Delta, read back, reconstruct polars_map.Map column."""
@@ -58,7 +58,7 @@ class TestMapRoundtrip:
 
         # Write path: struct → Map → Arrow → Delta
         converted = convert_structs_to_maps(provenance_df, columns=["metaxy_provenance_by_field"])
-        arrow_table = convert_extension_maps_to_native(converted.to_arrow())
+        arrow_table = polars_map.to_arrow(converted)
         delta_path = str(tmp_path / "test_delta")
         deltalake.write_deltalake(delta_path, arrow_table)
 
@@ -79,7 +79,7 @@ class TestMapRoundtrip:
         import deltalake
 
         converted = convert_structs_to_maps(provenance_df, columns=["metaxy_provenance_by_field"])
-        arrow_table = convert_extension_maps_to_native(converted.to_arrow())
+        arrow_table = polars_map.to_arrow(converted)
         delta_path = str(tmp_path / "test_delta")
         deltalake.write_deltalake(delta_path, arrow_table)
 

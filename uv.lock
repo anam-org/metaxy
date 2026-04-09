@@ -3079,13 +3079,13 @@ requires-dist = [
     { name = "lancedb", marker = "extra == 'lancedb'", specifier = ">=0.15.0" },
     { name = "mermaid-py", marker = "extra == 'mermaid'", specifier = ">=0.8.0" },
     { name = "narwhals", specifier = ">=2.18.1" },
-    { name = "narwhals-map", marker = "extra == 'map'", specifier = ">=0.1.0" },
+    { name = "narwhals-map", marker = "extra == 'map'", specifier = ">=0.1.1" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "polars", specifier = ">=1.35.0" },
     { name = "polars", marker = "extra == 'iceberg'", specifier = ">=1.39.0" },
     { name = "polars", marker = "extra == 'lancedb'", specifier = ">=1.36.1" },
     { name = "polars-hash", specifier = ">=0.5.1" },
-    { name = "polars-map", marker = "extra == 'map'", specifier = ">=0.2.0" },
+    { name = "polars-map", marker = "extra == 'map'", specifier = ">=0.2.1" },
     { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
@@ -3127,12 +3127,12 @@ dev = [
     { name = "mistune", specifier = ">=3.1.4" },
     { name = "mkdocs-metaxy", editable = "docs/.mkdocs-metaxy" },
     { name = "moto", extras = ["s3", "server"], specifier = ">=5.1.16" },
-    { name = "narwhals-map", specifier = ">=0.1.0" },
+    { name = "narwhals-map", specifier = ">=0.1.1" },
     { name = "nox", specifier = ">=2025.2.9" },
     { name = "nox-uv", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pandas", specifier = ">=2.3.3" },
-    { name = "polars-map", specifier = ">=0.2.0" },
+    { name = "polars-map", specifier = ">=0.2.1" },
     { name = "prek", specifier = ">=0.2.11" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
@@ -3861,11 +3861,11 @@ wheels = [
 
 [[package]]
 name = "narwhals-map"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/af/bb/48df5de6ae6f5234a5b6cc47e5d49bffa64644a5628e88b5cc6dc87a2433/narwhals_map-0.1.0.tar.gz", hash = "sha256:2946f18cb0d3321bf361292c32e2c10180327fb87f213165bba75f8ddf02b588", size = 4217, upload-time = "2026-04-03T11:22:34.03Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/72/b78515a328bfe727f7ecf612f996fc1907caf2eb1b45c0252f891157081a/narwhals_map-0.1.1.tar.gz", hash = "sha256:347506656d234a2cdef3dbacec223de218243074e52e88dfe9771438e5b27e41", size = 4417, upload-time = "2026-04-09T09:10:33.875Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/e6/c737b469d7776720ea61910ef3c8af7e813c2733583c7345e5dd6f05b4aa/narwhals_map-0.1.0-py3-none-any.whl", hash = "sha256:777c4818bcbb758df2ddd9554327f62a8dd90bf493d37ae3ffd3e2315265c66a", size = 8985, upload-time = "2026-04-03T11:22:34.736Z" },
+    { url = "https://files.pythonhosted.org/packages/73/4e/83e49b301123a2543f6c30c48d5f14ff05cd6d2776f850c152ce7785a9bd/narwhals_map-0.1.1-py3-none-any.whl", hash = "sha256:b806a06cc3827d950d8544476b9992cfe65dbd8bf073382c9726463ad403657b", size = 9141, upload-time = "2026-04-09T09:10:34.883Z" },
 ]
 
 [[package]]
@@ -4539,14 +4539,15 @@ wheels = [
 
 [[package]]
 name = "polars-map"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars" },
+    { name = "pyarrow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/f7/30e5fff227a9e1b02a037020f60c4cfeb491816e3718f1b642054baa2b21/polars_map-0.2.0.tar.gz", hash = "sha256:bdb4071d25c14e98257d9909771e51e8716a61074b1886ec75ea1d5074d782c1", size = 31019, upload-time = "2026-03-29T14:22:16.195Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/cb/1366e16d2114819393d58e5ca082ba59d27e774057ee050703166da958b2/polars_map-0.2.1.tar.gz", hash = "sha256:3b13791f94bfb71c116a930c16377f792c5d630d4075babf7494d5f58795a543", size = 43785, upload-time = "2026-04-05T15:25:04.612Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/5d/9c9d10fa4a069efca8b32e38ebe8785f2714458a4db5f890909891fc820c/polars_map-0.2.0-py3-none-any.whl", hash = "sha256:92106633c653d0b5025a1777f55ea9ac7000519c16e6853d1eed2fb0714098bb", size = 8762, upload-time = "2026-03-29T14:22:15.156Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/22/faef69efca731f27d8e468840c97e4aea4500fc757db3354801da5283a15/polars_map-0.2.1-py3-none-any.whl", hash = "sha256:695f5b1a1043446ac66b48cd74539b18a507fe455e40cf43ee67dae33d345ebe", size = 13022, upload-time = "2026-04-05T15:25:03.162Z" },
 ]
 
 [[package]]

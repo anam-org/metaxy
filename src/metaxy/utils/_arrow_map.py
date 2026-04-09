@@ -1,7 +1,7 @@
-"""Arrow Map conversion utilities for polars-map integration.
+"""Polars Map dtype conversion utilities for polars-map integration.
 
-Write path: Convert Polars Struct columns to native Arrow MapArray before writing to stores.
-Read path: Reconstruct polars_map.Map columns from Arrow MapArray after reading from stores.
+Write path: Convert Polars Struct columns to polars_map.Map.
+Read path: Reconstruct polars_map.Map columns from List(Struct({key, value})) after reading from stores.
 """
 
 from __future__ import annotations
@@ -9,15 +9,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeVar, cast
 
 import polars as pl
-import pyarrow as pa
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
 PolarsFrameT = TypeVar("PolarsFrameT", pl.DataFrame, pl.LazyFrame)
-
-
-# ── Write path: Struct → polars_map.Map → native Arrow MapArray ──────
 
 
 def convert_structs_to_maps(df: PolarsFrameT, columns: Sequence[str]) -> PolarsFrameT:
@@ -53,53 +49,6 @@ def convert_structs_to_maps(df: PolarsFrameT, columns: Sequence[str]) -> PolarsF
     if not map_exprs:
         return df
     return cast(PolarsFrameT, df.with_columns(map_exprs))  # ty: ignore[invalid-argument-type]
-
-
-def convert_extension_maps_to_native(table: pa.Table) -> pa.Table:
-    """Replace polars-map extension-typed columns with native Arrow MapArray columns.
-
-    When a Polars DataFrame with polars_map.Map columns is converted to Arrow,
-    those columns carry ARROW:extension:name metadata with List(Struct({key,value}))
-    storage. This converts them to native Arrow MapArray for store compatibility.
-    """
-    for i, field in enumerate(table.schema):
-        if not _is_extension_map_field(field):
-            continue
-        col = table.column(i)
-        native_chunks = [_extension_chunk_to_native_map(chunk) for chunk in col.chunks]
-        native_col = pa.chunked_array(native_chunks)
-        table = table.set_column(i, pa.field(field.name, native_col.type), native_col)
-    return table
-
-
-def _is_extension_map_field(field: pa.Field) -> bool:
-    """Check if an Arrow field has polars-map extension metadata."""
-    metadata = field.metadata
-    if metadata is None:
-        return False
-    return metadata.get(b"ARROW:extension:name") == b"polars_map.map"
-
-
-def _extension_chunk_to_native_map(arr: pa.Array) -> pa.MapArray:
-    """Convert a polars-map extension chunk (LargeList of Struct({key,value})) to native MapArray."""
-    # The array is a (Large)ListArray with Struct({key, value}) values
-    # Downcast large_string → string for MapArray compatibility, preserve other types
-    keys = arr.values.field("key")
-    if pa.types.is_large_string(keys.type):
-        keys = keys.cast(pa.string())
-    values = arr.values.field("value")
-    if pa.types.is_large_string(values.type):
-        values = values.cast(pa.string())
-    offsets = arr.offsets.cast(pa.int32())
-    return pa.MapArray.from_arrays(offsets, keys, values)
-
-
-def has_extension_map_columns(table: pa.Table) -> bool:
-    """Check if an Arrow table has any polars-map extension-typed columns."""
-    return any(_is_extension_map_field(field) for field in table.schema)
-
-
-# ── Read path: Arrow MapArray → polars_map.Map ──────────────────────────
 
 
 def convert_maps_to_polars_map(

@@ -696,12 +696,14 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def _handle_polars_map_columns(self, df: Frame, map_columns: set[str]) -> Frame:
         """Convert Polars Struct columns to native Arrow Map columns."""
+        import polars_map
+
         from metaxy.utils import collect_to_polars
-        from metaxy.utils._arrow_map import convert_extension_maps_to_native, convert_structs_to_maps
+        from metaxy.utils._arrow_map import convert_structs_to_maps
 
         polars_df = collect_to_polars(df)
         polars_df = convert_structs_to_maps(polars_df, columns=list(map_columns))
-        return nw.from_native(convert_extension_maps_to_native(polars_df.to_arrow()), eager_only=False)
+        return nw.from_native(polars_map.to_arrow(polars_df), eager_only=False)
 
     def _can_compute_native(self) -> bool:
         """
