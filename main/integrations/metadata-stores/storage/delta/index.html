@@ -2039,7 +2039,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.ext.polars.DeltaMetadataStore" class="md-nav__link">
+  <a href="#metaxy.ext.polars.handlers.delta.DeltaMetadataStore" class="md-nav__link">
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DeltaMetadataStore
@@ -3913,7 +3913,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.ext.polars.DeltaMetadataStore" class="md-nav__link">
+  <a href="#metaxy.ext.polars.handlers.delta.DeltaMetadataStore" class="md-nav__link">
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;DeltaMetadataStore
@@ -4146,7 +4146,7 @@
 
 
 <h1 id="metaxy-delta-lake">Metaxy + Delta Lake<a class="headerlink" href="#metaxy-delta-lake" title="Permanent link">&para;</a></h1>
-<p><a href="https://delta.io/">Delta Lake</a> is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.polars.DeltaMetadataStore&lt;/span&gt;" href="#metaxy.ext.polars.DeltaMetadataStore"><code>DeltaMetadataStore</code></a>. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.</p>
+<p><a href="https://delta.io/">Delta Lake</a> is an open-source lakehouse storage format with ACID transactions and schema enforcement. To use Metaxy with Delta Lake, configure <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.polars.handlers.delta.DeltaMetadataStore&lt;/span&gt;" href="#metaxy.ext.polars.handlers.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a>. It persists metadata as Delta tables and uses an in-memory Polars engine for versioning computations.</p>
 <p>It supports the local filesystem and remote object stores.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -4210,11 +4210,11 @@
 
 
 
-<h2 id="metaxy.ext.polars.DeltaMetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.ext.polars.DeltaMetadataStore</span>
+<h2 id="metaxy.ext.polars.handlers.delta.DeltaMetadataStore" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.ext.polars.handlers.delta.DeltaMetadataStore</span>
 
 
-<a href="#metaxy.ext.polars.DeltaMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#metaxy.ext.polars.handlers.delta.DeltaMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">DeltaMetadataStore</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">root_path</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
@@ -4435,7 +4435,7 @@ Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}</p>
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[stores.dev]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.polars.DeltaMetadataStore&quot;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.polars.handlers.delta.DeltaMetadataStore&quot;</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">[stores.dev.config]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">root_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/metaxy&quot;</span>
@@ -4463,7 +4463,7 @@ Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}</p>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="p">}</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">},</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration for DeltaMetadataStore.\n\nExample:\n    ```toml title=\&quot;metaxy.toml\&quot;\n    [stores.dev]\n    type = \&quot;metaxy.ext.polars.DeltaMetadataStore\&quot;\n\n    [stores.dev.config]\n    root_path = \&quot;s3://my-bucket/metaxy\&quot;\n    layout = \&quot;nested\&quot;\n\n    [stores.dev.config.storage_options]\n    AWS_REGION = \&quot;us-west-2\&quot;\n    ```&quot;</span><span class="p">,</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration for DeltaMetadataStore.\n\nExample:\n    ```toml title=\&quot;metaxy.toml\&quot;\n    [stores.dev]\n    type = \&quot;metaxy.ext.polars.handlers.delta.DeltaMetadataStore\&quot;\n\n    [stores.dev.config]\n    root_path = \&quot;s3://my-bucket/metaxy\&quot;\n    layout = \&quot;nested\&quot;\n\n    [stores.dev.config.storage_options]\n    AWS_REGION = \&quot;us-west-2\&quot;\n    ```&quot;</span><span class="p">,</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">    </span><span class="nt">&quot;fallback_stores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;List of fallback store names to search when features are not found in the current store.&quot;</span><span class="p">,</span>

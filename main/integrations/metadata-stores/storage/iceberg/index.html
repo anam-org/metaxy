@@ -2011,7 +2011,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.ext.polars.IcebergMetadataStore" class="md-nav__link">
+  <a href="#metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore" class="md-nav__link">
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;IcebergMetadataStore
@@ -3924,7 +3924,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.ext.polars.IcebergMetadataStore" class="md-nav__link">
+  <a href="#metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore" class="md-nav__link">
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;IcebergMetadataStore
@@ -4168,7 +4168,7 @@
 
 
 <h1 id="metaxy-apache-iceberg">Metaxy + Apache Iceberg<a class="headerlink" href="#metaxy-apache-iceberg" title="Permanent link">&para;</a></h1>
-<p><a href="https://iceberg.apache.org/">Apache Iceberg</a> is an open table format for large analytic datasets supporting ACID transactions and schema evolution. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.polars.IcebergMetadataStore&lt;/span&gt;" href="#metaxy.ext.polars.IcebergMetadataStore"><code>IcebergMetadataStore</code></a> to read and write Metaxy metadata from and to Iceberg tables. This metadata store is built on top of <a href="https://py.iceberg.apache.org/">PyIceberg</a> and uses the in-memory <abbr title="The local versioning engine implemented in Polars (and polars-hash). Reference versioning engine implementation for Metaxy.">Polars versioning engine</abbr> for versioning computations.</p>
+<p><a href="https://iceberg.apache.org/">Apache Iceberg</a> is an open table format for large analytic datasets supporting ACID transactions and schema evolution. Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore&lt;/span&gt;" href="#metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore"><code>IcebergMetadataStore</code></a> to read and write Metaxy metadata from and to Iceberg tables. This metadata store is built on top of <a href="https://py.iceberg.apache.org/">PyIceberg</a> and uses the in-memory <abbr title="The local versioning engine implemented in Polars (and polars-hash). Reference versioning engine implementation for Metaxy.">Polars versioning engine</abbr> for versioning computations.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>By default, it uses a SQLite-backed SQL catalog for local development. You can configure any PyIceberg-supported catalog (REST, Glue, Hive) via <a href="#metaxy.ext.polars.handlers.iceberg.IcebergMetadataStoreConfig.catalog_properties"><code>catalog_properties</code></a>.</p>
@@ -4230,11 +4230,11 @@
 
 
 
-<h2 id="metaxy.ext.polars.IcebergMetadataStore" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.ext.polars.IcebergMetadataStore</span>
+<h2 id="metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore</span>
 
 
-<a href="#metaxy.ext.polars.IcebergMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">IcebergMetadataStore</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">warehouse</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
@@ -4447,7 +4447,7 @@ It uses the <abbr title="The local versioning engine implemented in Polars (and 
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[stores.dev]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.polars.IcebergMetadataStore&quot;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore&quot;</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">[stores.dev.config]</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">warehouse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/path/to/warehouse&quot;</span>
@@ -4475,7 +4475,7 @@ It uses the <abbr title="The local versioning engine implemented in Polars (and 
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="p">}</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p">},</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="nt">&quot;additionalProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration for IcebergMetadataStore.\n\nExample:\n    ```toml title=\&quot;metaxy.toml\&quot;\n    [stores.dev]\n    type = \&quot;metaxy.ext.polars.IcebergMetadataStore\&quot;\n\n    [stores.dev.config]\n    warehouse = \&quot;/path/to/warehouse\&quot;\n    namespace = \&quot;metaxy\&quot;\n\n    [stores.dev.config.catalog_properties]\n    type = \&quot;sql\&quot;\n    ```&quot;</span><span class="p">,</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration for IcebergMetadataStore.\n\nExample:\n    ```toml title=\&quot;metaxy.toml\&quot;\n    [stores.dev]\n    type = \&quot;metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore\&quot;\n\n    [stores.dev.config]\n    warehouse = \&quot;/path/to/warehouse\&quot;\n    namespace = \&quot;metaxy\&quot;\n\n    [stores.dev.config.catalog_properties]\n    type = \&quot;sql\&quot;\n    ```&quot;</span><span class="p">,</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">    </span><span class="nt">&quot;fallback_stores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;List of fallback store names to search when features are not found in the current store.&quot;</span><span class="p">,</span>
