@@ -100,20 +100,44 @@ body = """
 {%- if trimmed is containing("-->") -%}{%- set_global in_comment = false -%}
 {%- elif trimmed is starting_with("## ") %}{% break -%}
 {%- elif not in_comment and trimmed | length > 0 -%}
+{%- if trimmed is starting_with("- ") -%}
+{%- set stripped = trimmed | split(pat="- ") | slice(start=1) | join(sep="- ") -%}
+{%- set_global changelog_lines = changelog_lines ~ stripped ~ "\n" -%}
+{%- else -%}
 {%- set_global changelog_lines = changelog_lines ~ trimmed ~ "\n" -%}
+{%- endif -%}
 {%- endif -%}
 {%- endfor -%}
 {%- endif -%}
+{%- set_global any_scoped = false -%}
 {%- if changelog_lines | length > 0 -%}
-{%- for line in changelog_lines | trim | split(pat="\n") %}
+{%- set_global current_cl_scope = "" -%}
+{%- for line in changelog_lines | trim | split(pat="\n") -%}
+{%- if line is containing("(") and line is containing("): ") -%}
+{%- set cl_scope = line | split(pat="(") | last | split(pat=")") | first -%}
+{%- set cl_type = line | split(pat="(") | first -%}
+{%- set cl_msg = line | replace(from=cl_type ~ "(" ~ cl_scope ~ "): ", to="") -%}
+{%- set_global any_scoped = true -%}
+{%- if cl_scope != current_cl_scope %}
+
+#### {{ cl_scope | upper_first }}
+{%- set_global current_cl_scope = cl_scope -%}
+{%- endif %}
+- {{ cl_msg }}
+{%- if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/anam-org/metaxy/pull/{{ commit.remote.pr_number }}){% if commit.remote.username %} by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}){% endif %})
+{%- endif -%}
+{%- else %}
 - {{ line }}
+{%- endif -%}
 {%- endfor -%}
 {%- else %}
 - {{ commit.message | split(pat="\n") | first | trim }}
 {%- endif %}
+{%- if not any_scoped -%}
 {%- if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/anam-org/metaxy/pull/{{ commit.remote.pr_number }}){% if commit.remote.username %} by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}){% endif %})
 {%- elif commit.remote.username %} (by [@{{ commit.remote.username }}](https://github.com/{{ commit.remote.username }}))
-{%- endif %}
+{%- endif -%}
+{%- endif -%}
 {%- endfor %}
 {% endfor %}
 {% endfor %}\
@@ -139,6 +163,8 @@ postprocessors = [
   { pattern = 'referrring', replace = "referring" },
   # deltalake Map support was bundled with the iceberg PR; add a separate changelog section
   { pattern = '(#### Iceberg\n\n- `Map` type support)', replace = "#### Deltalake\n\n- `Map` type support (experimental) ([#1108](https://github.com/anam-org/metaxy/pull/1108) by [@danielgafni](https://github.com/danielgafni))\n\n$1" },
+  # Remove empty scope headers left behind when per-line scopes replace the commit scope
+  { pattern = '#### [^\n]+\n+\n(#### )', replace = "$1" },
 ]
 footer = """
 
