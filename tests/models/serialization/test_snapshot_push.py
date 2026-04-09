@@ -10,14 +10,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import polars as pl
-from metaxy_testing.models import SampleFeatureSpec
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import PushResult
+from metaxy_testing.models import SampleFeatureSpec
+from syrupy.assertion import SnapshotAssertion
 
 
 def test_snapshot_push_result_model():
@@ -733,7 +732,6 @@ def test_push_graph_snapshot_requires_project_for_multi_project_graph(tmp_path: 
     specified via argument or config, push_graph_snapshot should raise ValueError.
     """
     import pytest
-
     from metaxy.config import MetaxyConfig
     from metaxy.models.feature_definition import FeatureDefinition
     from metaxy.models.feature_spec import FeatureSpec

@@ -1,4 +1,5 @@
 import pytest
+
 from metaxy_testing import TempMetaxyProject
 
 

@@ -8,9 +8,8 @@ import dagster as dg
 import narwhals as nw
 import polars as pl
 import pytest
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy.ext.dagster.table_metadata import build_table_preview_metadata
+from syrupy.assertion import SnapshotAssertion
 
 
 @pytest.fixture

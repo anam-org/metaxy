@@ -8,9 +8,6 @@ from pathlib import Path
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     FeatureDep,
     FeatureKey,
@@ -22,6 +19,9 @@ from metaxy import (
 from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system.storage import SystemTableStorage
+from metaxy_testing.models import SampleFeatureSpec
+
+from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
 
 UPSTREAM_KEY = FeatureKey(["test", "upstream"])
 DOWNSTREAM_KEY = FeatureKey(["test", "downstream"])

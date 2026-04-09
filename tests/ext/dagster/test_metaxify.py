@@ -3,11 +3,9 @@
 from typing import Any
 
 import dagster as dg
+import metaxy as mx
 import polars as pl
 import pytest
-from syrupy.assertion import SnapshotAssertion
-
-import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_INFO_METADATA_KEY,
@@ -16,6 +14,7 @@ from metaxy.ext.dagster.constants import (
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.metaxify import metaxify
+from syrupy.assertion import SnapshotAssertion
 
 
 @pytest.fixture
@@ -1491,9 +1490,8 @@ class TestMetaxifyColumnSchema:
 
     def test_metaxify_injects_column_schema(self):
         """Test that metaxify injects column schema from Pydantic fields."""
-        from pydantic import Field
-
         from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+        from pydantic import Field
 
         spec = mx.FeatureSpec(
             key=["test", "with_schema"],
@@ -1555,9 +1553,8 @@ class TestMetaxifyColumnSchema:
 
     def test_metaxify_asset_spec_injects_column_schema(self):
         """Test that metaxify injects column schema on AssetSpec."""
-        from pydantic import Field
-
         from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+        from pydantic import Field
 
         spec = mx.FeatureSpec(
             key=["test", "spec_schema"],
@@ -1591,9 +1588,8 @@ class TestMetaxifyColumnSchema:
 
     def test_metaxify_column_schema_with_complex_types(self):
         """Test column schema handles complex Pydantic types."""
-        from pydantic import Field
-
         from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+        from pydantic import Field
 
         spec = mx.FeatureSpec(
             key=["test", "complex_types"],

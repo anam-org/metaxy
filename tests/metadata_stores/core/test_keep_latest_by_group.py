@@ -11,9 +11,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest_cases
-from pytest_cases import parametrize_with_cases
-
 from metaxy.utils import collect_to_polars
+from pytest_cases import parametrize_with_cases
 
 
 class KeepLatestTestDataCases:
@@ -21,7 +20,6 @@ class KeepLatestTestDataCases:
 
     def case_polars(self) -> tuple[Any, Any, datetime]:
         import narwhals as nw
-
         from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
         base_time = datetime(2024, 1, 1, 12, 0, 0)
@@ -34,7 +32,6 @@ class KeepLatestTestDataCases:
     def case_ibis(self, tmp_path: Path) -> tuple[Any, Any, datetime]:
         import ibis
         import narwhals as nw
-
         from metaxy.ext.ibis.versioning import IbisVersioningEngine
 
         base_time = datetime(2024, 1, 1, 12, 0, 0)

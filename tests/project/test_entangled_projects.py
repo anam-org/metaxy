@@ -8,13 +8,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
 
 
 def test_project_can_push_with_unresolved_external_dependency(tmp_path: Path) -> None:

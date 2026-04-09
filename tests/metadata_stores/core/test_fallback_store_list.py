@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import pytest
-
 from metaxy.metadata_store.fallback import FallbackStoreList
 from metaxy.versioning.types import HashAlgorithm
 

@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 import tomli
-
 from metaxy import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils.lock_file import LockedFeature, LockedFeatureInfo, LockFile
@@ -36,9 +35,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class SharedFeature(
                 BaseFeature,
@@ -67,9 +65,8 @@ database = "{store_path}"
         consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class LocalFeature(
                 BaseFeature,
@@ -131,9 +128,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class ExistingFeature(
                 BaseFeature,
@@ -161,9 +157,8 @@ database = "{store_path}"
         project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class LocalFeature(
                 BaseFeature,
@@ -202,9 +197,8 @@ database = "{store_path}"
         project = TempMetaxyProject(tmp_path / "project", config_content=config)
 
         def local_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class LocalFeature(
                 BaseFeature,
@@ -246,9 +240,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class FeatureA(
                 BaseFeature,
@@ -286,9 +279,8 @@ database = "{store_path}"
         consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class LocalFeature(
                 BaseFeature,
@@ -337,9 +329,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             # Base feature with no deps
             class FeatureC(
@@ -391,9 +382,8 @@ database = "{store_path}"
         consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class LocalFeature(
                 BaseFeature,
@@ -440,9 +430,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class Feature(
                 BaseFeature,
@@ -469,9 +458,8 @@ database = "{store_path}"
         consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class Local(
                 BaseFeature,
@@ -517,9 +505,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features_v1():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class Feature(
                 BaseFeature,
@@ -546,9 +533,8 @@ database = "{store_path}"
         consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class Local(
                 BaseFeature,
@@ -566,9 +552,8 @@ database = "{store_path}"
 
         # Update the source feature (bump code_version)
         def source_features_v2():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class Feature(
                 BaseFeature,
@@ -610,9 +595,8 @@ database = "{store_path}"
         source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
 
         def source_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class TestFeature(
                 BaseFeature,
@@ -641,9 +625,8 @@ database = "{store_path}"
         custom_output = tmp_path / "custom.lock"
 
         def consumer_features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class LocalFeature(
                 BaseFeature,
@@ -666,12 +649,11 @@ def test_load_all_features_from_store_warns_on_invalid_feature(tmp_path: Path):
     """Test that _load_all_features_from_store warns and skips features that fail to validate."""
     import warnings
 
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureGraph, FeatureKey, FieldKey, FieldSpec
     from metaxy.ext.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.utils.lock_file import _load_all_features_from_store
+    from metaxy_testing.models import SampleFeatureSpec
 
     store_path = tmp_path / "store.duckdb"
 
@@ -732,11 +714,10 @@ class TestGenerateLockFileSelection:
 
     @staticmethod
     def _push_project(store: MetadataStore, project: str, keys: list[str]) -> None:
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
         from metaxy.metadata_store.system.storage import SystemTableStorage
         from metaxy.models.feature import FeatureGraph
+        from metaxy_testing.models import SampleFeatureSpec
 
         g = FeatureGraph()
         with g.use():
@@ -798,12 +779,11 @@ class TestGenerateLockFileSelection:
 
     def test_selection_combined_with_graph_deps(self, store: MetadataStore, tmp_path: Path):
         """Selection features are unioned with graph-discovered dependencies."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.feature_selection import FeatureSelection
         from metaxy.utils.lock_file import generate_lock_file
+        from metaxy_testing.models import SampleFeatureSpec
 
         self._push_project(store, "upstream", ["up/dep", "up/extra"])
 
@@ -848,12 +828,11 @@ class TestGenerateLockFileSelection:
 
     def test_selection_excludes_local_features(self, store: MetadataStore, tmp_path: Path):
         """Features defined locally in the graph are excluded even if matched by selection."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.feature_selection import FeatureSelection
         from metaxy.utils.lock_file import generate_lock_file
+        from metaxy_testing.models import SampleFeatureSpec
 
         self._push_project(store, "upstream", ["shared/feat", "up/other"])
 
@@ -1051,13 +1030,12 @@ class TestDiffLockFiles:
 def test_generate_lock_file_errors_on_missing_transitive_dependency(tmp_path: Path):
     """Test that generate_lock_file errors when a transitive dependency is not in store."""
     import pytest
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey, FieldKey, FieldSpec
     from metaxy.ext.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.utils.lock_file import generate_lock_file
+    from metaxy_testing.models import SampleFeatureSpec
 
     store_path = tmp_path / "store.duckdb"
 

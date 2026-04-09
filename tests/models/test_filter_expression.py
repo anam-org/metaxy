@@ -4,7 +4,6 @@ import narwhals as nw
 import polars as pl
 import pytest
 import sqlglot
-
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.filter_expression import (
     FilterParseError,

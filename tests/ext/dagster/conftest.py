@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Any
 
 import dagster as dg
+import metaxy as mx
+import metaxy.ext.dagster as mxd
 import pytest
 from pytest_cases import fixture, parametrize_with_cases
 
-import metaxy as mx
-import metaxy.ext.dagster as mxd
 from tests.conftest import require_fixture
 
 

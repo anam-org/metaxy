@@ -2,9 +2,6 @@
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -13,6 +10,8 @@ from metaxy import (
     FieldSpec,
 )
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from syrupy.assertion import SnapshotAssertion
 
 
 def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:

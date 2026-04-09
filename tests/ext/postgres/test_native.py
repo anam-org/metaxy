@@ -8,7 +8,6 @@ import narwhals as nw
 import polars as pl
 import polars.testing
 import pytest
-
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.ext.postgresql import PostgreSQLMetadataStore
 from metaxy.metadata_store import MetadataStore
@@ -18,6 +17,7 @@ from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
+
 from tests.ext.postgres.conftest import _with_search_path
 from tests.metadata_stores.shared import (
     CRUDTests,

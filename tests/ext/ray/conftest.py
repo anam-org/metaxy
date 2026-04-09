@@ -3,15 +3,15 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import metaxy as mx
 import polars as pl
 import pyarrow as pa
 import pytest
 import ray  # noqa: F401
-from metaxy_testing import RAY_FEATURES_MODULE
-
-import metaxy as mx
 from metaxy.config import StoreConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+
+from metaxy_testing import RAY_FEATURES_MODULE
 
 # NOTE: Do NOT import RayTestFeature at module level!
 # It must be imported AFTER init() to pick up the correct project.

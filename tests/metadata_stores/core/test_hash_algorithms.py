@@ -17,17 +17,17 @@ from pathlib import Path
 import polars as pl
 import polars.testing as pl_testing
 import pytest
-from metaxy_testing import HashAlgorithmCases
+from metaxy import BaseFeature, FeatureDep, FeatureGraph
+from metaxy.config import MetaxyConfig
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.parametric import (
     downstream_metadata_strategy,
 )
 from pytest_cases import parametrize_with_cases
 
-from metaxy import BaseFeature, FeatureDep, FeatureGraph
-from metaxy.config import MetaxyConfig
-from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
-from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing import HashAlgorithmCases
 
 # ============= TEST: HASH ALGORITHM CORRECTNESS =============
 

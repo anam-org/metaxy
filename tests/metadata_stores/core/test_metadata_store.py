@@ -7,8 +7,6 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -25,6 +23,7 @@ from metaxy.metadata_store import (
     StoreNotOpenError,
 )
 from metaxy.utils import collect_to_polars
+from metaxy_testing.models import SampleFeatureSpec
 
 
 @pytest.fixture

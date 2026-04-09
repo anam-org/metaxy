@@ -5,8 +5,6 @@ Requires MOTHERDUCK_TOKEN environment variable. Skipped automatically when not s
 
 import polars as pl
 import pytest
-from polars.testing import assert_frame_equal
-
 from metaxy.ext.duckdb import (
     DuckDBMetadataStore,
     DuckLakeAttachmentManager,
@@ -14,6 +12,7 @@ from metaxy.ext.duckdb import (
 )
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars
+from polars.testing import assert_frame_equal
 
 pytestmark = pytest.mark.motherduck
 

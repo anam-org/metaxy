@@ -4,12 +4,11 @@ import hashlib
 import json
 from pathlib import Path
 
-from metaxy_testing.models import SampleFeatureSpec
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
+from metaxy_testing.models import SampleFeatureSpec
+from syrupy.assertion import SnapshotAssertion
 
 
 def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None:

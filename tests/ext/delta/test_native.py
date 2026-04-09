@@ -7,12 +7,12 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-
 from metaxy import HashAlgorithm
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,

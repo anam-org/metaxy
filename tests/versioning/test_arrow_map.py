@@ -5,12 +5,11 @@ from __future__ import annotations
 import polars as pl
 import pyarrow as pa
 import pytest
-from polars_map import Map
-
 from metaxy.utils._arrow_map import (
     convert_maps_to_polars_map,
     convert_structs_to_maps,
 )
+from polars_map import Map
 
 MAP_STR_STR = Map(pl.String(), pl.String())
 

@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import metaxy as mx
 import polars as pl
 import pyarrow as pa
 import pytest
 import ray
-from metaxy_testing import RAY_FEATURES_MODULE
-from polars_map import Map
-
-import metaxy as mx
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.utils import collect_to_polars
+from polars_map import Map
+
+from metaxy_testing import RAY_FEATURES_MODULE
 
 from .conftest import FEATURE_KEY, make_test_data
 

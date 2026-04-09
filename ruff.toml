@@ -1,0 +1,34 @@
+target-version = "py310"
+line-length = 120
+fix = true
+
+[format]
+docstring-code-format = true
+
+[lint]
+extend-select = [
+  "I",
+  "TID252", # relative-imports
+  "TID253", # ban certain module-level imports
+  "UP",
+  "ICN001", # enforces common aliases
+  "ICN003", # bans certain from imports
+]
+
+[lint.isort]
+known-first-party = ["metaxy"]
+
+[lint.flake8-tidy-imports]
+# Ban certain modules from being imported at module level, instead requiring
+# that they're imported lazily (e.g., within a function definition).
+banned-module-level-imports = ["ibis", "duckdb", "narwhals_map", "polars_map"]
+
+[lint.flake8-import-conventions]
+# Declare the banned `from` imports.
+banned-from = ["dagster", "narwhals", "polars"]
+
+[lint.flake8-import-conventions.extend-aliases]
+"metaxy" = "mx"
+"dagster" = "dg"
+"polars" = "pl"
+"narwhals" = "nw"

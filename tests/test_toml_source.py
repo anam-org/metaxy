@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import pytest
-from pydantic_settings import BaseSettings
-
 from metaxy.config.metaxy_source import MetaxyTomlSource, _discover_config_in_dir
+from pydantic_settings import BaseSettings
 
 
 class _DummySettings(BaseSettings):

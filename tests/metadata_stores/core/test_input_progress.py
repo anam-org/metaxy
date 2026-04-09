@@ -8,9 +8,6 @@ from __future__ import annotations
 
 import narwhals as nw
 import polars as pl
-from metaxy_testing import add_metaxy_provenance_column
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -21,6 +18,9 @@ from metaxy import (
 )
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.lineage import LineageRelationship
+from metaxy_testing.models import SampleFeatureSpec
+
+from metaxy_testing import add_metaxy_provenance_column
 
 
 class TestCalculateInputProgress:

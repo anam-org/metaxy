@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import polars as pl
-
 from metaxy.ext.lancedb import LanceDBMetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars

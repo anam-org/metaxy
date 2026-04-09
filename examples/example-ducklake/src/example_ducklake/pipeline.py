@@ -1,11 +1,11 @@
 """Minimal Metaxy pipeline backed by DuckLake."""
 
-import metaxy as mx
 import polars as pl
+
+import metaxy as mx
+from example_ducklake.definitions import DuckLakeDemoFeature
 from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
-
-from example_ducklake.definitions import DuckLakeDemoFeature
 
 
 def build_demo_rows() -> pl.DataFrame:

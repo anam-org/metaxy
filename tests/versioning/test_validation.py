@@ -1,7 +1,6 @@
 """Tests for FeaturePlan column configuration validation."""
 
 import pytest
-
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.field import FieldKey, FieldSpec
 from metaxy.models.lineage import LineageRelationship

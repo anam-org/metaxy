@@ -10,14 +10,14 @@ from typing import Any
 
 import polars as pl
 import pytest
-from metaxy_testing import add_metaxy_provenance_column
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from pytest_cases import parametrize_with_cases
-
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from pytest_cases import parametrize_with_cases
+
+from metaxy_testing import add_metaxy_provenance_column
 from tests.metadata_stores.conftest import (
     BasicStoreCases,
 )
@@ -192,7 +192,6 @@ class TestResolveUpdateRootFeatures:
 
         with graph.use(), store:
             import narwhals as nw
-
             from metaxy.models.constants import (
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
@@ -242,7 +241,6 @@ class TestResolveUpdateRootFeatures:
 
         with graph.use(), store:
             import narwhals as nw
-
             from metaxy.models.constants import (
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
@@ -298,7 +296,6 @@ class TestResolveUpdateRootFeatures:
 
         with graph.use(), store:
             import narwhals as nw
-
             from metaxy.models.constants import (
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,

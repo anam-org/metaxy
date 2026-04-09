@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, Mock
 
 import polars as pl
 import pytest
-
 from metaxy import FeatureKey, HashAlgorithm
 from metaxy.config import MetaxyConfig
 from metaxy.ext.lancedb import LanceDBMetadataStore
@@ -15,6 +14,7 @@ from metaxy.metadata_store import MetadataStore, StoreNotOpenError
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,

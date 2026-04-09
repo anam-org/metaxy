@@ -1,11 +1,10 @@
 import json
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-from pydantic.types import JsonValue
-
 from metaxy import BaseFeature, FeatureKey
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
+from pydantic.types import JsonValue
 
 
 def test_metadata_does_not_affect_version() -> None:

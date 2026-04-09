@@ -5,9 +5,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-from packaging.utils import canonicalize_name
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -26,6 +23,8 @@ from metaxy.entrypoints import (
     load_module_entrypoint,
     load_package_entrypoints,
 )
+from metaxy_testing.models import SampleFeatureSpec
+from packaging.utils import canonicalize_name
 
 
 @pytest.fixture

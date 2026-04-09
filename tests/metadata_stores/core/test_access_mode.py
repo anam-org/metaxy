@@ -8,7 +8,6 @@ from typing import Any
 
 import polars as pl
 import pytest
-
 from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.exceptions import StoreNotOpenError

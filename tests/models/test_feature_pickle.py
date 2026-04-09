@@ -2,11 +2,10 @@
 
 import pickle
 
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeatureSpec
 
 # Create dedicated graph for pickle test features to avoid polluting global graph
 _pickle_test_graph = FeatureGraph()

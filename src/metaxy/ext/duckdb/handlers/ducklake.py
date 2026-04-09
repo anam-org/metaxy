@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from typing import Annotated, Any, Literal
 
-from duckdb import DuckDBPyConnection  # noqa: TID252
+from duckdb import DuckDBPyConnection  # noqa: TID253
 from pydantic import (
     BaseModel,
     Field,

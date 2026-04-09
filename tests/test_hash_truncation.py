@@ -5,8 +5,6 @@ from pathlib import Path
 
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-
 from metaxy._hashing import (
     MIN_TRUNCATION_LENGTH,
     ensure_hash_compatibility,
@@ -20,6 +18,7 @@ from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
 
 class TestHashTruncationUtils:

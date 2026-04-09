@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
 
 
 @pytest.fixture

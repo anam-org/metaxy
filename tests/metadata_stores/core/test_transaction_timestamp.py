@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-
 from metaxy.ext.duckdb import DuckDBMetadataStore
 
 

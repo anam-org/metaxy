@@ -3,10 +3,10 @@
 from pathlib import Path
 
 import pytest
-
 from metaxy import HashAlgorithm
 from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,

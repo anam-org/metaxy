@@ -8,11 +8,10 @@ This module tests:
 
 from __future__ import annotations
 
-from metaxy_testing.models import SampleFeatureSpec
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
+from syrupy.assertion import SnapshotAssertion
 
 
 class TestFeatureDepOptional:

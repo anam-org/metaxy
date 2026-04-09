@@ -6,7 +6,6 @@ import time
 import narwhals as nw
 import polars as pl
 import pytest
-
 from metaxy import BaseFeature, FeatureKey, FeatureSpec
 from metaxy.metadata_store import MetadataStore, StoreNotOpenError
 

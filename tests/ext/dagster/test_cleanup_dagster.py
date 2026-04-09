@@ -5,14 +5,13 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import dagster as dg
+import metaxy.ext.dagster as mxd
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
-import metaxy.ext.dagster as mxd
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy_testing.models import SampleFeatureSpec
 
 
 @pytest.fixture

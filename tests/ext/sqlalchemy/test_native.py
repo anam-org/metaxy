@@ -9,8 +9,6 @@ This module tests the SQLAlchemy integration functionality including:
 from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy import Column, MetaData, String, Table
-
 from metaxy import BaseFeature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig
 from metaxy.ext.ibis.metadata_store import IbisMetadataStore
@@ -19,6 +17,7 @@ from metaxy.ext.sqlalchemy import (
     get_system_slqa_metadata,
 )
 from metaxy.ext.sqlalchemy.plugin import _get_store_sqlalchemy_url
+from sqlalchemy import Column, MetaData, String, Table
 
 # Test fixtures
 

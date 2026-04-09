@@ -6,8 +6,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from metaxy.config import MetaxyConfig
 from mkdocs.structure.files import Files
+
+from metaxy.config import MetaxyConfig
 
 log = logging.getLogger("mkdocs")
 

@@ -1,7 +1,6 @@
 from typing import Any
 
 import dagster as dg
-
 import metaxy as mx
 
 

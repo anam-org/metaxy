@@ -3,11 +3,10 @@
 from typing import Any
 
 import dagster as dg
+import metaxy as mx
 import narwhals as nw
 import polars as pl
 import pytest
-
-import metaxy as mx
 
 
 @pytest.fixture

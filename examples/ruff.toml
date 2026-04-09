@@ -1,4 +1,4 @@
-extend = "../pyproject.toml"
+extend = "../ruff.toml"
 
 # docs often benefit from shorter lines
 line-length = 88

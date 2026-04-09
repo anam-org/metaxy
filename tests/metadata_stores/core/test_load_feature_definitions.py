@@ -5,8 +5,6 @@ from pathlib import Path
 
 import narwhals as nw
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     BaseFeature,
     CoercibleToFieldKey,
@@ -20,6 +18,7 @@ from metaxy import (
 )
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureDefinition, FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
 
 
 def test_load_feature_definitions_raw_into_graph(store: MetadataStore) -> None:

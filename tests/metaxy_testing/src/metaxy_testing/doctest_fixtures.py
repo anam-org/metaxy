@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import polars as pl
-
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep, FeatureKey, FeatureSpec

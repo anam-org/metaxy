@@ -4,10 +4,9 @@ CRITICAL: This implementation NEVER materializes lazy expressions.
 All operations stay in the lazy Ibis world for SQL execution.
 """
 
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 import narwhals as nw
-from ibis import Expr as IbisExpr
 from narwhals.typing import FrameT
 
 from metaxy.models.plan import FeaturePlan
@@ -15,9 +14,12 @@ from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
+if TYPE_CHECKING:
+    from ibis import Expr as IbisExpr
+
 
 class IbisHashFn(Protocol):
-    def __call__(self, expr: IbisExpr) -> IbisExpr: ...
+    def __call__(self, expr: "IbisExpr") -> "IbisExpr": ...
 
 
 class IbisVersioningEngine(VersioningEngine):

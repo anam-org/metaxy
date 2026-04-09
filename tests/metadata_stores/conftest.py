@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from metaxy_testing import HashAlgorithmCases
-from pytest_cases import fixture, parametrize_with_cases
-
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig
 from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
+from pytest_cases import fixture, parametrize_with_cases
+
+from metaxy_testing import HashAlgorithmCases
 
 
 class BasicStoreCases:

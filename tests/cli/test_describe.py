@@ -14,9 +14,8 @@ class TestDescribeFeature:
         """Test describing a single feature in plain format."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class MyFeature(
                 BaseFeature,
@@ -48,9 +47,8 @@ class TestDescribeFeature:
         """Test describing a single feature in JSON format."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class JsonFeature(
                 BaseFeature,
@@ -84,9 +82,8 @@ class TestDescribeFeature:
         """Test describing a feature with dependencies."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class UpstreamFeature(
                 BaseFeature,
@@ -123,9 +120,8 @@ class TestDescribeFeature:
         """Test describing multiple features."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class Feature1(
                 BaseFeature,
@@ -163,9 +159,8 @@ class TestDescribeFeature:
         """Test describing a feature that doesn't exist."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class SomeFeature(
                 BaseFeature,
@@ -191,9 +186,8 @@ class TestDescribeFeature:
         """Test that docstrings are extracted as descriptions."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class DocstringFeature(
                 BaseFeature,
@@ -217,9 +211,8 @@ class TestDescribeFeature:
         """Test describing a feature with metadata."""
 
         def features():
-            from metaxy_testing.models import SampleFeatureSpec
-
             from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
 
             class MetadataFeature(
                 BaseFeature,

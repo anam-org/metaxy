@@ -5,12 +5,11 @@ in the feature spec are present as fields in the feature class.
 """
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy.models.feature import BaseFeature
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeatureSpec
 
 
 def test_valid_single_id_column():

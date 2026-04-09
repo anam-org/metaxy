@@ -1,8 +1,8 @@
 """Quickstart pipeline demonstrating Metaxy's resolve_update API."""
 
-import metaxy as mx
 import polars as pl
 
+import metaxy as mx
 from example_quickstart.features import Audio, Video
 
 config = mx.init()

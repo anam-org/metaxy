@@ -3,8 +3,6 @@
 from typing import Any
 
 import pytest
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.graph.diff.diff_models import (
     AddedNode,
@@ -17,6 +15,7 @@ from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
 
 class TestFieldChange:
@@ -483,7 +482,6 @@ class TestDiffFormatter:
     def test_format_yaml_empty_diff(self):
         """Test YAML format for empty diff."""
         import yaml
-
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(from_project_version="snap1", to_project_version="snap2")
@@ -501,7 +499,6 @@ class TestDiffFormatter:
     def test_format_yaml_with_changes(self):
         """Test YAML format with various changes."""
         import yaml
-
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
@@ -901,7 +898,6 @@ class TestMergedFormatters:
     def test_format_yaml_merged(self):
         """Test YAML formatting of merged graph."""
         import yaml
-
         from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {

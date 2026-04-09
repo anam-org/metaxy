@@ -11,21 +11,20 @@ from datetime import date
 from pathlib import Path
 
 import hypothesis.strategies as st
+import metaxy as mx
 import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
 from hypothesis import HealthCheck, given, settings
-from narwhals_map import Map as NwMap
-from polars.testing.parametric.strategies.data import data as pl_data
-from polars_map import Map
-from syrupy.assertion import SnapshotAssertion
-
-import metaxy as mx
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_arrow, collect_to_polars
+from narwhals_map import Map as NwMap
+from polars.testing.parametric.strategies.data import data as pl_data
+from polars_map import Map
+from syrupy.assertion import SnapshotAssertion
 
 MAP_STR_STR = Map(pl.String(), pl.String())
 
@@ -681,13 +680,12 @@ class MapDtypeTests:
         3. resolve_update on the downstream feature reads upstream from fallback,
            joins it with local downstream data, and computes the increment.
         """
-        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-
         from metaxy import FeatureDep, FeatureKey
         from metaxy.config import MetaxyConfig
         from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
         from metaxy.models.field import FieldSpec
         from metaxy.models.types import FieldKey
+        from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
         config = MetaxyConfig(enable_map_datatype=True)
         with config.use():

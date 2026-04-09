@@ -6,13 +6,12 @@ import json
 from pathlib import Path
 
 import polars as pl
-from metaxy_testing.models import SampleFeatureSpec
-from pydantic import Field
-
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
+from pydantic import Field
 
 
 def test_push_graph_snapshot_stores_feature_schema(tmp_path: Path):

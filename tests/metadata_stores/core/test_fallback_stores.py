@@ -11,16 +11,6 @@ from typing import Any, Literal
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing import (
-    HashAlgorithmCases,
-    add_metaxy_provenance_column,
-    assert_all_results_equal,
-)
-from metaxy_testing.models import SampleFeatureSpec
-from metaxy_testing.pytest_helpers import skip_exception
-from pytest_cases import parametrize_with_cases
-from syrupy import SnapshotAssertion
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -38,6 +28,16 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing.models import SampleFeatureSpec
+from metaxy_testing.pytest_helpers import skip_exception
+from pytest_cases import parametrize_with_cases
+from syrupy import SnapshotAssertion
+
+from metaxy_testing import (
+    HashAlgorithmCases,
+    add_metaxy_provenance_column,
+    assert_all_results_equal,
+)
 
 # ============= HELPERS =============
 
@@ -601,10 +601,9 @@ def test_fallback_stores_opened_on_demand_when_reading(tmp_path: Path, graph: Fe
     the primary store tried to read from them, resulting in StoreNotOpenError
     being raised (or worse, being masked as FeatureNotFoundError).
     """
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
     from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+    from metaxy_testing.models import SampleFeatureSpec
 
     class TestFeature(
         BaseFeature,
@@ -652,10 +651,9 @@ def test_get_store_metadata_respects_fallback_stores(tmp_path: Path, graph: Feat
     fallback stores, returning metadata from the fallback store where the feature is
     actually found when it doesn't exist in the current store.
     """
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
     from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+    from metaxy_testing.models import SampleFeatureSpec
 
     class TestFeature(
         BaseFeature,
@@ -725,10 +723,9 @@ def test_get_store_metadata_prefers_current_store(tmp_path: Path, graph: Feature
     Even when a fallback store has the same feature, get_store_metadata should return
     metadata from the current store (not the fallback).
     """
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
     from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+    from metaxy_testing.models import SampleFeatureSpec
 
     class TestFeature(
         BaseFeature,
@@ -785,10 +782,9 @@ def test_read_with_store_info(tmp_path: Path, graph: FeatureGraph) -> None:
     (LazyFrame, MetadataStore) where the MetadataStore is the store that
     actually contained the feature (which may be a fallback store).
     """
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
     from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+    from metaxy_testing.models import SampleFeatureSpec
 
     class TestFeature(
         BaseFeature,

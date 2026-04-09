@@ -13,12 +13,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._packaging import detect_project_from_package
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
 
 if TYPE_CHECKING:
     from .conftest import FakePackageFactory

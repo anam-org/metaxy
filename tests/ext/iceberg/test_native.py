@@ -7,13 +7,13 @@ from unittest.mock import patch
 
 import polars as pl
 import pytest
-from packaging.version import Version
-
 from metaxy import HashAlgorithm
 from metaxy.ext.polars.handlers.iceberg import IcebergMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
+from packaging.version import Version
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,

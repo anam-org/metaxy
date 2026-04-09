@@ -4,14 +4,14 @@ from pathlib import Path
 
 import narwhals as nw
 import polars as pl
-from metaxy_testing import add_metaxy_provenance_column
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.lineage import LineageRelationship
+from metaxy_testing.models import SampleFeatureSpec
+
+from metaxy_testing import add_metaxy_provenance_column
 
 
 class TestExpansionRelationships:

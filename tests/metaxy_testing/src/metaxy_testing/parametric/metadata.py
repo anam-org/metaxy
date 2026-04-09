@@ -14,8 +14,6 @@ from typing import TYPE_CHECKING
 import polars as pl
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
-from polars.testing.parametric import column, dataframes
-
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     METAXY_CREATED_AT,
@@ -31,6 +29,7 @@ from metaxy.models.constants import (
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
+from polars.testing.parametric import column, dataframes
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -723,7 +722,6 @@ def downstream_metadata_strategy(
 
     # Use the new PolarsVersioningEngine to calculate provenance
     import narwhals as nw
-
     from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
     # Create engine (only accepts plan parameter)

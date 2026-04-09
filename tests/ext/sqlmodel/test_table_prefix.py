@@ -1,8 +1,6 @@
 """Tests for SQLModel table_prefix handling in filter_feature_sqlmodel_metadata."""
 
 import pytest
-from sqlmodel import Field, SQLModel
-
 from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.ibis.metadata_store import IbisMetadataStore
@@ -10,6 +8,7 @@ from metaxy.ext.sqlmodel import (
     BaseSQLModelFeature,
     filter_feature_sqlmodel_metadata,
 )
+from sqlmodel import Field, SQLModel
 
 
 @pytest.fixture(scope="function", autouse=True)

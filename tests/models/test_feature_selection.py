@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from metaxy.models.feature_selection import FeatureSelection
 from metaxy.models.types import FeatureKey
+from pydantic import ValidationError
 
 
 class TestValidation:

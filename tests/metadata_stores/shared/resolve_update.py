@@ -25,13 +25,6 @@ import polars as pl
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
-from metaxy_testing import add_metaxy_provenance_column
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.parametric import (
-    downstream_metadata_strategy,
-    feature_metadata_strategy,
-)
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -52,6 +45,13 @@ from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
+    downstream_metadata_strategy,
+    feature_metadata_strategy,
+)
+
+from metaxy_testing import add_metaxy_provenance_column
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan]

@@ -1,9 +1,8 @@
 """Tests for automatic field mapping functionality."""
 
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy.models.field import FieldDep
+from metaxy_testing.models import SampleFeatureSpec
 
 
 def test_default_fields_mapping_exact_match():

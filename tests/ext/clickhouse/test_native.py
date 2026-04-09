@@ -4,12 +4,12 @@ import ibis.backends.clickhouse  # noqa: F401
 import ibis.expr.datatypes as dt
 import polars as pl
 import pytest
-
 from metaxy import FeatureDefinition, HashAlgorithm
 from metaxy.ext.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.utils import collect_to_polars
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -644,7 +644,6 @@ def test_clickhouse_map_column_write_from_ibis_struct(
     """
     import ibis
     import narwhals as nw
-
     from metaxy.models.constants import (
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_PROVENANCE_BY_FIELD,

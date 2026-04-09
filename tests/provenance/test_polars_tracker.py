@@ -5,11 +5,10 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature
-
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing.models import SampleFeature
 
 
 def test_polars_engine_initialization(graph: FeatureGraph, simple_features: dict[str, type[SampleFeature]]) -> None:

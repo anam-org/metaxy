@@ -11,8 +11,6 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
@@ -20,6 +18,7 @@ from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
 # ============================================================================
 # Fixtures for Aggregation (N:1) scenarios

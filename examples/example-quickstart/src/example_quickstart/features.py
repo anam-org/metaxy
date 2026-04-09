@@ -1,8 +1,9 @@
 """Feature definitions for quickstart example."""
 
 # --8<-- [start:video_feature]
-import metaxy as mx
 from pydantic import Field
+
+import metaxy as mx
 
 
 class Video(

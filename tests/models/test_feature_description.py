@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import json
 
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureDefinition, FeatureKey, FieldKey, FieldSpec
+from metaxy_testing.models import SampleFeatureSpec
 
 
 def test_feature_spec_accepts_description():

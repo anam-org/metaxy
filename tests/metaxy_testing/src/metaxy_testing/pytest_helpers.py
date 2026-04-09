@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, TypeVar
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import IntoFrameT
-
 from metaxy._hashing import get_hash_truncation_length
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -14,6 +12,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
+from narwhals.typing import IntoFrameT
 
 if TYPE_CHECKING:
     from metaxy import CoercibleToFeatureKey

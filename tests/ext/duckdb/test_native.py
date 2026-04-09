@@ -5,7 +5,6 @@ from typing import Any
 
 import polars as pl
 import pytest
-
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.ext.duckdb import DuckDBMetadataStore
@@ -16,6 +15,7 @@ from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -86,7 +86,6 @@ class TestDuckDBPreCreatedMapTable:
     def test_write_to_precreated_map_table(self, tmp_path: Path, test_features: dict[str, Any]) -> None:
         """Writing to a table pre-created with MAP(VARCHAR, VARCHAR) columns works."""
         import duckdb
-
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
 
@@ -140,10 +139,9 @@ class TestDuckDBPreCreatedMapTable:
     ) -> None:
         """Writing to a table with a user-defined MAP column pre-created via SQL."""
         import duckdb
-        from polars_map import Map
-
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
+        from polars_map import Map
 
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
@@ -205,7 +203,6 @@ class TestDuckDBPreCreatedMapTable:
     def test_write_ibis_frame_to_precreated_map_table(self, tmp_path: Path, test_features: dict[str, Any]) -> None:
         """Writing an Ibis-backed frame to a MAP table stays lazy (no materialization)."""
         import duckdb
-
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
 

@@ -1,4 +1,7 @@
-extend = "../../pyproject.toml"
+extend = "../../ruff.toml"
+
+[lint.isort]
+known-first-party = ["metaxy", "mkdocs_metaxy"]
 
 [lint.flake8-import-conventions]
 # Declare the banned `from` imports.

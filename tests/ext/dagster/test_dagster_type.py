@@ -3,11 +3,10 @@
 from typing import Any, cast
 
 import dagster as dg
+import metaxy as mx
 import pandas as pd
 import polars as pl
 import pytest
-
-import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,

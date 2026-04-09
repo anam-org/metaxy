@@ -1,10 +1,10 @@
 import os
 import random
 
-import metaxy as mx
 import narwhals as nw
 import polars as pl
 
+import metaxy as mx
 from example_expansion.features import FaceRecognition, Video, VideoChunk
 from example_expansion.utils import split_video_into_chunks
 

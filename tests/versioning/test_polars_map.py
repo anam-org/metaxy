@@ -10,8 +10,6 @@ import polars as pl
 import polars_map
 import pyarrow as pa
 import pytest
-from polars_map import Map
-
 from metaxy.config import MetaxyConfig
 from metaxy.utils._arrow_map import (
     convert_maps_to_polars_map,
@@ -19,6 +17,7 @@ from metaxy.utils._arrow_map import (
 )
 from metaxy.utils.dataframes import lazy_frame_to_polars
 from metaxy.versioning.types import Increment, LazyIncrement
+from polars_map import Map
 
 MAP_STR_STR = Map(pl.String(), pl.String())
 

@@ -3,6 +3,7 @@
 import json
 
 import pytest
+
 from metaxy_testing import TempMetaxyProject
 
 
@@ -10,9 +11,8 @@ def test_list_features_basic(metaxy_project: TempMetaxyProject, capsys: pytest.C
     """Test basic list features command with plain output."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -40,9 +40,8 @@ def test_list_features_json_format(metaxy_project: TempMetaxyProject, capsys: py
     """Test list features with JSON output format."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -76,9 +75,8 @@ def test_list_features_multiple_features(metaxy_project: TempMetaxyProject, caps
     """Test listing multiple features."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -129,9 +127,8 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject, caps
     """Test listing features with dependencies shows dependent features correctly."""
 
     def root_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -143,8 +140,6 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject, caps
             pass
 
     def dependent_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import (
             BaseFeature,
             FeatureDep,
@@ -153,6 +148,7 @@ def test_list_features_with_dependencies(metaxy_project: TempMetaxyProject, caps
             FieldKey,
             FieldSpec,
         )
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             BaseFeature,
@@ -199,9 +195,8 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject, capsys: p
     """Test verbose mode shows additional details."""
 
     def root_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -213,8 +208,6 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject, capsys: p
             pass
 
     def dependent_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import (
             BaseFeature,
             FeatureDep,
@@ -223,6 +216,7 @@ def test_list_features_verbose_mode(metaxy_project: TempMetaxyProject, capsys: p
             FieldKey,
             FieldSpec,
         )
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             BaseFeature,
@@ -271,9 +265,8 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject, c
     """Test verbose mode with plain output shows field tables."""
 
     def root_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -285,8 +278,6 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject, c
             pass
 
     def dependent_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import (
             BaseFeature,
             FeatureDep,
@@ -295,6 +286,7 @@ def test_list_features_verbose_plain_output(metaxy_project: TempMetaxyProject, c
             FieldKey,
             FieldSpec,
         )
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             BaseFeature,
@@ -375,9 +367,8 @@ def test_list_features_shows_root_and_dependent_icons(
     """Test that plain output shows different icons for root vs dependent features."""
 
     def root_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -389,9 +380,8 @@ def test_list_features_shows_root_and_dependent_icons(
             pass
 
     def dependent_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             BaseFeature,
@@ -420,9 +410,8 @@ def test_list_features_short_flag(metaxy_project: TempMetaxyProject, capsys: pyt
     """Test short flags work (-v for verbose, -f for format)."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -450,9 +439,8 @@ def test_list_features_json_includes_version(metaxy_project: TempMetaxyProject, 
     """Test that JSON output includes full version hash."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -482,9 +470,8 @@ def test_list_features_verbose_auto_field_mapping(
     """Test verbose mode shows auto-mapped field dependencies (no explicit deps)."""
 
     def root_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class VideoFiles(
             BaseFeature,
@@ -499,8 +486,6 @@ def test_list_features_verbose_auto_field_mapping(
             pass
 
     def dependent_features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import (
             BaseFeature,
             FeatureDep,
@@ -508,6 +493,7 @@ def test_list_features_verbose_auto_field_mapping(
             FieldKey,
             FieldSpec,
         )
+        from metaxy_testing.models import SampleFeatureSpec
 
         # No explicit field deps - uses automatic mapping
         class VideoProcessing(
@@ -549,9 +535,8 @@ def test_list_features_multiple_fields(metaxy_project: TempMetaxyProject, capsys
     """Test listing a feature with multiple fields."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class MediaFiles(
             BaseFeature,
@@ -583,9 +568,8 @@ def test_list_features_long_names_not_truncated(metaxy_project: TempMetaxyProjec
     """Test that long feature keys and import paths are not truncated."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         class CroppedSceneChunk720x480FaceLandmarksEyeFeatures(
             BaseFeature,
@@ -676,10 +660,9 @@ def test_list_features_shows_external_features(metaxy_project: TempMetaxyProject
     """Test that external features are marked as such in the output."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
         from metaxy.models.feature import FeatureDefinition, FeatureGraph
+        from metaxy_testing.models import SampleFeatureSpec
 
         # Define a regular feature
         class LocalFeature(
@@ -717,10 +700,9 @@ def test_list_features_external_json_format(metaxy_project: TempMetaxyProject, c
     """Test that JSON output includes is_external field."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
         from metaxy.models.feature import FeatureDefinition, FeatureGraph
+        from metaxy_testing.models import SampleFeatureSpec
 
         # Define a regular feature
         class LocalFeature(
@@ -766,10 +748,9 @@ def test_list_features_external_verbose(metaxy_project: TempMetaxyProject, capsy
     """Test verbose mode with external features."""
 
     def features():
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
         from metaxy.models.feature import FeatureDefinition, FeatureGraph
+        from metaxy_testing.models import SampleFeatureSpec
 
         # Define a regular feature
         class LocalFeature(

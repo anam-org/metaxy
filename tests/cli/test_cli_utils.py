@@ -3,8 +3,6 @@
 from io import StringIO
 
 import pytest
-from rich.console import Console
-
 from metaxy.cli.utils import (
     CLIError,
     CLIErrorCode,
@@ -12,6 +10,7 @@ from metaxy.cli.utils import (
     print_error_item,
     print_error_list,
 )
+from rich.console import Console
 
 
 @pytest.fixture

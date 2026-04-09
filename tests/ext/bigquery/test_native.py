@@ -4,11 +4,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature
-
 from metaxy.ext.bigquery import BigQueryMetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing.models import SampleFeature
 
 
 @pytest.fixture

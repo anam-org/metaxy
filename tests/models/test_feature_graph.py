@@ -14,8 +14,6 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     BaseFeature,
     FeatureDefinition,
@@ -26,6 +24,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy_testing.models import SampleFeatureSpec
 
 
 class TestAddFeature:
@@ -1368,7 +1367,6 @@ class TestExternalDefinitions:
     def test_external_feature_with_missing_external_dependency_raises_error(self, graph: FeatureGraph):
         """External feature depending on missing external parent should raise error on graph operations."""
         import pytest
-
         from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
 
         # Add an external feature that depends on another external feature that doesn't exist

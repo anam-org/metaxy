@@ -2,7 +2,6 @@ import narwhals as nw
 import pandas as pd
 import polars as pl
 import pytest
-
 from metaxy.utils import collect_to_polars
 
 
