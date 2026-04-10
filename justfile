@@ -89,8 +89,14 @@ init-example name:
 changelog-preview:
     git cliff --unreleased --strip all
 
-changelog:
-    git cliff -o CHANGELOG.md
+changelog tag="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "{{tag}}" ]; then
+        git cliff --tag "{{tag}}" -o CHANGELOG.md
+    else
+        git cliff -o CHANGELOG.md
+    fi
 
 # Create a release (version auto-detected from commits, or manually specified)
 release bump="" message="":
