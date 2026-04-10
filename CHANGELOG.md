@@ -21,6 +21,43 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## v0.1.10 (09-04-2026)
+
+### :sparkles: Features
+
+#### Map datatype
+
+- use Arrow conversion utils from `polars-map` ([#1175](https://github.com/anam-org/metaxy/pull/1175) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :bug: Bug Fixes
+
+- conditionally import DeltaLake and Iceberg stores in `metaxy.ext.polars` ([#1180](https://github.com/anam-org/metaxy/pull/1180) by [@geoHeil](https://github.com/geoHeil))
+
+
+### :book: Docs
+
+- fix "outdated version" banner in `main` docs version ([#1172](https://github.com/anam-org/metaxy/pull/1172) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :hammer_and_wrench: Other Improvements
+
+- move Ruff config to `ruff.toml` ([#1177](https://github.com/anam-org/metaxy/pull/1177) by [@danielgafni](https://github.com/danielgafni))
+- pin write-read Arrow schema for `MapDtype` tests ([#1176](https://github.com/anam-org/metaxy/pull/1176) by [@danielgafni](https://github.com/danielgafni))
+- fix changelog for #1173 ([#1179](https://github.com/anam-org/metaxy/pull/1179) by [@danielgafni](https://github.com/danielgafni))
+- update devenv.lock ([#1173](https://github.com/anam-org/metaxy/pull/1173) by [@geoHeil](https://github.com/geoHeil))
+
+#### Deltalake
+- the `metaxy.ext.polars.DeltaMetadataStore` import path has been deprecated in favor of `metaxy.ext.polars.handlers.delta.DeltaMetadataStore` ([#1181](https://github.com/anam-org/metaxy/pull/1181) by [@danielgafni](https://github.com/danielgafni))
+
+#### Iceberg
+- the `metaxy.ext.iceberg.IcebergMetadataStore` import path has been deprecated in favor of `metaxy.ext.polars.handlers.iceberg.IcebergMetadataStore` ([#1181](https://github.com/anam-org/metaxy/pull/1181) by [@danielgafni](https://github.com/danielgafni))
+
+#### Publications
+
+- paper SAO Workshop ([#1174](https://github.com/anam-org/metaxy/pull/1174) by [@geoHeil](https://github.com/geoHeil))
+
+
 ## v0.1.9 (03-04-2026)
 
 ### :wastebasket: Deprecated
@@ -28,6 +65,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 - `MetadataStore` implementations have been moved from `metaxy.ext.metadata_stores.<store>` to `metaxy.ext.<store>`. Old import paths are deprecated and will be removed in `0.2.0`.
 
 - `HashAlgorithm` has been moved from `metaxy.versioning.types` to `metaxy._hashing` (is available as `metaxy.HashAlgorithm`). The old import path is deprecated and will be removed in `0.2.0`.
+
 
 ### :sparkles: Features
 
@@ -47,6 +85,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 ### :hammer_and_wrench: Other Improvements
 
+- release v0.1.9 ([#1170](https://github.com/anam-org/metaxy/pull/1170) by [@danielgafni](https://github.com/danielgafni))
 - fix random old analysis script ([#1168](https://github.com/anam-org/metaxy/pull/1168) by [@danielgafni](https://github.com/danielgafni))
 - improve internal dependency structure ([#1166](https://github.com/anam-org/metaxy/pull/1166) by [@danielgafni](https://github.com/danielgafni))
 - remove a few circular deps ([#1164](https://github.com/anam-org/metaxy/pull/1164) by [@danielgafni](https://github.com/danielgafni))
