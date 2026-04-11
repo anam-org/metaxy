@@ -688,7 +688,7 @@ class VersioningEngine(ABC):
         )
 
         # Step 4: Determine join columns and resolve increment
-        join_columns = self.plan.input_id_columns or list(self.plan.feature.id_columns)
+        join_columns = self.shared_id_columns
 
         from metaxy.versioning.increment_resolver import IncrementResolver
 
@@ -697,6 +697,14 @@ class VersioningEngine(ABC):
 
         return added, changed, removed, input_df
 
+    def _scope_to_sample_ids(self, df: FrameT, sample: FrameT) -> FrameT:
+        """Restrict a frame to the distinct input IDs present in a sample scope."""
+        sample_ids = sample.select(self.shared_id_columns).unique()  # ty: ignore[invalid-argument-type]
+        return cast(
+            FrameT,
+            df.join(sample_ids, on=self.shared_id_columns, how="inner"),  # ty: ignore[invalid-argument-type]
+        )
+
     def _prepare_expected(
         self,
         sample: FrameT | None,
@@ -704,12 +712,25 @@ class VersioningEngine(ABC):
         hash_algorithm: HashAlgorithm,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]],
     ) -> tuple[FrameT, FrameT | None]:
-        """Prepare the expected dataframe from sample (root features) or upstream."""
-        if sample is not None:
+        """Prepare the expected dataframe from sample (root features) or upstream.
+
+        When both sample and upstream are provided (non-root feature with samples),
+        provenance is computed from upstream data and scoped to IDs in the sample.
+        """
+        if sample is not None and upstream:
+            # Non-root feature with sample scope: compute provenance from upstream,
+            # then filter to only IDs present in the sample.
+            expected = self.load_upstream_with_provenance(
+                upstream,
+                hash_algo=hash_algorithm,
+                filters=filters,
+            )
+            expected = self._scope_to_sample_ids(expected, sample)
+            input_df: FrameT | None = expected
+        elif sample is not None:
             # Root features: sample is user-provided with provenance columns already
-            assert len(upstream) == 0, "Root features should have no upstream dependencies"
             expected = sample
-            input_df: FrameT | None = None
+            input_df = None
 
             # Auto-compute metaxy_provenance if missing but metaxy_provenance_by_field exists
             cols = expected.collect_schema().names()  # ty: ignore[invalid-argument-type]

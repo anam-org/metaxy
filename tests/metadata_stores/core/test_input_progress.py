@@ -508,3 +508,76 @@ class TestCalculateInputProgress:
             progress = store.calculate_input_progress(lazy_increment, Downstream)
             assert progress is not None
             assert abs(progress - 33.33) < 0.1
+
+    def test_samples_scope_limits_progress_input(self, graph: FeatureGraph, store: MetadataStore):
+        """Progress uses the scoped input set when samples narrow a multi-dependency feature."""
+
+        class UpstreamA(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["upstream_a_scoped_progress"]),
+                id_columns=["sample_uid"],
+                fields=[FieldSpec(key=FieldKey(["value_a"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class UpstreamB(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["upstream_b_scoped_progress"]),
+                id_columns=["sample_uid"],
+                fields=[FieldSpec(key=FieldKey(["value_b"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["downstream_scoped_progress"]),
+                id_columns=["sample_uid"],
+                deps=[FeatureDep(feature=UpstreamA), FeatureDep(feature=UpstreamB)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        with store.open("w"):
+            upstream_a_data = pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "value_a": ["a1", "a2", "a3"],
+                    "metaxy_provenance_by_field": [
+                        {"value_a": "hash_a1"},
+                        {"value_a": "hash_a2"},
+                        {"value_a": "hash_a3"},
+                    ],
+                }
+            )
+            store.write(UpstreamA, nw.from_native(add_metaxy_provenance_column(upstream_a_data, UpstreamA)))
+
+            upstream_b_data = pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "value_b": ["b1", "b2", "b3"],
+                    "metaxy_provenance_by_field": [
+                        {"value_b": "hash_b1"},
+                        {"value_b": "hash_b2"},
+                        {"value_b": "hash_b3"},
+                    ],
+                }
+            )
+            store.write(UpstreamB, nw.from_native(add_metaxy_provenance_column(upstream_b_data, UpstreamB)))
+
+            initial_increment = store.resolve_update(Downstream, lazy=False)
+            store.write(Downstream, initial_increment.new.to_polars().filter(pl.col("sample_uid") == "s1"))
+
+            scoped_increment = store.resolve_update(
+                Downstream,
+                samples=pl.DataFrame({"sample_uid": ["s1", "s3"]}),
+                lazy=True,
+            )
+
+            progress = store.calculate_input_progress(scoped_increment, Downstream)
+            assert progress == 50.0

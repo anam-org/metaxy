@@ -296,16 +296,19 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature class to resolve updates for
-            samples: A dataframe with joined upstream metadata and `"metaxy_provenance_by_field"` column set.
-                When provided, `MetadataStore` skips loading upstream feature metadata and provenance calculations.
+            samples: For root features, a dataframe with `"metaxy_provenance_by_field"` column set.
+                For non-root features, a dataframe with ID columns used to scope which
+                samples to process (provenance is computed automatically from upstream data).
 
                 !!! info "Required for root features"
                     Metaxy doesn't know how to populate input metadata for root features,
                     so `samples` argument **must** be provided for them.
 
                 !!! tip
-                    For non-root features, use `samples` to customize the automatic upstream loading and field provenance calculation.
-                    For example, it can be used to requires processing for specific sample IDs.
+                    For non-root features, `samples` acts as an ID scope — only IDs present
+                    in the provided dataframe will be included in the result. Provenance is
+                    still computed from all declared upstream features, ensuring staleness is
+                    detected across all `FeatureDep` inputs.
 
                 Setting this parameter during normal operations is not required.
 
@@ -326,8 +329,9 @@ class MetadataStore(ABC):
             lazy: Whether to return a [`LazyIncrement`][metaxy.versioning.types.LazyIncrement] or a [`Increment`][metaxy.versioning.types.Increment].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
-                upstream samples in `increment.new`. The `changed` and `removed` frames will
-                be empty.
+                expected samples in `increment.new`. The `changed` and `removed` frames will
+                be empty. For non-root features with `samples`, the result remains scoped to
+                the provided sample IDs.
             staleness_predicates: Narwhals expressions to treat samples as stale even if their provenance is up-to-date.
                 These expressions are evaluated against existing feature metadata.
                 When multiple predicates are provided, a sample is considered stale if it matches any of them.
@@ -439,49 +443,69 @@ class MetadataStore(ABC):
             *target_filter_list,
         ]
 
-        # Read current metadata with deduplication (with_sample_history=False by default)
-        # Use allow_fallback=False since we only want metadata from THIS store
-        # to determine what needs to be updated locally
-        try:
-            current_metadata: nw.LazyFrame[Any] | None = self.read(
-                feature_key,
-                filters=current_feature_filters if current_feature_filters else None,
-                allow_fallback=False,
-                with_feature_history=False,  # filters by current feature_version
-                with_sample_history=False,  # deduplicates by id_columns, keeping latest
-            )
-        except FeatureNotFoundError:
-            current_metadata = None
+        current_metadata: nw.LazyFrame[Any] | None = None
+        if not skip_comparison:
+            # Read current metadata with deduplication (with_sample_history=False by default)
+            # Use allow_fallback=False since we only want metadata from THIS store
+            # to determine what needs to be updated locally
+            try:
+                current_metadata = self.read(
+                    feature_key,
+                    filters=current_feature_filters if current_feature_filters else None,
+                    allow_fallback=False,
+                    with_feature_history=False,  # filters by current feature_version
+                    with_sample_history=False,  # deduplicates by id_columns, keeping latest
+                )
+            except FeatureNotFoundError:
+                current_metadata = None
 
         upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]] = {}
         filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
 
-        # if samples are provided, use them as source of truth for upstream data
+        # Determine whether samples carry pre-computed provenance. When samples
+        # include METAXY_PROVENANCE_BY_FIELD the caller (e.g. compute_provenance)
+        # already built provenance from all upstreams, so we use them as-is.
+        # When only ID columns are present, we treat samples as a scope and
+        # compute provenance from upstream data in the store.
+        samples_have_provenance = (
+            samples_nw is not None and METAXY_PROVENANCE_BY_FIELD in samples_nw.collect_schema().names()
+        )
+
         if samples_nw is not None:
             # Apply filters to samples if any
-            filtered_samples = samples_nw
             if current_feature_filters:
-                filtered_samples = samples_nw.filter(current_feature_filters)
+                samples_nw = samples_nw.filter(*current_feature_filters)
 
-            # fill in METAXY_PROVENANCE column if it's missing (e.g. for root features)
-            samples_nw = self.hash_struct_version_column(
-                plan,
-                df=filtered_samples,
-                struct_column=METAXY_PROVENANCE_BY_FIELD,
-                hash_column=METAXY_PROVENANCE,
-            )
-
-            # For root features, add data_version columns if they don't exist
-            # (root features have no computation, so data_version equals provenance)
-            # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
-            if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.collect_schema().names():
-                samples_nw = samples_nw.with_columns(
-                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
-                    nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+            if not plan.deps:
+                # Root feature: use samples directly with provenance columns
+                samples_nw = self.hash_struct_version_column(
+                    plan,
+                    df=samples_nw,
+                    struct_column=METAXY_PROVENANCE_BY_FIELD,
+                    hash_column=METAXY_PROVENANCE,
                 )
-        else:
+
+                # Root features have no computation, so data_version equals provenance
+                # Use collect_schema().names() to avoid PerformanceWarning on lazy frames
+                if METAXY_DATA_VERSION_BY_FIELD not in samples_nw.collect_schema().names():
+                    samples_nw = samples_nw.with_columns(
+                        nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+                        nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+                    )
+            elif samples_have_provenance:
+                # Non-root feature with pre-computed provenance: use samples as-is.
+                # The caller already built provenance from all upstream features.
+                samples_nw = self.hash_struct_version_column(
+                    plan,
+                    df=samples_nw,
+                    struct_column=METAXY_PROVENANCE_BY_FIELD,
+                    hash_column=METAXY_PROVENANCE,
+                )
+
+        # Load upstream features when no samples are provided, or when samples
+        # only contain ID columns (scope mode) without pre-computed provenance.
+        if not samples_have_provenance:
             for upstream_spec in plan.deps or []:
-                # Combine feature-specific filters with global filters for upstream
                 upstream_filters = [
                     *normalized_filters.get(upstream_spec.key, []),
                     *global_filter_list,
@@ -555,14 +579,30 @@ class MetadataStore(ABC):
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
+        if current_metadata is not None and samples_nw is not None and plan.deps:
+            scope_id_columns = plan.input_id_columns or list(plan.feature.id_columns)
+            current_metadata = current_metadata.join(
+                samples_nw.lazy().select(scope_id_columns).unique(),
+                on=scope_id_columns,
+                how="inner",
+            )
+
         # Convert _by_field Struct columns to Map when enable_map_datatype is set.
         # User-provided samples may have these as Struct (the natural Polars literal form);
         # the store normalizes them to Map so downstream processing and output are consistent.
-        if MetaxyConfig.get().enable_map_datatype and samples_nw is not None:
+        if MetaxyConfig.get().enable_map_datatype and samples_nw is not None and samples_have_provenance:
             import polars as pl
 
             native = samples_nw.to_native()
-            if isinstance(native, (pl.DataFrame, pl.LazyFrame)):
+            if isinstance(native, pl.DataFrame):
+                from metaxy.utils._arrow_map import convert_structs_to_maps
+
+                native = convert_structs_to_maps(
+                    native,
+                    columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
+                )
+                samples_nw = nw.from_native(native)
+            elif isinstance(native, pl.LazyFrame):
                 from metaxy.utils._arrow_map import convert_structs_to_maps
 
                 native = convert_structs_to_maps(
@@ -572,32 +612,15 @@ class MetadataStore(ABC):
                 samples_nw = nw.from_native(native)
 
         with self.create_versioning_engine(plan=plan, implementation=implementation) as engine:
-            if skip_comparison:
-                # Skip comparison: return all upstream samples as added
-                if samples_nw is not None:
-                    # Root features or user-provided samples: use samples directly
-                    # Note: samples already has metaxy_provenance computed
-                    added = samples_nw.lazy()
-                    input_df = None  # Root features have no upstream input
-                else:
-                    # Non-root features: load all upstream with provenance
-                    added = engine.load_upstream_with_provenance(
-                        upstream=upstream_by_key,
-                        hash_algo=self.hash_algorithm,
-                        filters=filters_by_key,
-                    )
-                    input_df = added  # Input is the same as added when skipping comparison
-                changed = None
-                removed = None
-            else:
-                added, changed, removed, input_df = engine.resolve_increment_with_provenance(
-                    current=current_metadata,
-                    upstream=upstream_by_key,
-                    hash_algorithm=self.hash_algorithm,
-                    filters=filters_by_key,
-                    sample=samples_nw.lazy() if samples_nw is not None else None,
-                    staleness_predicates=tuple(staleness_predicates) if staleness_predicates else (),
-                )
+            # skip_comparison is equivalent to resolving against an empty current frame.
+            added, changed, removed, input_df = engine.resolve_increment_with_provenance(
+                current=None if skip_comparison else current_metadata,
+                upstream=upstream_by_key,
+                hash_algorithm=self.hash_algorithm,
+                filters=filters_by_key,
+                sample=samples_nw.lazy() if samples_nw is not None else None,
+                staleness_predicates=tuple(staleness_predicates) if staleness_predicates else (),
+            )
 
         # Convert None to empty DataFrames
         if changed is None:
