@@ -1239,6 +1239,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ❓ Q&A
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1255,6 +1273,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-can-i-redesign-feature-fields-without-invalidating-everything-downstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How can I redesign feature fields without invalidating everything downstream?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-can-i-select-a-subset-of-a-feature-for-recomputation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How can I select a subset of a feature for recomputation?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-are-feature-definitions-created-via-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why are feature definitions created via classes?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#do-you-support-postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do you support PostgreSQL?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-does-the-logo-mean" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What does the logo mean?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3671,6 +3763,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-can-i-redesign-feature-fields-without-invalidating-everything-downstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How can I redesign feature fields without invalidating everything downstream?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-can-i-select-a-subset-of-a-feature-for-recomputation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How can I select a subset of a feature for recomputation?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-are-feature-definitions-created-via-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why are feature definitions created via classes?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#do-you-support-postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do you support PostgreSQL?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-does-the-logo-mean" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What does the logo mean?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3696,18 +3851,27 @@
 
 
 <h1 id="questions-and-answers">Questions And Answers<a class="headerlink" href="#questions-and-answers" title="Permanent link">&para;</a></h1>
-<div class="admonition question">
-<p class="admonition-title">Why are feature definitions created via classes?</p>
-<p>In short: it's handy for some integrations, allows to have more type annotation goodness, but isn't strictly necessary.
-We will explore other interfaces in the future (see <a href="https://github.com/anam-org/metaxy/issues/800"><code>anam-org/metaxy#800</code></a>).</p>
+<h2 id="how-can-i-redesign-feature-fields-without-invalidating-everything-downstream">How can I redesign feature fields without invalidating everything downstream?<a class="headerlink" href="#how-can-i-redesign-feature-fields-without-invalidating-everything-downstream" title="Permanent link">&para;</a></h2>
+<p>Do your redesign and use <a href="../concepts/metadata-stores/#rebasing-metadata-versions">metadata rebases</a>.</p>
+<h2 id="how-can-i-select-a-subset-of-a-feature-for-recomputation">How can I select a subset of a feature for recomputation?<a class="headerlink" href="#how-can-i-select-a-subset-of-a-feature-for-recomputation" title="Permanent link">&para;</a></h2>
+<p>Invoke <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-method&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;metaxy.MetadataStore.resolve_update&lt;/span&gt;" href="../../reference/api/metadata-stores/base/#metaxy.MetadataStore.resolve_update"><code>MetadataStore.resolve_update</code></a> with an appropriate condition passed to <code>staleness_predicates</code>.</p>
+<h2 id="why-are-feature-definitions-created-via-classes">Why are feature definitions created via classes?<a class="headerlink" href="#why-are-feature-definitions-created-via-classes" title="Permanent link">&para;</a></h2>
+<p>In short: it's handy for some integrations, and allows to have more type annotation goodness, but isn't strictly necessary.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Other interfaces will be explored in the future — see <a href="https://github.com/anam-org/metaxy/issues/800"><code>anam-org/metaxy#800</code></a>.</p>
 </div>
-<div class="admonition question">
-<p class="admonition-title">Do you support PostgreSQL?</p>
-<p>We kinda do, but PostgreSQL is a <a href="../../integrations/metadata-stores/databases/postgresql/">really bad choice</a> for a metadata store backend.</p>
+<h2 id="do-you-support-postgresql">Do you support PostgreSQL?<a class="headerlink" href="#do-you-support-postgresql" title="Permanent link">&para;</a></h2>
+<p>Kinda.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>PostgreSQL is a <a href="../../integrations/metadata-stores/databases/postgresql/">really bad choice</a> for a metadata store backend.</p>
 </div>
-<div class="admonition question">
-<p class="admonition-title">What does the logo mean? Why does it look like <a href="https://velvetshark.com/ai-company-logos-that-look-like-buttholes">this</a>?</p>
-<p>It's an accident. I wanted it to resemble a galaxy, but it is what it is.</p>
+<h2 id="what-does-the-logo-mean">What does the logo mean?<a class="headerlink" href="#what-does-the-logo-mean" title="Permanent link">&para;</a></h2>
+<p>It's an accident. The intent was for it to resemble a galaxy, but it is what it is.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Yes, we've seen <a href="https://velvetshark.com/ai-company-logos-that-look-like-buttholes">this page</a>.</p>
 </div>
 
 
