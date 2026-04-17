@@ -2,9 +2,11 @@
 
 import pytest
 from metaxy import BaseFeature
+from metaxy.models.feature_spec import FeatureDep, Unique
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 from metaxy_testing.models import SampleFeatureSpec
+from pydantic import ValidationError
 
 
 def test_duplicate_field_keys_raises_error():
@@ -131,9 +133,16 @@ def test_feature_spec_requires_id_columns():
     assert spec.id_columns == ("sample_uid",)
 
 
+def test_feature_spec_empty_id_columns_raises_validation_error():
+    """Test that FeatureSpec uses field constraints for empty id_columns."""
+    from metaxy.models.feature_spec import FeatureSpec
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        FeatureSpec(key="test/feature", id_columns=[])
+
+
 def test_feature_dep_from_feature_class():
     """Test that FeatureDep can be created directly from a Feature class."""
-    from metaxy.models.feature_spec import FeatureDep
     from metaxy.models.types import FeatureKey
 
     # Create a parent feature
@@ -174,7 +183,7 @@ def test_feature_dep_from_feature_class():
 
 def test_feature_spec_deps_mixed_types():
     """Test that FeatureSpec.deps accepts all coercible types in a single list."""
-    from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.types import FeatureKey
 
     # Create a Feature class
@@ -209,3 +218,117 @@ def test_feature_spec_deps_mixed_types():
     assert spec.deps[1].feature == FeatureKey(["my", "feature", "key"])
     assert spec.deps[2].feature == FeatureKey(["another", "key"])
     assert spec.deps[3].feature == FeatureKey(["very", "nice"])
+
+
+class TestUniqueValidation:
+    """Tests for the unique field on FeatureSpec."""
+
+    def test_unique_default_is_none(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature")
+        assert spec.unique is None
+
+    def test_unique_model_round_trips(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", unique=Unique(subset=("col1", "col2")))
+        assert spec.unique == Unique(subset=("col1", "col2"))
+
+    def test_unique_dict_list_is_coerced(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", unique={"subset": ["col1"]})
+        assert spec.unique == Unique(subset=("col1",))
+
+    def test_unique_subset_bare_string_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            SampleFeatureSpec(key="test/feature", unique={"subset": "col1"})
+
+    def test_unique_subset_mapping_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset={"col1": True})  # ty: ignore[invalid-argument-type]
+
+    def test_unique_subset_non_sequence_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset=42)  # ty: ignore[invalid-argument-type]
+
+    def test_unique_subset_empty_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            Unique(subset=())
+
+    def test_unique_subset_duplicate_columns_deduplicates(self) -> None:
+        u = Unique(subset=("col2", "col1", "col2"))
+        assert u.subset == ("col2", "col1")
+
+    def test_unique_serializes_correctly(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature", unique=Unique(subset=("content_hash_2", "content_hash_1")))
+        dumped = spec.model_dump(mode="json")
+        assert dumped["unique"] == {"subset": ["content_hash_2", "content_hash_1"], "keep": "any"}
+
+    def test_unique_none_serializes_correctly(self) -> None:
+        spec = SampleFeatureSpec(key="test/feature")
+        dumped = spec.model_dump(mode="json")
+        assert dumped["unique"] is None
+
+    def test_unique_missing_column_warns_on_feature(self) -> None:
+        with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+
+            class _BadFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/bad_dedup",
+                    unique=Unique(subset=("missing",)),
+                ),
+            ):
+                pass
+
+    def test_unique_current_feature_column_allowed(self) -> None:
+        class _Feature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/current_feature_dedup",
+                unique=Unique(subset=("content_hash",)),
+            ),
+        ):
+            content_hash: str | None = None
+
+        assert _Feature.spec().unique == Unique(subset=("content_hash",))
+
+    def test_unique_system_column_allowed(self) -> None:
+        class _SysColFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key="test/sys_dedup",
+                unique=Unique(subset=("metaxy_data_version",)),
+            ),
+        ):
+            pass
+
+        assert _SysColFeature.spec().unique == Unique(subset=("metaxy_data_version",))
+
+    def test_unique_upstream_column_warns(self) -> None:
+        class _Parent(BaseFeature, spec=SampleFeatureSpec(key="test/dedup_parent")):
+            content_hash: str | None = None
+
+        with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+
+            class _Child(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/dedup_child",
+                    deps=[FeatureDep(feature="test/dedup_parent", select=("content_hash",))],
+                    unique=Unique(subset=("content_hash",)),
+                ),
+            ):
+                pass
+
+    def test_unique_renamed_upstream_column_warns(self) -> None:
+        class _Parent(BaseFeature, spec=SampleFeatureSpec(key="test/dedup_rename_parent")):
+            content_hash: str | None = None
+
+        with pytest.warns(UserWarning, match="unique.subset columns.*not found"):
+
+            class _Child(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key="test/dedup_rename_child",
+                    deps=[FeatureDep(feature="test/dedup_rename_parent", rename={"content_hash": "chash"})],
+                    unique=Unique(subset=("chash",)),
+                ),
+            ):
+                pass

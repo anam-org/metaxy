@@ -10,11 +10,12 @@ from collections.abc import Sequence
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import Field, Json, PrivateAttr, TypeAdapter, field_serializer, field_validator
+from pydantic import Field, Json, PrivateAttr, TypeAdapter, field_serializer, field_validator, model_validator
 
 from metaxy._decorators import public
 from metaxy._hashing import truncate_hash
 from metaxy.models.bases import FrozenBaseModel
+from metaxy.models.constants import ALL_SYSTEM_COLUMNS
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.types import CoercibleToFieldKey, FeatureKey, ValidatedFieldKeyAdapter
 
@@ -59,6 +60,24 @@ class FeatureDefinition(FrozenBaseModel):
     _provenance_by_field: dict[str, str] | None = PrivateAttr(default=None)
     _on_version_mismatch: Literal["warn", "error"] = PrivateAttr(default="warn")
     _source: str | None = PrivateAttr(default=None)
+
+    @model_validator(mode="after")
+    def validate_unique_columns(self) -> FeatureDefinition:
+        """Warn if unique.subset references columns not present in the definition schema."""
+        if self.spec.unique is None or not self.columns:
+            return self
+
+        available = set(self.columns) | set(ALL_SYSTEM_COLUMNS)
+        missing = set(self.spec.unique.subset) - available
+        if missing:
+            warnings.warn(
+                f"Feature '{self.key}': unique.subset columns {sorted(missing)} not found in "
+                f"feature columns or system columns. "
+                f"They must exist at read time or a ColumnNotFoundError will occur.",
+                UserWarning,
+                stacklevel=2,
+            )
+        return self
 
     @classmethod
     def from_feature_class(cls, feature_cls: type[BaseFeature]) -> FeatureDefinition:

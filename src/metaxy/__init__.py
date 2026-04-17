@@ -30,6 +30,8 @@ from metaxy.models.feature_spec import (
     FeatureSpec,
     FeatureSpecWithIDColumns,
     IDColumns,
+    Unique,
+    UniqueKeep,
 )
 from metaxy.models.field import (
     FieldDep,
@@ -155,6 +157,8 @@ __all__ = [
     "graph",
     "FeatureSpec",
     "FeatureDep",
+    "Unique",
+    "UniqueKeep",
     "FeatureDepMetadata",
     "FeatureSpec",
     "FeatureSpecWithIDColumns",
