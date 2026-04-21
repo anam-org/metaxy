@@ -1,13 +1,14 @@
 ---
-title: 'Metaxy: Record-Level Feature Metadata Management for GPU-Accelerated ML Pipelines'
+title: 'Metaxy: Record-Level Feature Metadata Management for Multimodal ML Pipelines'
 tags:
   - Python
   - machine learning
   - metadata
   - feature engineering
   - reproducibility
-  - GPU
-  - AI
+  - data lineage
+  - incremental computation
+  - caching
   - Multimodal
 authors:
   - name: Daniel Gafni
@@ -30,8 +31,10 @@ bibliography: paper.bib
 
 Software that processes large datasets often repeats expensive computations when any part of the input data or processing logic changes.
 Metaxy is about perfecting the art of doing nothing: only compute what changed, save time and money, and accelerate exploration.
-In machine learning pipelines that handle video, audio, and images, these computations run on Graphics Processing Units (GPUs) that cost 10 to 100 times more per hour than standard processors.
+In machine learning pipelines that handle video, audio, and images, these computations run on Graphics Processing Units (GPUs) that cost 10 to 100 times more per hour than standard processors[^gpu-cost].
 A small change to one processing step can trigger unnecessary recomputation of unrelated steps, wasting both time and money.
+
+[^gpu-cost]: AWS on-demand pricing, 2026; the exact ratio depends on the instance families compared, spanning roughly 12× (general-purpose vs entry GPU) to several hundred-fold (commodity CPU vs top-end accelerator).
 
 Metaxy is a Python library that tracks which specific data records need reprocessing after a change, rather than rerunning entire datasets.
 It builds a dependency graph that connects individual data fields across processing steps.
@@ -39,7 +42,7 @@ When a researcher modifies one step, Metaxy identifies exactly which records are
 This selective approach eliminates redundant GPU work while preserving complete lineage for reproducibility.
 
 The library integrates with various backends through Ibis (@ibis) and supports multiple dataframe engines via Narwhals (@narwhals).
-Orchestration platforms such as Dagster (@dagster) and Ray (@ray) consume Metaxy's record-level diffs to schedule only the necessary GPU workloads.
+Orchestration platforms such as Dagster (@dagster) and Ray consume Metaxy's record-level diffs to schedule only the necessary GPU workloads.
 
 # Statement of Need
 
@@ -73,11 +76,11 @@ The target audience includes ML engineers working with multimodal data, MLOps te
 Several tools address aspects of feature management, but none, to our knowledge, provide field-level dependency tracking at record granularity as a standalone metadata layer.
 DVC (@dvc) versions datasets at the file level, treating each file as an opaque artifact without tracking individual records or fields within it.
 Feast (@feast) focuses on feature definition, materialization, and online serving. Recent Feast releases include DAG-based feature computation, but Feast does not expose field-level provenance for propagating version changes and deciding which downstream records require recomputation after an upstream modification.
-Hamilton (@hamilton) builds dataflows from Python functions and can report lineage over the resulting DAG, typically at the level of nodes, columns, and dataframe outputs. It does not maintain per-record, per-field provenance for selective downstream invalidation.
+Apache Hamilton (@hamilton) builds dataflows from Python functions and can report lineage over the resulting DAG, typically at the level of nodes, columns, and dataframe outputs. It does not maintain per-record, per-field provenance for selective downstream invalidation.
 DataChain (@datachain) combines metadata management with a Python-native data processing framework and supports delta processing over new or changed records. However, its incremental model is tied to dataset processing within that framework rather than to a standalone field-level dependency graph that can drive recomputation across multiple compute backends.
 
 Metaxy fills the gap by separating metadata from compute: it tracks field-level dependencies at record granularity and propagates version changes topologically through the dependency graph.
-This separation allows teams to integrate Metaxy with any compute framework, such as Ray (@ray) or Dagster (@dagster), while retaining precise control over which records require reprocessing.
+This separation allows teams to integrate Metaxy with any compute framework, such as Ray or Dagster, while retaining precise control over which records require reprocessing.
 
 # Software Design
 
@@ -85,19 +88,17 @@ Metaxy represents features as declarative Pydantic models organized into a direc
 Each feature declares its identifier columns, computed fields, and dependencies on upstream feature fields.
 The system constructs a global dependency graph at initialization, enabling downstream version propagation before any data processing occurs.
 
-Version computation operates at record granularity through hierarchical hashing.
-Field code versions are user-specified strings that mark algorithmic changes.
-For each record, field versions combine code versions with upstream record field versions through deterministic hashing.
+Version computation operates at two layers through deterministic hashing. Graph-level feature hashes combine field code versions with upstream structure once per code change, using a fixed `SHA-256` implementation whose exact choice is internal. Record-level hashes run once per data row, combining per-record identifiers with upstream record versions inside the metadata store via SQL; this function is configurable and defaults to `xxhash32` where the backend supports it, keeping hashing colocated with storage and avoiding expensive data transfers.
+Field code versions are user-specified strings that developers bump to mark algorithmic changes. This is a deliberate design choice rather than an automatic-detection problem: a static analyzer cannot reliably distinguish a behavior-preserving refactor from a semantic change, and silent false-positive invalidation would trigger prohibitively expensive GPU recomputation. Metaxy therefore delegates this judgement to the author.
 Feature versions aggregate field versions, and record versions map each data instance to the specific upstream versions that produced it, creating a per-record provenance trail.
 
 This record-level granularity is what distinguishes Metaxy from table-level orchestrators.
 When an upstream field changes for a subset of records, only those downstream records that transitively depend on the changed field are marked for recomputation.
 Records with unchanged dependencies are skipped.
 
-Metadata persistence uses pluggable storage backends.
-DuckDB provides embedded storage for prototyping; ClickHouse, BigQuery, Delta Lake, Ducklake, LanceDB and Postgresql scale to production workloads.
+Metadata persistence uses pluggable, append-only storage backends: version entries are never overwritten, preserving the lineage needed for retrospective audits.
+DuckDB provides embedded storage for prototyping; ClickHouse, BigQuery, Delta Lake, DuckLake, LanceDB and PostgreSQL scale to production workloads.
 Narwhals supplies a backend-agnostic dataframe interface, allowing users to work with Pandas, Polars, or Ibis interchangeably.
-The system pushes version computation into the metadata store through SQL, avoiding expensive data transfers.
 
 # Research Impact
 
@@ -112,8 +113,8 @@ When only the audio processing algorithm changes, the system correctly schedules
 This selective recomputation is the core value proposition: only records depending on the modified field incur GPU costs.
 
 Metaxy has been running in production at Anam for processing millions of training samples across multimodal video pipelines.
-Record-level selective execution eliminates redundant computation, making expensive GPU workloads financially viable for iterative research.
-The append-only lineage design ensures that every experiment remains reproducible, addressing a critical gap in machine learning workflows.
+Before Metaxy, achieving selective recomputation at this scale required manual metadata edits, ad-hoc overrides, and custom per-pipeline bookkeeping; Metaxy standardizes those decisions into a declarative model so that correct, auditable incremental updates become the default path rather than a bespoke engineering effort for each new feature.
+Combined with the append-only metadata layer introduced above, every experiment remains reproducible, closing a critical gap in machine learning workflows.
 
 The system bridges prototyping and production through vendor-neutral abstractions.
 Researchers define features once and deploy them across DuckDB on laptops, ClickHouse in data centers, or BigQuery in the cloud without modifying feature code.
@@ -126,7 +127,7 @@ Documentation is available at [https://docs.metaxy.io](https://docs.metaxy.io).
 
 Generative AI tools were used during development for code completion and documentation drafting.
 All AI-generated content was reviewed and refined by the authors.
-Large parts of the documentation was written by hand.
+Large parts of the documentation were written by hand.
 
 # Acknowledgements
 
