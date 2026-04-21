@@ -1,6 +1,8 @@
 target-version = "py310"
 line-length = 120
 fix = true
+extend-exclude = ["publications"]
+force-exclude = true
 
 [format]
 docstring-code-format = true

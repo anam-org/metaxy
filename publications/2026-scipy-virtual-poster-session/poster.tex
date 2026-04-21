@@ -1,0 +1,362 @@
+% Metaxy — SciPy 2026 Virtual Poster (LaTeX / tikzposter)
+% A0 landscape. Build:  make   (or: tectonic poster.tex after rendering SVGs)
+
+\documentclass[a0paper, landscape, 25pt, margin=0mm, innermargin=7mm,
+  blockverticalspace=2mm, colspace=10mm, subcolspace=6mm]{tikzposter}
+
+% ─── packages ─────────────────────────────────────────────────
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+\fi
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{url}
+
+% Font stack — engine-detecting packages, no [default] option to avoid
+% fontspec collisions under pdflatex.
+\usepackage{ebgaramond}
+\usepackage{sourcesanspro}
+\usepackage{sourcecodepro}
+\renewcommand{\familydefault}{\sfdefault}
+% Use the right family-selection syntax per engine. Under pdflatex the
+% NFSS name is "EBGaramond-LF"; under xelatex/luatex fontspec registers
+% EB Garamond as the default \rmfamily via the ebgaramond package.
+\ifPDFTeX
+  \newcommand{\garamond}{\fontfamily{EBGaramond-LF}\selectfont}
+\else
+  \newcommand{\garamond}{\rmfamily}
+\fi
+
+% Pre-rendered SVG → PDF (see Makefile). Tectonic does not support the
+% svg package's \write18 pipe, so rendering runs ahead of the build.
+\newcommand{\svgimg}[2][]{\includegraphics[#1]{#2.svg.pdf}}
+
+% Stub \href so tikzposter + TL2026 pdflatex (which chokes on hyperref's
+% \AtBeginDocument hook) can still compile the same source.
+\providecommand{\href}[2]{#2}
+
+\graphicspath{{assets/}}
+
+% Turn off the LaTeX/TikZposter watermark on the bottom-right of the poster.
+\tikzposterlatexaffectionproofoff
+
+% ─── design tokens ────────────────────────────────────────────
+\definecolor{navy}{HTML}{08111D}
+\definecolor{deep}{HTML}{0F172A}
+\definecolor{cream}{HTML}{F6F4EF}
+\definecolor{paper}{HTML}{FFFFFF}
+\definecolor{teal}{HTML}{0F766E}
+\definecolor{tealdark}{HTML}{14B8A6}
+\definecolor{tealsoft}{HTML}{F0FDF9}
+\definecolor{ink}{HTML}{0A0A0A}
+\definecolor{ink60}{HTML}{404040}
+\definecolor{ink40}{HTML}{737373}
+\definecolor{rulecolor}{HTML}{D4D4D4}
+
+% Python syntax highlighting palette (readable on the dark code background).
+\definecolor{codekw}{HTML}{5EEAD4}
+\definecolor{codestr}{HTML}{FCD34D}
+\definecolor{codecom}{HTML}{94A3B8}
+\definecolor{codenum}{HTML}{F0ABFC}
+\definecolor{codeid}{HTML}{E2E8F0}
+
+% ─── tikzposter styles ────────────────────────────────────────
+\definebackgroundstyle{metaxyBg}{
+  \fill[color=cream] (bottomleft) rectangle (topright);
+}
+\usebackgroundstyle{metaxyBg}
+
+\definetitlestyle{metaxyTitle}{
+  width=\paperwidth, roundedcorners=0, linewidth=0pt, innersep=3pt,
+  titletotopverticalspace=0mm, titletoblockverticalspace=3mm
+}{
+  \fill[color=navy] (\titleposleft,\titleposbottom) rectangle
+    (\titleposright,\titlepostop);
+}
+\usetitlestyle{metaxyTitle}
+
+\defineblockstyle{metaxyBlock}{
+  titlewidthscale=1, bodywidthscale=1, titlecenter,
+  titleoffsetx=0pt, titleoffsety=0pt, bodyoffsetx=0pt, bodyoffsety=0mm,
+  bodyverticalshift=3mm, roundedcorners=4, linewidth=0pt,
+  titleinnersep=3mm, bodyinnersep=5mm
+}{
+  \draw[color=teal, line width=4pt] (blocktitle.south west) -- (blocktitle.south east);
+  \fill[color=paper] (blockbody.south west) rectangle (blockbody.north east);
+}
+\useblockstyle{metaxyBlock}
+
+\definecolorstyle{metaxyColors}{}{
+  \colorlet{titlefgcolor}{paper}
+  \colorlet{titlebgcolor}{navy}
+  \colorlet{blocktitlebgcolor}{cream}
+  \colorlet{blocktitlefgcolor}{teal}
+  \colorlet{blockbodybgcolor}{paper}
+  \colorlet{blockbodyfgcolor}{ink}
+  \colorlet{backgroundcolor}{cream}
+  \colorlet{framecolor}{teal}
+  \colorlet{notefgcolor}{ink}
+  \colorlet{notebgcolor}{tealsoft}
+  \colorlet{notefrcolor}{teal}
+}
+\usecolorstyle{metaxyColors}
+
+% ─── code block (listings with Python highlighting, in a tikz box) ─────
+\lstdefinestyle{metaxyPython}{
+  language=Python,
+  basicstyle=\ttfamily\small\color{codeid},
+  keywordstyle=\color{codekw}\bfseries,
+  stringstyle=\color{codestr},
+  commentstyle=\color{codecom}\itshape,
+  numberstyle=\color{codenum},
+  identifierstyle=\color{codeid},
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  upquote=true,
+  tabsize=4,
+  aboveskip=0pt,
+  belowskip=0pt,
+}
+
+\newcommand{\codeblock}[1]{%
+  \begin{tikzpicture}
+    \node[fill=deep, inner sep=5mm, rounded corners=4pt] (code) {%
+      \begin{minipage}{\linewidth-14mm}%
+        \lstinputlisting[style=metaxyPython]{#1}%
+      \end{minipage}};
+  \end{tikzpicture}%
+}
+
+% ─── helpers ──────────────────────────────────────────────────
+\newcommand{\eyebrow}[1]{%
+  {\sffamily\normalsize\bfseries\color{teal}\MakeUppercase{#1}}\par\vspace{2mm}%
+}
+\newcommand{\eyebrowdark}[1]{%
+  {\sffamily\normalsize\bfseries\color{tealdark}\MakeUppercase{#1}}\par\vspace{2mm}%
+}
+\newcommand{\monolabel}[1]{%
+  {\ttfamily\normalsize\bfseries\color{teal}\MakeUppercase{#1}}\par%
+}
+\newcommand{\stat}[3]{%
+  \vspace{1mm}{\color{rulecolor}\rule{\linewidth}{1pt}}\vspace{2mm}\par
+  {\sffamily\normalsize\bfseries\color{ink40}\MakeUppercase{#1}}\par\vspace{0mm}
+  {\garamond\fontsize{36}{42}\selectfont #2}\par\vspace{1mm}
+  {\color{ink60}\large #3}\par\vspace{1mm}%
+}
+\newcommand{\serifhead}[1]{{\garamond\fontsize{48}{54}\selectfont #1}}
+\newcommand{\serifheadSm}[1]{{\garamond\fontsize{36}{42}\selectfont #1}}
+\newcommand{\bigstmt}[2][paper]{{\garamond\fontsize{44}{52}\selectfont\color{#1}#2}}
+
+% ─── title / authors ──────────────────────────────────────────
+% Empty defaults — full layout is in \settitle below so the logo sits
+% on the far right of the header rather than stacked centered on top.
+\title{}
+\author{}
+\institute{}
+\titlegraphic{}
+
+% ═════════════════════════════════════════════════════════════
+\begin{document}
+\settitle{%
+  \begin{minipage}[c]{0.80\textwidth}\raggedright%
+    {\garamond\fontsize{150}{156}\selectfont\color{paper}%
+    Perfecting the art of \color{tealdark}doing nothing\color{paper}.}\\[3mm]%
+    {\sffamily\color{paper}\fontsize{48}{54}\selectfont%
+    \textbf{Metaxy} --- field-level feature metadata for multimodal ML pipelines.}\\[1mm]%
+    {\sffamily\color{white!85!black}\fontsize{38}{44}\selectfont%
+    Only recompute what actually changed.}\\[2mm]%
+    {\ttfamily\color{tealdark}\fontsize{30}{34}\selectfont%
+    docs.metaxy.io \quad\textbullet\quad github.com/anam-org/metaxy \quad\textbullet\quad uv add metaxy}\\[1mm]%
+    {\sffamily\color{white!85!black}\fontsize{30}{34}\selectfont%
+    \href{https://gafni.dev/}{Daniel Gafni}\, \textbullet\, \href{https://georgheiler.com/}{Georg Heiler}%
+    \quad\color{white!65!black}\normalsize ex-ML engineer at Anam\, \textbullet\, Jubust / ASCII / CSH}%
+  \end{minipage}\hfill%
+  \begin{minipage}[c]{0.18\textwidth}\raggedleft%
+    \svgimg[height=13cm]{metaxy}%
+  \end{minipage}%
+}
+\maketitle[titletotopverticalspace=0mm]
+
+% ── 3-COLUMN BODY ─────────────────────────────────────────────
+\begin{columns}
+
+% ── COLUMN 1 · THE PROBLEM ────────────────────────────────────
+\column{0.33}
+\block{\eyebrow{The GPU Economics Problem}\serifhead{One careless rerun blows the weekly GPU budget}}{
+  Tabular pipelines forgive a full rerun --- they finish by morning on CPUs.
+  Multimodal pipelines do not. A tweak to cropping resolution cascades
+  through millions of samples, firing audio, transcription, and embedding
+  stages that never touched the frames.
+
+  \vspace{3mm}
+  \colorbox{tealsoft}{\parbox{\linewidth-6mm}{\vspace{2mm}%
+    \monolabel{The scenario Metaxy handles}\vspace{1mm}\par
+    Bump the cropping resolution. Without field-level tracking the full
+    pipeline would reprocess --- audio-only stages included. Roughly half
+    those stages never touched a frame.\vspace{2mm}}}
+
+  \vspace{3mm}
+  \stat{Compute reality}{10--100$\times$ cost}%
+       {GPU hours vs.\ CPU hours for the same wall-clock window.}
+  \stat{Iteration reality}{Many reruns / day}%
+       {Parameter sweeps, model swaps, bugfixes throughout the day.}
+  \stat{Decision cost}{Guessing is expensive}%
+       {You cannot afford to guess what needs recomputing.}
+
+  \vspace{2mm}
+  {\color{ink40}\small
+  Orchestrators (Dagster, Airflow), artifact versioning (DVC), online serving
+  (Feast), lineage (Hamilton), and versioned datasets (LanceDB, DataChain) all
+  stop \emph{above} the field~$\times$~record grain where GPU cost accrues.
+  Metaxy fills that gap.}
+}
+
+% ── COLUMN 2 · THE IDEA ───────────────────────────────────────
+\column{0.34}
+\block{\eyebrow{The Key Insight}\serifhead{A version per field, per record}}{
+  Each sample carries a \textbf{versioning dictionary} --- one hash per
+  field. Each per-field hash composes the upstream field's version with
+  the current code version, so a change propagates only along the edges
+  that actually consume it.
+
+  \vspace{3mm}
+  \begin{center}\svgimg[width=0.86\linewidth]{field_version}\end{center}
+  \vspace{1mm}
+  \begin{center}\color{ink40}\itshape\large
+    Per-field hash = SHA(upstream version, code version).
+  \end{center}
+
+  \vspace{3mm}
+  {\large
+  Field \emph{code versions} mark algorithmic changes; \emph{field
+  provenance} folds them with upstream record versions; \emph{record
+  provenance} is the sample-level rollup. \texttt{resolve\_update}
+  returns the concrete \emph{new}, \emph{stale}, and \emph{orphaned}
+  rows.}
+
+  \vspace{3mm}
+  \begin{center}\svgimg[width=0.86\linewidth]{field-deps}\end{center}
+  \vspace{1mm}
+  \begin{center}\color{ink40}\itshape\large
+    A change to \texttt{Video.frames} reaches
+    \texttt{FaceDetection}, not \texttt{Transcript}.
+  \end{center}
+}
+
+% ── COLUMN 3 · THE CODE ───────────────────────────────────────
+\column{0.33}
+\block{\eyebrow{Show me the code}\serifhead{Define $\cdot$ ask $\cdot$ record}}{
+  Three steps. The expensive GPU job only runs for samples that actually need it.
+
+  \vspace{3mm}
+  \codeblock{assets/example.py}
+
+  \vspace{4mm}
+  {\large
+  \textbf{Define} --- features as Python classes; each field declares its
+  upstream deps.\par\vspace{1mm}%
+  \textbf{Ask} --- \texttt{resolve\_update()} returns the concrete diff.\par\vspace{1mm}%
+  \textbf{Record} --- \texttt{write\_metadata()} commits versions; next run
+  starts empty.}
+}
+
+\block{\eyebrow{Pluggable backends}\serifheadSm{Scale small or large --- as needed}}{
+  Metaxy separates \emph{metadata} from storage, orchestration, and
+  execution. Version computation is pushed into the metadata store via
+  SQL (Ibis); dataframe interop is backend-agnostic via Narwhals.
+
+  \vspace{2mm}
+  \stat{Storage}{DuckDB $\to$ warehouse}%
+       {DuckDB $\cdot$ ClickHouse $\cdot$ BigQuery $\cdot$ PostgreSQL $\cdot$
+        Delta Lake $\cdot$ Iceberg $\cdot$ LanceDB $\cdot$ DuckLake.}
+  \stat{Orchestration}{Consume the diff anywhere}%
+       {Dagster via \texttt{@metaxify} $\cdot$ Ray for distributed GPU $\cdot$
+        any runner over Polars / Arrow.}
+}
+
+\end{columns}
+
+% ═════════════════════════════════════════════════════════════
+% PRODUCTION + TAKEAWAYS BAND (bright, dark-green accents)
+% ═════════════════════════════════════════════════════════════
+
+\begin{columns}
+
+\column{0.58}
+\block{\eyebrow{Running in production}{\color{teal}\serifheadSm{Millions of samples, since Dec 2025}}}{
+  \color{ink}\large
+  \textbf{\color{teal}Anam} runs Metaxy across a multimodal pipeline
+  powering \textbf{Cara 3} training data.
+
+  \vspace{2mm}
+  \begin{minipage}[t]{0.48\linewidth}
+    {\ttfamily\bfseries\color{teal}BEFORE METAXY}\par\vspace{1mm}
+    \serifheadSm{Full reprocess on every change}\par\vspace{1mm}
+    {\large\color{ink60}A tweak in one stage fires every downstream
+    GPU stage, regardless of whether it consumed the change.}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\linewidth}
+    {\ttfamily\bfseries\color{teal}AFTER METAXY}\par\vspace{1mm}
+    \serifheadSm{Only the affected records}\par\vspace{1mm}
+    {\large\color{ink60}Iteration speed scales with the size of
+    the change. Append-only lineage preserves provenance.}
+  \end{minipage}
+}
+
+\column{0.42}
+\block{\eyebrow{Three takeaways}{\phantom{.}}}{
+  \vspace{0mm}
+  \begin{flushleft}
+    \bigstmt[teal]{GPU cost lives at the record.}\\[1mm]
+    \bigstmt[teal]{Track versions at the field.}\\[1mm]
+    \bigstmt[teal]{Recompute only what changed.}
+  \end{flushleft}
+}
+
+\end{columns}
+
+% ═════════════════════════════════════════════════════════════
+% FOOTER (light cream)
+% ═════════════════════════════════════════════════════════════
+
+\begin{columns}
+
+\column{0.4}
+\block{\eyebrow{Authors}\serifheadSm{Presenters}}{
+  \large
+  \textbf{\href{https://gafni.dev/}{Daniel Gafni}} --- Author.
+  Ex-ML engineer at \href{https://anam.ai/}{Anam}.\par\vspace{1mm}
+  \textbf{\href{https://georgheiler.com/}{Georg Heiler}} --- Contributor.
+  Co-founder \href{https://jubust.com/}{Jubust}; RSE at
+  \href{https://ascii.ac.at/}{ASCII} / \href{https://csh.ac.at/}{CSH};
+  Senior Data Expert at \href{https://www.magenta.at/}{Magenta}.
+}
+
+\column{0.3}
+\block{\eyebrow{References}\serifheadSm{Links}}{
+  \large
+  Docs \textbullet\ \url{https://docs.metaxy.io/latest/}\par\vspace{1mm}
+  Source \textbullet\ \url{https://github.com/anam-org/metaxy}\par\vspace{1mm}
+  Origin \textbullet\ \url{https://anam.ai/blog/metaxy}
+}
+
+\column{0.3}
+\block{\eyebrow{Virtual poster session}\serifheadSm{Discussion}}{
+  \large
+  Online during the virtual poster session. If you run a multimodal
+  pipeline, we can estimate the avoidable-recompute fraction from its
+  dependency graph.%
+  \par\vspace{2mm}
+  \ttfamily\color{teal}@danielgafni \quad\textbullet\quad @geoHeil
+}
+
+\end{columns}
+
+\end{document}

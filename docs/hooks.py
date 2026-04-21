@@ -174,7 +174,7 @@ def _select_runner(bun_path: str | None) -> list[str]:
         "--out",
         SLIDES_OUTPUT,
         "--base",
-        "./",
+        f"/slides/2026-introducing-metaxy/{SLIDES_OUTPUT}/",
     ]
 
     if bun_path:
