@@ -9,7 +9,7 @@ tags:
   - data lineage
   - incremental computation
   - caching
-  - Multimodal
+  - multimodal
 authors:
   - name: Daniel Gafni
     affiliation: "1"
@@ -34,12 +34,12 @@ Metaxy is about perfecting the art of doing nothing: only compute what changed, 
 In machine learning pipelines that handle video, audio, and images, these computations run on Graphics Processing Units (GPUs) that cost 10 to 100 times more per hour than standard processors[^gpu-cost].
 A small change to one processing step can trigger unnecessary recomputation of unrelated steps, wasting both time and money.
 
-[^gpu-cost]: AWS on-demand pricing, 2026; the exact ratio depends on the instance families compared, spanning roughly 12× (general-purpose vs entry GPU) to several hundred-fold (commodity CPU vs top-end accelerator).
+[^gpu-cost]: AWS EC2 on-demand pricing, 2026-04; the exact ratio depends on the instance families compared, with common CPU-to-GPU comparisons falling in this range and top-end accelerators exceeding it.
 
 Metaxy is a Python library that tracks which specific data records need reprocessing after a change, rather than rerunning entire datasets.
 It builds a dependency graph that connects individual data fields across processing steps.
 When a researcher modifies one step, Metaxy identifies exactly which records are affected and which can be skipped.
-This selective approach eliminates redundant GPU work while preserving complete lineage for reproducibility.
+This selective approach lets downstream systems avoid redundant GPU work when a change does not affect a record, while preserving complete lineage for reproducibility.
 
 The library integrates with various backends through Ibis (@ibis) and supports multiple dataframe engines via Narwhals (@narwhals).
 Orchestration platforms such as Dagster (@dagster) and Ray consume Metaxy's record-level diffs to schedule only the necessary GPU workloads.
@@ -88,7 +88,7 @@ Metaxy represents features as declarative Pydantic models organized into a direc
 Each feature declares its identifier columns, computed fields, and dependencies on upstream feature fields.
 The system constructs a global dependency graph at initialization, enabling downstream version propagation before any data processing occurs.
 
-Version computation operates at two layers through deterministic hashing. Graph-level feature hashes combine field code versions with upstream structure once per code change, using a fixed `SHA-256` implementation whose exact choice is internal. Record-level hashes run once per data row, combining per-record identifiers with upstream record versions inside the metadata store via SQL; this function is configurable and defaults to `xxhash32` where the backend supports it, keeping hashing colocated with storage and avoiding expensive data transfers.
+Version computation operates at two layers through deterministic hashing. Graph-level feature hashes combine field code versions with upstream structure once per code change, using a fixed `hashlib.sha256` implementation. Record-level hashes run once per data row, combining per-record identifiers with upstream record versions inside the metadata store via SQL; this function is configurable and defaults to `xxhash32` where the backend supports it, keeping hashing colocated with storage and avoiding expensive data transfers.
 Field code versions are user-specified strings that developers bump to mark algorithmic changes. This is a deliberate design choice rather than an automatic-detection problem: a static analyzer cannot reliably distinguish a behavior-preserving refactor from a semantic change, and silent false-positive invalidation would trigger prohibitively expensive GPU recomputation. Metaxy therefore delegates this judgement to the author.
 Feature versions aggregate field versions, and record versions map each data instance to the specific upstream versions that produced it, creating a per-record provenance trail.
 
@@ -110,7 +110,7 @@ Cross-backend tests exercise the same feature definitions against all supported 
 Example pipelines demonstrate the system's impact on multimodal workflows.
 A video processing pipeline defines features for audio transcription and face detection with field-level dependencies.
 When only the audio processing algorithm changes, the system correctly schedules transcription updates for affected records while leaving face detection metadata unchanged.
-This selective recomputation is the core value proposition: only records depending on the modified field incur GPU costs.
+This selective recomputation is the core value proposition: the metadata layer exposes the exact update set, so teams can schedule only affected records instead of maintaining that decision logic manually.
 
 Metaxy has been running in production at Anam for processing millions of training samples across multimodal video pipelines.
 Before Metaxy, achieving selective recomputation at this scale required manual metadata edits, ad-hoc overrides, and custom per-pipeline bookkeeping; Metaxy standardizes those decisions into a declarative model so that correct, auditable incremental updates become the default path rather than a bespoke engineering effort for each new feature.
