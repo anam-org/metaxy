@@ -1,1 +1,0 @@
-import{f as o,o as s,j as t}from"./modules/vue-BtB2w7oG.js";import{u as l}from"./slidev/context-xkorsVSV.js";const r={class:"slide-deep h-full w-full overflow-hidden"},c={__name:"deep",setup(a){return l(),(e,n)=>(s(),o("div",r,[t(e.$slots,"default")]))}};export{c as _};

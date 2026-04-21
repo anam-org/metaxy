@@ -1,1 +1,0 @@
-import{f as o,o as t,g as r,j as l}from"./modules/vue-BtB2w7oG.js";import{u as a}from"./slidev/context-xkorsVSV.js";const n={class:"slide-dark h-full w-full relative overflow-hidden"},f={__name:"dark",setup(d){return a(),(s,e)=>(t(),o("div",n,[e[0]||(e[0]=r("div",{class:"grid-overlay absolute inset-0 pointer-events-none"},null,-1)),l(s.$slots,"default")]))}};export{f as _};
