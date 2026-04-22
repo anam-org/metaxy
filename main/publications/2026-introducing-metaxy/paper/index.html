@@ -3806,56 +3806,113 @@ The compute engine is equally pluggable: a backend-agnostic dataframe abstractio
 <p>Second, record-level hashing and the increment diff are pushed into the metadata store via SQL rather than computed client-side. This yields two concrete benefits: the caller never streams full metadata tables out of the store (only the computed increment crosses the wire), and the hash-and-join work runs inside the store, so <code>resolve_update</code> stays lightweight enough to invoke from laptops or dashboards while the store scales the compute (\autoref{tab:benchmark}), consistent with the principle of colocating incremental computation with its data (<a class="magiclink magiclink-github magiclink-mention" href="https://github.com/acar2006adaptive" title="GitHub User: acar2006adaptive">@acar2006adaptive</a>).</p>
 <p>Third, Metaxy hashes provenance signatures (code version plus upstream record versions) instead of the raw payloads that content-addressable storage (CAS) would require. CAS is not merely expensive here, it is inapplicable in principle: the increment must be known <em>before</em> downstream computation runs, so there is no content to address yet. Hashing the provenance signature lets Metaxy decide staleness without ever materialising the downstream payload, matching the provenance-first view of PROV (<a class="magiclink magiclink-github magiclink-mention" href="https://github.com/moreau2013prov" title="GitHub User: moreau2013prov">@moreau2013prov</a>; <a class="magiclink magiclink-github magiclink-mention" href="https://github.com/cheney2009provenance" title="GitHub User: cheney2009provenance">@cheney2009provenance</a>); users may still attach content-derived versions after the fact through the user-defined data-version hook, for instance to deduplicate identical outputs.</p>
 <h1 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h1>
+<p>Per-record hashing and the downstream diff are executed as SQL inside the metadata store, so their throughput is bounded by the vectorised hash kernels of the backend rather than by Python.
+The benchmark in <code>publications/2026-introducing-metaxy/</code> is implemented as a <a href="https://pytest-benchmark.readthedocs.io"><code>pytest-benchmark</code></a> suite that exercises two feature graphs: a <code>simple</code> graph (one root with two fields feeding a single-field leaf) and a <code>wide</code> graph (two roots with four fields each feeding a two-field leaf, so the leaf must join two upstream tables and aggregate eight <abbr title="User-defined versions for logical components of a single feature sample. | /guide/concepts/definitions/features/#fields">field versions</abbr> per record).
+For each graph and record count <span class="arithmatex">\(N\)</span>, the benchmark measures <code>resolve_update</code> in two phases: the initial materialisation (<code>resolve_new</code>) and, after bumping the upstream <code>audio</code> provenance for 10% of records, the incremental diff (<code>resolve_stale</code>).</p>
 <dl>
-<dt>Per-record hashing and the downstream diff are executed as SQL inside the metadata store, so their throughput is bounded by the vectorised hash kernels of the backend rather than by Python.</dt>
-<dt>The benchmark script <code>publications/2026-introducing-metaxy/benchmark.py</code> materialises a two-feature graph (a root with fields <code>audio</code> and <code>frames</code>, and a downstream leaf) against a fresh DuckDB store, measures <code>resolve_update</code> for the initial materialisation (<code>resolve_new</code>), then bumps the upstream <code>audio</code> provenance for 10% of records and measures the incremental diff (<code>resolve_stale</code>).</dt>
-<dt>Medians over three runs on an Apple M2 Max (64 GiB RAM, Python 3.10.19, DuckDB 1.4.3, <code>xxhash64</code>) are reported in \autoref{tab:benchmark}; throughput scales linearly with <code>N</code> and saturates near <span class="arithmatex">\(10^7\)</span> records per second once the hash kernel dominates fixed setup costs.</dt>
+<dt>To isolate caching effects between rounds, each measurement runs in <code>pytest-benchmark</code>'s pedantic mode with a <code>setup</code> callback that allocates a fresh DuckDB file in its own temporary directory and reseeds it from scratch. The DuckDB buffer pool, temp-table state, and file-system page cache for the new inode are therefore cold at the start of every round, so no round can inherit state from a previous one. The configuration under test sets <code>enable_map_datatype = true</code> in <code>metaxy.toml</code>, reflecting the upcoming default; the provenance column is stored and exchanged as a native <code>Map</code>. We report ten independent rounds per cell on an Apple M2 Max (64 GiB RAM, Python 3.10.19, DuckDB 1.4.3, <code>xxhash64</code>): the median as a robust central estimate, the 25<sup>th</sup>--75<sup>th</sup> percentile interquartile range (IQR) as a non-parametric confidence band, and mean <span class="arithmatex">\(\pm\)</span> standard deviation for readers preferring a parametric view (\autoref{tab:benchmark}).</dt>
+<dt>End-to-end wall-clock scales near-linearly with <span class="arithmatex">\(N\)</span> on both graphs (\autoref{tab:benchmark}, \autoref{fig:benchmark}); the constant-factor gap between <code>simple</code> and <code>wide</code> at any given <span class="arithmatex">\(N\)</span> reflects the additional upstream join and the richer provenance struct rather than super-linear slowdown, confirming that the SQL pushdown strategy absorbs join width well.</dt>
 <dd>
-<p>Median <code>resolve_update</code> wall-clock time on DuckDB for <code>N</code> records across a 2-feature graph (3 runs, 10% change fraction). \label{tab:benchmark}</p>
+<p><code>resolve_update</code> wall-clock time on DuckDB for the <code>simple</code> and <code>wide</code> graphs at <span class="arithmatex">\(N\)</span> records over 10 pedantic rounds per cell (10% change fraction, fresh DuckDB file per round, <code>enable_map_datatype = true</code>). Times are milliseconds; <code>IQR</code> is <span class="arithmatex">\([q_{25}, q_{75}]\)</span>. \label{tab:benchmark}</p>
 </dd>
 </dl>
 <table>
 <thead>
 <tr>
+<th style="text-align: left;">scenario</th>
 <th style="text-align: right;">N</th>
-<th style="text-align: right;">resolve_new (s)</th>
-<th style="text-align: right;">resolve_stale (s)</th>
-<th style="text-align: right;">rows/s (new)</th>
+<th style="text-align: right;">new median (ms)</th>
+<th style="text-align: left;">new IQR (ms)</th>
+<th style="text-align: left;">new mean <span class="arithmatex">\(\pm\)</span> sd (ms)</th>
+<th style="text-align: right;">stale median (ms)</th>
+<th style="text-align: left;">stale IQR (ms)</th>
+<th style="text-align: left;">stale mean <span class="arithmatex">\(\pm\)</span> sd (ms)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td style="text-align: left;">simple</td>
 <td style="text-align: right;">10,000</td>
-<td style="text-align: right;">0.089</td>
-<td style="text-align: right;">0.128</td>
-<td style="text-align: right;">112,938</td>
+<td style="text-align: right;">497.2</td>
+<td style="text-align: left;">[489.6, 546.2]</td>
+<td style="text-align: left;">547 <span class="arithmatex">\(\pm\)</span> 116</td>
+<td style="text-align: right;">590.8</td>
+<td style="text-align: left;">[558.1, 606.2]</td>
+<td style="text-align: left;">585 <span class="arithmatex">\(\pm\)</span> 32</td>
 </tr>
 <tr>
+<td style="text-align: left;">simple</td>
 <td style="text-align: right;">100,000</td>
-<td style="text-align: right;">0.101</td>
-<td style="text-align: right;">0.188</td>
-<td style="text-align: right;">985,968</td>
+<td style="text-align: right;">558.8</td>
+<td style="text-align: left;">[536.2, 582.7]</td>
+<td style="text-align: left;">583 <span class="arithmatex">\(\pm\)</span> 81</td>
+<td style="text-align: right;">711.6</td>
+<td style="text-align: left;">[696.6, 741.6]</td>
+<td style="text-align: left;">801 <span class="arithmatex">\(\pm\)</span> 296</td>
 </tr>
 <tr>
+<td style="text-align: left;">simple</td>
 <td style="text-align: right;">1,000,000</td>
-<td style="text-align: right;">0.169</td>
-<td style="text-align: right;">0.439</td>
-<td style="text-align: right;">5,931,115</td>
+<td style="text-align: right;">1,171.9</td>
+<td style="text-align: left;">[1,056.9, 1,370.8]</td>
+<td style="text-align: left;">1,225 <span class="arithmatex">\(\pm\)</span> 203</td>
+<td style="text-align: right;">1,270.8</td>
+<td style="text-align: left;">[1,243.2, 1,455.3]</td>
+<td style="text-align: left;">1,342 <span class="arithmatex">\(\pm\)</span> 167</td>
 </tr>
 <tr>
-<td style="text-align: right;">5,000,000</td>
-<td style="text-align: right;">0.463</td>
-<td style="text-align: right;">1.824</td>
-<td style="text-align: right;">10,806,628</td>
-</tr>
-<tr>
+<td style="text-align: left;">simple</td>
 <td style="text-align: right;">10,000,000</td>
-<td style="text-align: right;">0.948</td>
-<td style="text-align: right;">3.434</td>
-<td style="text-align: right;">10,553,281</td>
+<td style="text-align: right;">7,797.9</td>
+<td style="text-align: left;">[6,563.7, 8,594.4]</td>
+<td style="text-align: left;">7,811 <span class="arithmatex">\(\pm\)</span> 1,176</td>
+<td style="text-align: right;">7,133.4</td>
+<td style="text-align: left;">[6,950.9, 7,504.3]</td>
+<td style="text-align: left;">7,285 <span class="arithmatex">\(\pm\)</span> 586</td>
+</tr>
+<tr>
+<td style="text-align: left;">wide</td>
+<td style="text-align: right;">10,000</td>
+<td style="text-align: right;">763.8</td>
+<td style="text-align: left;">[717.6, 798.9]</td>
+<td style="text-align: left;">774 <span class="arithmatex">\(\pm\)</span> 79</td>
+<td style="text-align: right;">834.0</td>
+<td style="text-align: left;">[808.1, 855.4]</td>
+<td style="text-align: left;">830 <span class="arithmatex">\(\pm\)</span> 47</td>
+</tr>
+<tr>
+<td style="text-align: left;">wide</td>
+<td style="text-align: right;">100,000</td>
+<td style="text-align: right;">861.5</td>
+<td style="text-align: left;">[846.6, 882.7]</td>
+<td style="text-align: left;">866 <span class="arithmatex">\(\pm\)</span> 23</td>
+<td style="text-align: right;">1,097.9</td>
+<td style="text-align: left;">[1,061.1, 1,125.2]</td>
+<td style="text-align: left;">1,089 <span class="arithmatex">\(\pm\)</span> 40</td>
+</tr>
+<tr>
+<td style="text-align: left;">wide</td>
+<td style="text-align: right;">1,000,000</td>
+<td style="text-align: right;">1,909.6</td>
+<td style="text-align: left;">[1,841.5, 1,956.8]</td>
+<td style="text-align: left;">1,908 <span class="arithmatex">\(\pm\)</span> 69</td>
+<td style="text-align: right;">2,408.2</td>
+<td style="text-align: left;">[2,279.9, 2,458.5]</td>
+<td style="text-align: left;">2,394 <span class="arithmatex">\(\pm\)</span> 114</td>
+</tr>
+<tr>
+<td style="text-align: left;">wide</td>
+<td style="text-align: right;">10,000,000</td>
+<td style="text-align: right;">11,870.8</td>
+<td style="text-align: left;">[11,651.2, 12,436.3]</td>
+<td style="text-align: left;">12,070 <span class="arithmatex">\(\pm\)</span> 597</td>
+<td style="text-align: right;">14,695.4</td>
+<td style="text-align: left;">[14,554.2, 16,532.9]</td>
+<td style="text-align: left;">15,290 <span class="arithmatex">\(\pm\)</span> 1,052</td>
 </tr>
 </tbody>
 </table>
+<p><img alt="Wall-clock time of resolve_update on DuckDB as a function of record count \(N\) for both feature graphs, over 10 pedantic rounds per cell with a fresh DuckDB file per round. Lines show the median and the shaded band spans the 25th--75th percentile IQR. Both axes are logarithmic. Near-linear scaling with \(N\) is visible on both graphs; the wide graph pays a roughly constant-factor penalty for the extra upstream join.\label{fig:benchmark}" src="../assets/benchmark.svg" /></p>
 <h1 id="quality-control">Quality Control<a class="headerlink" href="#quality-control" title="Permanent link">&para;</a></h1>
 <p>Correctness is validated through automated tests covering three properties.
 Snapshot testing is used to ensure version computation consistency across Metaxy codebase changes.
