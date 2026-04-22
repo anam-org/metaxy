@@ -101,6 +101,22 @@ Metadata persistence uses pluggable, append-only storage backends: version entri
 DuckDB provides embedded storage for prototyping; ClickHouse, BigQuery, Delta Lake, DuckLake, LanceDB and PostgreSQL scale to production workloads.
 Narwhals supplies a backend-agnostic dataframe interface, allowing users to work with Pandas, Polars, or Ibis interchangeably.
 
+# Performance
+
+Per-record hashing and the downstream diff are executed as SQL inside the metadata store, so their throughput is bounded by the vectorised hash kernels of the backend rather than by Python.
+The benchmark script `publications/2026-introducing-metaxy/benchmark.py` materialises a two-feature graph (a root with fields `audio` and `frames`, and a downstream leaf) against a fresh DuckDB store, measures `resolve_update` for the initial materialisation (`resolve_new`), then bumps the upstream `audio` provenance for 10% of records and measures the incremental diff (`resolve_stale`).
+Medians over three runs on an Apple M2 Max (64 GiB RAM, Python 3.10.19, DuckDB 1.4.3, `xxhash64`) are reported in \autoref{tab:benchmark}; throughput scales linearly with `N` and saturates near $10^7$ records per second once the hash kernel dominates fixed setup costs.
+
+: Median `resolve_update` wall-clock time on DuckDB for `N` records across a 2-feature graph (3 runs, 10% change fraction). \label{tab:benchmark}
+
+|          N |  resolve_new (s) | resolve_stale (s) |   rows/s (new) |
+|-----------:|-----------------:|------------------:|---------------:|
+|     10,000 |            0.089 |             0.128 |        112,938 |
+|    100,000 |            0.101 |             0.188 |        985,968 |
+|  1,000,000 |            0.169 |             0.439 |      5,931,115 |
+|  5,000,000 |            0.463 |             1.824 |     10,806,628 |
+| 10,000,000 |            0.948 |             3.434 |     10,553,281 |
+
 # Research Impact
 
 Correctness is validated through automated tests covering three properties.
@@ -113,7 +129,7 @@ A video processing pipeline defines features for audio transcription and face de
 When only the audio processing algorithm changes, the system correctly schedules transcription updates for affected records while leaving face detection metadata unchanged.
 This selective recomputation is the core value proposition: the metadata layer exposes the exact update set, so teams can schedule only affected records instead of maintaining that decision logic manually.
 
-Metaxy has been running in production at Anam for processing millions of training samples across multimodal video pipelines.
+Metaxy has been running in production at Anam on multimodal video pipelines whose training corpora reach the low millions of samples.
 Before Metaxy, achieving selective recomputation at this scale required manual metadata edits, ad-hoc overrides, and custom per-pipeline bookkeeping; Metaxy standardizes those decisions into a declarative model so that correct, auditable incremental updates become the default path rather than a bespoke engineering effort for each new feature.
 Combined with the append-only metadata layer introduced above, every experiment remains reproducible, closing a critical gap in machine learning workflows.
 
