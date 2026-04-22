@@ -114,18 +114,26 @@ Third, Metaxy hashes provenance signatures (code version plus upstream record ve
 # Performance
 
 Per-record hashing and the downstream diff are executed as SQL inside the metadata store, so their throughput is bounded by the vectorised hash kernels of the backend rather than by Python.
-The benchmark script `publications/2026-introducing-metaxy/benchmark.py` materialises a two-feature graph (a root with fields `audio` and `frames`, and a downstream leaf) against a fresh DuckDB store, measures `resolve_update` for the initial materialisation (`resolve_new`), then bumps the upstream `audio` provenance for 10% of records and measures the incremental diff (`resolve_stale`).
-Medians over three runs on an Apple M2 Max (64 GiB RAM, Python 3.10.19, DuckDB 1.4.3, `xxhash64`) are reported in \autoref{tab:benchmark}; throughput scales linearly with `N` and saturates near $10^7$ records per second once the hash kernel dominates fixed setup costs.
+The benchmark in `publications/2026-introducing-metaxy/` is implemented as a [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io) suite that exercises two feature graphs: a `simple` graph (one root with two fields feeding a single-field leaf) and a `wide` graph (two roots with four fields each feeding a two-field leaf, so the leaf must join two upstream tables and aggregate eight field versions per record).
+For each graph and record count $N$, the benchmark measures `resolve_update` in two phases: the initial materialisation (`resolve_new`) and, after bumping the upstream `audio` provenance for 10% of records, the incremental diff (`resolve_stale`).
 
-: Median `resolve_update` wall-clock time on DuckDB for `N` records across a 2-feature graph (3 runs, 10% change fraction). \label{tab:benchmark}
+To isolate caching effects between rounds, each measurement runs in `pytest-benchmark`'s pedantic mode with a `setup` callback that allocates a fresh DuckDB file in its own temporary directory and reseeds it from scratch. The DuckDB buffer pool, temp-table state, and file-system page cache for the new inode are therefore cold at the start of every round, so no round can inherit state from a previous one. The configuration under test sets `enable_map_datatype = true` in `metaxy.toml`, reflecting the upcoming default; the provenance column is stored and exchanged as a native `Map`. We report ten independent rounds per cell on an Apple M2 Max (64 GiB RAM, Python 3.10.19, DuckDB 1.4.3, `xxhash64`): the median as a robust central estimate, the 25th--75th percentile interquartile range (IQR) as a non-parametric confidence band, and mean $\pm$ standard deviation for readers preferring a parametric view (\autoref{tab:benchmark}).
+End-to-end wall-clock scales near-linearly with $N$ on both graphs (\autoref{tab:benchmark}, \autoref{fig:benchmark}); the constant-factor gap between `simple` and `wide` at any given $N$ reflects the additional upstream join and the richer provenance struct rather than super-linear slowdown, confirming that the SQL pushdown strategy absorbs join width well.
 
-|          N |  resolve_new (s) | resolve_stale (s) |   rows/s (new) |
-|-----------:|-----------------:|------------------:|---------------:|
-|     10,000 |            0.089 |             0.128 |        112,938 |
-|    100,000 |            0.101 |             0.188 |        985,968 |
-|  1,000,000 |            0.169 |             0.439 |      5,931,115 |
-|  5,000,000 |            0.463 |             1.824 |     10,806,628 |
-| 10,000,000 |            0.948 |             3.434 |     10,553,281 |
+: `resolve_update` wall-clock time on DuckDB for the `simple` and `wide` graphs at $N$ records over 10 pedantic rounds per cell (10% change fraction, fresh DuckDB file per round, `enable_map_datatype = true`). Times are milliseconds; `IQR` is $[q_{25}, q_{75}]$. \label{tab:benchmark}
+
+| scenario |          N | new median (ms) | new IQR (ms)          | new mean $\pm$ sd (ms) | stale median (ms) | stale IQR (ms)          | stale mean $\pm$ sd (ms) |
+|:---------|-----------:|----------------:|:----------------------|:-----------------------|------------------:|:------------------------|:-------------------------|
+| simple   |     10,000 |           497.2 | [489.6, 546.2]        | 547 $\pm$ 116          |             590.8 | [558.1, 606.2]          | 585 $\pm$ 32             |
+| simple   |    100,000 |           558.8 | [536.2, 582.7]        | 583 $\pm$ 81           |             711.6 | [696.6, 741.6]          | 801 $\pm$ 296            |
+| simple   |  1,000,000 |         1,171.9 | [1,056.9, 1,370.8]    | 1,225 $\pm$ 203        |           1,270.8 | [1,243.2, 1,455.3]      | 1,342 $\pm$ 167          |
+| simple   | 10,000,000 |         7,797.9 | [6,563.7, 8,594.4]    | 7,811 $\pm$ 1,176      |           7,133.4 | [6,950.9, 7,504.3]      | 7,285 $\pm$ 586          |
+| wide     |     10,000 |           763.8 | [717.6, 798.9]        | 774 $\pm$ 79           |             834.0 | [808.1, 855.4]          | 830 $\pm$ 47             |
+| wide     |    100,000 |           861.5 | [846.6, 882.7]        | 866 $\pm$ 23           |           1,097.9 | [1,061.1, 1,125.2]      | 1,089 $\pm$ 40           |
+| wide     |  1,000,000 |         1,909.6 | [1,841.5, 1,956.8]    | 1,908 $\pm$ 69         |           2,408.2 | [2,279.9, 2,458.5]      | 2,394 $\pm$ 114          |
+| wide     | 10,000,000 |        11,870.8 | [11,651.2, 12,436.3]  | 12,070 $\pm$ 597       |          14,695.4 | [14,554.2, 16,532.9]    | 15,290 $\pm$ 1,052       |
+
+![Wall-clock time of `resolve_update` on DuckDB as a function of record count $N$ for both feature graphs, over 10 pedantic rounds per cell with a fresh DuckDB file per round. Lines show the median and the shaded band spans the 25th--75th percentile IQR. Both axes are logarithmic. Near-linear scaling with $N$ is visible on both graphs; the `wide` graph pays a roughly constant-factor penalty for the extra upstream join.\label{fig:benchmark}](assets/benchmark.svg)
 
 # Quality Control
 
