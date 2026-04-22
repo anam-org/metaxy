@@ -42,8 +42,8 @@ It builds a dependency graph that connects individual data fields across process
 When a researcher modifies one step, Metaxy identifies exactly which records are affected and which can be skipped.
 This selective approach lets downstream systems avoid redundant GPU work when a change does not affect a record, while preserving complete lineage for reproducibility.
 
-The library integrates with various backends through Ibis (@ibis) and supports multiple dataframe engines via Narwhals (@narwhals).
-Orchestration platforms such as Dagster (@dagster) and Ray consume Metaxy's record-level diffs to schedule only the necessary GPU workloads.
+The library treats the *metadata store* (which persists version entries), the *compute engine* (which evaluates feature code over dataframes), and the *orchestrator* (which schedules execution) as pluggable abstractions.
+Concrete integrations for the widely used Python ecosystem ship with the package (@ibis; @narwhals; @dagster; @ray), so that any compatible orchestrator can consume Metaxy's record-level diffs and schedule only the necessary GPU workloads.
 
 # Statement of Need
 
@@ -58,7 +58,7 @@ Existing orchestrators operate at table granularity, treating feature tables as 
 They cannot distinguish which fields within a record changed, forcing unnecessary recomputation of all downstream steps.
 
 Metaxy resolves this problem through field-level dependency tracking at record granularity.
-Researchers declare features as Python classes (@pydantic) that specify which upstream fields each computation depends on.
+Researchers declare features as Python classes that specify which upstream fields each computation depends on.
 The system constructs a directed acyclic graph where nodes represent feature fields and edges represent data flow (\autoref{fig:anatomy}).
 For each data record, Metaxy computes version hashes that combine code versions with upstream record versions, propagating changes along graph edges.
 When resolving incremental updates, the system returns only those records whose upstream dependencies have actually changed.
@@ -81,11 +81,11 @@ Apache Hamilton (@hamilton) builds dataflows from Python functions and can repor
 DataChain (@datachain) combines metadata management with a Python-native data processing framework and supports delta processing over new or changed records. However, its incremental model is tied to dataset processing within that framework rather than to a standalone field-level dependency graph that can drive recomputation across multiple compute backends.
 
 Metaxy fills the gap by separating metadata from compute: it tracks field-level dependencies at record granularity and propagates version changes topologically through the dependency graph.
-This separation allows teams to integrate Metaxy with any compute framework, such as Ray or Dagster, while retaining precise control over which records require reprocessing.
+This separation allows teams to integrate Metaxy with any orchestrator and compute engine, while retaining precise control over which records require reprocessing.
 
 # Software Design
 
-Metaxy represents features as declarative Pydantic models organized into a directed acyclic graph.
+Metaxy represents features as declarative models organized into a directed acyclic graph.
 Each feature declares its identifier columns, computed fields, and dependencies on upstream feature fields.
 The system constructs a global dependency graph at initialization, enabling downstream version propagation before any data processing occurs.
 
@@ -97,9 +97,19 @@ This record-level granularity is what distinguishes Metaxy from table-level orch
 When an upstream field changes for a subset of records, only those downstream records that transitively depend on the changed field are marked for recomputation.
 Records with unchanged dependencies are skipped.
 
-Metadata persistence uses pluggable, append-only storage backends: version entries are never overwritten, preserving the lineage needed for retrospective audits.
-DuckDB provides embedded storage for prototyping; ClickHouse, BigQuery, Delta Lake, DuckLake, LanceDB and PostgreSQL scale to production workloads.
-Narwhals supplies a backend-agnostic dataframe interface, allowing users to work with Pandas, Polars, or Ibis interchangeably.
+The metadata store is append-only: version entries are never overwritten, preserving the lineage needed for retrospective audits.
+Embedded stores suit prototyping while warehouse- and lakehouse-class stores scale to production workloads, all reached through the same feature API.
+The compute engine is equally pluggable: a backend-agnostic dataframe abstraction lets users swap implementations without touching feature code.
+
+## Design Trade-offs
+
+Metaxy's architecture rests on three deliberate design commitments.
+
+First, the metadata layer is decoupled from the compute engine and orchestrator by design rather than by compromise: Metaxy is a pluggable library that exposes a record-level dependency graph which any orchestrator can consume. The same version graph drives embedded prototyping, warehouse-scale production, and distributed GPU scheduling without changes to feature definitions, reusing the portable dependency-graph abstraction long studied in build-systems and data-lineage research (@mokhov2018build; @cui2003lineage; @buneman2001why).
+
+Second, record-level hashing and the increment diff are pushed into the metadata store via SQL rather than computed client-side. This yields two concrete benefits: the caller never streams full metadata tables out of the store (only the computed increment crosses the wire), and the hash-and-join work runs inside the store, so `resolve_update` stays lightweight enough to invoke from laptops or dashboards while the store scales the compute (\autoref{tab:benchmark}), consistent with the principle of colocating incremental computation with its data (@acar2006adaptive).
+
+Third, Metaxy hashes provenance signatures (code version plus upstream record versions) instead of the raw payloads that content-addressable storage (CAS) would require. CAS is not merely expensive here, it is inapplicable in principle: the increment must be known *before* downstream computation runs, so there is no content to address yet. Hashing the provenance signature lets Metaxy decide staleness without ever materialising the downstream payload, matching the provenance-first view of PROV (@moreau2013prov; @cheney2009provenance); users may still attach content-derived versions after the fact through the user-defined data-version hook, for instance to deduplicate identical outputs.
 
 # Performance
 
@@ -117,12 +127,14 @@ Medians over three runs on an Apple M2 Max (64 GiB RAM, Python 3.10.19, DuckDB 1
 |  5,000,000 |            0.463 |             1.824 |     10,806,628 |
 | 10,000,000 |            0.948 |             3.434 |     10,553,281 |
 
-# Research Impact
+# Quality Control
 
 Correctness is validated through automated tests covering three properties.
-Version stability tests ensure that hash computation is deterministic across Python interpreter versions and code refactorings.
+Snapshot testing is used to ensure version computation consistency across Metaxy codebase changes.
 Incremental update tests verify that the system returns exactly those records whose upstream dependencies changed, neither missing updates nor triggering false positives.
-Cross-backend tests exercise the same feature definitions against all supported backends to confirm consistent metadata semantics across storage engines.
+Cross-backend tests ensure different metadata store backends produce identical versioning results, matching with the "golden" DuckDB implementation.
+
+# Ongoing Research Projects
 
 Example pipelines demonstrate the system's impact on multimodal workflows.
 A video processing pipeline defines features for audio transcription and face detection with field-level dependencies.
@@ -134,7 +146,7 @@ Before Metaxy, achieving selective recomputation at this scale required manual m
 Combined with the append-only metadata layer introduced above, every experiment remains reproducible, closing a critical gap in machine learning workflows.
 
 The system bridges prototyping and production through vendor-neutral abstractions.
-Researchers define features once and deploy them across DuckDB on laptops, ClickHouse in data centers, or BigQuery in the cloud without modifying feature code.
+Researchers define features once and deploy them across embedded stores on laptops, warehouse-class stores in data centers, or managed cloud stores, without modifying feature code.
 This portability lowers the barrier to disciplined metadata management, making reproducibility the default rather than an afterthought.
 
 The project welcomes contributions at [https://github.com/anam-org/metaxy](https://github.com/anam-org/metaxy).
@@ -148,7 +160,7 @@ Large parts of the documentation were written by hand.
 
 # Acknowledgements
 
-We thank the maintainers of the Ibis, Narwhals, Pydantic, and Dagster communities for the foundational tooling Metaxy builds upon, and the contributors who tested early releases across heterogeneous hardware.
+We thank the maintainers of the open-source projects Metaxy builds upon, and the contributors who tested early releases across heterogeneous hardware.
 Funding and in-kind support were provided by Anam, the Complexity Science Hub Vienna, and the Austrian Supply Chain Intelligence Institute.
 
 # References
