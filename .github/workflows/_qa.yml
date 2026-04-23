@@ -38,6 +38,10 @@ on:
         required: false
       MOTHERDUCK_TOKEN:
         required: false
+      BIGQUERY_TEST_PROJECT_ID:
+        required: false
+      BIGQUERY_TEST_CREDENTIALS_JSON:
+        required: false
 
 jobs:
   filter:
@@ -284,6 +288,7 @@ jobs:
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
       MOTHERDUCK_REGION: eu-central-1
+      BIGQUERY_TEST_PROJECT_ID: ${{ (github.ref == 'refs/heads/main' || inputs.run-all-checks || github.event_name == 'workflow_dispatch') && secrets.BIGQUERY_TEST_PROJECT_ID || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -300,6 +305,15 @@ jobs:
         with:
           install-deps: "minimal"
 
+      - name: Write BigQuery credentials file
+        if: ${{ env.BIGQUERY_TEST_PROJECT_ID != '' }}
+        env:
+          BIGQUERY_SA_JSON: ${{ secrets.BIGQUERY_TEST_CREDENTIALS_JSON }}
+        run: |
+          umask 077
+          printf '%s' "$BIGQUERY_SA_JSON" > /tmp/bigquery-sa.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/bigquery-sa.json" >> "$GITHUB_ENV"
+
       - name: Run Tests with Coverage
         env:
           COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
@@ -308,6 +322,10 @@ jobs:
           uv run nox -s "integration(integration='${{ matrix.integration }}')"
           -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
           ${{ inputs.use-tach && '--tach' || ' ' }}
+
+      - name: Clean up BigQuery credentials
+        if: always()
+        run: rm -f /tmp/bigquery-sa.json
 
       - name: Upload Coverage to Codecov
         if: ${{ !cancelled() }}

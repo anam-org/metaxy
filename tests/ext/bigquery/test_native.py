@@ -1,13 +1,64 @@
-"""BigQuery-specific tests that don't apply to other stores."""
+"""BigQuery metadata store tests."""
 
 from unittest.mock import MagicMock, Mock, patch
 
 import polars as pl
 import pytest
 from metaxy.ext.bigquery import BigQueryMetadataStore
+from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeature
+from tests.metadata_stores.shared import (
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    IbisMapTests,
+    MapDtypeTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+)
+
+
+@pytest.mark.ibis
+@pytest.mark.native
+@pytest.mark.bigquery
+class TestBigQuery(
+    CRUDTests,
+    DeletionTests,
+    DisplayTests,
+    FilterTests,
+    IbisMapTests,
+    MapDtypeTests,
+    ResolveUpdateTests,
+    VersioningTests,
+    WriteTests,
+):
+    @pytest.fixture
+    def store(self, request: pytest.FixtureRequest) -> MetadataStore:
+        return BigQueryMetadataStore(
+            project_id=request.getfixturevalue("bigquery_project_id"),
+            dataset_id=request.getfixturevalue("bigquery_dataset"),
+            hash_algorithm=HashAlgorithm.MD5,
+            auto_create_tables=True,
+        )
+
+    @pytest.fixture
+    def named_store(self, request: pytest.FixtureRequest) -> MetadataStore:
+        return BigQueryMetadataStore(
+            project_id=request.getfixturevalue("bigquery_project_id"),
+            dataset_id=request.getfixturevalue("bigquery_dataset"),
+            hash_algorithm=HashAlgorithm.MD5,
+            auto_create_tables=True,
+            name="bigquery-test",
+        )
+
+
+# ---------------------------------------------------------------------------
+# BigQuery-specific unit tests (no live connection required)
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -22,7 +73,6 @@ def mock_bigquery_connection():
 
 
 def test_bigquery_initialization_with_project_dataset():
-    """Test BigQuery store initialization with project and dataset."""
     store = BigQueryMetadataStore(
         project_id="test-project",
         dataset_id="test_dataset",
@@ -33,18 +83,15 @@ def test_bigquery_initialization_with_project_dataset():
 
 
 def test_bigquery_initialization_with_credentials_path():
-    """Test BigQuery store initialization with credentials path."""
     with patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_creds:
-        mock_creds_instance = Mock()
-        mock_creds.return_value = mock_creds_instance
+        mock_creds.return_value = Mock()
 
-        _ = BigQueryMetadataStore(
+        BigQueryMetadataStore(
             project_id="test-project",
             dataset_id="test_dataset",
             credentials_path="/path/to/creds.json",
         )
 
-        # Verify credentials were loaded using the recommended method
         mock_creds.assert_called_once_with(
             "/path/to/creds.json",
             scopes=["https://www.googleapis.com/auth/bigquery"],
@@ -52,9 +99,7 @@ def test_bigquery_initialization_with_credentials_path():
 
 
 def test_bigquery_initialization_with_invalid_credentials_path():
-    """Test BigQuery store initialization with invalid credentials path."""
     with patch("google.oauth2.service_account.Credentials.from_service_account_file") as mock_creds:
-        # Simulate file not found
         mock_creds.side_effect = FileNotFoundError("File not found")
 
         with pytest.raises(FileNotFoundError, match="Service account credentials file not found"):
@@ -64,7 +109,6 @@ def test_bigquery_initialization_with_invalid_credentials_path():
                 credentials_path="/nonexistent/creds.json",
             )
 
-        # Simulate invalid JSON format
         mock_creds.side_effect = ValueError("Invalid JSON")
 
         with pytest.raises(ValueError, match="Invalid service account credentials file"):
@@ -75,39 +119,56 @@ def test_bigquery_initialization_with_invalid_credentials_path():
             )
 
 
-def test_bigquery_initialization_with_connection_params():
-    """Test BigQuery store initialization with connection_params."""
+def test_bigquery_project_id_from_connection_params():
     store = BigQueryMetadataStore(
+        dataset_id="test_dataset",
         connection_params={
             "project_id": "test-project",
-            "dataset_id": "test_dataset",
             "location": "US",
-        }
+        },
     )
 
     assert store.project_id == "test-project"
     assert store.dataset_id == "test_dataset"
+    assert store.connection_params["location"] == "US"
+
+
+def test_bigquery_explicit_project_id_overrides_connection_params():
+    store = BigQueryMetadataStore(
+        project_id="explicit-project",
+        dataset_id="test_dataset",
+        connection_params={
+            "project_id": "params-project",
+            "location": "EU",
+        },
+    )
+
+    assert store.project_id == "explicit-project"
+    assert store.connection_params["location"] == "EU"
 
 
 def test_bigquery_initialization_missing_project():
-    """Test that initialization fails without project_id."""
-    with pytest.raises(ValueError, match="Must provide either project_id"):
+    with pytest.raises(ValueError, match="Must provide either project_id or connection_params with project_id"):
         BigQueryMetadataStore(dataset_id="test_dataset")
 
 
-def test_bigquery_hash_algorithms():
-    """Test that BigQuery supports FARMHASH, MD5 and SHA256 hash algorithms."""
+def test_bigquery_initialization_without_dataset():
+    """dataset_id is optional - defaults to empty string."""
+    store = BigQueryMetadataStore(project_id="test-project")
+    assert store.project_id == "test-project"
+    assert store.dataset_id == ""
+
+
+def test_bigquery_default_hash_algorithm():
     store = BigQueryMetadataStore(
         project_id="test-project",
         dataset_id="test_dataset",
     )
 
-    # Should support FARMHASH (default)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
 
 def test_bigquery_display_string():
-    """Test display string generation for BigQuery store."""
     store = BigQueryMetadataStore(
         project_id="test-project",
         dataset_id="test_dataset",
@@ -119,23 +180,31 @@ def test_bigquery_display_string():
     assert "test_dataset" in display
 
 
+def test_bigquery_sqlalchemy_url_not_available():
+    """BigQuery store uses backend+connection_params, so sqlalchemy_url is not available."""
+    store = BigQueryMetadataStore(
+        project_id="my-project",
+        dataset_id="my_dataset",
+    )
+
+    with pytest.raises(ValueError, match="SQLAlchemy URL not available"):
+        _ = store.sqlalchemy_url
+
+
 def test_bigquery_location_parameter():
-    """Test BigQuery store with location parameter."""
     store = BigQueryMetadataStore(
         project_id="test-project",
         dataset_id="test_dataset",
         location="EU",
     )
 
-    # Verify location is passed to connection params
     assert store.connection_params.get("location") == "EU"
 
 
 def test_bigquery_config_instantiation():
-    """Test instantiating BigQuery store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig
 
-    config = MetaxyConfig(
+    store = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
                 type="metaxy.ext.bigquery.BigQueryMetadataStore",
@@ -145,16 +214,14 @@ def test_bigquery_config_instantiation():
                 },
             )
         }
-    )
+    ).get_store("bigquery_store")
 
-    store = config.get_store("bigquery_store")
     assert isinstance(store, BigQueryMetadataStore)
     assert store.project_id == "test-project"
     assert store.dataset_id == "test_dataset"
 
 
 def test_bigquery_config_with_hash_algorithm():
-    """Test BigQuery store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
 
     # Test default from config system is XXHASH64 (not FARMHASH)
@@ -212,10 +279,9 @@ def test_bigquery_config_with_hash_algorithm():
 
 
 def test_bigquery_config_with_fallback_stores():
-    """Test BigQuery store config with fallback stores."""
     from metaxy.config import MetaxyConfig, StoreConfig
 
-    config = MetaxyConfig(
+    dev_store = MetaxyConfig(
         stores={
             "dev": StoreConfig(
                 type="metaxy.ext.bigquery.BigQueryMetadataStore",
@@ -233,9 +299,8 @@ def test_bigquery_config_with_fallback_stores():
                 },
             ),
         }
-    )
+    ).get_store("dev")
 
-    dev_store = config.get_store("dev")
     assert isinstance(dev_store, BigQueryMetadataStore)
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], BigQueryMetadataStore)
@@ -245,16 +310,11 @@ def test_bigquery_config_with_fallback_stores():
 def test_bigquery_table_operations(
     mock_bigquery_connection: MagicMock, test_graph: FeatureGraph, test_features: dict[str, type[SampleFeature]]
 ):
-    """Test BigQuery table operations with mocked connection.
-
-    This test would require actual BigQuery connection in integration tests.
-    """
     with patch("ibis.bigquery.connect", return_value=mock_bigquery_connection):
         with BigQueryMetadataStore(
             project_id="test-project",
             dataset_id="test_dataset",
         ).open("w") as store:
-            # Mock the write operation
             store._write_feature = MagicMock()  # ty: ignore[invalid-assignment]
 
             metadata = pl.DataFrame(
@@ -269,7 +329,6 @@ def test_bigquery_table_operations(
             )
             store.write(test_features["UpstreamFeatureA"], metadata)
 
-            # Verify write was called with correct table name
             assert store._write_feature.called  # ty: ignore[unresolved-attribute]
             call_args = store._write_feature.call_args[0]  # ty: ignore[unresolved-attribute]
             assert call_args[0].table_name == "test_stores__upstream_a"
