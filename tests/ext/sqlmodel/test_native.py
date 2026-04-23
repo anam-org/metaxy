@@ -30,6 +30,7 @@ from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.models.feature import FeatureGraph
 from metaxy.utils import collect_to_polars
 from metaxy_testing.models import SampleFeatureSpec
+from pydantic import ValidationError
 from sqlmodel import Field
 from syrupy.assertion import SnapshotAssertion
 
@@ -758,15 +759,11 @@ def test_basic_custom_id_columns() -> None:
         timestamp: int
 
     # Verify id_columns are set correctly
-    assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
+    assert UserSessionFeature.spec().id_columns == ("user_id", "session_id")
 
     # Verify feature is registered
     graph = FeatureGraph.get_active()
     assert FeatureKey(["user", "session"]) in graph.feature_definitions_by_key
-
-    # Verify spec has custom id_columns
-    assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
-    assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
 
 
 def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAssertion) -> None:
@@ -957,7 +954,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
         metric: float
 
     # Verify 3-column composite key
-    assert MultiKeyFeature.spec().id_columns == ["user_id", "session_id", "timestamp"]
+    assert MultiKeyFeature.spec().id_columns == ("user_id", "session_id", "timestamp")
 
     # Verify feature version is deterministic
     version = MultiKeyFeature.feature_version()
@@ -1018,12 +1015,8 @@ def test_parent_child_different_id_columns() -> None:
         summary: str
 
     # Verify different ID columns
-    assert DetailedParentFeature.spec().id_columns == [
-        "user_id",
-        "session_id",
-        "device_id",
-    ]
-    assert AggregatedChildFeature.spec().id_columns == ["user_id", "session_id"]
+    assert DetailedParentFeature.spec().id_columns == ("user_id", "session_id", "device_id")
+    assert AggregatedChildFeature.spec().id_columns == ("user_id", "session_id")
 
     # Both should be registered
     graph = FeatureGraph.get_active()
@@ -1193,7 +1186,7 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
     - Appropriate error message is raised
     """
 
-    with pytest.raises(ValueError, match="id_columns must be non-empty"):
+    with pytest.raises(ValidationError, match="at least 1 item"):
 
         class InvalidFeature(
             SQLModelFeature,

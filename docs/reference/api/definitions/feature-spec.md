@@ -9,6 +9,12 @@ Feature specs act as source of truth for all metadata related to features: their
 
 ::: metaxy.FeatureSpec
 
-# Feature Dependencies
+## Unique
+
+::: metaxy.Unique
+
+::: metaxy.UniqueKeep
+
+## Feature Dependencies
 
 ::: metaxy.FeatureDep
