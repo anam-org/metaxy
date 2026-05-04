@@ -3,15 +3,15 @@
   list([
     dict({
       'id': 1,
-      'scores': '[1.0,..,3.0]',
+      'scores': '[1.0, 2.0, 3.0]',
     }),
     dict({
       'id': 2,
-      'scores': '[4.0,..,6.0]',
+      'scores': '[4.0, 5.0, 6.0]',
     }),
     dict({
       'id': 3,
-      'scores': '[7.0,..,9.0]',
+      'scores': '[7.0, 8.0, 9.0]',
     }),
   ])
 # ---
@@ -85,15 +85,15 @@
   list([
     dict({
       'id': 1,
-      'tags': '["python","data"]',
+      'tags': "['python', 'data']",
     }),
     dict({
       'id': 2,
-      'tags': '["ml","ai"]',
+      'tags': "['ml', 'ai']",
     }),
     dict({
       'id': 3,
-      'tags': '["testing"]',
+      'tags': "['testing']",
     }),
   ])
 # ---
@@ -101,24 +101,24 @@
   list([
     dict({
       'id': 1,
-      'metadata': '{"key":"value1"}',
+      'metadata': "{'key': 'value1'}",
       'name': 'Alice',
       'score': 1.5,
-      'tags': '["a","b"]',
+      'tags': "['a', 'b']",
     }),
     dict({
       'id': 2,
-      'metadata': '{"key":"value2"}',
+      'metadata': "{'key': 'value2'}",
       'name': 'Bob',
       'score': 2.7,
-      'tags': '["c"]',
+      'tags': "['c']",
     }),
     dict({
       'id': 3,
-      'metadata': '{"key":"value3"}',
+      'metadata': "{'key': 'value3'}",
       'name': 'Charlie',
       'score': 3.9,
-      'tags': '["d",..,"f"]',
+      'tags': "['d', 'e', 'f']",
     }),
   ])
 # ---
@@ -182,15 +182,15 @@
   list([
     dict({
       'id': 1,
-      'user': '{"name":"Alice","age":30}',
+      'user': "{'name': 'Alice', 'age': 30}",
     }),
     dict({
       'id': 2,
-      'user': '{"name":"Bob","age":25}',
+      'user': "{'name': 'Bob', 'age': 25}",
     }),
     dict({
       'id': 3,
-      'user': '{"name":"Charlie","age":35}',
+      'user': "{'name': 'Charlie', 'age': 35}",
     }),
   ])
 # ---

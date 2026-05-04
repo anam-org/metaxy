@@ -399,15 +399,15 @@ def test_build_table_preview_list_truncation() -> None:
     assert len(result.records) == 3
     records_data = [record.data for record in result.records]
 
-    # Short lists (<= 2 items) should not be truncated
-    assert records_data[0]["short_list"] == "[1,2]"
+    # Short lists (<= maxlist) should not be truncated
+    assert records_data[0]["short_list"] == "[1, 2]"
     assert records_data[1]["short_list"] == "[4]"
     assert records_data[2]["short_list"] == "[6]"
 
-    # Long lists (> 2 items) should be truncated to show first 1 and last 1 with ..
-    assert records_data[0]["long_list"] == "[1,..,10]"
-    assert records_data[1]["long_list"] == "[10,..,50]"
-    assert records_data[2]["long_list"] == "[1,..,3]"
+    # Long lists (> maxlist=4) show first 2 + ... + last 2
+    assert records_data[0]["long_list"] == "[1, 2, ..., 9, 10]"
+    assert records_data[1]["long_list"] == "[10, 20, ..., 40, 50]"
+    assert records_data[2]["long_list"] == "[1, 2, 3]"
 
 
 def test_build_table_preview_map_columns() -> None:
@@ -427,4 +427,75 @@ def test_build_table_preview_map_columns() -> None:
     )
 
     result = build_table_preview_metadata(nw.from_native(df.lazy()), schema, n_rows=5)
-    assert result.records[0].data["mapping"] == '{"a": "1", "b": "2"}'
+    assert result.records[0].data["mapping"] == "{'a': '1', 'b': '2'}"
+
+
+def test_build_table_preview_map_with_list_values() -> None:
+    """Map columns whose value type is a non-primitive (e.g. List[Int64]) must render
+    without crashing — the formatter cannot assume the value is castable to String.
+
+    Map keys are runtime data values and stay quoted in the preview; nested values render
+    via the same bounded-preview formatter.
+    """
+    from metaxy.utils._arrow_map import convert_structs_to_maps
+
+    df = convert_structs_to_maps(
+        pl.DataFrame({"id": [1], "shape": [{"motion": [12, 750, 256], "audio": [12, 1500]}]}),
+        columns=["shape"],
+    )
+
+    schema = dg.TableSchema(
+        columns=[
+            dg.TableColumn(name="id", type="int"),
+            dg.TableColumn(name="shape", type="Map"),
+        ]
+    )
+
+    result = build_table_preview_metadata(nw.from_native(df.lazy()), schema, n_rows=5)
+    assert result.records[0].data["shape"] == "{'motion': [12, 750, 256], 'audio': [12, 1500]}"
+
+
+def test_build_table_preview_nested_list_truncation() -> None:
+    """Lists nested inside lists are truncated independently at each level."""
+    df = pl.LazyFrame(
+        {
+            "id": [1, 2],
+            "matrix": [
+                [[1, 2, 3, 4, 5], [10]],
+                [[6, 7], [8, 9, 10, 11], [12]],
+            ],
+        }
+    )
+
+    schema = dg.TableSchema(
+        columns=[
+            dg.TableColumn(name="id", type="int"),
+            dg.TableColumn(name="matrix", type="List"),
+        ]
+    )
+
+    result = build_table_preview_metadata(nw.from_native(df), schema, n_rows=5)
+    # Inner [1, 2, 3, 4, 5] (>4 items) is truncated to head+tail; outer pair fits in maxlist=4.
+    assert result.records[0].data["matrix"] == "[[1, 2, ..., 4, 5], [10]]"
+    # All inner lists fit within maxlist=4, so nothing is truncated.
+    assert result.records[1].data["matrix"] == "[[6, 7], [8, 9, 10, 11], [12]]"
+
+
+def test_build_table_preview_struct_with_inner_list_truncation() -> None:
+    """A long list nested inside a Struct field is truncated; struct keys render unquoted."""
+    df = pl.LazyFrame(
+        {
+            "id": [1],
+            "user": [{"name": "Alice", "scores": [10, 20, 30, 40, 50]}],
+        }
+    )
+
+    schema = dg.TableSchema(
+        columns=[
+            dg.TableColumn(name="id", type="int"),
+            dg.TableColumn(name="user", type="Struct"),
+        ]
+    )
+
+    result = build_table_preview_metadata(nw.from_native(df), schema, n_rows=5)
+    assert result.records[0].data["user"] == "{'name': 'Alice', 'scores': [10, 20, ..., 40, 50]}"
