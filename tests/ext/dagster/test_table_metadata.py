@@ -428,3 +428,31 @@ def test_build_table_preview_map_columns() -> None:
 
     result = build_table_preview_metadata(nw.from_native(df.lazy()), schema, n_rows=5)
     assert result.records[0].data["mapping"] == '{"a": "1", "b": "2"}'
+
+
+def test_build_table_preview_map_with_list_values() -> None:
+    """Map columns whose value type is a non-primitive (e.g. List[Int64]) must
+    still render — the formatter cannot assume the value is castable to String.
+
+    Regression test: an `encoding_shape: dict[str, list[int]]` field on a feature
+    is stored as ``Map[str, List[Int64]]``. The previous implementation called
+    ``cast(pl.String)`` on the value, which raised
+    ``InvalidOperationError: cannot cast List type (inner: 'Int64', to: 'String')``
+    and broke the Dagster table preview metadata build.
+    """
+    from metaxy.utils._arrow_map import convert_structs_to_maps
+
+    df = convert_structs_to_maps(
+        pl.DataFrame({"id": [1], "shape": [{"motion": [12, 750, 256], "audio": [12, 1500]}]}),
+        columns=["shape"],
+    )
+
+    schema = dg.TableSchema(
+        columns=[
+            dg.TableColumn(name="id", type="int"),
+            dg.TableColumn(name="shape", type="Map"),
+        ]
+    )
+
+    result = build_table_preview_metadata(nw.from_native(df.lazy()), schema, n_rows=5)
+    assert result.records[0].data["shape"] == '{"motion": [12,750,256], "audio": [12,1500]}'

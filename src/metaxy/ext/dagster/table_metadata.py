@@ -411,6 +411,18 @@ def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
     return df.select(exprs)
 
 
+def _json_encode_expr(expr: pl.Expr) -> pl.Expr:
+    """Return a Polars Expr that JSON-encodes the value of `expr` to a String.
+
+    Polars exposes `.struct.json_encode()` only on Struct dtype, so to encode
+    a value of arbitrary dtype we wrap it in a 1-field struct, encode that,
+    then strip the wrapper via regex. Output is a JSON literal: strings are
+    quoted, numbers/bools/null are bare, lists/structs/arrays/maps are
+    recursively encoded.
+    """
+    return pl.struct(expr.alias("_")).struct.json_encode().str.extract(r'\{"_":(.*)\}', 1)
+
+
 def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> pl.Expr:
     """Truncate a list expression and convert to string.
 
@@ -434,18 +446,14 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
         list_expr.list.tail(half),
     )
 
-    # Convert to JSON string via struct wrapper
-    def to_json(expr: pl.Expr) -> pl.Expr:
-        return pl.struct(expr.alias("_")).struct.json_encode().str.extract(r'\{"_":(.*)\}', 1)
-
-    short_result = to_json(list_expr)
+    short_result = _json_encode_expr(list_expr)
     # For truncated: insert ".." after the first half elements
     # e.g., [1,10] -> [1,..,10]
     # Match: opening bracket, then `half` comma-separated values
     # The pattern matches values that may contain nested brackets
     value_pattern = r"[^\[\],]+(?:\[[^\]]*\])?"  # matches value or value[...]
     first_n_values = ",".join([value_pattern] * half)
-    long_result = to_json(truncated).str.replace(
+    long_result = _json_encode_expr(truncated).str.replace(
         r"^(\[" + first_n_values + r"),",
         "$1,..,",
     )
@@ -456,17 +464,18 @@ def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> p
 def _map_to_json_expr(list_expr: pl.Expr, alias: str) -> pl.Expr:
     """Convert a Map's physical List(Struct({key, value})) expression to a JSON object string.
 
-    Produces `{"key1": "value1", "key2": "value2"}` format.
+    Produces `{"key1": "value1", "key2": [1, 2, 3]}` format. Both keys and
+    values are JSON-encoded so any value dtype works: strings are quoted,
+    numbers/bools/null are rendered as JSON literals, and complex types
+    (List/Struct/Array/Map) are recursively encoded by Polars.
     """
     return (
         pl.lit("{")
         .add(
             list_expr.list.eval(
-                pl.lit('"')
-                .add(pl.element().struct.field("key"))
-                .add(pl.lit('": "'))
-                .add(pl.element().struct.field("value").cast(pl.String))
-                .add(pl.lit('"'))
+                _json_encode_expr(pl.element().struct.field("key"))
+                .add(pl.lit(": "))
+                .add(_json_encode_expr(pl.element().struct.field("value")))
             ).list.join(", ")
         )
         .add(pl.lit("}"))
