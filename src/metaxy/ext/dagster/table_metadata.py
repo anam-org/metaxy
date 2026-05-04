@@ -4,12 +4,15 @@ This module provides utilities for building Dagster table metadata
 (column schema, column lineage, table previews, etc.) from Metaxy feature definitions.
 """
 
+import datetime
+import reprlib
 import types
-from typing import Any, Union, get_args, get_origin
+from typing import Any, Union, cast, get_args, get_origin
 
 import dagster as dg
 import narwhals as nw
 import polars as pl
+from polars._typing import PolarsDataType
 
 import metaxy as mx
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
@@ -369,106 +372,114 @@ def build_table_preview_metadata(
 def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
     """Prepare a Polars DataFrame for conversion to Dagster TableRecord objects.
 
-    Complex types (Struct, List, Array) and temporal types are converted to strings.
-    Lists/Arrays with more than 4 items are truncated to show first 2 and last 2
-    with "..." in between.
-    Primitive types (str, int, float, bool, None) are kept as-is since
-    Dagster's TableRecord accepts them directly.
-
-    Args:
-        df: The Polars DataFrame to prepare.
-
-    Returns:
-        A DataFrame with complex/temporal types converted to strings.
+    Complex (Map/Struct/List/Array) and temporal columns are rendered to bounded-size preview
+    strings via :class:`reprlib.Repr`; lists/dicts at every nesting level are truncated, and
+    temporal values use ISO-format ``str()``. Primitives pass through unchanged.
     """
-    from metaxy.utils.dataframes import _is_polars_map_dtype
-
-    exprs: list[pl.Expr] = []
+    formatter = _PreviewRepr()
+    formatted: dict[str, Any] = {}
 
     for col_name in df.columns:
         dtype = df[col_name].dtype
-        if _is_polars_map_dtype(dtype):
-            # Map extension types: convert to {"key": "value", ...} JSON string
-            exprs.append(_map_to_json_expr(pl.col(col_name).to_physical(), alias=col_name))
-        elif isinstance(dtype, pl.Struct):
-            # Struct types: use json_encode for a clean JSON representation
-            exprs.append(pl.col(col_name).struct.json_encode())
-        elif isinstance(dtype, pl.List):
-            # List types: truncate and convert to string
-            exprs.append(_truncate_list_expr(pl.col(col_name), alias=col_name))
-        elif isinstance(dtype, pl.Array):
-            # Array types: convert to list first, then truncate
-            exprs.append(_truncate_list_expr(pl.col(col_name).arr.to_list(), alias=col_name))
-        elif dtype in (pl.Datetime, pl.Date, pl.Time, pl.Duration) or isinstance(
-            dtype, (pl.Datetime, pl.Date, pl.Time, pl.Duration)
-        ):
-            # Temporal types: cast to string (ISO format)
-            exprs.append(pl.col(col_name).cast(pl.String))
+        if not _is_complex_or_temporal(dtype):
+            formatted[col_name] = df[col_name]
+            continue
+        formatted[col_name] = [
+            None if v is None else formatter.repr(_to_preview_python(v, dtype)) for v in df[col_name].to_list()
+        ]
+
+    return pl.DataFrame(formatted)
+
+
+def _is_complex_or_temporal(dtype: pl.DataType) -> bool:
+    """Whether a column needs preview-string conversion (vs pass-through)."""
+    from metaxy.utils.dataframes import _is_polars_map_dtype
+
+    return _is_polars_map_dtype(dtype) or isinstance(dtype, (pl.Struct, pl.List, pl.Array)) or dtype.is_temporal()
+
+
+def _to_preview_python(value: Any, dtype: PolarsDataType) -> Any:
+    """Recursively rewrite a Polars-collected Python value so :class:`_PreviewRepr` formats it correctly.
+
+    Maps' physical ``[{key, value}]`` form becomes a real ``dict``; ``List``/``Array`` elements are
+    walked recursively. ``Struct`` values are already plain ``dict`` after collection — the dtype is
+    visible in the schema header, so no special cell rendering is needed.
+    """
+    from metaxy.utils.dataframes import _is_polars_map_dtype
+
+    if value is None:
+        return None
+    if _is_polars_map_dtype(dtype):
+        value_dtype = cast(Any, dtype).value
+        return {entry["key"]: _to_preview_python(entry["value"], value_dtype) for entry in value}
+    if isinstance(dtype, pl.Struct):
+        return {f.name: _to_preview_python(value[f.name], f.dtype) for f in dtype.fields}
+    if isinstance(dtype, (pl.List, pl.Array)):
+        return [_to_preview_python(v, dtype.inner) for v in value]
+    return value
+
+
+class _PreviewRepr(reprlib.Repr):
+    """Bounded-preview formatter that preserves dict insertion order, renders truncated iterables and
+    dicts as ``[head, ..., tail]``/``{head, ..., tail}``, and uses ``str()`` for temporal values."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.maxlist = 4
+        self.maxtuple = 4
+        self.maxarray = 4
+        self.maxdict = 6
+        self.maxstring = 100
+        self.maxother = 100
+
+    def _repr_iterable(self, x: Any, level: int, left: str, right: str, maxiter: int, trail: str = "") -> str:
+        # reprlib.Repr renders truncated iterables as ``[head, ...]``; show ``[head, ..., tail]`` instead
+        # so the end of a long list (often the most recently appended elements) stays visible.
+        items = list(x)
+        n = len(items)
+        if level <= 0 and n:
+            return f"{left}...{right}"
+        repr1 = self.repr1
+        if n <= maxiter:
+            s = ", ".join(repr1(item, level - 1) for item in items)
         else:
-            # Primitive types: keep as-is
-            exprs.append(pl.col(col_name))
+            head_n = (maxiter + 1) // 2
+            tail_n = maxiter - head_n
+            head = [repr1(item, level - 1) for item in items[:head_n]]
+            tail = [repr1(item, level - 1) for item in items[-tail_n:]] if tail_n else []
+            s = ", ".join([*head, "...", *tail])
+        if n == 1 and trail:
+            right = trail + right
+        return f"{left}{s}{right}"
 
-    return df.select(exprs)
+    def repr_dict(self, x: dict[Any, Any], level: int) -> str:
+        # Preserve insertion order — reprlib.Repr's default sorts keys, which loses
+        # the user-meaningful order in maps. Show head + tail when truncated.
+        if not x:
+            return "{}"
+        if level <= 0:
+            return "{...}"
+        repr1 = self.repr1
+        items = list(x.items())
+        n = len(items)
+        if n <= self.maxdict:
+            pieces = [f"{repr1(k, level - 1)}: {repr1(v, level - 1)}" for k, v in items]
+        else:
+            head_n = (self.maxdict + 1) // 2
+            tail_n = self.maxdict - head_n
+            head = [f"{repr1(k, level - 1)}: {repr1(v, level - 1)}" for k, v in items[:head_n]]
+            tail = [f"{repr1(k, level - 1)}: {repr1(v, level - 1)}" for k, v in items[-tail_n:]] if tail_n else []
+            pieces = [*head, "...", *tail]
+        return "{" + ", ".join(pieces) + "}"
 
+    def repr_datetime(self, x: datetime.datetime, _level: int) -> str:
+        return str(x)
 
-def _truncate_list_expr(list_expr: pl.Expr, alias: str, max_items: int = 2) -> pl.Expr:
-    """Truncate a list expression and convert to string.
+    def repr_date(self, x: datetime.date, _level: int) -> str:
+        return str(x)
 
-    Lists with more than max_items show first 1 and last 1 items with "..." between.
+    def repr_time(self, x: datetime.time, _level: int) -> str:
+        return str(x)
 
-    Args:
-        list_expr: A Polars expression that evaluates to a List type.
-        alias: The output column name.
-        max_items: Maximum items to show without truncation. Default 4.
-
-    Returns:
-        A Polars expression that truncates and converts the list to string.
-    """
-    list_len = list_expr.list.len()
-    half = max_items // 2
-
-    # For short lists: just json_encode the whole thing
-    # For long lists: concat first 2 + last 2 and json_encode, then insert "..."
-    truncated = pl.concat_list(
-        list_expr.list.head(half),
-        list_expr.list.tail(half),
-    )
-
-    # Convert to JSON string via struct wrapper
-    def to_json(expr: pl.Expr) -> pl.Expr:
-        return pl.struct(expr.alias("_")).struct.json_encode().str.extract(r'\{"_":(.*)\}', 1)
-
-    short_result = to_json(list_expr)
-    # For truncated: insert ".." after the first half elements
-    # e.g., [1,10] -> [1,..,10]
-    # Match: opening bracket, then `half` comma-separated values
-    # The pattern matches values that may contain nested brackets
-    value_pattern = r"[^\[\],]+(?:\[[^\]]*\])?"  # matches value or value[...]
-    first_n_values = ",".join([value_pattern] * half)
-    long_result = to_json(truncated).str.replace(
-        r"^(\[" + first_n_values + r"),",
-        "$1,..,",
-    )
-
-    return pl.when(list_len <= max_items).then(short_result).otherwise(long_result).alias(alias)
-
-
-def _map_to_json_expr(list_expr: pl.Expr, alias: str) -> pl.Expr:
-    """Convert a Map's physical List(Struct({key, value})) expression to a JSON object string.
-
-    Produces `{"key1": "value1", "key2": "value2"}` format.
-    """
-    return (
-        pl.lit("{")
-        .add(
-            list_expr.list.eval(
-                pl.lit('"')
-                .add(pl.element().struct.field("key"))
-                .add(pl.lit('": "'))
-                .add(pl.element().struct.field("value").cast(pl.String))
-                .add(pl.lit('"'))
-            ).list.join(", ")
-        )
-        .add(pl.lit("}"))
-        .alias(alias)
-    )
+    def repr_timedelta(self, x: datetime.timedelta, _level: int) -> str:
+        return str(x)

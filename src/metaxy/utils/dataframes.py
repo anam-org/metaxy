@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 PolarsCompatibleFrame: TypeAlias = Frame | pl.DataFrame | pl.LazyFrame
 
 
-def _is_polars_map_dtype(dtype: pl.DataType) -> bool:
+def _is_polars_map_dtype(dtype: pl.DataType | pl.datatypes.classes.DataTypeClass) -> bool:
     """Check if a Polars dtype is a polars_map.Map extension type without importing polars_map."""
     return isinstance(dtype, pl.datatypes.classes.BaseExtension) and getattr(dtype, "_name", None) == "polars_map.map"
 
