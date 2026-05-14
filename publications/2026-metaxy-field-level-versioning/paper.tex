@@ -1,3 +1,4 @@
+%% ACM Primary Article Template, SIGCONF proceedings format.
 \documentclass[sigconf]{acmart}
 
 %% Remove copyright / ACM reference for workshop submission draft
@@ -10,20 +11,25 @@
 \acmConference[SAO @ CAIS 2026]{Workshop on Supporting Our AI Overlords}{May 26, 2026}{Berkeley, CA, USA}
 
 \usepackage{graphicx}
+\usepackage{booktabs}
 
 \usepackage{listings}
 \lstset{
   language=Python,
-  basicstyle=\ttfamily\scriptsize,
+  basicstyle=\ttfamily\footnotesize,
   keywordstyle=\bfseries,
   commentstyle=\itshape,
-  columns=flexible,
+  columns=fullflexible,
   breaklines=true,
+  breakatwhitespace=true,
   aboveskip=4pt,
   belowskip=4pt,
-  xleftmargin=2pt,
+  xleftmargin=0pt,
   frame=none,
 }
+
+%% Give slightly more freedom on hyphenation and line breaks for tight columns.
+\sloppy
 
 \begin{document}
 
@@ -39,7 +45,7 @@
 \email{heiler@csh.ac.at}
 
 \begin{abstract}
-Multimodal ML pipelines incur substantial GPU costs, yet existing orchestrators invalidate entire downstream datasets when any processing step changes---even for unaffected fields.
+Multimodal ML pipelines incur high GPU costs, yet existing orchestrators invalidate entire downstream datasets when any processing step changes---even for unaffected fields.
 We present \textbf{Metaxy}, an open-source Python library providing \emph{field-level dependency tracking at record granularity}.
 Feature definitions form a directed acyclic graph; for each record, hierarchical version hashes propagate changes along field-level edges.
 A \texttt{resolve\_update} operation returns exactly those records that are new, stale, or orphaned, enabling selective recomputation.
@@ -71,73 +77,169 @@ In production across two organizations processing millions of multimodal samples
 \section{Introduction}
 
 Modern ML increasingly relies on multimodal data---video, audio, images, and text---processed through GPU-accelerated pipelines.
-Unlike tabular ETL, where re-execution is cheap, multimodal steps such as speech-to-text transcription or embedding generation cost orders of magnitude more per record.
+Unlike tabular ETL, where re-execution is cheap, multimodal steps such as speech-to-text transcription or embedding generation can be expensive per record~\cite{anyscale2024gpu}.
 Data orchestrators like Dagster~\cite{dagster} model pipelines as graphs of \emph{assets} (tables or datasets) and track freshness at the asset level: when a processing step changes, every downstream record is recomputed---even those whose inputs are unchanged.
 
-Consider a video pipeline extracting both audio transcripts and face detections (Figure~\ref{fig:field-deps}).
-Improving only the audio denoising algorithm triggers recomputation of face detections that depend solely on video frames---a costly false positive.
-This problem compounds as pipelines grow and is especially acute for iterative, agent-driven ML development, where rapid experimentation on feature pipelines demands that each iteration recomputes only what is strictly necessary.
+Consider a video pipeline that extracts audio transcripts and face detections (Figure~\ref{fig:field-deps}).
+Improving only the audio denoising algorithm should not trigger recomputation of face detections that depend solely on video frames---yet at table granularity, that recomputation fires anyway.
+This problem compounds as pipelines grow, and is especially acute for iterative, agent-driven ML development, where rapid experimentation demands that each iteration recomputes only what is strictly necessary.
 
 We address this gap with \textbf{Metaxy},\footnote{\url{https://github.com/anam-org/metaxy}} a standalone metadata layer operating at \emph{field} and \emph{record} granularity that enables selective recomputation---both cost-efficient and supportive of rapid experimentation.
-
-\section{Design}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{field-deps.png}
-\caption{Feature graph after an audio algorithm change. Orange borders indicate affected features; gray borders remain unchanged. Red/green hashes show old/new field versions. The \texttt{audio} field change propagates to \texttt{example/crop} and \texttt{example/stt}, but \texttt{example/face\_detection} (depending only on \texttt{frames}) is unaffected.}
+\caption{Feature graph after an audio algorithm change. Orange borders mark affected features; gray borders are unchanged. Red/green hashes show old/new field versions. The \texttt{audio} change propagates to \texttt{crop} and \texttt{stt}; \texttt{face\_detection} (consuming only \texttt{frames}) is unaffected.}
 \label{fig:field-deps}
 \end{figure}
 
-\subsection{Feature Definitions and Dependency Graph}
+\section{Why field-level, per-record tracking is hard}
+\label{sec:hard}
+
+Most pipeline tools stop above field $\times$ record granularity because finer invalidation requires coordinated choices in the dependency graph, version policy, identifier scheme, and metadata-store execution.
+
+\paragraph{B1.~The granularity of the dependency model.}
+Build systems~\cite{mokhov2018build}, asset orchestrators~\cite{dagster}, and feature stores~\cite{feast} model dependencies between \emph{coarse} units---files, tables, datasets, or features.
+That granularity makes correctness easy (one timestamp per node) but treats the table as atomic, so any upstream change invalidates the whole downstream node.
+Tracking dependencies at the level of \emph{individual fields within a feature} requires the metadata layer to carry a vector of per-field provenance per record, not a single timestamp per table.
+
+\paragraph{B2.~Inferring semantic change automatically is unsafe.}
+The natural alternative---static analysis of feature code---cannot reliably distinguish a behavior-preserving refactor from a semantically meaningful edit.
+False negatives silently break downstream correctness; false positives trigger the recomputation we are trying to avoid.
+Metaxy uses a declarative boundary: each field carries a developer-controlled \texttt{code\_version} string, and a change is whatever the author marks as a change.
+This is the same trade-off used in compilers and build systems~\cite{mokhov2018build}: developers set the boundary, and the system propagates it.
+
+\paragraph{B3.~Content-addressable storage does not apply.}
+A natural way to identify computed outputs is by their hashed content (CAS, as in DVC~\cite{dvc} and most artifact stores).
+For an \emph{incremental} pipeline this does not determine the worklist: the increment must be known \emph{before} the downstream stage runs, so the content does not yet exist.
+Metaxy hashes the \emph{provenance signature}---field code versions plus upstream record versions---which lets it decide staleness without ever materializing a downstream payload.
+Users may still attach content-derived versions after the fact via a user-defined data-version hook (for example to deduplicate identical outputs), keeping CAS as an opt-in optimization rather than a requirement.
+
+\paragraph{B4.~The metadata itself must be cheap at record granularity.}
+Coarse metadata (one timestamp per table) is naturally tiny.
+Per-record, per-field metadata over millions of multimodal samples is not: a naive implementation pulls full metadata tables into Python and hashes them client-side.
+Metaxy pushes record-level hashing and the increment join into the metadata store via SQL using Ibis~\cite{ibis}; only the computed increment crosses the wire.
+This is the same colocation principle that underpins adaptive incremental computation~\cite{acar2006adaptive}: keep the diff next to the data that determines it.
+
+Metaxy couples these choices: the field-level dependency graph defines what can change, explicit code versions define when it changes, provenance hashes identify stale records before recomputation, and store-side SQL keeps the per-record diff cheap.
+
+\section{Design}
+
+\subsection{Feature definitions and dependency graph}
 
 Feature definitions are registered through a common specification interface.\footnote{The most common authoring pattern uses Python classes extending a Pydantic base model, but the same graph can also be populated from \texttt{metaxy.lock} or directly from the metadata store.}
 Each feature specifies identifier columns, computed fields with explicit code versions, and field-level dependencies on upstream features via a \texttt{FeatureSpec}.
-At initialization, Metaxy constructs a global DAG where nodes are feature fields and edges encode data flow.
+At initialization, Metaxy constructs a global DAG whose nodes are feature fields and whose edges encode data flow.
 This graph enables topological version propagation: when an upstream field changes, only transitively dependent downstream fields are marked stale.
 The system handles one-to-one, one-to-many, and many-to-one lineage relationships, covering common multimodal patterns such as expanding a video into per-frame crops or aggregating audio segments into a transcript summary.
 
-\subsection{Hierarchical Versioning}
+\subsection{Hierarchical versioning}
 
 Version computation operates through deterministic hashing at multiple levels:
-(1)~\emph{field code versions}---user-specified strings marking algorithmic changes;
-(2)~\emph{field provenance}---per-field hashes combining current code versions with upstream record field versions;
-(3)~\emph{record provenance}---a sample-level hash derived from the per-field provenance map.
-Metaxy also exposes user-controlled data versions that default to provenance, allowing applications to encode direct data-version decisions when needed.
+\emph{(1) field code versions}---user-specified strings marking algorithmic changes (B2);
+\emph{(2) field provenance}---per-field hashes combining current code versions with upstream record field versions;
+\emph{(3) record provenance}---a sample-level hash derived from the per-field provenance map.
+Metaxy also exposes user-controlled data versions that default to provenance, allowing applications to encode direct data-version decisions when needed (B3).
 When \texttt{resolve\_update} is invoked, Metaxy compares expected provenance (computed from the current graph and upstream data) against stored provenance:
 
 \begin{lstlisting}
-inc = store.resolve_update("video/speech_to_text")
-# inc.new:      records not yet processed
-# inc.stale:    records with changed expected provenance
-# inc.orphaned: records removed upstream
-to_process = pl.concat([inc.new, inc.stale])
+inc = store.resolve_update("video/stt")
+# inc.new      not yet processed
+# inc.stale    expected provenance changed
+# inc.orphaned removed upstream
+todo = pl.concat([inc.new, inc.stale])
 \end{lstlisting}
 
 \noindent The returned \texttt{Increment} contains exactly those records requiring work; unchanged records are skipped entirely.
 
-\subsection{Pluggable Storage, Orchestration, and Execution}
+\subsection{Pluggable storage, orchestration, and execution}
 
 Metaxy separates metadata from storage, orchestration, and execution.
-The \texttt{MetadataStore} abstraction supports multiple backends (e.g., DuckDB for local prototyping, ClickHouse or BigQuery or ducklake for production, or lakehouse formats like Delta Lake).
-Version computation is pushed into the store via SQL where possible, avoiding data transfers.
-Backend-agnostic dataframe interoperability is achieved through Narwhals~\cite{narwhals} and Ibis~\cite{ibis}.
+The \texttt{MetadataStore} abstraction supports multiple backends (DuckDB for local prototyping, ClickHouse, BigQuery, DuckLake or lakehouse formats for production).
+Version computation is pushed into the store via SQL where possible (B4), avoiding data transfers; backend-agnostic dataframe interoperability is achieved through Narwhals~\cite{narwhals} and Ibis~\cite{ibis}.
 
 For orchestration, Metaxy integrates with Dagster assets.
 The \texttt{metaxify} decorator enriches asset definitions with lineage metadata while leaving scheduling decisions to the orchestrator.
 For execution, Metaxy can be paired with Ray~\cite{ray} via dedicated datasource and datasink classes.
 The orchestrator decides \emph{which feature} to compute; Metaxy resolves \emph{which samples actually require it}; the execution engine processes only the delta.
 
-\section{Related Work}
+\section{Evaluation}
+\label{sec:eval}
 
-DVC~\cite{dvc} versions datasets at file level without tracking individual records.
-Asset orchestrators such as Dagster~\cite{dagster} schedule recomputation at asset granularity rather than tracking per-record, per-field provenance.
-DataChain~\cite{datachain} supports delta processing for multimodal workflows but couples its incremental model to its own framework.
-Metaxy fills this gap as a \emph{standalone} metadata layer providing field-level tracking at record granularity, decoupled from any specific compute or storage backend.
+The evaluation has two bounded parts.
+Section~\ref{sec:eval-savings} gives a topology-only before/after calculation on a small multimodal DAG to show how field dependencies change the recomputation set.
+This calculation is illustrative; it is not a measurement of production throughput, latency, or cost.
+Section~\ref{sec:eval-overhead} reports \texttt{resolve\_update} wall-clock from a public DuckDB benchmark suite and compares the added metadata work with coarse asset-level freshness checks.
 
-\section{Production Experience}
+\subsection{Avoided recomputation}
+\label{sec:eval-savings}
 
-Metaxy has been in production at Anam\footnote{\url{https://www.anam.ai}}, a conversational AI avatar company, since December 2025, processing millions of training samples for a real-time interactive avatar platform powered by a custom video generation model.
+The pipeline in Figure~\ref{fig:field-deps} extends to a seven-feature DAG with a \texttt{Video} root, fields \texttt{\{audio, frames\}}, an audio path (\texttt{audio\_denoise} $\to$ \texttt{stt} $\to$ \texttt{text\_embed}), a visual path (\texttt{crop} $\to$ \texttt{face\_detection}), and a fusion stage (\texttt{video\_embed}) that consumes \texttt{crop} and \texttt{audio\_denoise}.
+There are six \emph{downstream} features (excluding the root).
+The baseline is the coarse asset/table tracking used before Metaxy: a change to the shared multimodal sample asset reprocesses all six downstream features over all $N$ records.
+Under Metaxy, only features whose field-level dependencies transitively consume the changed field are reprocessed; record-level selectivity narrows this further when a change affects only a subset of records.
+Table~\ref{tab:savings} uses normalized work units: (features reprocessed) $\times$ (records reprocessed).
+It is a structural calculation over the example DAG, not a production measurement.
+Table~\ref{tab:savings} summarizes five example changes.
+
+\begin{table}[t]
+\centering
+\caption{Illustrative before/after calculation for the seven-feature example DAG of Figure~\ref{fig:field-deps} (six downstream features over $N$ records). \emph{Asset} = invalidate all downstream features over all records; \emph{Metaxy} = recompute only transitively affected (feature, record) pairs. For subset changes, $p$ is the fraction of records actually changed.}
+\label{tab:savings}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Change                                & Asset           & Metaxy       \\
+\midrule
+Audio denoiser code bump              & $6 \cdot N$     & $4 \cdot N$  \\
+Crop-resolution code bump             & $6 \cdot N$     & $3 \cdot N$  \\
+STT model swap                        & $6 \cdot N$     & $2 \cdot N$  \\
+Refresh subset of records             & $6 \cdot N$     & $6 \cdot pN$ \\
+Audio bump on subset of records       & $6 \cdot N$     & $4 \cdot pN$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The table separates field-level dependency pruning from record selectivity.
+Rows 1--3 isolate which downstream features consume the changed field; rows 4--5 add record-level scope.
+Production savings depend on actual stage costs, change frequency, and record distributions.
+
+\subsection{Overhead}
+\label{sec:eval-overhead}
+
+The benchmark suite reported in~\cite{gafni2026metaxyjoss} measures \texttt{resolve\_update} on DuckDB using two graphs: a \texttt{simple} graph (one root, single-field leaf) and a \texttt{wide} graph (two roots with four fields each, two-field leaf) that exercises a wider provenance join.
+Each cell is ten rounds with a fresh DuckDB file per round (cold buffer pool, cold OS page cache); the configuration enables the native \texttt{Map} datatype.
+Table~\ref{tab:overhead} reports the median wall-clock for the initial materialization (\texttt{resolve\_new}) and for the incremental diff after bumping a subset of records (\texttt{resolve\_stale}) on an Apple M2 Max laptop.
+
+\begin{table}[t]
+\centering
+\caption{Median wall-clock of \texttt{resolve\_update} on DuckDB across record counts $N$, in milliseconds (10 rounds per cell, cold cache, fresh DB file per round).}
+\label{tab:overhead}
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Scenario          & $N$        & new (ms) & stale (ms) \\
+\midrule
+\texttt{simple}   & $10^4$     & 497      & 591        \\
+\texttt{simple}   & $10^5$     & 559      & 712        \\
+\texttt{simple}   & $10^6$     & 1{,}172  & 1{,}271    \\
+\texttt{simple}   & $10^7$     & 7{,}798  & 7{,}133    \\
+\texttt{wide}     & $10^4$     & 764      & 834        \\
+\texttt{wide}     & $10^5$     & 862      & 1{,}098    \\
+\texttt{wide}     & $10^6$     & 1{,}910  & 2{,}408    \\
+\texttt{wide}     & $10^7$     & 11{,}871 & 14{,}695   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+End-to-end wall-clock scales near-linearly with $N$ on both graphs, showing that the SQL pushdown strategy absorbs join width well in this benchmark.
+Coarse asset-level freshness checks are essentially constant time in the number of records because they compare one version per asset.
+Metaxy's extra benchmark cost is the row-level metadata diff.
+The overhead is dominated by hash construction and join inside the metadata store, not by Python; the same workload on a warehouse-class backend (ClickHouse, BigQuery) shifts the constant but preserves the scaling pattern.
+
+\section{Production experience}
+
+Metaxy has been in production at Anam\footnote{\url{https://www.anam.ai}}, a conversational avatar company, since December 2025, processing millions of training samples for a real-time interactive avatar platform powered by a custom video generation model.
 The pipeline spans audio extraction, speech-to-text, face detection, video cropping, and embedding generation; the most expensive stages are GPU-accelerated.
 Before Metaxy, changing crop resolution triggered recomputation of all downstream steps, including audio-only stages unaffected by the change.
 With field-level tracking, only genuinely affected records are reprocessed.
@@ -147,11 +249,46 @@ At ASCII (Austrian Supply Chain Intelligence Institute), Metaxy powers increment
 
 The same feature definitions can be reused across local prototyping and production deployments, reducing operational friction.
 
+\section{Discussion: lessons for the SAO community}
+\label{sec:lessons}
+
+The deployments give four lessons for multimodal ML data systems.
+
+\paragraph{Metadata granularity should match cost granularity.}
+A pipeline's most expensive stages dictate the granularity at which invalidation must be precise.
+For tabular ETL on cheap CPUs, table-level invalidation is fine; rerunning the table is cheaper than the metadata bookkeeping required to avoid it.
+Once per-record stages become expensive (multimodal GPU work, LLM calls, retrieval over large embeddings), the asymmetry inverts: the cost of \emph{getting the increment wrong} dwarfs the cost of computing a precise increment.
+The same cost model appears in agentic data systems: cost is paid per record or LLM call, while many code-version edits affect only a subset of fields.
+
+\paragraph{Iteration rate amplifies the value of precise increments.}
+The savings compound with iteration: if a researcher runs $k$ experiments per week and each touches only a subset of fields, asset-granularity invalidation pays the full $N \cdot$(\#features) cost $k$ times, while field-granularity pays a structurally smaller cost per iteration.
+This effect is largest for agentic loops, where many candidate code versions are tried and most are discarded; cheap, precise increments make exploration affordable.
+
+\paragraph{Pipeline shape predicts the gain.}
+The example in Table~\ref{tab:savings} prunes work because the graph has a clear bifurcation between audio and visual fields, with only a fusion stage downstream that recombines them.
+Pipelines that are deep and narrow (every stage consumes every upstream field) gain less from field-level tracking; pipelines that fan out by modality, language, or feature family gain more.
+Practitioners can estimate likely benefit before adopting Metaxy by counting, for a representative recent change, the fraction of downstream features whose declared field dependencies actually consume the changed field.
+
+\paragraph{Declarative change boundaries should be reviewable.}
+Code-version strings make the boundary between ``what counts as a semantic change'' explicit and reviewable, much as database migrations or API versioning do.
+For systems whose code is partly generated, a reviewed version boundary is easier to audit than a heuristic.
+
+\section{Related work}
+
+DVC~\cite{dvc} versions datasets at file level without tracking individual records.
+Asset orchestrators such as Dagster~\cite{dagster} schedule recomputation at asset granularity rather than tracking per-record, per-field provenance.
+Feast~\cite{feast} focuses on feature definition, materialization, and online serving and does not expose field-level provenance for propagating version changes.
+Apache Hamilton~\cite{hamilton} reports column-level lineage over Python dataflows but at table granularity.
+DataChain~\cite{datachain} supports delta processing for multimodal workflows but couples its incremental model to its own framework.
+Conceptually, Metaxy draws on the why/where provenance distinction~\cite{buneman2001why,cheney2009provenance} and the W3C PROV data model~\cite{moreau2013prov}, applied to record-level multimodal feature pipelines; the colocation of incremental computation with its data follows the line of work on adaptive computation~\cite{acar2006adaptive,cui2003lineage}.
+Metaxy fills this gap as a \emph{standalone} metadata layer providing field-level tracking at record granularity, decoupled from any specific compute or storage backend.
+
 \section{Conclusion}
 
 Metaxy introduces field-level dependency tracking at record granularity as a standalone metadata layer for multimodal ML pipelines.
-By computing precise diffs before execution, it eliminates redundant GPU work while preserving complete lineage.
-For the SAO community, Metaxy demonstrates that fine-grained provenance and cost-efficient incremental processing---properties essential for data systems supporting iterative and agentic ML workflows, feature pipeline iteration loops, and operational cost control---can be achieved through a lightweight layer that complements existing orchestrators rather than replacing them.
+The example calculation shows how field dependencies reduce the recomputation set in a branched audio/visual DAG, while the DuckDB benchmark shows that record-level diffing can be executed inside the metadata store.
+The implementation combines a field-level dependency graph, explicit code versions, provenance hashes, and store-side diffing so stale records can be identified before downstream GPU work starts.
+For the SAO community, the practical rule is to match metadata granularity to cost granularity: workloads that pay per record or per LLM call need increments at the same grain.
 The library is open-source at \url{https://github.com/anam-org/metaxy}.
 
 \bibliographystyle{ACM-Reference-Format}
