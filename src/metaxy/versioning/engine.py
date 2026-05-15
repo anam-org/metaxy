@@ -218,23 +218,43 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
-    @staticmethod
-    @abstractmethod
     def build_struct_column(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Build a metadata column from existing columns.
 
         Args:
             df: Input DataFrame.
-            struct_name: Name for the new struct column.
+            struct_name: Name for the new metadata column.
             field_columns: Mapping of struct field names to source column names.
 
         Returns:
-            DataFrame with the new struct column added.
+            DataFrame with a new Struct column, or a Map column when
+            ``enable_map_datatype`` is set.
         """
+        if MetaxyConfig.get().enable_map_datatype:
+            return self.build_map_column(df, struct_name, field_columns)
+
+        return cast(
+            FrameT,
+            df.with_columns(  # ty: ignore[invalid-argument-type]
+                nw.struct([nw.col(src_col).alias(field_name) for field_name, src_col in field_columns.items()]).alias(
+                    struct_name
+                )
+            ),
+        )
+
+    @staticmethod
+    @abstractmethod
+    def build_map_column(
+        df: FrameT,
+        col_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build a native Map metadata column from existing columns."""
         raise NotImplementedError()
 
     @abstractmethod

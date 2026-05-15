@@ -102,45 +102,17 @@ class IbisVersioningEngine(VersioningEngine):
         return cast(FrameT, nw.from_native(result_table))
 
     @staticmethod
-    def build_struct_column(
-        df: FrameT,
-        struct_name: str,
-        field_columns: dict[str, str],
-    ) -> FrameT:
-        """Build a metadata column (Struct or Map) from existing columns.
-
-        When ``enable_map_datatype`` is set, produces a ``Map(String, String)``
-        column. Otherwise produces a Struct column.
-        """
-        from metaxy.config import MetaxyConfig
-
-        if MetaxyConfig.get().enable_map_datatype:
-            return IbisVersioningEngine._build_map_column(df, struct_name, field_columns)
-        return IbisVersioningEngine._build_ibis_struct_column(df, struct_name, field_columns)
-
-    @staticmethod
-    def _build_ibis_struct_column(
-        df: FrameT,
-        col_name: str,
-        field_columns: dict[str, str],
-    ) -> FrameT:
-        """Build an Ibis Struct column from existing columns."""
-        import ibis.expr.types
-
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
-        expr = ibis.struct({field_name: ibis_table[src_col] for field_name, src_col in field_columns.items()})
-        return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: expr})))
-
-    @staticmethod
-    def _build_map_column(
+    def build_map_column(
         df: FrameT,
         col_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
         """Build a Map(String, String) column from existing columns using ibis.map()."""
+        import ibis
         import ibis.expr.types
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
         keys = ibis.array([ibis.literal(name) for name in field_columns])
         values = ibis.array([ibis_table[src_col].cast("string") for src_col in field_columns.values()])
         return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: ibis.map(keys, values)})))
