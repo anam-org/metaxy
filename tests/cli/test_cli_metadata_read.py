@@ -42,7 +42,6 @@ def project_with_data(metaxy_project: TempMetaxyProject):
 
         import ibis
 
-        # Create sample data using Ibis (avoid Polars as requested)
         data = ibis.memtable(
             {
                 "sample_uid": [1, 2, 3],
@@ -87,7 +86,6 @@ def test_metadata_read_parquet(project_with_data, tmp_path, capsys):
     assert result.returncode == 0
     assert output_file.exists()
 
-    # Verify content using PyArrow (avoid Polars)
     import pyarrow.parquet as pq
 
     table = pq.read_table(output_file)
@@ -118,6 +116,23 @@ def test_metadata_read_filtering(project_with_data, capsys, options, expected_co
     data = json.loads(result.stdout)
     assert len(data) == expected_count
     assert check_fn(result.stdout)
+
+
+def test_metadata_read_query_uses_ibis(project_with_data, capsys, monkeypatch):
+    """The --query path on an Ibis-based store routes through Ibis SQL generation."""
+    from unittest import mock
+
+    import ibis
+
+    spy = mock.Mock(wraps=ibis.to_sql)
+    monkeypatch.setattr(ibis, "to_sql", spy)
+
+    result = project_with_data.run_cli(
+        ["metadata", "read", "files_root", "-f", "json", "--query", "SELECT count(*) AS cnt FROM files_root"],
+        capsys=capsys,
+    )
+    assert result.returncode == 0
+    spy.assert_called_once()
 
 
 def test_metadata_read_invalid_feature(project_with_data, capsys):
