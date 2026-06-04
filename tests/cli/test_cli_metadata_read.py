@@ -157,17 +157,14 @@ def test_metadata_read_invalid_format(project_with_data, capsys):
     assert result.returncode != 0
 
 
-def test_metadata_read_markdown_render_failure(project_with_data, capsys, monkeypatch):
-    """Markdown output must fail loudly rather than fall back when rendering cannot produce Markdown."""
-    import pandas as pd
-
-    def _fail(self, *args, **kwargs):
-        raise RuntimeError("cannot render markdown")
-
-    monkeypatch.setattr(pd.DataFrame, "to_markdown", _fail)
-
-    result = project_with_data.run_cli(["metadata", "read", "files_root", "-f", "markdown"], capsys=capsys, check=False)
-    assert result.returncode != 0
+def test_metadata_read_markdown_render(project_with_data, capsys):
+    """Markdown output renders a real Markdown table without relying on Pandas."""
+    result = project_with_data.run_cli(["metadata", "read", "files_root", "-f", "markdown"], capsys=capsys)
+    assert result.returncode == 0
+    lines = result.stdout.strip().splitlines()
+    assert lines[0].startswith("| ") and lines[0].endswith(" |")
+    assert "sample_uid" in lines[0]
+    assert set(lines[1].replace("|", "").split()) == {"---"}
 
 
 def test_metadata_read_output_file_csv(project_with_data, tmp_path, capsys):

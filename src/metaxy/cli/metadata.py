@@ -893,7 +893,19 @@ def _write_output(table: pa.Table, fmt: WriteFormat, output: str | None) -> None
         else:
             sys.stdout.write(content)
     elif fmt == "markdown":
-        md = con.query("SELECT * FROM _output").fetchdf().to_markdown(index=False) or ""
+        result = con.query("SELECT * FROM _output").fetch_arrow_table()
+        columns = result.column_names
+        data = result.to_pydict()
+        rows = (
+            ["" if data[col][i] is None else str(data[col][i]) for col in columns]
+            for i in range(result.num_rows)
+        )
+        lines = [
+            "| " + " | ".join(columns) + " |",
+            "| " + " | ".join("---" for _ in columns) + " |",
+            *("| " + " | ".join(row) + " |" for row in rows),
+        ]
+        md = "\n".join(lines)
         if output:
             with open(output, "w", encoding="utf-8") as f:
                 f.write(md)
