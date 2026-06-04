@@ -3,14 +3,14 @@
 import json
 
 import pytest
+
 from metaxy_testing import TempMetaxyProject
 
 
 def _define_features():
     """Define test features for the metadata read command."""
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+    from metaxy_testing.models import SampleFeatureSpec
 
     class FilesRoot(
         BaseFeature,
@@ -154,6 +154,19 @@ def test_metadata_read_explicit_store(project_with_data, capsys):
 def test_metadata_read_invalid_format(project_with_data, capsys):
     """Test that an unsupported format returns an error."""
     result = project_with_data.run_cli(["metadata", "read", "files_root", "-f", "invalid"], capsys=capsys, check=False)
+    assert result.returncode != 0
+
+
+def test_metadata_read_markdown_render_failure(project_with_data, capsys, monkeypatch):
+    """Markdown output must fail loudly rather than fall back when rendering cannot produce Markdown."""
+    import pandas as pd
+
+    def _fail(self, *args, **kwargs):
+        raise RuntimeError("cannot render markdown")
+
+    monkeypatch.setattr(pd.DataFrame, "to_markdown", _fail)
+
+    result = project_with_data.run_cli(["metadata", "read", "files_root", "-f", "markdown"], capsys=capsys, check=False)
     assert result.returncode != 0
 
 

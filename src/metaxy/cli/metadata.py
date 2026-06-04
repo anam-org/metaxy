@@ -848,8 +848,6 @@ def read(
                 con.register(table_name, arrow_table)
                 con.register("metadata", arrow_table)
                 arrow_table = con.query(query).fetch_arrow_table()
-                if hasattr(arrow_table, "read_all"):
-                    arrow_table = arrow_table.read_all()
 
             # --- Output ---
             _write_output(arrow_table, format, output)
@@ -884,8 +882,6 @@ def _write_output(table: pa.Table, fmt: WriteFormat, output: str | None) -> None
             pq.write_table(table, sys.stdout.buffer)
     elif fmt == "json":
         result = con.query("SELECT * FROM _output").fetch_arrow_table()
-        if hasattr(result, "read_all"):
-            result = result.read_all()
         rows = result.to_pydict()
         # Convert to list of dicts
         keys = list(rows.keys())
@@ -897,15 +893,7 @@ def _write_output(table: pa.Table, fmt: WriteFormat, output: str | None) -> None
         else:
             sys.stdout.write(content)
     elif fmt == "markdown":
-        try:
-            con.install_extension("markdown")
-            con.load_extension("markdown")
-            md = con.query("SELECT * FROM _output").fetchdf().to_markdown(index=False)
-            if md is None:
-                md = ""
-        except Exception:
-            # Fallback: use DuckDB's built-in display
-            md = str(con.query("SELECT * FROM _output"))
+        md = con.query("SELECT * FROM _output").fetchdf().to_markdown(index=False) or ""
         if output:
             with open(output, "w", encoding="utf-8") as f:
                 f.write(md)
