@@ -801,7 +801,7 @@ def read(
 
     from metaxy.cli.context import AppContext
     from metaxy.cli.utils import CLIError, CLIErrorCode, exit_with_error, load_graph_for_command
-    from metaxy.metadata_store.ibis import IbisMetadataStore
+    from metaxy.ext.ibis.metadata_store import IbisMetadataStore
     from metaxy.utils import collect_to_arrow
 
     filters = filters or []
