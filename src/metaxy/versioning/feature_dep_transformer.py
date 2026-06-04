@@ -146,7 +146,7 @@ class FeatureDepTransformer:
             renamed_df = renamed_df.select(*self.renamed_columns)  # ty: ignore[invalid-argument-type]
 
         # Create RenamedDataFrame with the complete ID column tracker
-        return RenamedDataFrame(
+        return RenamedDataFrame(  # ty: ignore[invalid-return-type]
             df=renamed_df,  # ty: ignore[invalid-argument-type]
             id_column_tracker=self.id_column_tracker,
         )

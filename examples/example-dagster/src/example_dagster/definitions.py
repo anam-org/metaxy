@@ -123,7 +123,7 @@ def definitions():
     mx.init()  # (1)!
 
     return dg.Definitions(
-        assets=[  # ty: ignore[invalid-argument-type]
+        assets=[
             audio_embeddings,
             audio_clusters,
             cluster_report,

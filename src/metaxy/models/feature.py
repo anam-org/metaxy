@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypedDict, cast
 
 import pydantic
 from pydantic import AwareDatetime, Field, model_validator
@@ -772,33 +772,33 @@ class MetaxyMeta(ModelMetaclass):
         *,
         spec: FeatureSpec | None = None,
         **kwargs,
-    ) -> type[Self]:
+    ) -> type["BaseFeature"]:
         # Inject frozen config if not already specified in namespace
         if "model_config" not in namespace:
             from pydantic import ConfigDict
 
             namespace["model_config"] = ConfigDict(frozen=True, extra="forbid")
 
-        new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
+        new_cls = cast("type[BaseFeature]", super().__new__(cls, cls_name, bases, namespace, **kwargs))
 
         if spec:
             # Get graph from context at class definition time
             active_graph = FeatureGraph.get_active()
-            new_cls.graph = active_graph  # ty: ignore[unresolved-attribute]
-            new_cls._spec = spec  # ty: ignore[unresolved-attribute]
+            new_cls.graph = active_graph
+            new_cls._spec = spec
 
             # Determine project for this feature
             # Use explicit class attribute if defined, otherwise auto-detect from package
             if "__metaxy_project__" in namespace:
-                new_cls.__metaxy_project__ = namespace["__metaxy_project__"]  # ty: ignore[unresolved-attribute]
+                new_cls.__metaxy_project__ = namespace["__metaxy_project__"]
             else:
-                new_cls.__metaxy_project__ = cls._detect_project(new_cls)  # ty: ignore[unresolved-attribute]
+                new_cls.__metaxy_project__ = cls._detect_project(new_cls)
 
             active_graph.add_feature(new_cls)
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
 
-        return new_cls  # ty: ignore[invalid-return-type]
+        return new_cls
 
     @staticmethod
     def _detect_project(feature_cls: type) -> str:

@@ -253,7 +253,7 @@ class TempFeatureModule:
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
-def assert_all_results_equal(results: dict[str, Any], snapshot=None) -> None:
+def assert_all_results_equal(results: dict[Any, Any], snapshot=None) -> None:
     """Compare all results from different store type combinations.
 
     Ensures all variants produce identical results, then optionally snapshots all results.

@@ -427,7 +427,7 @@ class ResolveUpdateTests:
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
-            samples_df = feature_metadata_strategy(  # type: ignore[missing-argument]  # ty: ignore[missing-argument]
+            samples_df = feature_metadata_strategy(  # type: ignore[missing-argument]
                 feature_spec=feature_spec,
                 feature_version=feature_version,
                 project_version=project_version,

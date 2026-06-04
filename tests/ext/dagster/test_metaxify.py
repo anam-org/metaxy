@@ -120,7 +120,7 @@ class TestMetaxifyBasic:
             pass
 
         # Should have metaxy kind injected
-        asset_spec = list(my_asset.specs)[0]  # ty: ignore[unresolved-attribute]
+        asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND in asset_spec.kinds
 
     def test_metaxify_injects_metaxy_kind(self, upstream_feature: type[mx.BaseFeature]):
@@ -520,7 +520,7 @@ class TestMetaxifyDeps:
             pass
 
         # Downstream asset should have upstream feature key as a dependency
-        downstream_spec = list(downstream_asset.specs)[0]  # ty: ignore[unresolved-attribute]
+        downstream_spec = list(downstream_asset.specs)[0]
         dep_keys = {dep.asset_key for dep in downstream_spec.deps}
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
@@ -1158,7 +1158,7 @@ class TestMetaxifyDescription:
         def my_asset():
             pass
 
-        asset_spec = list(my_asset.specs)[0]  # ty: ignore[unresolved-attribute]
+        asset_spec = list(my_asset.specs)[0]
         assert asset_spec.description is not None
         assert "feature documentation" in asset_spec.description
         assert asset_spec.description == snapshot
@@ -1177,7 +1177,7 @@ class TestMetaxifyDescription:
         def my_asset():
             pass
 
-        asset_spec = list(my_asset.specs)[0]  # ty: ignore[unresolved-attribute]
+        asset_spec = list(my_asset.specs)[0]
         assert asset_spec.description == "My custom description"
 
     def test_metaxify_no_description_without_docstring(
@@ -1443,7 +1443,7 @@ class TestMetaxifyWithInputDefinitions:
             pass
 
         # Should work even with key replacement
-        assert dg.AssetKey(["custom", "asset", "key"]) in original_key_asset.keys  # ty: ignore[unresolved-attribute]
+        assert dg.AssetKey(["custom", "asset", "key"]) in original_key_asset.keys
 
     def test_metaxify_with_asset_in_materializes(
         self,

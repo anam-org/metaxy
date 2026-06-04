@@ -404,7 +404,7 @@ class MetadataStore(ABC):
             if isinstance(samples, (nw.DataFrame, nw.LazyFrame)):
                 samples_nw = samples
             else:
-                samples_nw = nw.from_native(samples)  # ty: ignore[invalid-assignment]
+                samples_nw = nw.from_native(samples)
 
         # Normalize filter keys to FeatureKey
         normalized_filters: dict[FeatureKey, list[nw.Expr]] = {}

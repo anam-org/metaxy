@@ -25,11 +25,11 @@ class PolarsVersioningEngine(VersioningEngine):
 
     # Map HashAlgorithm enum to polars-hash functions
     _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
-        HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),
-        HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),
-        HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),
-        HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),
-        HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),
+        HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # ty: ignore[unresolved-attribute]
+        HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # ty: ignore[unresolved-attribute]
+        HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # ty: ignore[unresolved-attribute]
+        HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # ty: ignore[unresolved-attribute]
+        HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # ty: ignore[unresolved-attribute]
     }
 
     @classmethod

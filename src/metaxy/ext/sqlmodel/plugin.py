@@ -226,7 +226,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                     table_kwargs = {}
 
                 # Merge info
-                existing_info = table_kwargs.get("info", {})
+                existing_info: dict[str, Any] = table_kwargs.get("info", {})  # ty: ignore[invalid-assignment]
                 existing_info.update(metaxy_info)
                 table_kwargs["info"] = existing_info
                 # Merge base table kwargs (don't override user settings)
@@ -286,7 +286,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
 
     # Override the frozen config from Feature's FrozenBaseModel
     # SQLModel instances need to be mutable for ORM operations
-    model_config = {"frozen": False}
+    model_config = {"frozen": False}  # ty: ignore[invalid-assignment]
 
     # Re-declare ClassVar attributes from BaseFeature for type checker visibility.
     # These are set by MetaxyMeta at class creation time but type checkers can't see them

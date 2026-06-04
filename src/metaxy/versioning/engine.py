@@ -422,7 +422,7 @@ class VersioningEngine(ABC):
         # Pre-extract fields, then concatenate with separator and hash
         sorted_fields = sorted(upstream_field_names)
         temp_field_cols = {fn: f"__field_{fn}" for fn in sorted_fields}
-        df = self._extract_metadata_fields(df, renamed_data_version_by_field_col, temp_field_cols)
+        df = self._extract_metadata_fields(df, renamed_data_version_by_field_col, temp_field_cols)  # ty: ignore[invalid-assignment]
         sample_concat = nw.concat_str([nw.col(c) for c in temp_field_cols.values()], separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
@@ -587,13 +587,13 @@ class VersioningEngine(ABC):
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
         version_columns = ["metaxy_feature_version", "metaxy_project_version"]
-        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        current_columns = df.collect_schema().names()
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+            df = df.drop(*columns_to_drop)
 
-        return df
+        return df  # ty: ignore[invalid-return-type]
 
     def compute_provenance_columns(
         self,
@@ -650,7 +650,7 @@ class VersioningEngine(ABC):
         temp_cols = {fn: f"__hsvf_{fn}" for fn in sorted_names}
         df = self._extract_metadata_fields(df, struct_column, temp_cols)
         sample_concat = nw.concat_str([nw.col(c) for c in temp_cols.values()], separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(sample_concat.alias("__sample_concat"))
 
         # Hash the concatenation to produce final provenance hash
         return self.hash_string_column(  # ty: ignore[invalid-return-type]
@@ -744,7 +744,7 @@ class VersioningEngine(ABC):
 
             # Validate that root features provide both required provenance columns
             self._check_required_provenance_columns(
-                expected,
+                expected,  # ty: ignore[invalid-argument-type]
                 "The `sample` DataFrame (must be provided to root features)",
             )
         else:

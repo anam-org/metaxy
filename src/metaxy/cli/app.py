@@ -15,7 +15,7 @@ app = cyclopts.App(
     version=__version__,
     console=console,
     error_console=error_console,
-    config=cyclopts.config.Env(  # ty: ignore[invalid-argument-type]
+    config=cyclopts.config.Env(
         "METAXY_",  # Every environment variable for setting the arguments will begin with this.
     ),
     help_epilogue="Learn more in [Metaxy docs](https://docs.metaxy.io)",

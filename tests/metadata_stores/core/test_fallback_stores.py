@@ -241,8 +241,10 @@ def test_fallback_store_warning_issued(
         assert reference["added"] == 3
         assert reference["changed"] == 0
         assert reference["removed"] == 0
-        assert len(reference["versions"]) == 3
-        assert all(isinstance(v, dict) for v in reference["versions"])
+        versions = reference["versions"]
+        assert isinstance(versions, list)
+        assert len(versions) == 3
+        assert all(isinstance(v, dict) for v in versions)
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)

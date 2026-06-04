@@ -67,7 +67,7 @@ def test_datasink_with_multiple_blocks(
     data3 = make_test_data(sample_uids=["e", "f"], values=[5, 6])
 
     ds = ray.data.from_arrow_refs(
-        [
+        [  # ty: ignore[invalid-argument-type]
             ray.put(data1.to_arrow()),
             ray.put(data2.to_arrow()),
             ray.put(data3.to_arrow()),
@@ -305,7 +305,7 @@ def test_datasink_result_aggregates_across_multiple_write_tasks(
     data3 = make_test_data(sample_uids=["f", "g", "h", "i"], values=[6, 7, 8, 9])
 
     ds = ray.data.from_arrow_refs(
-        [
+        [  # ty: ignore[invalid-argument-type]
             ray.put(data1.to_arrow()),
             ray.put(data2.to_arrow()),
             ray.put(data3.to_arrow()),
