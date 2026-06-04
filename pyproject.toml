@@ -144,7 +144,7 @@ dev = [
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
-  "ty==0.0.25",
+  "ty==0.0.43",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pytest-benchmark>=5.0.0",
@@ -188,6 +188,9 @@ docs = [
   "mkdocs-macros-plugin>=1.5.0",
   "mkdocs-exclude>=1.0.2",
 ]
+
+[tool.uv]
+preview = true
 
 [tool.uv.workspace]
 members = [

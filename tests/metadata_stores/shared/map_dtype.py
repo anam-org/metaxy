@@ -453,7 +453,7 @@ class MapDtypeTests:
             if store.has_feature(feature):
                 s.drop_feature_metadata(feature)
 
-    @given(user_map=map_series())  # ty: ignore[missing-argument]
+    @given(user_map=map_series())
     @settings(
         max_examples=20,
         deadline=None,

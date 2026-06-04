@@ -79,7 +79,7 @@ class TestJoiner:
             provenance_col_name = f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
             mapping[upstream_key_str] = provenance_col_name
 
-        return joined, mapping  # ty: ignore[invalid-return-type]
+        return joined, mapping
 
 
 def test_feature_spec_id_columns_default():

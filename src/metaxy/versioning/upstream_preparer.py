@@ -114,7 +114,7 @@ class UpstreamPreparer(Generic[FrameT]):
                     renamed_df.df,
                     hash_algorithm,
                 )
-                result[feature_key] = RenamedDataFrame(
+                result[feature_key] = RenamedDataFrame(  # ty: ignore[invalid-assignment]
                     df=transformed_df,
                     id_column_tracker=renamed_df.id_column_tracker,
                 )

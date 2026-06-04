@@ -406,13 +406,13 @@ def clickhouse_db(clickhouse_server):
     default_conn_string = f"clickhouse://{host}:{port}/default"
     conn: Any = ibis.connect(default_conn_string)
 
-    conn.raw_sql(f"CREATE DATABASE {db_name}")  # ty: ignore[unresolved-attribute]
+    conn.raw_sql(f"CREATE DATABASE {db_name}")
     test_conn_string = f"clickhouse://{host}:{port}/{db_name}"
 
     yield test_conn_string
 
     # Cleanup: drop test database
     try:
-        conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # ty: ignore[unresolved-attribute]
+        conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")
     except Exception:
         pass  # Best effort cleanup
