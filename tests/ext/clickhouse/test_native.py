@@ -4,12 +4,12 @@ import ibis.backends.clickhouse  # noqa: F401
 import ibis.expr.datatypes as dt
 import polars as pl
 import pytest
-
 from metaxy import FeatureDefinition, HashAlgorithm
-from metaxy.ext.metadata_stores.clickhouse import ClickHouseMetadataStore
+from metaxy.ext.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.utils import collect_to_polars
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -191,7 +191,7 @@ def test_clickhouse_config_instantiation(
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                 },
@@ -214,7 +214,7 @@ def test_clickhouse_config_with_connection_params(test_graph, test_features: dic
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_params": {
                         "host": "localhost",
@@ -242,7 +242,7 @@ def test_clickhouse_config_with_hash_algorithm(
     config = MetaxyConfig(
         stores={
             "clickhouse_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                     "hash_algorithm": "md5",
@@ -268,14 +268,14 @@ def test_clickhouse_config_with_fallback_stores(
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+                type="metaxy.ext.clickhouse.ClickHouseMetadataStore",
                 config={
                     "connection_string": clickhouse_db,
                 },
@@ -644,7 +644,6 @@ def test_clickhouse_map_column_write_from_ibis_struct(
     """
     import ibis
     import narwhals as nw
-
     from metaxy.models.constants import (
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_PROVENANCE_BY_FIELD,

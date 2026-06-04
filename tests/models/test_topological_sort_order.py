@@ -11,8 +11,6 @@ Tests cover:
 
 from __future__ import annotations
 
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -21,6 +19,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy_testing.models import SampleFeatureSpec
 
 
 class TestDescendingOrdering:

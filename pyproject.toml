@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.1.8"
+version = "0.1.10"
 description = "Pluggable versioned metadata management for incremental multimodal pipelines."
 readme = "README.md"
 authors = [
@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "cyclopts>=4.4.0",
-  "narwhals>=2.14.0",
+  "narwhals>=2.20.0",
   "typing-extensions>=4.0.0",
   "pydantic-core>=2.0.0",
   "polars>=1.35.0",
@@ -47,8 +47,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-polars-map = [
-  "polars-map>=0.2.0",
+map = [
+  "polars-map>=0.2.1",
+  "narwhals-map>=0.1.1",
 ]
 ibis = [
   "pyarrow>=18.0.0",
@@ -114,7 +115,7 @@ mx = "metaxy.cli.app:main"
 Documentation = "https://docs.metaxy.io"
 Repository = "https://github.com/anam-org/metaxy"
 Issues = "https://github.com/anam-org/metaxy/issues"
-Changelog = "https://docs.metaxy.io/latest/changelog"
+Changelog = "https://docs.metaxy.io/stable/changelog"
 
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]
@@ -146,6 +147,8 @@ dev = [
   "ty==0.0.25",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
+  "pytest-benchmark>=5.0.0",
+  "matplotlib>=3.8.0",
   "pandas>=2.3.3",
   "numpy>=2.2.6",
   "sybil>=9.3.0",
@@ -156,7 +159,8 @@ dev = [
   "mkdocs-metaxy",
   "pytest-postgresql>=8.0.0",
   "tach>=0.34.0",
-  "polars-map>=0.2.0",
+  "polars-map>=0.2.1",
+  "narwhals-map>=0.1.1",
 ]
 
 examples = [
@@ -185,40 +189,6 @@ docs = [
   "mkdocs-exclude>=1.0.2",
 ]
 
-[tool.ruff]
-target-version = "py310"
-line-length = 120
-
-[tool.ruff.format]
-docstring-code-format = true
-
-[tool.ruff.lint]
-extend-select = [
-  "I",
-  "TID252",
-  "UP",
-  "ICN001", # enforces common aliases
-  "ICN003", # bans certain from imports
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["src"]
-
-[tool.ruff.lint.flake8-tidy-imports]
-# Ban certain modules from being imported at module level, instead requiring
-# that they're imported lazily (e.g., within a function definition).
-banned-module-level-imports = ["ibis", "duckdb"]
-
-[tool.ruff.lint.flake8-import-conventions]
-# Declare the banned `from` imports.
-banned-from = ["dagster", "narwhals", "polars"]
-
-[tool.ruff.lint.flake8-import-conventions.extend-aliases]
-"metaxy" = "mx"
-"dagster" = "dg"
-"polars" = "pl"
-"narwhals" = "nw"
-
 [tool.uv.workspace]
 members = [
   "examples",
@@ -232,6 +202,7 @@ examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
 metaxy-testing = { workspace = true }
 griffe-pydantic = { git = "https://github.com/danielgafni/griffe-pydantic.git", branch = "feat/configurable-bases" }
+# narwhals-map = { git = "https://github.com/danielgafni/narwhals-map.git" }
 # cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "docstring-parser-skipped-sections" }
 
 [tool.coverage.run]
@@ -248,10 +219,11 @@ omit = [
   "src/metaxy/ext/ray/**",
 
   # very experimental
-  "src/metaxy/migrations/**",
-  "src/metaxy/cli/migrations.py",
   "src/metaxy/cli/graph.py",
   "src/metaxy/cli/graph_diff.py",
+
+  # deprecated
+  "src/metaxy/ext/metadata_stores/**",
 
   # mostly used in experimental CLI
   "src/metaxy/graph/**",
@@ -304,6 +276,7 @@ env = [
 ]
 filterwarnings = [
   "error::polars.exceptions.PerformanceWarning",
+  "error::metaxy._warnings.MovedMetadataStoreWarning",
   "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
   "ignore:Global Metaxy configuration not initialized:UserWarning",
   "ignore::hypothesis.errors.NonInteractiveExampleWarning",

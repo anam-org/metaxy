@@ -5,7 +5,7 @@ description: "Learn how to use DuckDB as a Metaxy metadata store."
 
 # Metaxy + DuckDB
 
-[DuckDB](https://duckdb.org/) is an embedded analytical database. To use Metaxy with DuckDB, configure [`DuckDBMetadataStore`][metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore]. This runs versioning computations natively in DuckDB.
+[DuckDB](https://duckdb.org/) is an embedded analytical database. To use Metaxy with DuckDB, configure [`DuckDBMetadataStore`][metaxy.ext.duckdb.DuckDBMetadataStore]. This runs versioning computations natively in DuckDB.
 
 !!! warning
 
@@ -24,18 +24,18 @@ pip install 'metaxy[duckdb]'
 ## API Reference
 
 <!-- dprint-ignore-start -->
-::: metaxy.ext.metadata_stores.duckdb
+::: metaxy.ext.duckdb
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore
+::: metaxy.ext.duckdb.DuckDBMetadataStore
     options:
       members: false
       heading_level: 3
 
-::: metaxy.ext.metadata_stores.duckdb.ExtensionSpec
+::: metaxy.ext.duckdb.ExtensionSpec
     options:
       members: false
       heading_level: 3
@@ -46,7 +46,7 @@ pip install 'metaxy[duckdb]'
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStoreConfig
+    class: metaxy.ext.duckdb.DuckDBMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 2
 <!-- dprint-ignore-end -->

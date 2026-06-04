@@ -10,21 +10,19 @@ from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias, overload
 
 import pydantic
-from pydantic import BeforeValidator
-
 from metaxy.models.feature import BaseFeature
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.field import FieldSpec
+from pydantic import BeforeValidator
 
 if TYPE_CHECKING:
-    from pydantic.types import JsonValue
-
     from metaxy.models.feature_spec import (
         CoercibleToFeatureDep,
         FeatureDep,
         IDColumns,
     )
     from metaxy.models.types import CoercibleToFeatureKey
+    from pydantic.types import JsonValue
 
 
 # Type aliases

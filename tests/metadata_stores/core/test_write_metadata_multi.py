@@ -16,8 +16,6 @@ from unittest.mock import patch
 
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -28,6 +26,7 @@ from metaxy import (
     MetadataStore,
 )
 from metaxy.utils import collect_to_polars
+from metaxy_testing.models import SampleFeatureSpec
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
-import metaxy as mx
 import polars as pl
 
+import metaxy as mx
 from example_aggregation.features import Audio, SpeakerEmbedding
 
 # Audio samples: 2 speakers with 2 recordings each

@@ -34,6 +34,7 @@ jobs:
       run-windows: true
       run-macos: true
       run-all-checks: true
+      use-tach: false
       dependency-matrix: true
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -96,6 +97,7 @@ jobs:
       environment: github-pages
       docs-version: ${{ needs.check-stable-release.outputs.version }}
       docs-alias: 'stable'
+      docs-default: 'stable'
 
   github-release:
     needs: pypi

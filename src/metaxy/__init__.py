@@ -2,6 +2,7 @@ from pathlib import Path
 
 from metaxy._decorators import experimental, public
 from metaxy._exceptions import ExternalFeatureVersionMismatchError
+from metaxy._hashing import HashAlgorithm
 from metaxy._version import __version__
 from metaxy._warnings import (
     ExternalFeatureVersionMismatchWarning,
@@ -60,7 +61,7 @@ from metaxy.models.types import (
 from metaxy.utils import BufferedMetadataWriter
 from metaxy.utils.exceptions import MetaxyMissingFeatureDependency
 from metaxy.utils.external_features import sync_external_features
-from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement, PolarsIncrement, PolarsLazyIncrement
+from metaxy.versioning.types import Increment, LazyIncrement, PolarsIncrement, PolarsLazyIncrement
 
 
 @public

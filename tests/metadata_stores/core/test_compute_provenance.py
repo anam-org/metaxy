@@ -9,8 +9,6 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, MetadataStore
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -18,6 +16,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
+from metaxy_testing.models import SampleFeatureSpec
 
 
 @pytest.fixture

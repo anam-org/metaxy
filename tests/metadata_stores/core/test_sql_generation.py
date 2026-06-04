@@ -8,16 +8,15 @@ import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
-from metaxy_testing.predicate_cases import PredicateCase, predicate_cases
-from sqlglot import exp, parse_one
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy.metadata_store.utils import (
     _strip_table_qualifiers,
     generate_sql,
     narwhals_expr_to_sql_predicate,
     unquote_identifiers,
 )
+from metaxy_testing.predicate_cases import PredicateCase, predicate_cases
+from sqlglot import exp, parse_one
+from syrupy.assertion import SnapshotAssertion
 
 PREDICATE_CASES = predicate_cases()
 

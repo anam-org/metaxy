@@ -25,13 +25,6 @@ import polars as pl
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
-from metaxy_testing import add_metaxy_provenance_column
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.parametric import (
-    downstream_metadata_strategy,
-    feature_metadata_strategy,
-)
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -52,6 +45,13 @@ from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
+    downstream_metadata_strategy,
+    feature_metadata_strategy,
+)
+
+from metaxy_testing import add_metaxy_provenance_column
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan]
@@ -367,7 +367,7 @@ def _compute_golden_increment_for_optional_deps(
     hash_algorithm: HashAlgorithm,
 ) -> Increment:
     """Compute golden increment using PolarsVersioningEngine for optional dependency tests."""
-    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
     engine = PolarsVersioningEngine(plan=child_plan)
 
@@ -1523,7 +1523,7 @@ class ResolveUpdateTests:
         - DeltaMetadataStore uses append mode, preserving duplicates
         """
         from metaxy import FieldKey, FieldSpec
-        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
         class Upstream(
             SampleFeature,
@@ -1644,7 +1644,7 @@ class ResolveUpdateTests:
         - So 755755 samples in downstream have no matching upstream in local store
         """
         from metaxy import FieldKey, FieldSpec
-        from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+        from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
         class Upstream(
             SampleFeature,

@@ -8,9 +8,6 @@ from typing import Any
 
 import ibis
 import pytest
-from metaxy_testing import HashAlgorithmCases, TempFeatureModule
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import (
     FeatureDep,
     FeatureKey,
@@ -21,6 +18,9 @@ from metaxy import (
 )
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
+
+from metaxy_testing import HashAlgorithmCases, TempFeatureModule
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
 
@@ -100,7 +100,7 @@ def config(tmp_path_factory):
         project="test",
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={"database": data_dir / "test.duckdb"},
             )
         },

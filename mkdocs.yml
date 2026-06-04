@@ -310,6 +310,7 @@ nav:
       - Introducing Metaxy (2026): publications/2026-introducing-metaxy/paper.md
     - Slides:
       - Introducing Metaxy (2026): slides/2026-introducing-metaxy/intro.md
+      - Metaxy Applications (2026): https://georgheiler.com/event/vdsg-optimizing-multimodal-ai-pipelines-with-metaxy/
   - 📝 Changelog: changelog.md
 
 extra:
@@ -318,6 +319,9 @@ extra:
       link: https://github.com/anam-org/metaxy
   version:
     provider: mike
+    default:
+      - stable
+  pre_release: !ENV [DOCS_PRERELEASE, false]
 
 validation:
   omitted_files: warn

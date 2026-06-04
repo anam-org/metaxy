@@ -5,12 +5,11 @@ import time
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureDep, FeatureSpec, FieldsMapping
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
 
 class FilterTests:

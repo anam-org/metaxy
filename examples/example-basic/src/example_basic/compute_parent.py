@@ -9,8 +9,9 @@ The VERSION environment variable determines which feature versions are loaded.
 Run with VERSION=1 initially, then VERSION=2 to see recomputation.
 """
 
-import metaxy as mx
 import polars as pl
+
+import metaxy as mx
 from metaxy.metadata_store.system import SystemTableStorage
 
 # Initialize metaxy (loads config and discovers features)

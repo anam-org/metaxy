@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Any
 
 import dagster as dg
+import metaxy as mx
+import metaxy.ext.dagster as mxd
 import pytest
 from pytest_cases import fixture, parametrize_with_cases
 
-import metaxy as mx
-import metaxy.ext.dagster as mxd
 from tests.conftest import require_fixture
 
 
@@ -20,7 +20,7 @@ class DagsterStoreConfigCases:
     def case_delta(self, tmp_path: Path) -> mx.StoreConfig:
         """DeltaMetadataStore configuration."""
         return mx.StoreConfig(
-            type="metaxy.ext.metadata_stores.delta.DeltaMetadataStore",
+            type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
             config={"root_path": tmp_path / "delta_store"},
         )
 
@@ -28,7 +28,7 @@ class DagsterStoreConfigCases:
     def case_clickhouse(self, request) -> mx.StoreConfig:
         """ClickHouseMetadataStore configuration."""
         return mx.StoreConfig(
-            type="metaxy.ext.metadata_stores.clickhouse.ClickHouseMetadataStore",
+            type="metaxy.ext.clickhouse.ClickHouseMetadataStore",
             config={"connection_string": require_fixture(request, "clickhouse_db")},
         )
 
@@ -60,7 +60,7 @@ def resources(metaxy_config: mx.MetaxyConfig) -> dict[str, Any]:
 def duckdb_in_memory_resources() -> Iterator[dict[str, Any]]:
     """Dagster resources configured with an in-memory DuckDB metadata store."""
     store_config = mx.StoreConfig(
-        type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+        type="metaxy.ext.duckdb.DuckDBMetadataStore",
         config={"database": ":memory:"},
     )
     with mx.MetaxyConfig(stores={"dev": store_config}).use():

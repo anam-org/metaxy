@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any, TypeAlias, cast, overload
 
 import narwhals as nw
@@ -26,36 +25,17 @@ def find_map_columns(df: Frame) -> list[str]:
     """Return column names that have a Map type in the underlying frame.
 
     Returns empty list when enable_map_datatype is not set.
-    Inspects the native backend (Polars, Arrow, Ibis) for Map-typed columns.
+    Uses narwhals-map's Map dtype for detection across all backends.
     """
     from metaxy.config import MetaxyConfig
 
     if not MetaxyConfig.get().enable_map_datatype:
         return []
 
-    if df.implementation == nw.Implementation.POLARS:
-        native = df.to_native()
-        schema = native.collect_schema() if isinstance(native, pl.LazyFrame) else native.schema
-        return [name for name, dtype in schema.items() if _is_polars_map_dtype(dtype)]
+    from narwhals_map import Map
 
-    if df.implementation == nw.Implementation.PYARROW:
-        import pyarrow as pa
-
-        table = cast(pa.Table, df.to_native())
-        return [field.name for field in table.schema if pa.types.is_map(field.type)]
-
-    if df.implementation == nw.Implementation.IBIS:
-        import ibis
-        import ibis.expr.datatypes as dt
-
-        table = cast(ibis.Table, df.to_native())
-        return [name for name, dtype in table.schema().items() if isinstance(dtype, dt.Map)]
-
-    warnings.warn(
-        f"cannot identify Map columns for unsupported narwhals implementation {df.implementation}",
-        stacklevel=2,
-    )
-    return []
+    schema = df.collect_schema() if isinstance(df, nw.LazyFrame) else df.schema
+    return [name for name, dtype in schema.items() if isinstance(dtype, Map)]
 
 
 def has_polars_map_columns(df: pl.DataFrame | pl.LazyFrame) -> bool:
@@ -88,7 +68,7 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
         map_cols = find_map_columns(frame)
         result = frame.collect().to_polars() if isinstance(frame, nw.LazyFrame) else frame.to_polars()
         if map_cols:
-            from metaxy.versioning._arrow_map import convert_maps_to_polars_map
+            from metaxy.utils._arrow_map import convert_maps_to_polars_map
 
             result = convert_maps_to_polars_map(result, columns=map_cols)
         return result
@@ -101,22 +81,10 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
 
 @public
 def collect_to_arrow(frame: PolarsCompatibleFrame) -> pa.Table:
-    """Convert a frame into a PyArrow Table.
-
-    If the dataframe is a Polars dataframe, it converts `polars_map.Map`
-        extension columns to native Arrow `MapArray` when `MetaxyConfig.enable_map_datatype` is set.
-    """
+    """Convert a frame into a PyArrow Table."""
     nw_frame = nw.from_native(frame) if isinstance(frame, (pl.DataFrame, pl.LazyFrame)) else frame
     collected = nw_frame.collect() if isinstance(nw_frame, nw.LazyFrame) else nw_frame
-    table: pa.Table = collected.to_arrow()
-
-    if collected.implementation == nw.Implementation.POLARS:
-        from metaxy.versioning._arrow_map import convert_extension_maps_to_native, has_extension_map_columns
-
-        if has_extension_map_columns(table):
-            table = convert_extension_maps_to_native(table)
-
-    return table
+    return collected.to_arrow()
 
 
 def lazy_frame_to_polars(frame: nw.LazyFrame[Any]) -> pl.LazyFrame:
@@ -158,7 +126,7 @@ def switch_implementation_to_polars(frame: FrameT) -> FrameT:
 
     # Reconstruct polars_map.Map columns that were lost during conversion
     if map_columns:
-        from metaxy.versioning._arrow_map import convert_maps_to_polars_map
+        from metaxy.utils._arrow_map import convert_maps_to_polars_map
 
         native = result.to_native()
         native = convert_maps_to_polars_map(native, columns=map_columns)

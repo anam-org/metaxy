@@ -6,8 +6,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from metaxy.config import MetaxyConfig
 from mkdocs.structure.files import Files
+
+from metaxy.config import MetaxyConfig
 
 log = logging.getLogger("mkdocs")
 
@@ -73,6 +74,32 @@ _ensure_metaxy_config()
 def _run(command: list[str]) -> None:
     """Run a subprocess command with error handling."""
     subprocess.run(command, check=True, cwd=SLIDES_DIR)
+
+
+def _relativize_slidev_dist(output_dir: Path) -> None:
+    """Make Slidev assets work below mike version prefixes."""
+    replacements = (
+        ('"/assets/', '"./assets/'),
+        ('"/img/', '"./img/'),
+        ("'/assets/", "'./assets/"),
+        ("'/img/", "'./img/"),
+        ("url(/assets/", "url(./assets/"),
+        ("url(/img/", "url(./img/"),
+        ('=>"/"+', '=>"./"+'),
+        ('return"/"+', 'return"./"+'),
+        ('"/#/', '"./#/'),
+        ("'/#/", "'./#/"),
+    )
+
+    for path in output_dir.rglob("*"):
+        if path.suffix not in {".html", ".js", ".css"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        updated = text
+        for old, new in replacements:
+            updated = updated.replace(old, new)
+        if updated != text:
+            path.write_text(updated, encoding="utf-8")
 
 
 def _remove_stale_slide_root_index() -> None:
@@ -173,7 +200,7 @@ def _select_runner(bun_path: str | None) -> list[str]:
         "--out",
         SLIDES_OUTPUT,
         "--base",
-        "./",
+        "/",
     ]
 
     if bun_path:
@@ -245,6 +272,7 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
         log.info("Building Slidev slides into %s.", output_dir)
         runner = _select_runner(bun_path=bun)
         _run(runner)
+        _relativize_slidev_dist(output_dir)
         if _should_sync_docs_mounts():
             _sync_docs_mounts()
     finally:

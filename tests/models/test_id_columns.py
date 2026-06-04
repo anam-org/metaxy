@@ -6,10 +6,8 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.pytest_helpers import add_metaxy_system_columns
-
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
@@ -18,7 +16,8 @@ from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.pytest_helpers import add_metaxy_system_columns
 
 
 # Simple test joiner that uses VersioningEngine

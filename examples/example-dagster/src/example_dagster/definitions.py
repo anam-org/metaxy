@@ -1,5 +1,6 @@
-import metaxy as mx
 import narwhals as nw
+
+import metaxy as mx
 
 # --8<-- [start:feature-definitions]
 # Upstream feature
@@ -32,8 +33,9 @@ class AudioClusters(mx.BaseFeature, spec=downstream_spec):
 
 
 import dagster as dg
-import metaxy.ext.dagster as mxd
 import polars as pl
+
+import metaxy.ext.dagster as mxd
 
 
 # --8<-- [start:root-asset]

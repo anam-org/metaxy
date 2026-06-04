@@ -35,7 +35,7 @@ def lock(
         ),
     ] = "",
 ):
-    """Generate `metaxy.lock` file with [external feature definitions](https://docs.metaxy.io/latest/guide/concepts/definitions/external-features/) fetched from the metadata store.
+    """Generate `metaxy.lock` file with [external feature definitions](https://docs.metaxy.io/stable/guide/concepts/definitions/external-features/) fetched from the metadata store.
 
     Analyzes the current feature graph to find external dependencies, then fetches
     those feature definitions (and their transitive dependencies) from the metadata store.

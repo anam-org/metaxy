@@ -8,15 +8,14 @@ from datetime import datetime, timedelta, timezone
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.predicate_cases import PredicateCase, predicate_cases
-
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DELETED_AT,
     METAXY_PROVENANCE_BY_FIELD,
 )
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.predicate_cases import PredicateCase, predicate_cases
 
 PREDICATE_CASES = predicate_cases()
 

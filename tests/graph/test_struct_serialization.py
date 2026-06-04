@@ -1,7 +1,6 @@
 """Tests for GraphData and GraphDiff struct serialization."""
 
 import pytest
-
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,

@@ -2,16 +2,15 @@
 
 from pathlib import Path
 
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from syrupy.assertion import SnapshotAssertion
-
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from syrupy.assertion import SnapshotAssertion
 
 
 def test_load_snapshot_data_computes_proper_field_versions(

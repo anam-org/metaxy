@@ -3,10 +3,10 @@
 from pathlib import Path
 
 import pytest
-
 from metaxy import HashAlgorithm
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store import MetadataStore
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -37,7 +37,7 @@ class TestDuckDBDuckLake(
 ):
     @pytest.fixture
     def store(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+        from metaxy.ext.duckdb import DuckLakeConfig
 
         return DuckDBMetadataStore(
             database=tmp_path / "test_ducklake.duckdb",
@@ -53,7 +53,7 @@ class TestDuckDBDuckLake(
 
     @pytest.fixture
     def named_store(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+        from metaxy.ext.duckdb import DuckLakeConfig
 
         return DuckDBMetadataStore(
             database=tmp_path / "test_ducklake.duckdb",

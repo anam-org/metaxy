@@ -1,0 +1,9 @@
+extend = "../ruff.toml"
+
+[lint]
+extend-ignore = [
+  "TID253",
+]
+
+[lint.isort]
+known-first-party = ["metaxy_testing/src"]

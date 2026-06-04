@@ -1,6 +1,6 @@
 # Feature Definitions
 
-See full documentation: https://docs.metaxy.io/latest/guide/concepts/definitions/features/
+See full documentation: https://docs.metaxy.io/stable/guide/concepts/definitions/features/
 
 !!! critical
 

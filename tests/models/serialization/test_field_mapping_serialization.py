@@ -2,8 +2,6 @@
 
 import json
 
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import FieldKey
 from metaxy.models.fields_mapping import (
     AllFieldsMapping,
@@ -13,6 +11,7 @@ from metaxy.models.fields_mapping import (
     FieldsMappingType,
     SpecificFieldsMapping,
 )
+from syrupy.assertion import SnapshotAssertion
 
 
 def test_default_fields_mapping_serialization_basic():

@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, TypeVar
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import IntoFrameT
-
 from metaxy._hashing import get_hash_truncation_length
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -14,6 +12,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
+from narwhals.typing import IntoFrameT
 
 if TYPE_CHECKING:
     from metaxy import CoercibleToFeatureKey
@@ -93,8 +92,8 @@ def add_metaxy_provenance_column(
         Polars DataFrame with metaxy_provenance column added
     """
     from metaxy import coerce_to_feature_key
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.feature import current_graph
-    from metaxy.versioning.polars import PolarsVersioningEngine
     from metaxy.versioning.types import HashAlgorithm as HashAlgo
 
     if hash_algorithm is None:

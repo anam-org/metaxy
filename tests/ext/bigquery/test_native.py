@@ -4,11 +4,10 @@ from unittest.mock import MagicMock, Mock, patch
 
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeature
-
-from metaxy.ext.metadata_stores.bigquery import BigQueryMetadataStore
+from metaxy.ext.bigquery import BigQueryMetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing.models import SampleFeature
 
 
 @pytest.fixture
@@ -139,7 +138,7 @@ def test_bigquery_config_instantiation():
     config = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -163,7 +162,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_default = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -179,7 +178,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_farmhash = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -197,7 +196,7 @@ def test_bigquery_config_with_hash_algorithm():
     config_md5 = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "test-project",
                     "dataset_id": "test_dataset",
@@ -219,7 +218,7 @@ def test_bigquery_config_with_fallback_stores():
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "dev-project",
                     "dataset_id": "dev_dataset",
@@ -227,7 +226,7 @@ def test_bigquery_config_with_fallback_stores():
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.ext.metadata_stores.bigquery.BigQueryMetadataStore",
+                type="metaxy.ext.bigquery.BigQueryMetadataStore",
                 config={
                     "project_id": "prod-project",
                     "dataset_id": "prod_dataset",

@@ -12,8 +12,6 @@ from datetime import datetime
 
 import polars as pl
 import pytest
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -24,6 +22,7 @@ from metaxy import (
 )
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.types import FieldKey
+from syrupy.assertion import SnapshotAssertion
 
 
 @pytest.mark.parametrize(
@@ -43,8 +42,7 @@ def test_provenance_snapshot(
     Uses fixed input data and PolarsVersioningEngine with xxhash64 for determinism.
     """
     import narwhals as nw
-    from metaxy_testing.models import SampleFeatureSpec
-
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.constants import (
         METAXY_CREATED_AT,
         METAXY_DATA_VERSION,
@@ -54,8 +52,8 @@ def test_provenance_snapshot(
         METAXY_PROVENANCE,
         METAXY_PROVENANCE_BY_FIELD,
     )
-    from metaxy.versioning.polars import PolarsVersioningEngine
     from metaxy.versioning.types import HashAlgorithm
+    from metaxy_testing.models import SampleFeatureSpec
 
     graph = FeatureGraph()
 

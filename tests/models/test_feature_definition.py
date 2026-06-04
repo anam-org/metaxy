@@ -1,7 +1,6 @@
 """Tests for FeatureDefinition model."""
 
 import pytest
-
 from metaxy import CoercibleToFieldKey, FeatureDefinition
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.field import FieldSpec
@@ -10,9 +9,8 @@ from metaxy.models.types import FeatureKey, FieldKey
 
 def test_feature_definition_from_feature_class(graph):
     """Test creating FeatureDefinition from a Feature class."""
-    from metaxy_testing.models import SampleFeatureSpec
-
     from metaxy import BaseFeature
+    from metaxy_testing.models import SampleFeatureSpec
 
     # Create a feature class directly for this test
     class TestFeature(
@@ -174,9 +172,8 @@ class TestGetFeatureByKey:
 
     def test_get_feature_by_key_returns_definition(self, graph):
         """Test that get_feature_by_key returns a FeatureDefinition."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         import metaxy as mx
+        from metaxy_testing.models import SampleFeatureSpec
 
         class TestFeature(
             mx.BaseFeature,
@@ -195,9 +192,8 @@ class TestGetFeatureByKey:
 
     def test_get_feature_by_key_coerces_list(self, graph):
         """Test that get_feature_by_key accepts list of strings."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         import metaxy as mx
+        from metaxy_testing.models import SampleFeatureSpec
 
         class AnotherFeature(
             mx.BaseFeature,
@@ -216,9 +212,8 @@ class TestGetFeatureByKey:
 
     def test_get_feature_by_key_coerces_string(self, graph):
         """Test that get_feature_by_key accepts slashed string."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         import metaxy as mx
+        from metaxy_testing.models import SampleFeatureSpec
 
         class StringFeature(
             mx.BaseFeature,
@@ -315,9 +310,8 @@ def test_is_external_property_true_for_external():
 
 def test_is_external_property_false_for_regular(graph):
     """Regular definitions report is_external=False."""
-    from metaxy_testing.models import SampleFeatureSpec
-
     import metaxy as mx
+    from metaxy_testing.models import SampleFeatureSpec
 
     class RegularFeature(
         mx.BaseFeature,
@@ -386,10 +380,9 @@ class TestExternalProvenanceOverride:
 
     def test_regular_feature_has_provenance_override_raises(self, graph):
         """Accessing has_provenance_override on non-external features raises."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         import metaxy as mx
         from metaxy.utils.exceptions import MetaxyInvariantViolationError
+        from metaxy_testing.models import SampleFeatureSpec
 
         class RegularFeatureProvCheck(
             mx.BaseFeature,

@@ -21,7 +21,7 @@ from metaxy.models.constants import (
 from metaxy.models.feature_spec import FeatureSpec
 
 if TYPE_CHECKING:
-    from metaxy.metadata_store.ibis import IbisMetadataStore
+    from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 
 
 # System Tables

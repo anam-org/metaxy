@@ -7,9 +7,8 @@ import polars as pl
 import pytest
 from ibis.common.collections import FrozenOrderedDict
 from ibis.common.temporal import IntervalUnit
-
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 from metaxy.metadata_store.utils import is_local_path
 
 

@@ -10,8 +10,6 @@ they are tested via their source files.
 import re
 
 import dagster as dg
-import metaxy.ext.dagster as mxd
-from metaxy.models.feature import FeatureGraph
 from sybil import Sybil
 from sybil.evaluators.python import PythonEvaluator
 from sybil.parsers.abstract.codeblock import AbstractCodeBlockParser
@@ -23,6 +21,8 @@ from sybil.parsers.markdown.skip import SkipParser
 from sybil.typing import Evaluator
 
 import metaxy as mx
+import metaxy.ext.dagster as mxd
+from metaxy.models.feature import FeatureGraph
 
 
 # Workaround for pytest-cases compatibility issue
@@ -159,7 +159,6 @@ def sybil_setup(namespace):
     banned in documentation examples.
     """
     import narwhals as nw
-    from metaxy.models import feature as feature_module
     from metaxy_testing.doctest_fixtures import (
         ChildFeature,
         DocsStoreFixtures,
@@ -168,6 +167,8 @@ def sybil_setup(namespace):
         register_doctest_fixtures,
         sample_data,
     )
+
+    from metaxy.models import feature as feature_module
 
     # Create isolated graph and enter its context
     isolated_graph = FeatureGraph()

@@ -3,13 +3,6 @@
 import polars as pl
 import pytest
 from hypothesis import given, settings
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.parametric import (
-    downstream_metadata_strategy,
-    feature_metadata_strategy,
-    upstream_metadata_strategy,
-)
-
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
@@ -19,6 +12,12 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
 from metaxy.versioning.types import HashAlgorithm
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import (
+    downstream_metadata_strategy,
+    feature_metadata_strategy,
+    upstream_metadata_strategy,
+)
 
 # System columns expected in test-generated metadata (excludes metaxy_materialization_id
 # which is only added when an external materialization ID is provided)

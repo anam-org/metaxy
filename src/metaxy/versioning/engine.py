@@ -22,6 +22,7 @@ from metaxy.models.types import FeatureKey
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 from metaxy.versioning.renamed_df import RenamedDataFrame
 from metaxy.versioning.types import HashAlgorithm
+from metaxy.versioning.validation import validate_column_configuration
 
 # Lazy imports to avoid circular dependencies
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ class VersioningEngine(ABC):
     """
 
     def __init__(self, plan: FeaturePlan):
+        validate_column_configuration(plan)
         self.plan = plan
 
     @classmethod
@@ -216,23 +218,43 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
-    @staticmethod
-    @abstractmethod
     def build_struct_column(
+        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Build a metadata column from existing columns.
 
         Args:
             df: Input DataFrame.
-            struct_name: Name for the new struct column.
+            struct_name: Name for the new metadata column.
             field_columns: Mapping of struct field names to source column names.
 
         Returns:
-            DataFrame with the new struct column added.
+            DataFrame with a new Struct column, or a Map column when
+            ``enable_map_datatype`` is set.
         """
+        if MetaxyConfig.get().enable_map_datatype:
+            return self.build_map_column(df, struct_name, field_columns)
+
+        return cast(
+            FrameT,
+            df.with_columns(  # ty: ignore[invalid-argument-type]
+                nw.struct([nw.col(src_col).alias(field_name) for field_name, src_col in field_columns.items()]).alias(
+                    struct_name
+                )
+            ),
+        )
+
+    @staticmethod
+    @abstractmethod
+    def build_map_column(
+        df: FrameT,
+        col_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build a native Map metadata column from existing columns."""
         raise NotImplementedError()
 
     @abstractmethod
@@ -299,16 +321,14 @@ class VersioningEngine(ABC):
             ]
             return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
 
-        # Map path: use native polars-map expressions (preserves laziness)
-        import polars as pl
-        import polars_map  # noqa: F401  # registers .map accessor
+        # Map path: use narwhals-map expressions (works across Polars, Arrow, Ibis)
+        import narwhals_map  # noqa: F401  # registers .map namespace on nw.Expr
 
-        native = df.to_native()  # ty: ignore[invalid-argument-type]
         exprs = [
-            pl.col(col_name).map.get(field_name).cast(pl.String).alias(out_col)  # ty: ignore[unresolved-attribute]
+            nw.col(col_name).map.get(field_name).cast(nw.String).alias(out_col)  # ty: ignore[unresolved-attribute]
             for field_name, out_col in field_mapping.items()
         ]
-        return cast(FrameT, nw.from_native(native.with_columns(exprs)))
+        return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
 
     def aggregate_metadata_columns(
         self,

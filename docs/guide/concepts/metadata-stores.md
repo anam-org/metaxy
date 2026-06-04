@@ -22,7 +22,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 1. Using the Python API directly:
 
     ```py
-    from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
+    from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 
     store = DeltaMetadataStore(root_path="/path/to/directory")
     ```
@@ -33,7 +33,7 @@ There are generally two ways to create a `MetadataStore`. We are going to demons
 
     ```toml title="metaxy.toml"
     [stores.dev]
-    type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+    type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
     root_path = "/path/to/directory"
     ```
 
@@ -275,12 +275,12 @@ Example Metaxy configuration:
 
 ```toml title="metaxy.toml"
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 root_path = "${HOME}/.metaxy/dev"
 fallback_stores = ["prod"]
 
 [stores.prod]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 root_path = "s3://my-prod-bucket/metaxy"
 ```
 
@@ -314,9 +314,9 @@ enable_map_datatype = true
 
 !!! warning "Experimental"
 
-    `Map` datatype support requires the [`polars-map`](https://pypi.org/project/polars-map/) package to be installed and is experimental.
+    `Map` datatype support is experimental and requires the [`narwhals-map`](https://pypi.org/project/narwhals-map/) and [`polars-map`](https://pypi.org/project/polars-map/) packages to be installed. They are shipped with `metaxy[map]` extra.
 
-When enabled, Metaxy keeps Arrow `Map` columns intact across operations (including reads and writes), avoiding unnecessary conversions and preserving user-defined `Map` columns.
+When enabled, Metaxy uses [`narwhals-map`](https://pypi.org/project/narwhals-map/) to represent `Map` columns as `narwhals_map.Map` across all dataframe backends. Metadata stores consume and return Narwhals frames with `narwhals_map.Map` and `polars_map.Map` columns, keeping `Map` columns intact across operations and preserving user-defined `Map` columns.
 
 The following metadata stores support `Map` columns when `enable_map_datatype` is enabled:
 
@@ -327,11 +327,11 @@ The following metadata stores support `Map` columns when `enable_map_datatype` i
 
 !!! info "`Map` support in Narwhals"
 
-    It's not there yet. See the [Narwhals tracking issue](https://github.com/narwhals-dev/narwhals/issues/3525) for more details.
+    Narwhals does not have native `Map` support yet (see the [tracking issue](https://github.com/narwhals-dev/narwhals/issues/3525)). Metaxy uses [`narwhals-map`](https://pypi.org/project/narwhals-map/) to bridge this gap, providing a `narwhals_map.Map` datatype and the `nw.Expr.map` namespace for working with `Map` columns across backends.
 
 !!! tip "Collecting results with `Map` columns"
 
-    Standard `narwhals.DataFrame.to_polars()` and other conversion methods are not aware of the `polars_map.Map` datatype and will lose `Map` columns from other dataframe backends.
+    Standard `narwhals.DataFrame.to_polars()` and other conversion methods are not aware of `narwhals_map.Map` columns and will lose them when converting from other dataframe backends.
     Use [`collect_to_polars`][metaxy.utils.collect_to_polars] or [`collect_to_arrow`][metaxy.utils.collect_to_arrow] to materialize lazy frames while preserving `Map` columns.
 
     <!-- skip next -->

@@ -3,7 +3,6 @@ import pandas as pd
 import polars as pl
 import pyarrow as pa
 import pytest
-
 from metaxy.utils import collect_to_arrow
 
 
@@ -56,7 +55,7 @@ def test_narwhals_pandas_dataframe() -> None:
 def polars_map_df() -> pl.DataFrame:
     """Build a Polars DataFrame with a polars_map.Map column from a native Arrow map."""
     pytest.importorskip("polars_map")
-    from metaxy.versioning._arrow_map import convert_maps_to_polars_map
+    from metaxy.utils._arrow_map import convert_maps_to_polars_map
 
     arrow_table = pa.table(
         {

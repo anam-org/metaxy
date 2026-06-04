@@ -15,10 +15,6 @@ import polars as pl
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
-from metaxy_testing.models import SampleFeature, SampleFeatureSpec
-from metaxy_testing.parametric import downstream_metadata_strategy
-from syrupy.assertion import SnapshotAssertion
-
 from metaxy import (
     BaseFeature,
     FeatureDep,
@@ -37,6 +33,9 @@ from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
 from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm, Increment
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+from metaxy_testing.parametric import downstream_metadata_strategy
+from syrupy.assertion import SnapshotAssertion
 
 if TYPE_CHECKING:
     pass
@@ -452,12 +451,11 @@ def generate_plan_data(
         Tuple of (upstream_data dict, golden_downstream DataFrame)
     """
     import narwhals as nw
-
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.constants import (
         METAXY_CREATED_AT,
         METAXY_FEATURE_VERSION,
     )
-    from metaxy.versioning.polars import PolarsVersioningEngine
 
     graph, upstream_features, child_feature_plan = feature_plan_config
 
@@ -715,8 +713,7 @@ def compute_golden_increment(
         Golden Increment computed by PolarsVersioningEngine
     """
     import narwhals as nw
-
-    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
     engine = PolarsVersioningEngine(plan=child_feature_plan)
 
@@ -859,7 +856,6 @@ class VersioningTests:
                 from datetime import timedelta
 
                 import polars as pl
-
                 from metaxy.models.constants import METAXY_CREATED_AT
 
                 # Add older duplicates to upstream metadata
@@ -984,7 +980,6 @@ class VersioningTests:
                 from datetime import datetime, timezone
 
                 import polars as pl
-
                 from metaxy.models.constants import METAXY_CREATED_AT
 
                 # Create duplicates with SAME timestamp for ALL samples
@@ -1052,7 +1047,6 @@ class VersioningTests:
                 from datetime import timedelta
 
                 import polars as pl
-
                 from metaxy.models.constants import METAXY_CREATED_AT
 
                 # Add older duplicates for only HALF of the samples in each upstream
@@ -1292,7 +1286,7 @@ class VersioningTests:
         assert len(result_off) > 0, "Expected non-empty versioning result"
 
         from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.versioning._arrow_map import convert_structs_to_maps
+        from metaxy.utils._arrow_map import convert_structs_to_maps
 
         # Normalize result_off's Struct _by_field columns to polars_map.Map so
         # both frames have the same type and values can be compared.

@@ -11,7 +11,7 @@ description: "Learn how to store Metaxy metadata in DuckLake."
 
 [DuckLake](https://ducklake.select) is a modern LakeHouse which uses a relational database as metadata catalog.
 
-Currently, there is only one production-ready implementation of DuckLake - via DuckDB, and the built-in [`DuckDBMetadataStore`][metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore] can be configured to use DuckLake as its storage backend. Learn more about the DuckDB integration [here](/integrations/metadata-stores/databases/duckdb.md).
+Currently, there is only one production-ready implementation of DuckLake - via DuckDB, and the built-in [`DuckDBMetadataStore`][metaxy.ext.duckdb.DuckDBMetadataStore] can be configured to use DuckLake as its storage backend. Learn more about the DuckDB integration [here](/integrations/metadata-stores/databases/duckdb.md).
 
 ## Configuration
 
@@ -31,7 +31,7 @@ Each piece of configuration that manages secrets (e.g. PostgreSQL, S3, R2, GCS) 
 
     ```toml
     [stores.dev]
-    type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+    type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
     [stores.dev.config.ducklake.catalog]
     type = "postgres"
@@ -54,50 +54,50 @@ Each piece of configuration that manages secrets (e.g. PostgreSQL, S3, R2, GCS) 
 See the [DuckLake example](/examples/ducklake.md) to learn more.
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.DuckLakeConfig
+    class: metaxy.ext.duckdb.DuckLakeConfig
     path_prefix: stores.dev.config.ducklake
     header_level: 3
 
 ### Catalog Backends
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.DuckDBCatalogConfig
+    class: metaxy.ext.duckdb.DuckDBCatalogConfig
     path_prefix: stores.dev.config.ducklake.catalog
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.SQLiteCatalogConfig
+    class: metaxy.ext.duckdb.SQLiteCatalogConfig
     path_prefix: stores.dev.config.ducklake.catalog
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.PostgresCatalogConfig
+    class: metaxy.ext.duckdb.PostgresCatalogConfig
     path_prefix: stores.dev.config.ducklake.catalog
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.MotherDuckCatalogConfig
+    class: metaxy.ext.duckdb.MotherDuckCatalogConfig
     path_prefix: stores.dev.config.ducklake.catalog
     header_level: 4
 
 ### Storage Backends
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.LocalStorageConfig
+    class: metaxy.ext.duckdb.LocalStorageConfig
     path_prefix: stores.dev.config.ducklake.storage
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.S3StorageConfig
+    class: metaxy.ext.duckdb.S3StorageConfig
     path_prefix: stores.dev.config.ducklake.storage
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.R2StorageConfig
+    class: metaxy.ext.duckdb.R2StorageConfig
     path_prefix: stores.dev.config.ducklake.storage
     header_level: 4
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.ducklake.GCSStorageConfig
+    class: metaxy.ext.duckdb.GCSStorageConfig
     path_prefix: stores.dev.config.ducklake.storage
     header_level: 4

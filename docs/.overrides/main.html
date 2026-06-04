@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block outdated %}
+  {%- if not config.extra.pre_release -%}
+    You're viewing documentation for an <strong>outdated version</strong>.
+    <a href="{{ '../' ~ base_url }}">
+      <strong>Switch to the latest stable release</strong>
+    </a>
+  {%- endif -%}
+{% endblock %}
+
+{% block announce %}
+  {%- if config.extra.pre_release -%}
+    You're viewing <strong>unstable</strong> documentation for the development version.
+    <a href="{{ '../' ~ base_url }}">
+      <strong>Switch to the latest stable release</strong>
+    </a>
+  {%- endif -%}
+{% endblock %}

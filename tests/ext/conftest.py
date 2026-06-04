@@ -7,11 +7,11 @@ from typing import Any
 
 import boto3
 import pytest
+from metaxy import BaseFeature
+from metaxy.config import MetaxyConfig
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
-from metaxy import BaseFeature
-from metaxy.config import MetaxyConfig
 from tests.metadata_stores.shared.resolve_update import (
     FeatureGraphCases,
     FeaturePlanOutput,

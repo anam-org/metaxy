@@ -27,7 +27,7 @@ metaxy_examples = "mkdocs_metaxy.examples.markdown_ext:makeExtension"
 metaxy_mcp = "mkdocs_metaxy.mcp.markdown_ext:makeExtension"
 
 [tool.ruff]
-extend = "../../pyproject.toml"
+extend = "../../ruff.toml"
 
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]

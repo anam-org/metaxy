@@ -28,41 +28,45 @@ component_management:
         - src/metaxy/**
         - "!src/metaxy/ext/**"
 
+    - component_id: ibis
+      name: Ibis
+      paths:
+        - src/metaxy/ext/ibis/**
+
     - component_id: duckdb
       name: DuckDB
       paths:
-        - src/metaxy/ext/metadata_stores/duckdb.py
-        - src/metaxy/ext/metadata_stores/ducklake.py
+        - src/metaxy/ext/duckdb/**
 
     - component_id: clickhouse
       name: ClickHouse
       paths:
-        - src/metaxy/ext/metadata_stores/clickhouse.py
+        - src/metaxy/ext/clickhouse/**
 
     - component_id: postgres
       name: PostgreSQL
       paths:
-        - src/metaxy/ext/metadata_stores/postgresql.py
+        - src/metaxy/ext/postgresql/**
 
     - component_id: delta
       name: Delta Lake
       paths:
-        - src/metaxy/ext/metadata_stores/delta.py
+        - src/metaxy/ext/polars/handlers/delta.py
 
     - component_id: iceberg
       name: Iceberg
       paths:
-        - src/metaxy/ext/metadata_stores/iceberg.py
+        - src/metaxy/ext/polars/handlers/iceberg.py
 
     - component_id: lancedb
       name: LanceDB
       paths:
-        - src/metaxy/ext/metadata_stores/lancedb.py
+        - src/metaxy/ext/lancedb/**
 
     - component_id: bigquery
       name: BigQuery
       paths:
-        - src/metaxy/ext/metadata_stores/bigquery.py
+        - src/metaxy/ext/bigquery/**
 
     - component_id: dagster
       name: Dagster

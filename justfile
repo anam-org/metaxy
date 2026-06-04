@@ -89,8 +89,14 @@ init-example name:
 changelog-preview:
     git cliff --unreleased --strip all
 
-changelog:
-    git cliff -o CHANGELOG.md
+changelog tag="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -n "{{tag}}" ]; then
+        git cliff --tag "{{tag}}" -o CHANGELOG.md
+    else
+        git cliff -o CHANGELOG.md
+    fi
 
 # Create a release (version auto-detected from commits, or manually specified)
 release bump="" message="":
@@ -107,6 +113,17 @@ release bump="" message="":
         git cliff --tag "$version" --with-tag-message "{{message}}" -o CHANGELOG.md
     else
         git cliff --tag "$version" -o CHANGELOG.md
+    fi
+
+# Create an annotated tag for the current version, opening the editor for the message
+tag message="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="v$(uv version --short)"
+    if [ -n "{{message}}" ]; then
+        git tag --annotate --cleanup=verbatim --message "{{message}}" --edit "$version"
+    else
+        git tag --annotate --cleanup=verbatim --message "" --edit "$version"
     fi
 
 # Update snapshots for all examples or specific examples

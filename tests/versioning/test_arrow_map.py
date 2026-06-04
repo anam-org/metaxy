@@ -5,13 +5,11 @@ from __future__ import annotations
 import polars as pl
 import pyarrow as pa
 import pytest
-from polars_map import Map
-
-from metaxy.versioning._arrow_map import (
-    convert_extension_maps_to_native,
+from metaxy.utils._arrow_map import (
     convert_maps_to_polars_map,
     convert_structs_to_maps,
 )
+from polars_map import Map
 
 MAP_STR_STR = Map(pl.String(), pl.String())
 
@@ -75,10 +73,11 @@ class TestConvertStructsToMaps:
         assert result["metaxy_provenance_by_field"].map.get("beta").to_list() == ["b1", "b2"]  # ty: ignore[unresolved-attribute]
 
     def test_roundtrip_to_native_arrow_map(self, struct_df: pl.DataFrame) -> None:
-        """Struct → polars_map.Map → Arrow extension → native Arrow MapArray."""
+        """Struct → polars_map.Map → native Arrow MapArray via polars_map.to_arrow()."""
+        import polars_map
+
         converted = convert_structs_to_maps(struct_df, columns=["metaxy_provenance_by_field"])
-        arrow_table = converted.to_arrow()
-        native = convert_extension_maps_to_native(arrow_table)
+        native = polars_map.to_arrow(converted)
 
         map_field = native.schema.field("metaxy_provenance_by_field")
         assert pa.types.is_map(map_field.type)

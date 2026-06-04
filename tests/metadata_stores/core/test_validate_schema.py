@@ -8,10 +8,9 @@ import narwhals as nw
 import polars as pl
 import pyarrow as pa
 import pytest
-from polars_map import Map
-
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import _is_map_column
+from polars_map import Map
 
 
 @pytest.fixture

@@ -8,8 +8,6 @@ from datetime import datetime, timedelta, timezone
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey, FeatureSpec, FieldDep, FieldKey, FieldSpec
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.warnings import MetaxyColumnMissingWarning
@@ -26,6 +24,7 @@ from metaxy.models.constants import (
     METAXY_UPDATED_AT,
 )
 from metaxy.utils import collect_to_polars
+from metaxy_testing.models import SampleFeatureSpec
 
 
 class WriteTests:

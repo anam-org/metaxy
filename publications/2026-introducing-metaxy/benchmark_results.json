@@ -1,0 +1,843 @@
+{
+  "machine_info": {
+    "node": "geo",
+    "processor": "arm",
+    "machine": "arm64",
+    "python_compiler": "Clang 21.1.1 ",
+    "python_implementation": "CPython",
+    "python_implementation_version": "3.10.19",
+    "python_version": "3.10.19",
+    "python_build": [
+      "main",
+      "Oct  9 2025 15:25:03"
+    ],
+    "release": "25.4.0",
+    "system": "Darwin",
+    "cpu": {
+      "python_version": "3.10.19.final.0 (64 bit)",
+      "cpuinfo_version": [
+        9,
+        0,
+        0
+      ],
+      "cpuinfo_version_string": "9.0.0",
+      "arch": "ARM_8",
+      "bits": 64,
+      "count": 12,
+      "arch_string_raw": "arm64",
+      "brand_raw": "Apple M2 Max"
+    }
+  },
+  "commit_info": {
+    "id": "235f6f8809173cd08c3de4202d3c6e223035712f",
+    "time": "2026-04-22T12:19:41+02:00",
+    "author_time": "2026-04-22T11:21:44+02:00",
+    "dirty": false,
+    "project": "metaxy",
+    "branch": "04-22-chore_publications_refine_benchmarking"
+  },
+  "benchmarks": [
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[simple-10_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[simple-10_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 10000
+      },
+      "param": "simple-10_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.4806874169735238,
+        "max": 0.8620928329764865,
+        "mean": 0.5465241542900913,
+        "stddev": 0.11588156999946791,
+        "rounds": 10,
+        "median": 0.4972361044783611,
+        "iqr": 0.056586959020933136,
+        "q1": 0.4895749999850523,
+        "q3": 0.5461619590059854,
+        "iqr_outliers": 1,
+        "stddev_outliers": 1,
+        "outliers": "1;1",
+        "ld15iqr": 0.4806874169735238,
+        "hd15iqr": 0.8620928329764865,
+        "ops": 1.8297452951534268,
+        "total": 5.4652415429009125,
+        "data": [
+          0.8620928329764865,
+          0.4806874169735238,
+          0.4895749999850523,
+          0.5461619590059854,
+          0.5311901249806397,
+          0.49449762498261407,
+          0.5862665000022389,
+          0.48462575001758523,
+          0.4999745839741081,
+          0.4901697500026785
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[simple-100_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[simple-100_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 100000
+      },
+      "param": "simple-100_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.5289344170014374,
+        "max": 0.8038085830048658,
+        "mean": 0.5826123956037919,
+        "stddev": 0.0811833945026504,
+        "rounds": 10,
+        "median": 0.5587761454953579,
+        "iqr": 0.0464750420069322,
+        "q1": 0.5361792909970973,
+        "q3": 0.5826543330040295,
+        "iqr_outliers": 1,
+        "stddev_outliers": 1,
+        "outliers": "1;1",
+        "ld15iqr": 0.5289344170014374,
+        "hd15iqr": 0.8038085830048658,
+        "ops": 1.7164070101248834,
+        "total": 5.826123956037918,
+        "data": [
+          0.8038085830048658,
+          0.5289344170014374,
+          0.5425567500060424,
+          0.5361792909970973,
+          0.5599499579984695,
+          0.5988840000063647,
+          0.5576023329922464,
+          0.5813322910107672,
+          0.534222000016598,
+          0.5826543330040295
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[simple-1_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[simple-1_000_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 1000000
+      },
+      "param": "simple-1_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 1.0123337499971967,
+        "max": 1.6011571249982808,
+        "mean": 1.2251220622973051,
+        "stddev": 0.2024799690522079,
+        "rounds": 10,
+        "median": 1.1718652495037531,
+        "iqr": 0.313918582018232,
+        "q1": 1.0568749590020161,
+        "q3": 1.370793541020248,
+        "iqr_outliers": 0,
+        "stddev_outliers": 3,
+        "outliers": "3;0",
+        "ld15iqr": 1.0123337499971967,
+        "hd15iqr": 1.6011571249982808,
+        "ops": 0.8162451977436728,
+        "total": 12.251220622973051,
+        "data": [
+          1.0123337499971967,
+          1.1243890410114545,
+          1.0604315410018899,
+          1.0343841659778263,
+          1.0568749590020161,
+          1.3245906669762917,
+          1.2193414579960518,
+          1.446924374991795,
+          1.6011571249982808,
+          1.370793541020248
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[simple-10_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[simple-10_000_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 10000000
+      },
+      "param": "simple-10_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 6.4154904169845395,
+        "max": 9.91167679100181,
+        "mean": 7.8108415456983495,
+        "stddev": 1.175546478937664,
+        "rounds": 10,
+        "median": 7.79789562500082,
+        "iqr": 2.0307029180112295,
+        "q1": 6.563718666002387,
+        "q3": 8.594421584013617,
+        "iqr_outliers": 0,
+        "stddev_outliers": 5,
+        "outliers": "5;0",
+        "ld15iqr": 6.4154904169845395,
+        "hd15iqr": 9.91167679100181,
+        "ops": 0.12802717788465806,
+        "total": 78.1084154569835,
+        "data": [
+          7.29252175000147,
+          8.057341125007952,
+          8.289467958005844,
+          9.91167679100181,
+          7.5384501249936875,
+          6.563718666002387,
+          6.44612316598068,
+          8.594421584013617,
+          8.999203874991508,
+          6.4154904169845395
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[wide-10_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[wide-10_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 10000
+      },
+      "param": "wide-10_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.6827674579981249,
+        "max": 0.9604495000094175,
+        "mean": 0.7735689832974458,
+        "stddev": 0.0790286942306819,
+        "rounds": 10,
+        "median": 0.7637628130032681,
+        "iqr": 0.0813018339977134,
+        "q1": 0.7175517079886049,
+        "q3": 0.7988535419863183,
+        "iqr_outliers": 1,
+        "stddev_outliers": 2,
+        "outliers": "2;1",
+        "ld15iqr": 0.6827674579981249,
+        "hd15iqr": 0.9604495000094175,
+        "ops": 1.292709534109499,
+        "total": 7.735689832974458,
+        "data": [
+          0.8270263749873266,
+          0.9604495000094175,
+          0.7612465840065852,
+          0.766279041999951,
+          0.7423972910037264,
+          0.7988535419863183,
+          0.6827674579981249,
+          0.7777405419910792,
+          0.7013777910033241,
+          0.7175517079886049
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[wide-100_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[wide-100_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 100000
+      },
+      "param": "wide-100_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.8327016660186928,
+        "max": 0.9025696250027977,
+        "mean": 0.865797520702472,
+        "stddev": 0.02340906963335836,
+        "rounds": 10,
+        "median": 0.8615176870080177,
+        "iqr": 0.03606558300089091,
+        "q1": 0.8466159169911407,
+        "q3": 0.8826814999920316,
+        "iqr_outliers": 0,
+        "stddev_outliers": 4,
+        "outliers": "4;0",
+        "ld15iqr": 0.8327016660186928,
+        "hd15iqr": 0.9025696250027977,
+        "ops": 1.155004462462126,
+        "total": 8.65797520702472,
+        "data": [
+          0.8576000420143828,
+          0.8587243330257479,
+          0.8327016660186928,
+          0.8944487079861574,
+          0.8466159169911407,
+          0.8643110409902874,
+          0.8826814999920316,
+          0.9025696250027977,
+          0.8391246669925749,
+          0.8791977080109064
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[wide-1_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[wide-1_000_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 1000000
+      },
+      "param": "wide-1_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 1.8255061660020147,
+        "max": 2.0369595829979517,
+        "mean": 1.9081663165008649,
+        "stddev": 0.06940644484221273,
+        "rounds": 10,
+        "median": 1.9096434579987545,
+        "iqr": 0.11526266697910614,
+        "q1": 1.8415294580045156,
+        "q3": 1.9567921249836218,
+        "iqr_outliers": 0,
+        "stddev_outliers": 2,
+        "outliers": "2;0",
+        "ld15iqr": 1.8255061660020147,
+        "hd15iqr": 2.0369595829979517,
+        "ops": 0.5240633331342776,
+        "total": 19.08166316500865,
+        "data": [
+          1.8520982499758247,
+          2.0369595829979517,
+          1.8255061660020147,
+          1.9485715830232948,
+          1.8396786670200527,
+          1.8891257909999695,
+          1.9612404170038644,
+          1.8415294580045156,
+          1.9567921249836218,
+          1.9301611249975394
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_new",
+      "name": "test_resolve_new[wide-10_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_new[wide-10_000_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 10000000
+      },
+      "param": "wide-10_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 11.379043957975227,
+        "max": 13.0251049590006,
+        "mean": 12.070471908294712,
+        "stddev": 0.5973036274406442,
+        "rounds": 10,
+        "median": 11.87084145800327,
+        "iqr": 0.7851518749666866,
+        "q1": 11.651198125007795,
+        "q3": 12.436349999974482,
+        "iqr_outliers": 0,
+        "stddev_outliers": 4,
+        "outliers": "4;0",
+        "ld15iqr": 11.379043957975227,
+        "hd15iqr": 13.0251049590006,
+        "ops": 0.08284680231207942,
+        "total": 120.70471908294712,
+        "data": [
+          11.651198125007795,
+          11.443325750005897,
+          11.735854541999288,
+          13.0251049590006,
+          11.744433124986244,
+          11.379043957975227,
+          11.997249791020295,
+          12.305272582976613,
+          12.436349999974482,
+          12.98688625000068
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[simple-10_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[simple-10_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 10000
+      },
+      "param": "simple-10_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.5327797909849323,
+        "max": 0.638732917024754,
+        "mean": 0.5853157083009137,
+        "stddev": 0.032175571355777643,
+        "rounds": 10,
+        "median": 0.5907913334958721,
+        "iqr": 0.04811137498472817,
+        "q1": 0.5580981250095647,
+        "q3": 0.6062094999942929,
+        "iqr_outliers": 0,
+        "stddev_outliers": 3,
+        "outliers": "3;0",
+        "ld15iqr": 0.5327797909849323,
+        "hd15iqr": 0.638732917024754,
+        "ops": 1.7084796902219734,
+        "total": 5.853157083009137,
+        "data": [
+          0.5968529580277391,
+          0.5887497499934398,
+          0.5457177080097608,
+          0.6124493749812245,
+          0.5580981250095647,
+          0.6062094999942929,
+          0.5327797909849323,
+          0.5928329169983044,
+          0.638732917024754,
+          0.5807340419851243
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[simple-100_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[simple-100_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 100000
+      },
+      "param": "simple-100_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.6520366669865325,
+        "max": 1.6408091660123318,
+        "mean": 0.8009369001025334,
+        "stddev": 0.2964236671482307,
+        "rounds": 10,
+        "median": 0.7115924170066137,
+        "iqr": 0.044952541997190565,
+        "q1": 0.6966393330076244,
+        "q3": 0.7415918750048149,
+        "iqr_outliers": 1,
+        "stddev_outliers": 1,
+        "outliers": "1;1",
+        "ld15iqr": 0.6520366669865325,
+        "hd15iqr": 1.6408091660123318,
+        "ops": 1.248537806001925,
+        "total": 8.009369001025334,
+        "data": [
+          0.7114237500063609,
+          0.7188949580013286,
+          0.6811884590133559,
+          0.7048356249870267,
+          1.6408091660123318,
+          0.6520366669865325,
+          0.7501880839990918,
+          0.7117610840068664,
+          0.7415918750048149,
+          0.6966393330076244
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[simple-1_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[simple-1_000_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 1000000
+      },
+      "param": "simple-1_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 1.2064515000092797,
+        "max": 1.7291171659890097,
+        "mean": 1.342473495795275,
+        "stddev": 0.16706346524012675,
+        "rounds": 10,
+        "median": 1.270811041496927,
+        "iqr": 0.21209491699119098,
+        "q1": 1.2431767079979181,
+        "q3": 1.4552716249891091,
+        "iqr_outliers": 0,
+        "stddev_outliers": 1,
+        "outliers": "1;0",
+        "ld15iqr": 1.2064515000092797,
+        "hd15iqr": 1.7291171659890097,
+        "ops": 0.7448936631762735,
+        "total": 13.42473495795275,
+        "data": [
+          1.2899522079969756,
+          1.2064515000092797,
+          1.207126541994512,
+          1.4552716249891091,
+          1.3106565840134863,
+          1.2516698749968782,
+          1.2431767079979181,
+          1.2448187919799238,
+          1.4864939579856582,
+          1.7291171659890097
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[simple-10_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[simple-10_000_000]",
+      "params": {
+        "scenario_fixture": "simple_bench_graph",
+        "n": 10000000
+      },
+      "param": "simple-10_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 6.420465417002561,
+        "max": 8.439771333010867,
+        "mean": 7.285267933600698,
+        "stddev": 0.5855610506190452,
+        "rounds": 10,
+        "median": 7.1334434379969025,
+        "iqr": 0.5534636249940377,
+        "q1": 6.950854416994844,
+        "q3": 7.504318041988881,
+        "iqr_outliers": 1,
+        "stddev_outliers": 3,
+        "outliers": "3;1",
+        "ld15iqr": 6.420465417002561,
+        "hd15iqr": 8.439771333010867,
+        "ops": 0.1372633112624255,
+        "total": 72.85267933600699,
+        "data": [
+          7.149710041994695,
+          7.4955085839901585,
+          7.1056955410167575,
+          6.420465417002561,
+          8.439771333010867,
+          6.950854416994844,
+          7.933511791983619,
+          6.735667334025493,
+          7.11717683399911,
+          7.504318041988881
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[wide-10_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[wide-10_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 10000
+      },
+      "param": "wide-10_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 0.7548187499924097,
+        "max": 0.9120292500010692,
+        "mean": 0.82982779169688,
+        "stddev": 0.046615679188978444,
+        "rounds": 10,
+        "median": 0.8339705624821363,
+        "iqr": 0.04729566600872204,
+        "q1": 0.8080982090032194,
+        "q3": 0.8553938750119414,
+        "iqr_outliers": 0,
+        "stddev_outliers": 3,
+        "outliers": "3;0",
+        "ld15iqr": 0.7548187499924097,
+        "hd15iqr": 0.9120292500010692,
+        "ops": 1.2050693047471235,
+        "total": 8.2982779169688,
+        "data": [
+          0.8503098329820205,
+          0.8553938750119414,
+          0.7548187499924097,
+          0.8080982090032194,
+          0.8647708749922458,
+          0.8156307080062106,
+          0.849878874985734,
+          0.9120292500010692,
+          0.769285292015411,
+          0.8180622499785386
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[wide-100_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[wide-100_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 100000
+      },
+      "param": "wide-100_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 1.013010041002417,
+        "max": 1.134545667009661,
+        "mean": 1.0893157583021094,
+        "stddev": 0.04041729715183079,
+        "rounds": 10,
+        "median": 1.097949916496873,
+        "iqr": 0.06412354100029916,
+        "q1": 1.0610887920192908,
+        "q3": 1.12521233301959,
+        "iqr_outliers": 0,
+        "stddev_outliers": 4,
+        "outliers": "4;0",
+        "ld15iqr": 1.013010041002417,
+        "hd15iqr": 1.134545667009661,
+        "ops": 0.9180074669613486,
+        "total": 10.893157583021093,
+        "data": [
+          1.1314592499984428,
+          1.0976882500108331,
+          1.134545667009661,
+          1.0447518749861047,
+          1.113601374992868,
+          1.0735884169989731,
+          1.12521233301959,
+          1.0610887920192908,
+          1.013010041002417,
+          1.0982115829829127
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[wide-1_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[wide-1_000_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 1000000
+      },
+      "param": "wide-1_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 2.2313538329908624,
+        "max": 2.580110832990613,
+        "mean": 2.393825899902731,
+        "stddev": 0.11421187867124655,
+        "rounds": 10,
+        "median": 2.4082062499946915,
+        "iqr": 0.17853270898922347,
+        "q1": 2.2799430830054916,
+        "q3": 2.458475791994715,
+        "iqr_outliers": 0,
+        "stddev_outliers": 4,
+        "outliers": "4;0",
+        "ld15iqr": 2.2313538329908624,
+        "hd15iqr": 2.580110832990613,
+        "ops": 0.4177413236445613,
+        "total": 23.938258999027312,
+        "data": [
+          2.260176165989833,
+          2.458475791994715,
+          2.527754917013226,
+          2.4258562089817133,
+          2.580110832990613,
+          2.425991000025533,
+          2.3905562910076696,
+          2.2313538329908624,
+          2.3580408750276547,
+          2.2799430830054916
+        ],
+        "iterations": 1
+      }
+    },
+    {
+      "group": "resolve_stale",
+      "name": "test_resolve_stale[wide-10_000_000]",
+      "fullname": "publications/2026-introducing-metaxy/test_benchmark.py::test_resolve_stale[wide-10_000_000]",
+      "params": {
+        "scenario_fixture": "wide_bench_graph",
+        "n": 10000000
+      },
+      "param": "wide-10_000_000",
+      "extra_info": {},
+      "options": {
+        "disable_gc": false,
+        "timer": "perf_counter",
+        "min_rounds": 5,
+        "max_time": 1.0,
+        "min_time": 5e-06,
+        "warmup": false
+      },
+      "stats": {
+        "min": 14.16594000000623,
+        "max": 16.897934167005587,
+        "mean": 15.290334362501744,
+        "stddev": 1.0523463766720318,
+        "rounds": 10,
+        "median": 14.69543250001152,
+        "iqr": 1.978688458999386,
+        "q1": 14.554242665995844,
+        "q3": 16.53293112499523,
+        "iqr_outliers": 0,
+        "stddev_outliers": 4,
+        "outliers": "4;0",
+        "ld15iqr": 14.16594000000623,
+        "hd15iqr": 16.897934167005587,
+        "ops": 0.06540079348770918,
+        "total": 152.90334362501744,
+        "data": [
+          16.647262833022978,
+          14.716184292017715,
+          14.389195582974935,
+          14.59781608398771,
+          14.674680708005326,
+          15.727156167005887,
+          16.53293112499523,
+          14.554242665995844,
+          16.897934167005587,
+          14.16594000000623
+        ],
+        "iterations": 1
+      }
+    }
+  ],
+  "datetime": "2026-04-22T11:59:42.701285+00:00",
+  "version": "5.2.3"
+}

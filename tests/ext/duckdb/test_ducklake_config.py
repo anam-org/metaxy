@@ -7,11 +7,8 @@ import polars as pl
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
-from polars.testing import assert_frame_equal
-from polars.testing.parametric import column, dataframes
-
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
-from metaxy.ext.metadata_stores.ducklake import (
+from metaxy.ext.duckdb import (
+    DuckDBMetadataStore,
     DuckLakeAttachmentManager,
     DuckLakeConfig,
     GCSStorageConfig,
@@ -24,6 +21,8 @@ from metaxy.ext.metadata_stores.ducklake import (
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars
+from polars.testing import assert_frame_equal
+from polars.testing.parametric import column, dataframes
 
 
 # Hypothesis strategies for generating metadata dataframes using Polars parametric testing

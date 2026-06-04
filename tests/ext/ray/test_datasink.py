@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import metaxy as mx
 import polars as pl
 import pyarrow as pa
 import pytest
 import ray
-from metaxy_testing import RAY_FEATURES_MODULE
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from metaxy.utils import collect_to_polars
 from polars_map import Map
 
-import metaxy as mx
-from metaxy.ext.metadata_stores.delta import DeltaMetadataStore
-from metaxy.utils import collect_to_polars
+from metaxy_testing import RAY_FEATURES_MODULE
 
 from .conftest import FEATURE_KEY, make_test_data
 
@@ -149,7 +149,7 @@ auto_create_tables = true
 entrypoints = ["{RAY_FEATURES_MODULE}"]
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_root}"

@@ -13,12 +13,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._packaging import detect_project_from_package
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeatureSpec
 
 if TYPE_CHECKING:
     from .conftest import FakePackageFactory
@@ -156,7 +155,7 @@ class TestConfigProjectLoading:
 project = "my_metaxy_project"
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_path}"
@@ -180,7 +179,7 @@ name = "test"
 project = "pyproject_metaxy"
 
 [tool.metaxy.stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 
 [tool.metaxy.stores.dev.config]
 root_path = "{delta_path}"
@@ -200,7 +199,7 @@ root_path = "{delta_path}"
 project = "file_project"
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.delta.DeltaMetadataStore"
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
 
 [stores.dev.config]
 root_path = "{delta_path}"

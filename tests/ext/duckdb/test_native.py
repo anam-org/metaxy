@@ -5,17 +5,17 @@ from typing import Any
 
 import polars as pl
 import pytest
-
 from metaxy import HashAlgorithm
 from metaxy.config import MetaxyConfig, StoreConfig
-from metaxy.ext.metadata_stores.duckdb import DuckDBMetadataStore
+from metaxy.ext.duckdb import DuckDBMetadataStore
+from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 from metaxy.metadata_store import MetadataStore
-from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
+
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -86,7 +86,6 @@ class TestDuckDBPreCreatedMapTable:
     def test_write_to_precreated_map_table(self, tmp_path: Path, test_features: dict[str, Any]) -> None:
         """Writing to a table pre-created with MAP(VARCHAR, VARCHAR) columns works."""
         import duckdb
-
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
 
@@ -140,10 +139,9 @@ class TestDuckDBPreCreatedMapTable:
     ) -> None:
         """Writing to a table with a user-defined MAP column pre-created via SQL."""
         import duckdb
-        from polars_map import Map
-
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
+        from polars_map import Map
 
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
@@ -205,7 +203,6 @@ class TestDuckDBPreCreatedMapTable:
     def test_write_ibis_frame_to_precreated_map_table(self, tmp_path: Path, test_features: dict[str, Any]) -> None:
         """Writing an Ibis-backed frame to a MAP table stays lazy (no materialization)."""
         import duckdb
-
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
 
@@ -269,7 +266,7 @@ def test_store_from_config_gets_name(tmp_path: Path) -> None:
     config = MetaxyConfig(
         stores={
             "my_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={"database": str(tmp_path / "test.duckdb")},
             )
         }
@@ -514,7 +511,7 @@ def test_duckdb_get_filtered_lazy_does_not_require_list_tables(
 
 def test_duckdb_ducklake_integration(tmp_path: Path, test_graph: FeatureGraph, test_features: dict[str, Any]) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
-    from metaxy.ext.metadata_stores.ducklake import DuckLakeConfig
+    from metaxy.ext.duckdb import DuckLakeConfig
 
     db_path = tmp_path / "ducklake.duckdb"
     metadata_path = tmp_path / "ducklake_catalog.duckdb"
@@ -549,7 +546,7 @@ def test_duckdb_config_instantiation() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "config": {
@@ -575,7 +572,7 @@ def test_duckdb_config_with_extensions() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "extensions": ["json"],
@@ -601,7 +598,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     config = MetaxyConfig(
         stores={
             "duckdb_store": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "hash_algorithm": "md5",
@@ -623,14 +620,14 @@ def test_duckdb_config_with_fallback_stores() -> None:
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                     "fallback_stores": ["prod"],
                 },
             ),
             "prod": StoreConfig(
-                type="metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore",
+                type="metaxy.ext.duckdb.DuckDBMetadataStore",
                 config={
                     "database": ":memory:",
                 },

@@ -1,11 +1,10 @@
 """Tests for SampleFeatureSpec validation, especially duplicate field keys."""
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-
 from metaxy import BaseFeature
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
+from metaxy_testing.models import SampleFeatureSpec
 
 
 def test_duplicate_field_keys_raises_error():
@@ -120,9 +119,8 @@ def test_field_keys_with_similar_names():
 
 def test_feature_spec_requires_id_columns():
     """Test that FeatureSpec (production API) requires id_columns parameter."""
-    from pydantic import ValidationError
-
     from metaxy.models.feature_spec import FeatureSpec
+    from pydantic import ValidationError
 
     # This should fail - id_columns is required
     with pytest.raises(ValidationError, match="id_columns"):

@@ -8,7 +8,7 @@ description: "PostgreSQL as a metadata store backend."
 !!! warning "Experimental"
     This functionality is experimental.
 
-Metadata managed by Metaxy can be stored in [`PostgreSQLMetadataStore`][metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStore].
+Metadata managed by Metaxy can be stored in [`PostgreSQLMetadataStore`][metaxy.ext.postgresql.PostgreSQLMetadataStore].
 It uses [PostgreSQL](https://www.postgresql.org/).
 This metadata store backend is limited in comparison to others, because PostgreSQL doesn't support map-like data types, and Metaxy's versioning engine can't run in the database.
 The local Polars versioning engine is used instead.
@@ -21,17 +21,17 @@ This results in the following limitations for [`MetadataStore.resolve_update`][m
 
 PostgreSQL doesn't have native map-like or struct types, so it's recommended to store Metaxy's versioning columns as `JSONB`.
 As a convenience feature, `PostgreSQLMetadataStore` will automatically json-encodes `pl.Struct` columns when writing metadata and parse them to `pl.Struct` when reading.
-This behavior can be disabled with [`auto_cast_struct_for_jsonb`](#metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStoreConfig.auto_cast_struct_for_jsonb) configuration parameter. This setting only affects user-defined columns, while Metaxy's versioning columns are always encoded/parsed.
+This behavior can be disabled with [`auto_cast_struct_for_jsonb`](#metaxy.ext.postgresql.PostgreSQLMetadataStoreConfig.auto_cast_struct_for_jsonb) configuration parameter. This setting only affects user-defined columns, while Metaxy's versioning columns are always encoded/parsed.
 
 ## API Reference
 
-::: metaxy.ext.metadata_stores.postgresql
+::: metaxy.ext.postgresql
     options:
       members: false
       show_root_heading: true
       heading_level: 2
 
-::: metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStore
+::: metaxy.ext.postgresql.PostgreSQLMetadataStore
     options:
       inherited_members: false
       heading_level: 3
@@ -39,6 +39,6 @@ This behavior can be disabled with [`auto_cast_struct_for_jsonb`](#metaxy.ext.me
 ## Configuration
 
 ::: metaxy-config
-    class: metaxy.ext.metadata_stores.postgresql.PostgreSQLMetadataStoreConfig
+    class: metaxy.ext.postgresql.PostgreSQLMetadataStoreConfig
     path_prefix: stores.dev.config
     header_level: 3

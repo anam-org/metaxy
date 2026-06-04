@@ -9,12 +9,10 @@
     "export-ppt": "slidev export --format pptx --timeout 240000"
   },
   "dependencies": {
-    "@slidev/cli": "^52.6.0",
-    "@slidev/theme-default": "latest",
-    "@slidev/theme-seriph": "latest",
-    "vue": "^3.5.22"
+    "@slidev/cli": "^52.14.2",
+    "vue": "^3.5.32"
   },
   "devDependencies": {
-    "playwright-chromium": "^1.56.1"
+    "playwright-chromium": "^1.59.1"
   }
 }

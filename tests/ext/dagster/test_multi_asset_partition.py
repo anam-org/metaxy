@@ -15,11 +15,10 @@ Test Scenario:
 from typing import Any
 
 import dagster as dg
-import polars as pl
-import pytest
-
 import metaxy as mx
 import metaxy.ext.dagster as mxd
+import polars as pl
+import pytest
 
 
 @pytest.fixture

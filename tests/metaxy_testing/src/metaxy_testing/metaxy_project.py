@@ -944,13 +944,13 @@ store = "dev"
 auto_create_tables = true
 
 [stores.dev]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = "{dev_db_path}"
 
 [stores.staging]
-type = "metaxy.ext.metadata_stores.duckdb.DuckDBMetadataStore"
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
 
 [stores.staging.config]
 database = "{staging_db_path}"
@@ -1126,9 +1126,9 @@ database = "{staging_db_path}"
                 For example: {"sample_uid": [1, 2, 3, 4, 5]}
         """
         import polars as pl
-
         from metaxy.metadata_store.system import SystemTableStorage
         from metaxy.models.types import FeatureKey
+
         from metaxy_testing.parametric.metadata import feature_metadata_strategy
 
         # Parse feature key

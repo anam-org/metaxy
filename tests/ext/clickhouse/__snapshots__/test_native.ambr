@@ -1,0 +1,17 @@
+# serializer version: 1
+# name: TestClickHouse.test_arrow_schema_after_roundtrip
+  dict({
+    'metaxy_created_at': 'timestamp[us, tz=UTC]',
+    'metaxy_data_version': 'string',
+    'metaxy_data_version_by_field': 'map<string, string>',
+    'metaxy_deleted_at': 'timestamp[us, tz=UTC]',
+    'metaxy_feature_version': 'string',
+    'metaxy_materialization_id': 'string',
+    'metaxy_project_version': 'string',
+    'metaxy_provenance': 'string',
+    'metaxy_provenance_by_field': 'map<string, string>',
+    'metaxy_updated_at': 'timestamp[us, tz=UTC]',
+    'sample_uid': 'int64',
+    'tags': 'map<string, string>',
+  })
+# ---

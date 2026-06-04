@@ -5,10 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from metaxy_testing.models import SampleFeatureSpec
-from pydantic import ValidationError
-from typing_extensions import assert_type
-
 from metaxy import BaseFeature
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.types import (
@@ -16,6 +12,9 @@ from metaxy.models.types import (
     FieldKey,
     # FieldKeyType,
 )
+from metaxy_testing.models import SampleFeatureSpec
+from pydantic import ValidationError
+from typing_extensions import assert_type
 
 if TYPE_CHECKING:
     pass
@@ -470,10 +469,9 @@ class TestFeatureSpecIntegration:
 
     def test_complete_feature_spec_with_list_keys(self):
         """Test complete SampleFeatureSpec with all keys created using list format."""
-        from metaxy_testing.models import SampleFeatureSpec
-
         from metaxy.models.feature_spec import FeatureDep
         from metaxy.models.field import FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
 
         spec = SampleFeatureSpec(
             key=FeatureKey(["my", "complete", "feature"]),
@@ -534,9 +532,8 @@ class TestCoercibleToFeatureKey:
 
     def test_coercible_in_pydantic_model_with_string(self):
         """Test ValidatedFeatureKey in Pydantic model accepts string."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFeatureKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
@@ -547,9 +544,8 @@ class TestCoercibleToFeatureKey:
 
     def test_coercible_in_pydantic_model_with_list(self):
         """Test ValidatedFeatureKey in Pydantic model accepts list."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFeatureKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
@@ -560,9 +556,8 @@ class TestCoercibleToFeatureKey:
 
     def test_coercible_in_pydantic_model_with_feature_key(self):
         """Test ValidatedFeatureKey in Pydantic model accepts FeatureKey."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFeatureKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
@@ -574,9 +569,8 @@ class TestCoercibleToFeatureKey:
 
     def test_coercible_in_pydantic_model_with_feature_class(self):
         """Test ValidatedFeatureKey in Pydantic model accepts Feature class."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFeatureKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
@@ -663,9 +657,8 @@ class TestCoercibleToFieldKey:
 
     def test_coercible_in_pydantic_model_with_string(self):
         """Test ValidatedFieldKey in Pydantic model accepts string."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFieldKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFieldKey
@@ -676,9 +669,8 @@ class TestCoercibleToFieldKey:
 
     def test_coercible_in_pydantic_model_with_list(self):
         """Test ValidatedFieldKey in Pydantic model accepts list."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFieldKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFieldKey
@@ -689,9 +681,8 @@ class TestCoercibleToFieldKey:
 
     def test_coercible_in_pydantic_model_with_field_key(self):
         """Test ValidatedFieldKey in Pydantic model accepts FieldKey."""
-        from pydantic import BaseModel
-
         from metaxy.models.types import ValidatedFieldKey
+        from pydantic import BaseModel
 
         class MyModel(BaseModel):
             key: ValidatedFieldKey

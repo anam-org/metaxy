@@ -9,7 +9,6 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
-
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,
