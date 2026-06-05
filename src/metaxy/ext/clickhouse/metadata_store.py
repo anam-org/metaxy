@@ -10,6 +10,7 @@ from pydantic import Field
 
 if TYPE_CHECKING:
     import ibis
+    import pyarrow as pa
     from ibis.expr.schema import Schema as IbisSchema
 
     from metaxy.metadata_store.base import MetadataStore
@@ -567,7 +568,41 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         pl_df = pl_df.with_columns(transformations)
 
-        return nw.from_native(pl_df)
+        # The insert ships this column as Arrow (`FORMAT Arrow`); ClickHouse reads the Arrow schema
+        # server-side, then casts the resulting array into the target `Map(K, V)` column. PyArrow
+        # marks a list's element field as nullable. Since ClickHouse 26.4 ("Nullable(Tuple) reading
+        # for Arrow") the reader honors that flag and materializes the element struct as
+        # `Array(Nullable(Tuple(...)))`; earlier versions dropped the element nullability and read a
+        # plain `Array(Tuple(...))`. The array-to-Map cast only accepts the non-nullable form, so the
+        # inner struct is forced non-nullable here. This is also the accurate representation: `Map`
+        # keys and values are non-nullable and null entries are already dropped above.
+        arrow_table = pl_df.to_arrow()
+        for col_name, _, _ in cols_to_transform:
+            arrow_table = self._make_map_list_non_nullable(arrow_table, col_name)
+
+        return nw.from_native(arrow_table)
+
+    @staticmethod
+    def _make_map_list_non_nullable(arrow_table: "pa.Table", col_name: str) -> "pa.Table":
+        """Rewrite a `List[Struct{key, value}]` column so its inner struct and fields are non-nullable.
+
+        ClickHouse's Arrow reader maps a nullable list element to `Nullable(Tuple(...))`, and its
+        array-to-`Map` cast rejects `Array(Nullable(Tuple(...)))`, requiring `Array(Tuple(...))`.
+        """
+        import pyarrow as pa
+
+        field = arrow_table.schema.field(col_name)
+        list_type = field.type
+        struct_type = list_type.value_type
+        non_nullable_struct = pa.struct([pa.field(f.name, f.type, nullable=False) for f in struct_type])
+        item_field = pa.field(list_type.value_field.name, non_nullable_struct, nullable=False)
+        new_list_type = pa.large_list(item_field) if pa.types.is_large_list(list_type) else pa.list_(item_field)
+
+        return arrow_table.set_column(
+            arrow_table.schema.get_field_index(col_name),
+            pa.field(col_name, new_list_type),
+            arrow_table.column(col_name).cast(new_list_type),
+        )
 
     def ibis_type_to_polars(self, ibis_type: Any) -> Any:
         """Convert Ibis data type to Polars data type, with ClickHouse Map support.
