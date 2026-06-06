@@ -43,7 +43,7 @@ When a researcher modifies one step, Metaxy identifies exactly which records are
 This selective approach lets downstream systems avoid redundant GPU work when a change does not affect a record, while preserving complete lineage for reproducibility.
 
 The library treats the *metadata store* (which persists version entries), the *compute engine* (which evaluates feature code over dataframes), and the *orchestrator* (which schedules execution) as pluggable abstractions.
-Concrete integrations for the widely used Python ecosystem ship with the package (@ibis; @narwhals; @dagster; @ray), so that any compatible orchestrator can consume Metaxy's record-level diffs and schedule only the necessary GPU workloads.
+Concrete integrations for the widely used Python ecosystem ship with the package [@ibis; @narwhals; @dagster; @ray], so that any compatible orchestrator can consume Metaxy's record-level diffs and schedule only the necessary GPU workloads.
 
 # Statement of Need
 
@@ -75,10 +75,10 @@ The target audience includes ML engineers working with multimodal data, MLOps te
 # State of the Field
 
 Several tools address aspects of feature management, but none, to our knowledge, provide field-level dependency tracking at record granularity as a standalone metadata layer.
-DVC (@dvc) versions datasets at the file level, treating each file as an opaque artifact without tracking individual records or fields within it.
-Feast (@feast) focuses on feature definition, materialization, and online serving. Recent Feast releases include DAG-based feature computation, but Feast does not expose field-level provenance for propagating version changes and deciding which downstream records require recomputation after an upstream modification.
-Apache Hamilton (@hamilton) builds dataflows from Python functions and can report lineage over the resulting DAG, typically at the level of nodes, columns, and dataframe outputs. It does not maintain per-record, per-field provenance for selective downstream invalidation.
-DataChain (@datachain) combines metadata management with a Python-native data processing framework and supports delta processing over new or changed records. However, its incremental model is tied to dataset processing within that framework rather than to a standalone field-level dependency graph that can drive recomputation across multiple compute backends.
+DVC [@dvc] versions datasets at the file level, treating each file as an opaque artifact without tracking individual records or fields within it.
+Feast [@feast] focuses on feature definition, materialization, and online serving. Recent Feast releases include DAG-based feature computation, but Feast does not expose field-level provenance for propagating version changes and deciding which downstream records require recomputation after an upstream modification.
+Apache Hamilton [@hamilton] builds dataflows from Python functions and can report lineage over the resulting DAG, typically at the level of nodes, columns, and dataframe outputs. It does not maintain per-record, per-field provenance for selective downstream invalidation.
+DataChain [@datachain] combines metadata management with a Python-native data processing framework and supports delta processing over new or changed records. However, its incremental model is tied to dataset processing within that framework rather than to a standalone field-level dependency graph that can drive recomputation across multiple compute backends.
 
 Metaxy fills the gap by separating metadata from compute: it tracks field-level dependencies at record granularity and propagates version changes topologically through the dependency graph.
 This separation allows teams to integrate Metaxy with any orchestrator and compute engine, while retaining precise control over which records require reprocessing.
@@ -89,13 +89,17 @@ Metaxy represents features as declarative models organized into a directed acycl
 Each feature declares its identifier columns, computed fields, and dependencies on upstream feature fields.
 The system constructs a global dependency graph at initialization, enabling downstream version propagation before any data processing occurs.
 
-Version computation operates at two layers through deterministic hashing. Graph-level feature hashes combine field code versions with upstream structure once per code change, using a fixed `hashlib.sha256` implementation. Record-level hashes run once per data row, combining per-record identifiers with upstream record versions inside the metadata store via SQL; this function is configurable and defaults to `xxhash32` where the backend supports it, keeping hashing colocated with storage and avoiding expensive data transfers.
-Field code versions are user-specified strings that developers bump to mark algorithmic changes. This is a deliberate design choice rather than an automatic-detection problem: a static analyzer cannot reliably distinguish a behavior-preserving refactor from a semantic change, and silent false-positive invalidation would trigger prohibitively expensive GPU recomputation. Metaxy therefore delegates this judgement to the author.
-Feature versions aggregate field versions, and record versions map each data instance to the specific upstream versions that produced it, creating a per-record provenance trail.
+After the graph is built, Metaxy separates versioning into graph-level and record-level work.
+Graph-level feature hashes are recomputed when feature definitions change: each field hash combines the developer-supplied field code version with the upstream graph structure using a fixed `hashlib.sha256` implementation.
+Developers bump field code versions when they make an algorithmic change.
+Metaxy makes this boundary explicit because static analysis cannot reliably distinguish a behavior-preserving refactor from a semantic change, and unnecessary invalidation can trigger expensive GPU recomputation.
 
-This record-level granularity is what distinguishes Metaxy from table-level orchestrators.
-When an upstream field changes for a subset of records, only those downstream records that transitively depend on the changed field are marked for recomputation.
-Records with unchanged dependencies are skipped.
+Record-level hashes are computed inside the metadata store.
+For each data row, the store combines record identifiers with the upstream record versions for only the fields declared as dependencies; this function is configurable and defaults to `xxhash32` where the backend supports it.
+The result is an expected provenance signature for each output record before the compute engine runs.
+Because each signature is tied to declared field dependencies, changes propagate only along affected paths in the graph.
+When `resolve_update` compares these expected signatures with the append-only signatures already stored, it returns the new or stale records for the orchestrator to schedule.
+The compute engine then processes only that increment, while records whose relevant upstream dependencies are unchanged are skipped.
 
 The metadata store is append-only: version entries are never overwritten, preserving the lineage needed for retrospective audits.
 Embedded stores suit prototyping while warehouse- and lakehouse-class stores scale to production workloads, all reached through the same feature API.
@@ -105,11 +109,11 @@ The compute engine is equally pluggable: a backend-agnostic dataframe abstractio
 
 Metaxy's architecture rests on three deliberate design commitments.
 
-First, the metadata layer is decoupled from the compute engine and orchestrator by design rather than by compromise: Metaxy is a pluggable library that exposes a record-level dependency graph which any orchestrator can consume. The same version graph drives embedded prototyping, warehouse-scale production, and distributed GPU scheduling without changes to feature definitions, reusing the portable dependency-graph abstraction long studied in build-systems and data-lineage research (@mokhov2018build; @cui2003lineage; @buneman2001why).
+First, the metadata layer is decoupled from the compute engine and orchestrator by design rather than by compromise: Metaxy is a pluggable library that exposes a record-level dependency graph which any orchestrator can consume. The same version graph drives embedded prototyping, warehouse-scale production, and distributed GPU scheduling without changes to feature definitions, reusing the portable dependency-graph abstraction long studied in build-systems and data-lineage research [@mokhov2018build; @cui2003lineage; @buneman2001why].
 
-Second, record-level hashing and the increment diff are pushed into the metadata store via SQL rather than computed client-side. This yields two concrete benefits: the caller never streams full metadata tables out of the store (only the computed increment crosses the wire), and the hash-and-join work runs inside the store, so `resolve_update` stays lightweight enough to invoke from laptops or dashboards while the store scales the compute (\autoref{tab:benchmark}), consistent with the principle of colocating incremental computation with its data (@acar2006adaptive).
+Second, record-level hashing and the increment diff are pushed into the metadata store via SQL rather than computed client-side. This yields two concrete benefits: the caller never streams full metadata tables out of the store (only the computed increment crosses the wire), and the hash-and-join work runs inside the store, so `resolve_update` stays lightweight enough to invoke from laptops or dashboards while the store scales the compute (\autoref{tab:benchmark}), consistent with the principle of colocating incremental computation with its data [@acar2006adaptive].
 
-Third, Metaxy hashes provenance signatures (code version plus upstream record versions) instead of the raw payloads that content-addressable storage (CAS) would require. CAS is not merely expensive here, it is inapplicable in principle: the increment must be known *before* downstream computation runs, so there is no content to address yet. Hashing the provenance signature lets Metaxy decide staleness without ever materialising the downstream payload, matching the provenance-first view of PROV (@moreau2013prov; @cheney2009provenance); users may still attach content-derived versions after the fact through the user-defined data-version hook, for instance to deduplicate identical outputs.
+Third, Metaxy hashes provenance signatures (code version plus upstream record versions) instead of the raw payloads that content-addressable storage (CAS) would require. CAS is not merely expensive here, it is inapplicable in principle: the increment must be known *before* downstream computation runs, so there is no content to address yet. Hashing the provenance signature lets Metaxy decide staleness without ever materialising the downstream payload, matching the provenance-first view of PROV [@moreau2013prov; @cheney2009provenance]; users may still attach content-derived versions after the fact through the user-defined data-version hook, for instance to deduplicate identical outputs.
 
 # Performance
 
