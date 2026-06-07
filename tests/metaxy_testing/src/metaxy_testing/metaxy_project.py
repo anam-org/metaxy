@@ -292,6 +292,10 @@ class HashAlgorithmCases:
         """xxHash64 algorithm."""
         return HashAlgorithm.XXHASH64
 
+    def case_xxh3_64(self) -> HashAlgorithm:
+        """XXH3 64-bit algorithm."""
+        return HashAlgorithm.XXH3_64
+
     def case_xxhash32(self) -> HashAlgorithm:
         """xxHash32 algorithm."""
         return HashAlgorithm.XXHASH32

@@ -15,6 +15,7 @@ import polars as pl
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 from metaxy.config import MetaxyConfig
+from metaxy.ext.polars.versioning import xxh3_64_signed_expr
 from metaxy.models.constants import (
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
 # Map HashAlgorithm enum to polars-hash functions
 _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
     HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),
+    HashAlgorithm.XXH3_64: xxh3_64_signed_expr,
     HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),
     HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),
     HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),
