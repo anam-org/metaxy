@@ -249,6 +249,7 @@ _sybil_collect_file = Sybil(
         "integrations/metadata-stores/databases/clickhouse.md",  # Requires ClickHouse server
         "integrations/metadata-stores/databases/bigquery.md",  # Requires BigQuery
         "integrations/metadata-stores/databases/postgresql.md",  # Requires PostgreSQL server
+        "integrations/metadata-stores/databases/starrocks.md",  # Requires StarRocks server
         "integrations/compute/ray.md",  # Requires Ray cluster
         "integrations/ai/*",  # AI integrations
         # Plugin pages with complex setup requirements

@@ -882,10 +882,15 @@ class MetadataStore(ABC):
                 id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
                 # Treat soft-deletes like hard deletes by ordering on the
                 # most recent lifecycle timestamp.
-                lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                latest_feature_version = (
+                    feature_version if with_feature_history else current_graph().get_feature_version(feature_key)
+                )
+                lazy_frame = self._keep_latest_by_group(
                     df=lazy_frame,
+                    feature_key=feature_key,
                     group_columns=id_cols,
                     timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
+                    feature_version=latest_feature_version,
                 )
 
             if filter_deleted:
@@ -945,6 +950,28 @@ class MetadataStore(ABC):
         # Not found anywhere
         raise FeatureNotFoundError(
             f"Feature {feature_key.to_string()} not found in store" + (" or fallback stores" if allow_fallback else "")
+        )
+
+    def _keep_latest_by_group(
+        self,
+        *,
+        df: nw.LazyFrame[Any],
+        feature_key: FeatureKey,
+        group_columns: list[str],
+        timestamp_columns: list[str],
+        feature_version: str | None,
+    ) -> nw.LazyFrame[Any]:
+        """Keep the latest materialization per feature id group.
+
+        Backends can override this hook to use feature-specific acceleration
+        structures. The default path preserves the existing versioning-engine
+        behavior.
+        """
+        _ = (feature_key, feature_version)
+        return self.versioning_engine_cls.keep_latest_by_group(
+            df=df,
+            group_columns=group_columns,
+            timestamp_columns=timestamp_columns,
         )
 
     def write(

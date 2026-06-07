@@ -3416,6 +3416,10 @@ sqlmodel = [
     { name = "sqlalchemy" },
     { name = "sqlmodel" },
 ]
+starrocks = [
+    { name = "ibis-framework" },
+    { name = "pymysql" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -3497,6 +3501,7 @@ requires-dist = [
     { name = "ibis-framework", marker = "extra == 'delta'", specifier = ">=11.0.0" },
     { name = "ibis-framework", marker = "extra == 'ibis'", specifier = ">=11.0.0" },
     { name = "ibis-framework", marker = "extra == 'iceberg'", specifier = ">=11.0.0" },
+    { name = "ibis-framework", marker = "extra == 'starrocks'", specifier = ">=11.0.0" },
     { name = "ibis-framework", extras = ["bigquery"], marker = "extra == 'bigquery'", specifier = ">=11.0.0" },
     { name = "ibis-framework", extras = ["clickhouse"], marker = "extra == 'clickhouse'", specifier = ">=11.0.0" },
     { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'duckdb'", specifier = ">=11.0.0" },
@@ -3517,6 +3522,7 @@ requires-dist = [
     { name = "pydantic-core", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "pyiceberg", extras = ["sql-sqlite"], marker = "extra == 'iceberg'", specifier = ">=0.9.0" },
+    { name = "pymysql", marker = "extra == 'starrocks'", specifier = ">=1.1.0" },
     { name = "pytest-cases", specifier = ">=3.9.1" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
@@ -3532,7 +3538,7 @@ requires-dist = [
     { name = "tomlkit", specifier = ">=0.13.2" },
     { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
-provides-extras = ["map", "ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
+provides-extras = ["map", "ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "starrocks", "mcp", "ray"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -5693,6 +5699,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d4/95/e4fa281e3f13b3d9c4aaebb21ef44879840325fa418276dd921209a5e9f9/pymdown_extensions-10.18.tar.gz", hash = "sha256:20252abe6367354b24191431617a072ee6be9f68c5afcc74ea5573508a61f9e5", size = 847697, upload-time = "2025-12-07T17:22:12.857Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/46/a4/aa2bada4a2fd648f40f19affa55d2c01dc7ff5ea9cffd3dfdeb6114951db/pymdown_extensions-10.18-py3-none-any.whl", hash = "sha256:090bca72be43f7d3186374e23c782899dbef9dc153ef24c59dcd3c346f9ffcae", size = 266703, upload-time = "2025-12-07T17:22:11.22Z" },
+]
+
+[[package]]
+name = "pymysql"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/bc/1c6a92f385940f727daeecf3bacaf186e03875dff57197801046c583bcf0/pymysql-1.2.0.tar.gz", hash = "sha256:6c7b17ca686988104d7426c27895b455cdeea3e9d3ceb1270f0c3704fead8c33", size = 49021, upload-time = "2026-05-19T08:26:22.302Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/bd/2534e130295c8cfd4f0a2e31623baab7502278f1e97bcfe61db75656a77f/pymysql-1.2.0-py3-none-any.whl", hash = "sha256:62169ce6d5510f08e140c5e7990ee884a9764024e4a9a27b2cc11f1099322ae0", size = 45716, upload-time = "2026-05-19T08:26:20.974Z" },
 ]
 
 [[package]]

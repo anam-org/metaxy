@@ -12,8 +12,21 @@ from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
+_SIGNED_INT64_MAX = 2**63 - 1
+_UINT64_MODULUS = 2**64
+
 # narwhals DataFrame backed by either a lazy or an eager frame
 # PolarsFrame = TypeVar("PolarsFrame", pl.DataFrame, pl.LazyFrame)
+
+
+def xxh3_64_signed_expr(expr: pl.Expr) -> pl.Expr:
+    """Return XXH3-64 as a signed integer expression matching SQL BIGINT output."""
+    raw_hash = expr.nchash.xxh3_64().cast(pl.UInt64)  # ty: ignore[unresolved-attribute]
+    return (
+        pl.when(raw_hash > pl.lit(_SIGNED_INT64_MAX, dtype=pl.UInt64))
+        .then(raw_hash.cast(pl.Int128) - pl.lit(_UINT64_MODULUS, dtype=pl.Int128))
+        .otherwise(raw_hash.cast(pl.Int128))
+    )
 
 
 class PolarsVersioningEngine(VersioningEngine):
@@ -26,6 +39,7 @@ class PolarsVersioningEngine(VersioningEngine):
     # Map HashAlgorithm enum to polars-hash functions
     _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
         HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # ty: ignore[unresolved-attribute]
+        HashAlgorithm.XXH3_64: xxh3_64_signed_expr,
         HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # ty: ignore[unresolved-attribute]
         HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # ty: ignore[unresolved-attribute]
         HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # ty: ignore[unresolved-attribute]

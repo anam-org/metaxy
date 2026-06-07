@@ -100,6 +100,10 @@ postgres = [
   "ibis-framework[postgres]>=11.0.0",
   "psycopg>=3.2.0",
 ]
+starrocks = [
+  "ibis-framework>=11.0.0",
+  "pymysql>=1.1.0",
+]
 mcp = [
   "fastmcp>=2.0.0",
 ]
@@ -298,6 +302,7 @@ markers = [
   "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
   "lancedb: LanceDB store tests",
   "postgresql: PostgreSQL store tests",
+  "starrocks: StarRocks store tests",
   "integration: Integration tests (require external services)",
 ]
 

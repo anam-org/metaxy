@@ -131,6 +131,7 @@ def test_hash_truncation(
     max_hash_lengths = {
         HashAlgorithm.XXHASH32: 10,
         HashAlgorithm.XXHASH64: 20,
+        HashAlgorithm.XXH3_64: 20,
         HashAlgorithm.WYHASH: 19,
         HashAlgorithm.SHA256: 64,
         HashAlgorithm.MD5: 32,

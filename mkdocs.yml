@@ -260,6 +260,7 @@ nav:
         - LanceDB: integrations/metadata-stores/databases/lancedb.md
         - Ibis: integrations/metadata-stores/databases/ibis.md
         - PostgreSQL: integrations/metadata-stores/databases/postgresql.md
+        - StarRocks: integrations/metadata-stores/databases/starrocks.md
       - Storage:
         - integrations/metadata-stores/storage/index.md
         - Apache Iceberg: integrations/metadata-stores/storage/iceberg.md

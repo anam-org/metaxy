@@ -12,6 +12,7 @@ INTEGRATIONS = [
     "duckdb",
     "clickhouse",
     "postgres",
+    "starrocks",
     "delta",
     "iceberg",
     "lancedb",

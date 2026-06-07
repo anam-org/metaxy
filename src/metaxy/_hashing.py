@@ -30,8 +30,9 @@ class HashAlgorithm(Enum):
     - Good collision resistance for field provenance calculation
     """
 
-    XXHASH64 = "xxhash64"
     XXHASH32 = "xxhash32"
+    XXHASH64 = "xxhash64"
+    XXH3_64 = "xxh3_64"
     WYHASH = "wyhash"
     SHA256 = "sha256"
     MD5 = "md5"
