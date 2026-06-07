@@ -146,7 +146,7 @@ def test_clickhouse_persistence(
 def test_clickhouse_hash_algorithms(
     clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Test that ClickHouse supports MD5, XXHASH32, and XXHASH64 hash algorithms.
+    """Test that ClickHouse supports MD5, XXH3_64, and XXHASH hash algorithms.
 
     Args:
         clickhouse_db: Connection string fixture
@@ -159,6 +159,7 @@ def test_clickhouse_hash_algorithms(
     # Test each supported algorithm
     for algorithm in [
         HashAlgorithm.MD5,
+        HashAlgorithm.XXH3_64,
         HashAlgorithm.XXHASH32,
         HashAlgorithm.XXHASH64,
     ]:
@@ -182,6 +183,20 @@ def test_clickhouse_hash_algorithms(
             assert len(result) == 2
 
 
+def test_clickhouse_xxh3_hash_functions_build_native_expressions() -> None:
+    """XXH3 hash functions should build native ClickHouse Ibis expressions."""
+    import ibis
+    from metaxy.config import MetaxyConfig
+
+    with MetaxyConfig().use():
+        store = ClickHouseMetadataStore("clickhouse://localhost/default")
+
+    hash_functions = store._create_hash_functions()
+    sample = ibis.literal("sample")
+
+    assert str(hash_functions[HashAlgorithm.XXH3_64](sample))
+
+
 def test_clickhouse_config_instantiation(
     clickhouse_db: str, test_graph: FeatureGraph, test_features: dict[str, FeatureDefinition]
 ) -> None:
@@ -201,6 +216,7 @@ def test_clickhouse_config_instantiation(
 
     store = config.get_store("clickhouse_store")
     assert isinstance(store, ClickHouseMetadataStore)
+    assert store.hash_algorithm == HashAlgorithm.XXHASH32
 
     # Verify store can be opened
     with store.open("w"):

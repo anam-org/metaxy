@@ -281,13 +281,14 @@ def upstream_metadata_multi_field() -> nw.LazyFrame[pl.LazyFrame]:
 
 @pytest.fixture(
     params=[
+        HashAlgorithm.XXH3_64,
         HashAlgorithm.XXHASH64,
         HashAlgorithm.XXHASH32,
         HashAlgorithm.WYHASH,
         HashAlgorithm.SHA256,
         HashAlgorithm.MD5,
     ],
-    ids=["xxhash64", "xxhash32", "wyhash", "sha256", "md5"],
+    ids=["xxh3_64", "xxhash64", "xxhash32", "wyhash", "sha256", "md5"],
 )
 def hash_algorithm(request: pytest.FixtureRequest) -> HashAlgorithm:
     """Parametrize tests across all supported hash algorithms."""

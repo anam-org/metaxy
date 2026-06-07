@@ -227,6 +227,11 @@ class ClickHouseMetadataStore(IbisMetadataStore):
 
         # ClickHouse xxHash functions
         @ibis.udf.scalar.builtin
+        def xxh3(x: str) -> int:  # ty: ignore[empty-body]
+            """ClickHouse xxh3() function - returns UInt64."""
+            ...  # pragma: no cover
+
+        @ibis.udf.scalar.builtin
         def xxHash32(x: str) -> int:  # ty: ignore[empty-body]
             """ClickHouse xxHash32() function - returns UInt32."""
             ...
@@ -241,6 +246,10 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             """ClickHouse toString() function - converts integer to string."""
             ...
 
+        def xxh3_64_hash(col_expr):
+            """Hash a column using ClickHouse's xxh3() function."""
+            return toString(xxh3(col_expr))
+
         def xxhash32_hash(col_expr):
             """Hash a column using ClickHouse's xxHash32() function."""
             # xxHash32 returns UInt32, convert to string
@@ -251,6 +260,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             # xxHash64 returns UInt64, convert to string
             return toString(xxHash64(col_expr))
 
+        hash_functions[HashAlgorithm.XXH3_64] = xxh3_64_hash
         hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
         hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
 

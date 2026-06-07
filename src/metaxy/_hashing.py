@@ -30,6 +30,7 @@ class HashAlgorithm(Enum):
     - Good collision resistance for field provenance calculation
     """
 
+    XXH3_64 = "xxh3_64"  # pragma: no cover
     XXHASH64 = "xxhash64"
     XXHASH32 = "xxhash32"
     WYHASH = "wyhash"

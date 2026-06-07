@@ -2267,7 +2267,7 @@ def test_metadata_status_with_fallback_stores(
     This was a bug where `--allow-fallback-stores` defaulted to False in CLI,
     causing status to report orphaned samples when upstream was only in fallback.
 
-    NOTE: We use DeltaMetadataStore for both stores since they both default to XXHASH64
+    NOTE: We use DeltaMetadataStore for both stores since they share the same default hash algorithm
     and work well together without Ibis backend conflicts.
     """
     # Create config with dev store that has prod as fallback (both Delta)
