@@ -561,10 +561,24 @@ def test_duckdb_config_instantiation() -> None:
     store = config.get_store("duckdb_store")
     assert isinstance(store, DuckDBMetadataStore)
     assert store.database == ":memory:"
+    assert store.hash_algorithm == HashAlgorithm.XXHASH32
 
     # Verify store can be opened
     with store.open("w"):
         assert store._is_open
+
+
+def test_duckdb_xxh3_hash_functions_build_native_expressions() -> None:
+    """XXH3 hash functions should build native DuckDB Ibis expressions."""
+    import ibis
+
+    with MetaxyConfig().use():
+        store = DuckDBMetadataStore(":memory:")
+
+    hash_functions = store._create_hash_functions()
+    sample = ibis.literal("sample")
+
+    assert str(hash_functions[HashAlgorithm.XXH3_64](sample))
 
 
 def test_duckdb_config_with_extensions() -> None:

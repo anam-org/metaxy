@@ -9,9 +9,11 @@ Uses Polars' native parametric testing for efficient DataFrame generation.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, TypeVar, overload
 
 import polars as pl
+import polars_hash as plh
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 from metaxy.config import MetaxyConfig
@@ -36,18 +38,8 @@ if TYPE_CHECKING:
     from metaxy.models.plan import FeaturePlan
 
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, TypeVar, overload
-
-import polars_hash as plh
-
-if TYPE_CHECKING:
-    from metaxy.models.feature_spec import FeatureSpec
-    from metaxy.models.plan import FeaturePlan
-
-
-# Map HashAlgorithm enum to polars-hash functions
 _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
+    HashAlgorithm.XXH3_64: lambda expr: expr.nchash.xxh3_64(),
     HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),
     HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),
     HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),
@@ -99,7 +91,7 @@ def calculate_provenance_by_field_polars(
         feature_spec: Feature specification
         feature_plan: Feature plan with field dependencies
         upstream_column_mapping: Maps upstream feature key -> provenance column name
-        hash_algorithm: Hash algorithm to use (default: XXHASH64)
+        hash_algorithm: Hash algorithm to use
         hash_truncation_length: Optional length to truncate hashes to
 
     Returns:

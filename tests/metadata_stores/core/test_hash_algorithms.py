@@ -129,6 +129,7 @@ def test_hash_truncation(
 
     # Skip invalid combinations where truncation is longer than the hash algorithm produces
     max_hash_lengths = {
+        HashAlgorithm.XXH3_64: 20,
         HashAlgorithm.XXHASH32: 10,
         HashAlgorithm.XXHASH64: 20,
         HashAlgorithm.WYHASH: 19,
@@ -207,7 +208,7 @@ def test_hash_truncation(
                     f"Expected hash length <= {truncation_length}, got {len(hash_val)}"
                 )
                 # For most cases it should be close to the truncation length (within 2 chars)
-                # Numeric hashes (xxhash32, xxhash64, wyhash) can have leading zeros stripped,
+                # Numeric hashes (xxh3_64, xxhash32, xxhash64, wyhash) can have leading zeros stripped,
                 # so we don't fail on slightly shorter hashes
 
 

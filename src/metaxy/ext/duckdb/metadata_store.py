@@ -258,7 +258,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
             # Use Ibis's builtin UDF decorator to wrap DuckDB's xxhash functions
             # These functions already exist in DuckDB (via hashfuncs extension)
             # The decorator tells Ibis to call them directly in SQL
-            # NOTE: xxh32/xxh64 return integers in DuckDB, not strings
+            # NOTE: xxh3_64/xxh32/xxh64 return integers in DuckDB, not strings
+            @ibis.udf.scalar.builtin
+            def xxh3_64(x: str) -> int:  # ty: ignore[empty-body]
+                """DuckDB xxh3_64() hash function from hashfuncs extension."""
+                ...  # pragma: no cover
+
             @ibis.udf.scalar.builtin
             def xxh32(x: str) -> int:  # ty: ignore[empty-body]
                 """DuckDB xxh32() hash function from hashfuncs extension."""
@@ -270,6 +275,10 @@ class DuckDBMetadataStore(IbisMetadataStore):
                 ...
 
             # Create hash functions that use these wrapped SQL functions
+            def xxh3_64_hash(col_expr):
+                """Hash a column using DuckDB's xxh3_64() function."""
+                return xxh3_64(col_expr.cast(str)).cast(str)
+
             def xxhash32_hash(col_expr):
                 """Hash a column using DuckDB's xxh32() function."""
                 # Cast to string and then cast result to string (xxh32 returns integer in DuckDB)
@@ -280,6 +289,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
                 # Cast to string and then cast result to string (xxh64 returns integer in DuckDB)
                 return xxh64(col_expr.cast(str)).cast(str)
 
+            hash_functions[HashAlgorithm.XXH3_64] = xxh3_64_hash
             hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
             hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
 

@@ -12,9 +12,6 @@ from metaxy.utils.constants import TEMP_TABLE_NAME
 from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
-# narwhals DataFrame backed by either a lazy or an eager frame
-# PolarsFrame = TypeVar("PolarsFrame", pl.DataFrame, pl.LazyFrame)
-
 
 class PolarsVersioningEngine(VersioningEngine):
     """Provenance engine using Polars and polars_hash plugin.
@@ -25,6 +22,7 @@ class PolarsVersioningEngine(VersioningEngine):
 
     # Map HashAlgorithm enum to polars-hash functions
     _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
+        HashAlgorithm.XXH3_64: lambda expr: expr.nchash.xxh3_64(),  # ty: ignore[unresolved-attribute]
         HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # ty: ignore[unresolved-attribute]
         HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # ty: ignore[unresolved-attribute]
         HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # ty: ignore[unresolved-attribute]

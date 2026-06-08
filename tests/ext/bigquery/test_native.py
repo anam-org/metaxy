@@ -157,8 +157,7 @@ def test_bigquery_config_with_hash_algorithm():
     """Test BigQuery store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
 
-    # Test default from config system is XXHASH64 (not FARMHASH)
-    # When no hash_algorithm is specified in config, the config system defaults to XXHASH64
+    # BigQuery keeps its backend-specific MD5 default when no hash algorithm is configured.
     config_default = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(
@@ -173,7 +172,7 @@ def test_bigquery_config_with_hash_algorithm():
 
     store_default = config_default.get_store("bigquery_store")
     assert isinstance(store_default, BigQueryMetadataStore)
-    assert store_default.hash_algorithm == HashAlgorithm.MD5  # Config system default
+    assert store_default.hash_algorithm == HashAlgorithm.MD5
 
     config_farmhash = MetaxyConfig(
         stores={

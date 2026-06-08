@@ -288,6 +288,10 @@ def assert_all_results_equal(results: dict[Any, Any], snapshot=None) -> None:
 class HashAlgorithmCases:
     """Test cases for different hash algorithms."""
 
+    def case_xxh3_64(self) -> HashAlgorithm:
+        """XXH3 64-bit algorithm."""
+        return HashAlgorithm.XXH3_64
+
     def case_xxhash64(self) -> HashAlgorithm:
         """xxHash64 algorithm."""
         return HashAlgorithm.XXHASH64
