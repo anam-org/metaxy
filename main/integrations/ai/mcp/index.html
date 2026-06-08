@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/favicon.ico">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -4165,13 +4165,10 @@ settings like project, store, entrypoints, stores, etc.</p>
 <td><code>str</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Feature key in slash notation (e.g., "video/processing")</td>
+<td></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong></p>
-<p>Complete feature specification as a dictionary including fields,
-dependencies, id_columns, and other metadata</p>
 <h3 id="get_metadata"><code>get_metadata</code><a class="headerlink" href="#get_metadata" title="Permanent link">&para;</a></h3>
 <p>Query metadata for a feature from a store.</p>
 <p><strong>Parameters:</strong></p>
@@ -4191,87 +4188,80 @@ dependencies, id_columns, and other metadata</p>
 <td><code>str</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Feature key in slash notation (e.g., "video/processing")</td>
+<td></td>
 </tr>
 <tr>
 <td><code>store_name</code></td>
 <td><code>str</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Name of the metadata store to read from</td>
+<td></td>
 </tr>
 <tr>
 <td><code>columns</code></td>
 <td><code>list[str] | None</code></td>
 <td>No</td>
 <td><code>None</code></td>
-<td>List of columns to select (None for all)</td>
+<td></td>
 </tr>
 <tr>
 <td><code>filters</code></td>
 <td><code>list[str] | None</code></td>
 <td>No</td>
 <td><code>None</code></td>
-<td>List of SQL-like filter expressions (e.g., "column &gt; 5", "name == 'foo'")</td>
+<td></td>
 </tr>
 <tr>
 <td><code>with_feature_history</code></td>
 <td><code>bool</code></td>
 <td>No</td>
 <td><code>False</code></td>
-<td>Only return current (non-superseded) rows</td>
+<td></td>
 </tr>
 <tr>
 <td><code>with_sample_history</code></td>
 <td><code>bool</code></td>
 <td>No</td>
 <td><code>False</code></td>
-<td>Only return latest version of each row</td>
+<td></td>
 </tr>
 <tr>
 <td><code>include_soft_deleted</code></td>
 <td><code>bool</code></td>
 <td>No</td>
 <td><code>False</code></td>
-<td>Include soft-deleted rows</td>
+<td></td>
 </tr>
 <tr>
 <td><code>allow_fallback</code></td>
 <td><code>bool</code></td>
 <td>No</td>
 <td><code>True</code></td>
-<td>If True, check fallback stores when feature is not found in the primary store</td>
+<td></td>
 </tr>
 <tr>
 <td><code>sort_by</code></td>
 <td><code>list[str] | None</code></td>
 <td>No</td>
 <td><code>None</code></td>
-<td>List of column names to sort by</td>
+<td></td>
 </tr>
 <tr>
 <td><code>descending</code></td>
 <td><code>bool | list[bool]</code></td>
 <td>No</td>
 <td><code>False</code></td>
-<td>Sort descending (bool for all columns, or list per column)</td>
+<td></td>
 </tr>
 <tr>
 <td><code>limit</code></td>
 <td><code>int</code></td>
 <td>No</td>
 <td><code>50</code></td>
-<td>Maximum number of rows to return</td>
+<td></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong></p>
-<p>Dictionary containing:</p>
-<ul>
-<li>columns: List of column names</li>
-<li>rows: List of row dictionaries</li>
-<li>total_rows: Number of rows returned</li>
-</ul>
 <h3 id="get_store"><code>get_store</code><a class="headerlink" href="#get_store" title="Permanent link">&para;</a></h3>
 <p>Get display information for a metadata store.</p>
 <p><strong>Parameters:</strong></p>
@@ -4291,13 +4281,10 @@ dependencies, id_columns, and other metadata</p>
 <td><code>str</code></td>
 <td>Yes</td>
 <td>—</td>
-<td>Name of the store to get info for</td>
+<td></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong></p>
-<p>Human-readable display string for the store
-(e.g., "DuckDBMetadataStore(database=/tmp/db.duckdb)")</p>
 <h3 id="list_features"><code>list_features</code><a class="headerlink" href="#list_features" title="Permanent link">&para;</a></h3>
 <p>List all registered features with their metadata.</p>
 <p>Matches the output format of <code>mx list features --format json</code>.</p>
@@ -4318,24 +4305,17 @@ dependencies, id_columns, and other metadata</p>
 <td><code>str | None</code></td>
 <td>No</td>
 <td><code>None</code></td>
-<td>Filter by project name (optional)</td>
+<td></td>
 </tr>
 <tr>
 <td><code>verbose</code></td>
 <td><code>bool</code></td>
 <td>No</td>
 <td><code>False</code></td>
-<td>Include detailed field information and dependencies</td>
+<td></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong></p>
-<p>Dictionary containing:</p>
-<ul>
-<li>feature_count: Total number of features</li>
-<li>features: List of feature dictionaries with key, version, is_root,
-project, import_path, field_count, fields, and optionally deps</li>
-</ul>
 <h3 id="list_stores"><code>list_stores</code><a class="headerlink" href="#list_stores" title="Permanent link">&para;</a></h3>
 <p>List all configured metadata stores.</p>
 <p><strong>Returns:</strong></p>
@@ -4416,10 +4396,10 @@ project, import_path, field_count, fields, and optionally deps</li>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": ["stable"], "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": ["stable"], "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="../../../javascripts/telemetry.js"></script>
       

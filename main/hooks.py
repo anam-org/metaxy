@@ -12,6 +12,23 @@ from metaxy.config import MetaxyConfig
 
 log = logging.getLogger("mkdocs")
 
+
+class _GriffeInspectionNoiseFilter(logging.Filter):
+    """Drop griffe warnings about runtime-inspected objects.
+
+    FastMCP builds its tools dynamically, so griffe inspects them at runtime and
+    reports missing annotations in their docstrings with a `<module>` source. Real
+    API documentation is parsed from source files and always carries a real path,
+    so suppressing the `<module>` records keeps `mkdocs --strict` meaningful while
+    silencing this unactionable noise.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "<module>:" not in record.getMessage()
+
+
+logging.getLogger("mkdocs.plugins.griffe").addFilter(_GriffeInspectionNoiseFilter())
+
 DOCS_DIR = Path(__file__).parent
 ROOT_DIR = DOCS_DIR.parent
 SLIDES_DIR = ROOT_DIR / "slides" / "2026-introducing-metaxy"
