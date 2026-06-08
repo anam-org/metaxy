@@ -15,6 +15,7 @@ directly parses the JSON Schema from FastMCP tool objects.
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import logging
 import re
@@ -214,7 +215,7 @@ def _generate_mcp_tools_doc(
 
     # Get tools from the server, sorted alphabetically by name
     tool_docs = []
-    tools = sorted(mcp._tool_manager._tools.values(), key=lambda t: t.name)
+    tools = sorted(asyncio.run(mcp.list_tools()), key=lambda t: t.name)
     for tool in tools:
         tool_docs.append(_generate_tool_doc(tool, header_level))
 

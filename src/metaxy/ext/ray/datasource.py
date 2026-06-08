@@ -166,10 +166,14 @@ class MetaxyDatasource(Datasource):
         with self.store:
             return self._read_lazy().select(nw.len()).collect().item()
 
-    def get_read_tasks(  # ty: ignore[invalid-method-override]
-        self, parallelism: int, per_task_row_limit: int | None = None, **kwargs: object
+    def get_read_tasks(
+        self, parallelism: int, per_task_row_limit: int | None = None, *args: object, **kwargs: object
     ) -> list[ReadTask]:
         """Return read tasks for the feature metadata.
+
+        `*args` and `**kwargs` absorb the extra parameters Ray passes to this hook
+        (such as `data_context`), which vary across the `ray>2.36.0` range Metaxy
+        supports, so the override stays callable on any of them.
 
         Args:
             parallelism: Requested parallelism level (currently ignored, returns single task).

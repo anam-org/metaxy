@@ -85,6 +85,9 @@ in {
     UV_PREVIEW = "1";
     PG_BIN = "${pkgs.postgresql}/bin";
 
+    # Silence the Material for MkDocs "MkDocs 2.0" upgrade notice.
+    NO_MKDOCS_2_WARNING = "1";
+
     LD_LIBRARY_PATH = makeLinuxLibPath allIntegrations;
 
     DYLD_FALLBACK_LIBRARY_PATH = lib.optionalString pkgs.stdenv.isDarwin (lib.makeLibraryPath [
