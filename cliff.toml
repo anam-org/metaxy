@@ -18,6 +18,8 @@ commit_preprocessors = [
   { pattern = '^:zap: ', replace = "perf: " },
   { pattern = '^:robot: ', replace = "ci: " },
   { pattern = '^:bomb: ', replace = "refactor!: " },
+  { pattern = '\(publication\):', replace = "(publications):" },
+  { pattern = '\(slides\):', replace = "(publications):" },
   { pattern = '^fix: update devenv.lock', replace = "chore: update devenv.lock" },
   # Strip markdown list markers from ## Changelog lines in commit bodies
   { pattern = '(?m)^- ', replace = "" },
