@@ -21,7 +21,51 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
-## v0.1.10 (09-04-2026)
+## v0.1.11 (09-06-2026)
+
+### :sparkles: Features
+
+- add `xxh3_64` hash support ([#1220](https://github.com/anam-org/metaxy/pull/1220) by [@geoHeil](https://github.com/geoHeil))
+
+
+### :bug: Bug Fixes
+
+- ci for latex build ([#1195](https://github.com/anam-org/metaxy/pull/1195) by [@geoHeil](https://github.com/geoHeil))
+
+#### Clickhouse
+
+- make Arrow struct fields non-nullable before writing (for ClickHouse 26.4) ([#1217](https://github.com/anam-org/metaxy/pull/1217) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :book: Docs
+
+- improve QA page ([#1189](https://github.com/anam-org/metaxy/pull/1189) by [@danielgafni](https://github.com/danielgafni))
+
+
+### :hammer_and_wrench: Other Improvements
+
+- release v0.1.11
+- ensure `uv audit` passes ([#1213](https://github.com/anam-org/metaxy/pull/1213) by [@danielgafni](https://github.com/danielgafni))
+- upgrade `ty` to 0.0.43 ([#1215](https://github.com/anam-org/metaxy/pull/1215) by [@danielgafni](https://github.com/danielgafni))
+- add security policy ([#1214](https://github.com/anam-org/metaxy/pull/1214) by [@danielgafni](https://github.com/danielgafni))
+- fix `uv audit` errors ([#1212](https://github.com/anam-org/metaxy/pull/1212) by [@danielgafni](https://github.com/danielgafni))
+- use native `narwhals.struct` expression in the versioning engine ([#1209](https://github.com/anam-org/metaxy/pull/1209) by [@geoHeil](https://github.com/geoHeil))
+- address joss feedback ([#1194](https://github.com/anam-org/metaxy/pull/1194) by [@geoHeil](https://github.com/geoHeil))
+- devenv 2.0.7 ([#1183](https://github.com/anam-org/metaxy/pull/1183) by [@geoHeil](https://github.com/geoHeil))
+
+#### Publications
+
+- address reviewers comments ([#1216](https://github.com/anam-org/metaxy/pull/1216) by [@geoHeil](https://github.com/geoHeil))
+- add VDSG metaxy-applications ([#1208](https://github.com/anam-org/metaxy/pull/1208) by [@geoHeil](https://github.com/geoHeil))
+- address reviewer feedback for SAO ([#1207](https://github.com/anam-org/metaxy/pull/1207) by [@geoHeil](https://github.com/geoHeil))
+- refine benchmarking ([#1204](https://github.com/anam-org/metaxy/pull/1204) by [@geoHeil](https://github.com/geoHeil))
+- address reviewer comments ([#1203](https://github.com/anam-org/metaxy/pull/1203) by [@geoHeil](https://github.com/geoHeil))
+- add benchmark ([#1199](https://github.com/anam-org/metaxy/pull/1199) by [@geoHeil](https://github.com/geoHeil))
+- fix slides build ([#1197](https://github.com/anam-org/metaxy/pull/1197) by [@geoHeil](https://github.com/geoHeil))
+- revise slides for pycon virtual poster session ([#1190](https://github.com/anam-org/metaxy/pull/1190) by [@geoHeil](https://github.com/geoHeil))
+
+
+## v0.1.10 (10-04-2026)
 
 ### :sparkles: Features
 
@@ -42,6 +86,7 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 
 ### :hammer_and_wrench: Other Improvements
 
+- release v0.1.10 ([#1184](https://github.com/anam-org/metaxy/pull/1184) by [@danielgafni](https://github.com/danielgafni))
 - move Ruff config to `ruff.toml` ([#1177](https://github.com/anam-org/metaxy/pull/1177) by [@danielgafni](https://github.com/danielgafni))
 - pin write-read Arrow schema for `MapDtype` tests ([#1176](https://github.com/anam-org/metaxy/pull/1176) by [@danielgafni](https://github.com/danielgafni))
 - fix changelog for #1173 ([#1179](https://github.com/anam-org/metaxy/pull/1179) by [@danielgafni](https://github.com/danielgafni))
