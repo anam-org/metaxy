@@ -1,0 +1,1 @@
+import{a as n,e}from"./Mermaid.vue_vue_type_script_setup_true_lang-I6WJdmNI.js";var d=n((t,o)=>{let a;return o==="sandbox"&&(a=e("#i"+t)),(o==="sandbox"?e(a.nodes()[0].contentDocument.body):e("body")).select(`[id="${t}"]`)},"getDiagramElement");export{d as g};
