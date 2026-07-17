@@ -13,6 +13,8 @@ description: "Learn how to store Metaxy metadata in DuckLake."
 
 Currently, there is only one production-ready implementation of DuckLake - via DuckDB, and the built-in [`DuckDBMetadataStore`][metaxy.ext.duckdb.DuckDBMetadataStore] can be configured to use DuckLake as its storage backend. Learn more about the DuckDB integration [here](/integrations/metadata-stores/databases/duckdb.md).
 
+For air-gapped deployments, [pre-install the required DuckDB extensions](/integrations/metadata-stores/databases/duckdb.md#pre-installing-duckdb-extensions).
+
 ## Configuration
 
 There are two main parts that configure DuckLake: a **catalog** (where the transaction log and other metadata is stored) and a **storage** (where the data files (1) live).
