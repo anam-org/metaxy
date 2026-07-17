@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import Field, Json, PrivateAttr, TypeAdapter, field_serializer, field_validator
 
 from metaxy._decorators import public
-from metaxy._hashing import truncate_hash
+from metaxy._hashing import HashAlgorithm
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.types import CoercibleToFieldKey, FeatureKey, ValidatedFieldKeyAdapter
@@ -31,12 +31,23 @@ class FeatureDefinition(FrozenBaseModel):
         feature_schema: Pydantic JSON schema dict for the feature model
         feature_class_path: Python import path (e.g., 'myapp.features.VideoFeature')
         project: The metaxy project this feature belongs to
+        hash_algorithm: Hash algorithm used for provenance
+        hash_truncation_length: Maximum length of hashes produced for the feature
     """
 
     spec: FeatureSpec = Field(description="Complete feature specification")
     feature_schema: Json[dict[str, Any]] = Field(description="Pydantic JSON schema dict")
     feature_class_path: str | None = Field(default=None, description="Python import path")
     project: str = Field(description="The metaxy project this feature belongs to", min_length=1)
+    hash_algorithm: HashAlgorithm = Field(
+        default=HashAlgorithm.XXHASH32,
+        description="Hash algorithm used for this feature's provenance.",
+    )
+    hash_truncation_length: int = Field(
+        default=8,
+        description="Maximum length of hashes produced for this feature.",
+        ge=8,
+    )
 
     # Runtime-only reference to the feature class. Not serialized. Will be removed in the future once we figure out a good way to extract Pydantic fields from the serialized schema.
     _feature_class: type[BaseFeature] | None = PrivateAttr(default=None)
@@ -78,6 +89,8 @@ class FeatureDefinition(FrozenBaseModel):
             feature_schema=schema,
             feature_class_path=class_path,
             project=project,
+            hash_algorithm=feature_cls.metaxy_hash_algorithm(),
+            hash_truncation_length=feature_cls.metaxy_hash_truncation_length(),
         )
         definition._feature_class = feature_cls
         return definition
@@ -89,6 +102,8 @@ class FeatureDefinition(FrozenBaseModel):
         feature_schema: dict[str, Any] | str,
         feature_class_path: str,
         project: str,
+        hash_algorithm: HashAlgorithm | str | None = None,
+        hash_truncation_length: int | None = None,
         source: str | None = None,
     ) -> FeatureDefinition:
         """Create a FeatureDefinition from stored data.
@@ -118,6 +133,10 @@ class FeatureDefinition(FrozenBaseModel):
             feature_schema=feature_schema,
             feature_class_path=feature_class_path,
             project=project,
+            hash_algorithm=HashAlgorithm(hash_algorithm)
+            if isinstance(hash_algorithm, str)
+            else hash_algorithm or HashAlgorithm.XXHASH32,
+            hash_truncation_length=hash_truncation_length or 8,
         )
         definition._source = source
         return definition
@@ -162,6 +181,8 @@ class FeatureDefinition(FrozenBaseModel):
         project: str,
         feature_schema: dict[str, Any] | None = None,
         provenance_by_field: dict[CoercibleToFieldKey, str] | None = None,
+        hash_algorithm: HashAlgorithm = HashAlgorithm.XXHASH32,
+        hash_truncation_length: int = 8,
         on_version_mismatch: Literal["warn", "error"] = "warn",
         source: str | None = None,
     ) -> FeatureDefinition:
@@ -180,6 +201,8 @@ class FeatureDefinition(FrozenBaseModel):
             provenance_by_field: Optional manually-specified field provenance map.
                 Use this argument to avoid providing too many upstream external features.
                 Make sure to provide the actual values from the real external feature.
+            hash_algorithm: Hash algorithm used by the external feature.
+            hash_truncation_length: Maximum hash length used by the external feature.
             on_version_mismatch: How to handle a version mismatch if the actual feature loaded from the
                 metadata store has a different version than the version specified in the corresponding external feature.
             source: Human-readable string describing where this definition came from.
@@ -203,6 +226,8 @@ class FeatureDefinition(FrozenBaseModel):
             feature_schema=feature_schema or {},
             feature_class_path=None,
             project=project,
+            hash_algorithm=hash_algorithm,
+            hash_truncation_length=hash_truncation_length,
         )
         definition._is_external = True
         definition._provenance_by_field = normalized_provenance
@@ -256,17 +281,29 @@ class FeatureDefinition(FrozenBaseModel):
             ) from e
 
     @staticmethod
-    def _compute_definition_version(spec: FeatureSpec, schema: dict[str, Any]) -> str:
-        """Compute hash of spec + schema (excludes project)."""
+    def _compute_definition_version(
+        spec: FeatureSpec,
+        schema: dict[str, Any],
+        hash_algorithm: HashAlgorithm = HashAlgorithm.XXHASH32,
+        hash_truncation_length: int = 8,
+    ) -> str:
+        """Compute hash of spec, schema, and hash settings (excludes project)."""
         hasher = hashlib.sha256()
-        hasher.update(spec.feature_spec_version.encode())
+        hasher.update(json.dumps(spec.model_dump(mode="json"), sort_keys=True).encode())
         hasher.update(json.dumps(schema, sort_keys=True).encode())
-        return truncate_hash(hasher.hexdigest())
+        hasher.update(hash_algorithm.value.encode())
+        hasher.update(str(hash_truncation_length).encode())
+        return hasher.hexdigest()[:hash_truncation_length]
 
     @cached_property
     def feature_definition_version(self) -> str:
-        """Hash of spec + schema (excludes project)."""
-        return self._compute_definition_version(self.spec, self.feature_schema)
+        """Hash of spec, schema, and hash settings (excludes project)."""
+        return self._compute_definition_version(
+            self.spec,
+            self.feature_schema,
+            self.hash_algorithm,
+            self.hash_truncation_length,
+        )
 
     @property
     def key(self) -> FeatureKey:

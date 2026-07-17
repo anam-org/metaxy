@@ -188,7 +188,8 @@ class MetadataStore(ABC):
         Args:
             name: Optional name for this store. For representation purposes only.
                 Is typically included into `.display()`.
-            hash_algorithm: Hash algorithm to use for the versioning engine.
+            hash_algorithm: Backend hash algorithm default. Feature definitions use
+                `MetaxyConfig.hash_algorithm`, falling back to this value for compatibility.
             versioning_engine: Which versioning engine to use.
 
                 - "auto": Prefer the store's native engine and fall back to Polars if needed
@@ -214,7 +215,6 @@ class MetadataStore(ABC):
                 Can be overridden per [`MetadataStore.write`][metaxy.MetadataStore.write] call.
 
         Raises:
-            ValueError: If fallback stores use different hash algorithms or truncation lengths
             VersioningEngineMismatchError: If the versioning engine is attempted to be switched
                 to Polars and `versioning_engine` is set to `native`.
         """
@@ -583,7 +583,7 @@ class MetadataStore(ABC):
                     # Non-root features: load all upstream with provenance
                     added = engine.load_upstream_with_provenance(
                         upstream=upstream_by_key,
-                        hash_algo=self.hash_algorithm,
+                        hash_algo=engine.hash_algorithm,
                         filters=filters_by_key,
                     )
                     input_df = added  # Input is the same as added when skipping comparison
@@ -593,7 +593,7 @@ class MetadataStore(ABC):
                 added, changed, removed, input_df = engine.resolve_increment_with_provenance(
                     current=current_metadata,
                     upstream=upstream_by_key,
-                    hash_algorithm=self.hash_algorithm,
+                    hash_algorithm=engine.hash_algorithm,
                     filters=filters_by_key,
                     sample=samples_nw.lazy() if samples_nw is not None else None,
                     staleness_predicates=tuple(staleness_predicates) if staleness_predicates else (),
@@ -718,7 +718,7 @@ class MetadataStore(ABC):
                     f"metaxy_data_version_by_field__<feature_key.table_name>."
                 )
 
-            return engine.compute_provenance_columns(df, hash_algo=self.hash_algorithm)  # ty: ignore[invalid-argument-type]
+            return engine.compute_provenance_columns(df, hash_algo=engine.hash_algorithm)  # ty: ignore[invalid-argument-type]
 
     @overload
     def read(
@@ -1141,7 +1141,6 @@ class MetadataStore(ABC):
             store.fallback_stores = FallbackStoreList(
                 fallback_store_names,
                 config=MetaxyConfig.get(),
-                parent_hash_algorithm=store.hash_algorithm,
             )
         return store
 
@@ -1268,7 +1267,7 @@ class MetadataStore(ABC):
                 Frame,
                 engine.hash_struct_version_column(
                     df,  # ty: ignore[invalid-argument-type]
-                    hash_algorithm=self.hash_algorithm,
+                    hash_algorithm=engine.hash_algorithm,
                     struct_column=struct_column,
                     hash_column=hash_column,
                 ),
@@ -1331,22 +1330,9 @@ class MetadataStore(ABC):
         return self
 
     def _validate_after_open(self) -> None:
-        """Validate hash algorithm compatibility after store is opened.
-
-        When fallback stores are lazy (not yet resolved), hash algorithm checks
-        are deferred to FallbackStoreList._resolve() at resolution time.
-        """
+        """Validate configured hash algorithm support after the store is opened."""
         stores_resolved = self.fallback_stores.all_resolved
         self.validate_hash_algorithm(check_fallback_stores=stores_resolved)
-
-        if stores_resolved:
-            for i, fallback_store in enumerate(self.fallback_stores):
-                if fallback_store.hash_algorithm != self.hash_algorithm:
-                    raise ValueError(
-                        f"Fallback store {i} uses hash_algorithm='{fallback_store.hash_algorithm.value}' "
-                        f"but this store uses '{self.hash_algorithm.value}'. "
-                        f"All stores in a fallback chain must use the same hash algorithm."
-                    )
 
     def __exit__(
         self,
