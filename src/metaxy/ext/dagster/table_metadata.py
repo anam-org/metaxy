@@ -14,9 +14,12 @@ import polars as pl
 import metaxy as mx
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
 from metaxy.models.constants import (
-    ALL_SYSTEM_COLUMNS,
     METAXY_CREATED_AT,
+    METAXY_DELETED_AT,
+    METAXY_UPDATED_AT,
     SYSTEM_COLUMNS_WITH_LINEAGE,
+    get_lifecycle_system_columns,
+    get_reserved_system_columns,
 )
 
 
@@ -45,11 +48,17 @@ def build_column_schema(feature: mx.FeatureDefinition | type[mx.BaseFeature]) ->
     else:
         feature_cls = feature
 
+    created_at_column, updated_at_column, deleted_at_column = get_lifecycle_system_columns()
+    lifecycle_columns = {
+        METAXY_CREATED_AT: created_at_column,
+        METAXY_UPDATED_AT: updated_at_column,
+        METAXY_DELETED_AT: deleted_at_column,
+    }
     columns: list[dg.TableColumn] = []
     for field_name, field_info in feature_cls.model_fields.items():
         columns.append(
             dg.TableColumn(
-                name=field_name,
+                name=lifecycle_columns.get(field_name, field_name),
                 type=_get_type_string(field_info.annotation),
                 description=field_info.description,
             )
@@ -202,7 +211,7 @@ def build_column_lineage(
 
         # Process direct pass-through columns (same name in both, not renamed, ID, or system)
         # System columns are handled separately below since only some have lineage
-        handled_columns = set(id_column_mapping.keys()) | set(reverse_rename.keys()) | ALL_SYSTEM_COLUMNS
+        handled_columns = set(id_column_mapping.keys()) | set(reverse_rename.keys()) | get_reserved_system_columns()
         for col in downstream_columns - handled_columns:
             if col in upstream_columns:
                 if col not in deps_by_column:
@@ -298,8 +307,8 @@ def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
     - Polars: Uses .tail() directly
     - Ibis: Uses sort + head since tail() is not available
 
-    For backends without tail(), we sort by `metaxy_created_at` (which always
-    exists in Metaxy feature tables) to get the most recent rows.
+    For backends without tail(), we sort by the configured creation timestamp
+    to get the most recent rows.
 
     Args:
         lazy_df: A narwhals LazyFrame to collect from.
@@ -313,10 +322,11 @@ def _collect_tail(lazy_df: nw.LazyFrame[Any], n_rows: int) -> pl.DataFrame:
         return lazy_df.tail(n_rows).collect().to_polars()
     else:
         # For backends without tail() (e.g., Ibis), use sort + head to simulate it
-        # Sort descending by metaxy_created_at (latest first), take head(n_rows),
+        # Sort descending by creation timestamp (latest first), take head(n_rows),
         # then sort ascending to restore chronological order
+        created_at_column, _, _ = get_lifecycle_system_columns()
         return (
-            lazy_df.sort(METAXY_CREATED_AT, descending=True).head(n_rows).sort(METAXY_CREATED_AT).collect().to_polars()
+            lazy_df.sort(created_at_column, descending=True).head(n_rows).sort(created_at_column).collect().to_polars()
         )
 
 
