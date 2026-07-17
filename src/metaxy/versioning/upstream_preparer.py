@@ -9,15 +9,14 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
-    METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
-    METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
+    get_lifecycle_system_columns,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.renamed_df import RenamedDataFrame
@@ -158,13 +157,14 @@ class UpstreamPreparer(Generic[FrameT]):
                 all_columns[col].append(feature_key)
 
         # System columns that are allowed to collide (needed for provenance calculation)
+        created_at_column, _, deleted_at_column = get_lifecycle_system_columns()
         allowed_system_columns = {
             METAXY_PROVENANCE,
             METAXY_PROVENANCE_BY_FIELD,
             METAXY_DATA_VERSION,
             METAXY_DATA_VERSION_BY_FIELD,
-            METAXY_CREATED_AT,
-            METAXY_DELETED_AT,
+            created_at_column,
+            deleted_at_column,
             METAXY_MATERIALIZATION_ID,
         }
         id_cols = set(self.engine.shared_id_columns)
