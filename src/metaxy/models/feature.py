@@ -10,7 +10,7 @@ from pydantic import AwareDatetime, Field, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 
 from metaxy._decorators import public
-from metaxy._hashing import get_hash_truncation_length, truncate_hash
+from metaxy._hashing import HashAlgorithm
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_VERSION,
@@ -46,6 +46,8 @@ class SerializedFeature(TypedDict):
     metaxy_definition_version: str
     feature_class_path: str
     project: str
+    hash_algorithm: str
+    hash_truncation_length: int
 
 
 def _hash_version_by_field(version_by_field: Mapping[str, str], hash_truncation_length: int) -> str:
@@ -68,24 +70,19 @@ class _FeatureVersions:
 class _FeatureVersionCacheEntry:
     """Versions of one feature, together with the inputs they are computed from.
 
-    The entry is valid while the hash truncation length is the same and the graph holds the
-    same definition objects for all recorded keys. A recorded `None` means that the key is
-    not in the graph. The plan is built from the recorded definitions. Field versions are
-    added one at a time as they are computed.
+    The entry is valid while the graph holds the same definition objects for all recorded keys.
+    The definitions hold the hash settings, so the entry also follows changes of the hash settings.
+    A recorded `None` means that the key is not in the graph. The plan is built from the recorded
+    definitions. Field versions are added one at a time as they are computed.
     """
 
-    hash_truncation_length: int
     definitions: dict[FeatureKey, FeatureDefinition | None]
     plan: FeaturePlan
     field_versions: dict[FieldKey, str] = field(default_factory=dict)
     feature_versions: _FeatureVersions | None = None
 
-    def is_current(
-        self, definitions_by_key: Mapping[FeatureKey, FeatureDefinition], hash_truncation_length: int
-    ) -> bool:
-        return self.hash_truncation_length == hash_truncation_length and all(
-            definitions_by_key.get(key) is definition for key, definition in self.definitions.items()
-        )
+    def is_current(self, definitions_by_key: Mapping[FeatureKey, FeatureDefinition]) -> bool:
+        return all(definitions_by_key.get(key) is definition for key, definition in self.definitions.items())
 
 
 @public
@@ -293,19 +290,33 @@ class FeatureGraph:
             feature=spec,
             deps=dep_specs or None,
             feature_deps=spec.deps,
+            hash_algorithm=definition.hash_algorithm,
+            hash_truncation_length=definition.hash_truncation_length,
         )
 
     def get_field_version(self, key: FQFieldKey) -> str:
         """Get the version of one field.
 
         The version is derived from the field's code version and the versions of its parent fields.
+        Its length is the hash truncation length of the feature definition.
         A field of an external feature with a provenance override uses the override value as its version.
         """
-        # An override is returned before the config is read, because reading a config that is not loaded warns.
         override = self._provenance_override(key)
         if override is not None:
             return override
-        return self._get_field_version(key, get_hash_truncation_length())
+
+        entry = self._cache_entry(key.feature)
+        if key.field in entry.field_versions:
+            return entry.field_versions[key.field]
+
+        hasher = hashlib.sha256()
+        hasher.update(key.to_string().encode())
+        hasher.update(str(entry.plan.feature.fields_by_key[key.field].code_version).encode())
+        for parent_key in sorted(entry.plan.get_parent_fields_for_field(key.field)):
+            hasher.update(self.get_field_version(parent_key).encode())
+
+        entry.field_versions[key.field] = hasher.hexdigest()[: entry.plan.hash_truncation_length]
+        return entry.field_versions[key.field]
 
     def _provenance_override(self, key: FQFieldKey) -> str | None:
         """Get the provenance override of a field of an external feature, if the field has one."""
@@ -317,35 +328,16 @@ class FeatureGraph:
             return definition.provenance_by_field_override.get(key.field.to_string())
         return None
 
-    def _get_field_version(self, key: FQFieldKey, hash_truncation_length: int) -> str:
-        override = self._provenance_override(key)
-        if override is not None:
-            return override
-
-        entry = self._cache_entry(key.feature, hash_truncation_length)
-        if key.field in entry.field_versions:
-            return entry.field_versions[key.field]
-
-        hasher = hashlib.sha256()
-        hasher.update(key.to_string().encode())
-        hasher.update(str(entry.plan.feature.fields_by_key[key.field].code_version).encode())
-        for parent_key in sorted(entry.plan.get_parent_fields_for_field(key.field)):
-            hasher.update(self._get_field_version(parent_key, hash_truncation_length).encode())
-
-        entry.field_versions[key.field] = hasher.hexdigest()[:hash_truncation_length]
-        return entry.field_versions[key.field]
-
-    def _cache_entry(self, key: FeatureKey, hash_truncation_length: int) -> _FeatureVersionCacheEntry:
+    def _cache_entry(self, key: FeatureKey) -> _FeatureVersionCacheEntry:
         """Get the current cache entry of a feature, and replace a missing or stale entry with a new one.
 
         The cache only holds entries of features with a valid plan.
         """
         entry = self._feature_version_cache.get(key)
-        if entry is not None and entry.is_current(self.feature_definitions_by_key, hash_truncation_length):
+        if entry is not None and entry.is_current(self.feature_definitions_by_key):
             return entry
 
         entry = _FeatureVersionCacheEntry(
-            hash_truncation_length=hash_truncation_length,
             definitions=self._dependency_definitions(key),
             plan=self.get_feature_plan(key),
         )
@@ -370,21 +362,18 @@ class FeatureGraph:
         return definitions
 
     def _get_feature_versions(self, key: FeatureKey) -> _FeatureVersions:
-        hash_truncation_length = get_hash_truncation_length()
-        entry = self._cache_entry(key, hash_truncation_length)
+        entry = self._cache_entry(key)
         if entry.feature_versions is not None:
             return entry.feature_versions
 
         # The field order of the spec is kept, because it is visible in serialized versions.
         version_by_field = {
-            field_key.to_string(): self._get_field_version(
-                FQFieldKey(field=field_key, feature=key), hash_truncation_length
-            )
+            field_key.to_string(): self.get_field_version(FQFieldKey(field=field_key, feature=key))
             for field_key in entry.plan.feature.fields_by_key
         }
         entry.feature_versions = _FeatureVersions(
             version_by_field=version_by_field,
-            feature_version=_hash_version_by_field(version_by_field, hash_truncation_length),
+            feature_version=_hash_version_by_field(version_by_field, entry.plan.hash_truncation_length),
         )
         return entry.feature_versions
 
@@ -593,12 +582,12 @@ class FeatureGraph:
             hasher.update(feature_key.to_string().encode("utf-8"))
             hasher.update(definition.feature_definition_version.encode("utf-8"))
 
-        return truncate_hash(hasher.hexdigest())
+        return hasher.hexdigest()[: max(definition.hash_truncation_length for _, definition in features)]
 
     def get_project_version(self, project: str) -> str:
         """Generate a project version for features belonging to a specific project.
 
-        Uses feature_definition_version (spec + schema only), excluding external features.
+        Uses feature_definition_version, excluding external features.
         This makes the project version independent of external feature changes.
 
         Args:
@@ -621,7 +610,7 @@ class FeatureGraph:
     def project_version(self) -> str:
         """Generate a project version for the current project's features.
 
-        Uses feature_definition_version (spec + schema only), excluding external features.
+        Uses feature_definition_version, excluding external features.
         The project is determined from MetaxyConfig.project if set, otherwise from the graph's
         single project (via the `project` property).
 
@@ -705,6 +694,8 @@ class FeatureGraph:
                 FEATURE_TRACKING_VERSION_COL: definition_version,
                 "feature_class_path": class_path,
                 "project": project,
+                "hash_algorithm": definition.hash_algorithm.value,
+                "hash_truncation_length": definition.hash_truncation_length,
             }
 
         return snapshot
@@ -758,6 +749,8 @@ class FeatureGraph:
                 feature_schema=feature_data["feature_schema"],
                 feature_class_path=feature_data["feature_class_path"],
                 project=feature_data["project"],
+                hash_algorithm=feature_data.get("hash_algorithm"),
+                hash_truncation_length=feature_data.get("hash_truncation_length"),
                 source="snapshot",
             )
             graph.add_feature_definition(definition)
@@ -885,6 +878,14 @@ class MetaxyMeta(ModelMetaclass):
             else:
                 new_cls.__metaxy_project__ = cls._detect_project(new_cls)
 
+            from metaxy.config import MetaxyConfig
+
+            config = MetaxyConfig.get()
+            new_cls.__metaxy_hash_algorithm__ = config.hash_algorithm or (
+                config.get_store().hash_algorithm if config.stores else HashAlgorithm.XXHASH32
+            )
+            new_cls.__metaxy_hash_truncation_length__ = config.hash_truncation_length
+
             active_graph.add_feature(new_cls)
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
@@ -921,11 +922,23 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
     graph: ClassVar[FeatureGraph]
     __metaxy_project__: ClassVar[str]
+    __metaxy_hash_algorithm__: ClassVar[HashAlgorithm]
+    __metaxy_hash_truncation_length__: ClassVar[int]
 
     @classmethod
     def metaxy_project(cls) -> str:
         """Return the project this feature belongs to."""
         return cls.__metaxy_project__
+
+    @classmethod
+    def metaxy_hash_algorithm(cls) -> HashAlgorithm:
+        """Return the hash algorithm captured when this feature was defined."""
+        return cls.__metaxy_hash_algorithm__
+
+    @classmethod
+    def metaxy_hash_truncation_length(cls) -> int:
+        """Return the hash length captured when this feature was defined."""
+        return cls.__metaxy_hash_truncation_length__
 
     # System columns - automatically managed by Metaxy
     # Most of them are optional since Metaxy injects them into dataframes at some point

@@ -35,23 +35,29 @@ def layer_spec(layer: int, code_version: str) -> FeatureSpec:
     )
 
 
-def layer_definition(layer: int, code_version: str) -> FeatureDefinition:
+def layer_definition(layer: int, code_version: str, *, hash_truncation_length: int = 8) -> FeatureDefinition:
     return FeatureDefinition(
         spec=layer_spec(layer, code_version),
         feature_schema={},
         feature_class_path=f"tests.diamond.L{layer}",
         project="test",
+        hash_truncation_length=hash_truncation_length,
     )
 
 
 def external_layer_definition(
-    layer: int, code_version: str, provenance_by_field: dict[CoercibleToFieldKey, str] | None
+    layer: int,
+    code_version: str,
+    provenance_by_field: dict[CoercibleToFieldKey, str] | None,
+    *,
+    hash_truncation_length: int = 8,
 ) -> FeatureDefinition:
     """External definition of a layer, with an optional provenance override."""
     return FeatureDefinition.external(
         spec=layer_spec(layer, code_version),
         project="external",
         provenance_by_field=provenance_by_field,
+        hash_truncation_length=hash_truncation_length,
         source="tests.models.diamond_graph",
     )
 

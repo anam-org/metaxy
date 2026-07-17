@@ -307,13 +307,10 @@ class TestFeatureVersionTruncation:
         snapshot_full = graph.project_version
         assert len(snapshot_full) == 8
 
-        # Enable truncation
+        # Changing the active config does not reinterpret the existing project.
         config = MetaxyConfig(project="test", hash_truncation_length=12)
         with config.use():
-            snapshot_truncated = graph.project_version
-            assert len(snapshot_truncated) == 12
-            # Note: The truncated version is computed fresh with truncated dependencies,
-            # not just a truncation of the full version, so they may differ
+            assert graph.project_version == snapshot_full
 
     def test_field_version_truncation(self, graph):
         """Test that field versions are truncated."""
@@ -334,11 +331,21 @@ class TestFeatureVersionTruncation:
         provenance_full = TestFeature.provenance_by_field()
         assert all(len(v) == 8 for v in provenance_full.values())
 
-        # Enable truncation
+        # Changing the active config does not reinterpret an existing feature.
         config = MetaxyConfig(hash_truncation_length=20)
         with config.use():
-            provenance_truncated = TestFeature.provenance_by_field()
-            assert all(len(v) == 20 for v in provenance_truncated.values())
+            assert all(len(v) == 8 for v in TestFeature.provenance_by_field().values())
+
+            class LongerHashFeature(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["test", "longer_hash_feature"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
+                ),
+            ):
+                pass
+
+            assert all(len(v) == 20 for v in LongerHashFeature.provenance_by_field().values())
 
 
 class TestConfigIntegration:

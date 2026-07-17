@@ -2,7 +2,7 @@
 
 The functions compute versions with a plain recursion over the feature graph and do not use
 the version cache of `FeatureGraph`. Tests use them as an independent oracle for the cached computation.
-The hash truncation length of the active config applies.
+Each version has the hash truncation length of the feature definition that it belongs to.
 
 The functions look up parent fields with `FeaturePlan.get_parent_fields_for_field`, so tests that record
 these lookups must call them only after their assertions on the recorded lookups.
@@ -10,7 +10,6 @@ these lookups must call them only after their assertions on the recorded lookups
 
 import hashlib
 
-from metaxy._hashing import truncate_hash
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.plan import FQFieldKey
 from metaxy.models.types import CoercibleToFeatureKey, ValidatedFeatureKeyAdapter
@@ -38,7 +37,7 @@ def reference_field_version(graph: FeatureGraph, key: FQFieldKey) -> str:
     for parent_key, _parent_field in sorted(plan.get_parent_fields_for_field(key.field).items()):
         hasher.update(reference_field_version(graph, parent_key).encode())
 
-    return truncate_hash(hasher.hexdigest())
+    return hasher.hexdigest()[: graph.get_feature_definition(key.feature).hash_truncation_length]
 
 
 def reference_feature_version_by_field(graph: FeatureGraph, key: CoercibleToFeatureKey) -> dict[str, str]:
@@ -59,4 +58,4 @@ def reference_feature_version(graph: FeatureGraph, key: CoercibleToFeatureKey) -
         hasher.update(field_key.encode())
         hasher.update(version_by_field[field_key].encode())
 
-    return truncate_hash(hasher.hexdigest())
+    return hasher.hexdigest()[: graph.get_feature_definition(key).hash_truncation_length]

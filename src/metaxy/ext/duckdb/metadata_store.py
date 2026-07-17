@@ -363,7 +363,6 @@ class DuckDBMetadataStore(IbisMetadataStore):
             store.fallback_stores = FallbackStoreList(
                 fallback_store_names,
                 config=MetaxyConfig.get(),
-                parent_hash_algorithm=store.hash_algorithm,
             )
         return store
 
