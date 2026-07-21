@@ -317,7 +317,8 @@ jobs:
           COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
           COVERAGE_FILE: ${{ github.workspace }}/.coverage
         run: >
-          uv run nox -s "integration(integration='${{ matrix.integration }}')"
+          uv run nox --force-python "${{ matrix.python-version }}"
+          -s "integration(integration='${{ matrix.integration }}')"
           -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
           ${{ inputs.use-tach && '--tach' || ' ' }}
 
