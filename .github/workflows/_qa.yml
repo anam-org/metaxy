@@ -31,8 +31,8 @@ on:
         description: "Run dependency version compatibility tests"
         type: boolean
         default: false
-      upgrade-dependencies:
-        description: "Resolve the newest dependency versions allowed by pyproject.toml"
+      test-latest-dependencies:
+        description: "Test against the newest dependency versions allowed by pyproject.toml"
         type: boolean
         default: false
       use-tach:
@@ -173,7 +173,7 @@ jobs:
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
-          upgrade-dependencies: ${{ inputs.upgrade-dependencies }}
+          test-latest-dependencies: ${{ inputs.test-latest-dependencies }}
       - name: Run Tach
         run: uv run tach check
 
@@ -220,7 +220,7 @@ jobs:
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
-          upgrade-dependencies: ${{ inputs.upgrade-dependencies }}
+          test-latest-dependencies: ${{ inputs.test-latest-dependencies }}
       - name: Run ty
         run: uv run ty check
 
@@ -249,7 +249,7 @@ jobs:
         uses: ./.github/actions/setup-devenv
         with:
           extras: "duckdb delta"
-          upgrade-dependencies: ${{ inputs.upgrade-dependencies }}
+          test-latest-dependencies: ${{ inputs.test-latest-dependencies }}
 
       - name: Run Tests with Coverage
         id: pytest
@@ -310,7 +310,7 @@ jobs:
         uses: ./.github/actions/setup-devenv
         with:
           install-deps: "minimal"
-          upgrade-dependencies: ${{ inputs.upgrade-dependencies }}
+          test-latest-dependencies: ${{ inputs.test-latest-dependencies }}
 
       - name: Run Tests with Coverage
         env:
@@ -388,7 +388,7 @@ jobs:
         uses: ./.github/actions/setup-devenv
         with:
           install-deps: "minimal"
-          upgrade-dependencies: ${{ inputs.upgrade-dependencies }}
+          test-latest-dependencies: ${{ inputs.test-latest-dependencies }}
       - name: Run ${{ matrix.session }}
         run: uv run nox -s "${{ matrix.session }}"
 
@@ -425,7 +425,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv python pin ${{ matrix.python-version }}
-          uv sync --group dev --all-extras --no-extra clickhouse
+          uv sync --group dev --all-extras --no-extra clickhouse ${{ inputs.test-latest-dependencies && '--upgrade' || '' }}
 
       - name: Run Tests
         run: >
@@ -474,7 +474,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv python pin ${{ matrix.python-version }}
-          uv sync --group dev --all-extras --no-extra clickhouse
+          uv sync --group dev --all-extras --no-extra clickhouse ${{ inputs.test-latest-dependencies && '--upgrade' || '' }}
 
       - name: Run Tests
         run: >
@@ -503,7 +503,7 @@ jobs:
       - name: Setup devenv
         uses: ./.github/actions/setup-devenv
         with:
-          upgrade-dependencies: ${{ inputs.upgrade-dependencies }}
+          test-latest-dependencies: ${{ inputs.test-latest-dependencies }}
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2.1.3
         with:

@@ -14,8 +14,8 @@ inputs:
     description: "Space-separated list of extras to install (only used when install-deps is not 'all' or 'false')"
     required: false
     default: ""
-  upgrade-dependencies:
-    description: "Resolve the newest dependency versions allowed by pyproject.toml"
+  test-latest-dependencies:
+    description: "Test against the newest dependency versions allowed by pyproject.toml"
     required: false
     default: "false"
 
@@ -52,12 +52,20 @@ runs:
       shell: bash
       run: git checkout -- devenv.lock
 
+    - name: Pin the matrix Python version for uv
+      if: env.DEVENV_PYTHON_VERSION != ''
+      shell: bash
+      run: uv python pin "$DEVENV_PYTHON_VERSION"
+
     - name: Install Python dependencies
       if: inputs.install-deps != 'false'
       shell: bash
       run: |
         UPGRADE_ARGS=()
-        if [ "${{ inputs.upgrade-dependencies }}" = "true" ]; then
+        if [ "${{ inputs.test-latest-dependencies }}" = "true" ]; then
+          # This intentionally updates uv.lock in the workspace. Nox sessions
+          # then resolve from that updated lock, so restoring uv.lock or using
+          # locked/frozen nox syncs would invalidate the compatibility check.
           UPGRADE_ARGS+=(--upgrade)
         fi
 

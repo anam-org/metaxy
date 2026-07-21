@@ -1,24 +1,77 @@
 name: Upstream compatibility
 
 on:
-  pull_request:
-    paths:
-      - ".github/actions/setup-devenv/action.yml"
-      - ".github/workflows/_qa.yml"
-      - ".github/workflows/upstream-compatibility.yml"
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
 
+concurrency:
+  group: upstream-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   qa:
     uses: ./.github/workflows/_qa.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: write
     with:
+      python-versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+      run-windows: true
+      run-macos: true
       dependency-matrix: true
       run-all-checks: true
-      upgrade-dependencies: true
+      test-latest-dependencies: true
       use-tach: false
-    secrets: inherit
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+
+  report-failure:
+    needs: qa
+    if: ${{ always() && github.event_name == 'schedule' && needs.qa.result == 'failure' }}
+    runs-on: depot-ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open or update the upstream compatibility issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "Upstream compatibility workflow failed";
+            const body = [
+              "The scheduled upstream compatibility run failed.",
+              "",
+              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            ].join("\n");
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = issues.find(
+              (issue) => !issue.pull_request && issue.title === title,
+            );
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+            }
