@@ -28,6 +28,10 @@ date: 2026-02-16
 bibliography: paper.bib
 ---
 
+!!! "Published in JOSS"
+
+    This paper is published in the [Journal of Open Source Software](https://joss.theoj.org/papers/10.21105/joss.10449).
+
 # Summary
 
 Software that processes large datasets often repeats expensive computations when any part of the input data or processing logic changes.
