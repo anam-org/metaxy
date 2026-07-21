@@ -14,6 +14,10 @@ inputs:
     description: "Space-separated list of extras to install (only used when install-deps is not 'all' or 'false')"
     required: false
     default: ""
+  upgrade-dependencies:
+    description: "Resolve the newest dependency versions allowed by pyproject.toml"
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -52,14 +56,19 @@ runs:
       if: inputs.install-deps != 'false'
       shell: bash
       run: |
+        UPGRADE_ARGS=()
+        if [ "${{ inputs.upgrade-dependencies }}" = "true" ]; then
+          UPGRADE_ARGS+=(--upgrade)
+        fi
+
         if [ "${{ inputs.install-deps }}" = "minimal" ]; then
-          uv sync --group dev
+          uv sync --group dev "${UPGRADE_ARGS[@]}"
         elif [ -n "${{ inputs.extras }}" ]; then
-          EXTRAS_ARGS=""
+          EXTRAS_ARGS=()
           for extra in ${{ inputs.extras }}; do
-            EXTRAS_ARGS="$EXTRAS_ARGS --extra $extra"
+            EXTRAS_ARGS+=(--extra "$extra")
           done
-          uv sync --group dev $EXTRAS_ARGS
+          uv sync --group dev "${EXTRAS_ARGS[@]}" "${UPGRADE_ARGS[@]}"
         else
-          uv sync --all-extras --all-groups
+          uv sync --all-extras --all-groups "${UPGRADE_ARGS[@]}"
         fi

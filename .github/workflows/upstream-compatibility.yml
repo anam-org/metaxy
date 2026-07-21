@@ -1,0 +1,24 @@
+name: Upstream compatibility
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/setup-devenv/action.yml"
+      - ".github/workflows/_qa.yml"
+      - ".github/workflows/upstream-compatibility.yml"
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    uses: ./.github/workflows/_qa.yml
+    with:
+      dependency-matrix: true
+      run-all-checks: true
+      upgrade-dependencies: true
+      use-tach: false
+    secrets: inherit
