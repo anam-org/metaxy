@@ -31,7 +31,9 @@ dependencies = [
   "narwhals>=2.20.0",
   "typing-extensions>=4.0.0",
   "pydantic-core>=2.0.0",
-  "polars>=1.35.0",
+  # Polars 1.43.0 panics on self-joins of Delta/Iceberg lazy scans:
+  # https://github.com/pola-rs/polars/issues/28465
+  "polars>=1.35.0,!=1.43.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
@@ -128,7 +130,9 @@ dev = [
   "ipython>=8.37.0",
   "boto3>=1.35.0",
   "duckdb>=1.4.1",
-  "pytest>=8.4.2",
+  # pytest-cases 3.10.1 is incompatible with pytest 9.1+:
+  # https://github.com/smarie/python-pytest-cases/issues/385
+  "pytest>=8.4.2,<9.1",
   "pytest-cases>=3.9.1",
   "hypothesis>=6.142.4",
   "ruff>=0.14.4",

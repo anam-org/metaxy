@@ -213,6 +213,7 @@ def test_sqlmodel_field_definitions() -> None:
 
     # Verify instance can be created
     instance = AudioFeature(
+        sample_id="sample-1",
         uid="1",
         path="/audio/track1.wav",
         sample_rate=44100,
@@ -1807,3 +1808,26 @@ def test_sqlmodel_has_materialization_id_field() -> None:
     if hasattr(TestFeature, "__table__"):
         table_columns = {col.name for col in TestFeature.__table__.columns}
         assert METAXY_MATERIALIZATION_ID in table_columns
+
+
+def test_sqlmodel_timestamp_columns_are_timezone_aware() -> None:
+    """Test that generated system timestamp columns retain timezone support."""
+    from metaxy.models.constants import (
+        METAXY_CREATED_AT,
+        METAXY_DELETED_AT,
+        METAXY_UPDATED_AT,
+    )
+
+    class TestFeature(
+        BaseSQLModelFeature,
+        table=True,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["timezone_columns"]),
+            fields=[FieldSpec(key=FieldKey(["field"]), code_version="1")],
+        ),
+    ):
+        uid: str = Field(primary_key=True)
+
+    table = getattr(TestFeature, "__table__")
+    for column_name in (METAXY_CREATED_AT, METAXY_UPDATED_AT, METAXY_DELETED_AT):
+        assert table.columns[column_name].type.timezone is True

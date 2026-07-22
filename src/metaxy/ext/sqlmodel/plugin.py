@@ -4,7 +4,7 @@ This module provides a combined metaclass that allows Metaxy Feature classes
 to also be SQLModel table classes, enabling seamless integration with SQLAlchemy/SQLModel ORMs.
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict, cast
 
 from pydantic import AwareDatetime, BaseModel
 from sqlalchemy.types import JSON, DateTime
@@ -356,7 +356,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_created_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was created (UTC)",
-        sa_type=DateTime(timezone=True),
+        sa_type=cast(type[Any], DateTime(timezone=True)),
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
         },
@@ -366,7 +366,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_updated_at: AwareDatetime | None = Field(
         default=None,
         description="Timestamp when the metadata row was last updated (UTC)",
-        sa_type=DateTime(timezone=True),
+        sa_type=cast(type[Any], DateTime(timezone=True)),
         sa_column_kwargs={
             "name": METAXY_UPDATED_AT,
         },
@@ -385,7 +385,7 @@ class BaseSQLModelFeature(SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, 
     metaxy_deleted_at: AwareDatetime | None = Field(
         default=None,
         description="Soft delete timestamp (UTC); null means active row",
-        sa_type=DateTime(timezone=True),
+        sa_type=cast(type[Any], DateTime(timezone=True)),
         sa_column_kwargs={
             "name": METAXY_DELETED_AT,
         },
