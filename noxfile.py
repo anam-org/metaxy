@@ -52,6 +52,10 @@ def _install_coverage_subprocess(session: nox.Session) -> None:
 @nox.parametrize("integration", INTEGRATIONS)
 def integration(session: nox.Session, integration: str) -> None:
     """Run tests for a single integration."""
+    if integration == "ray":
+        # The runtime extra intentionally leaves Python 3.14+ unconstrained,
+        # while the integration suite should exercise Ray releases that support it.
+        session.install("ray; python_version >= '3.14'")
     session.install("-e", f".[{integration}]")
     _install_coverage_subprocess(session)
     session.run("pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
