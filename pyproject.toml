@@ -31,15 +31,12 @@ dependencies = [
   "narwhals>=2.20.0",
   "typing-extensions>=4.0.0",
   "pydantic-core>=2.0.0",
-  # Polars 1.43.0 panics on self-joins of Delta/Iceberg lazy scans:
-  # https://github.com/pola-rs/polars/issues/28465
-  "polars>=1.35.0,!=1.43.0",
+  "polars>=1.35.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
   "python-dotenv>=1.0.0",
   "pyyaml>=6.0.0",
-  "pytest-cases>=3.9.1",
   "sqlglot>=28.1.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
@@ -130,10 +127,8 @@ dev = [
   "ipython>=8.37.0",
   "boto3>=1.35.0",
   "duckdb>=1.4.1",
-  # pytest-cases 3.10.1 is incompatible with pytest 9.1+:
-  # https://github.com/smarie/python-pytest-cases/issues/385
-  "pytest>=8.4.2,<9.1",
-  "pytest-cases>=3.9.1",
+  "pytest>=8.4.2",
+  "pytest-cases>=3.10.1",
   "hypothesis>=6.142.4",
   "ruff>=0.14.4",
   "syrupy>=5.0.0",
@@ -209,6 +204,8 @@ examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
 metaxy-testing = { workspace = true }
 griffe-pydantic = { git = "https://github.com/danielgafni/griffe-pydantic.git", branch = "feat/configurable-bases" }
+# Remove this source override after pytest-cases releases the fix from PR #386.
+pytest-cases = { git = "https://github.com/smarie/python-pytest-cases.git", rev = "37c72c1350899d45bc80e92b4b4168b5f7a7af7c" }
 # narwhals-map = { git = "https://github.com/danielgafni/narwhals-map.git" }
 # cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "docstring-parser-skipped-sections" }
 

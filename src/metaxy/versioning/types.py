@@ -5,6 +5,7 @@ from typing import Any, NamedTuple, cast
 
 import narwhals as nw
 import polars as pl
+from packaging.version import Version
 
 from metaxy._decorators import public
 from metaxy._hashing import HashAlgorithm as HashAlgorithm
@@ -57,6 +58,15 @@ class PolarsLazyIncrement:
         Returns:
             PolarsIncrement: The collected increment.
         """
+        if (
+            Version(pl.__version__) == Version("1.43.0")
+            and "optimizations" not in kwargs
+            and "comm_subplan_elim" not in kwargs
+        ):
+            # Polars 1.43.0 panics when CSE revisits shared Delta/Iceberg scan nodes.
+            # Later releases can keep the default once pola-rs/polars#28468 ships.
+            kwargs["optimizations"] = pl.QueryOptFlags(comm_subplan_elim=False)
+
         collected = cast(
             list[pl.DataFrame],
             pl.collect_all([self.new, self.stale, self.orphaned], **kwargs),
