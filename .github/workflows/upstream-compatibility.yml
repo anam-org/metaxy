@@ -13,6 +13,42 @@ permissions:
   contents: read
 
 jobs:
+  dependency-manifest:
+    runs-on: depot-ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.5.0
+        with:
+          enable-cache: true
+      - name: Resolve latest allowed dependencies
+        id: resolve
+        shell: bash
+        run: |
+          set +e
+          uv lock --upgrade
+          status=$?
+          set -e
+
+          git diff -- uv.lock > upstream-compatibility-uv-lock.diff
+          if [[ ! -s upstream-compatibility-uv-lock.diff ]]; then
+            echo "No uv.lock changes were produced." > upstream-compatibility-uv-lock.diff
+          fi
+          exit "$status"
+      - name: Upload dependency manifest
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: upstream-compatibility-dependency-manifest
+          path: upstream-compatibility-uv-lock.diff
+          if-no-files-found: error
+          retention-days: 14
+
   qa:
     uses: ./.github/workflows/_qa.yml
     permissions:
@@ -28,33 +64,121 @@ jobs:
     secrets:
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
-  report-failure:
-    needs: qa
-    if: ${{ always() && github.event_name == 'schedule' && needs.qa.result == 'failure' }}
+  report-scheduled-result:
+    needs: [dependency-manifest, qa]
+    if: ${{ always() && github.event_name == 'schedule' }}
     runs-on: depot-ubuntu-latest
     permissions:
+      actions: read
       contents: read
       issues: write
     steps:
-      - name: Open or update the upstream compatibility issue
+      - name: Update the upstream compatibility incident
         uses: actions/github-script@v8
+        env:
+          DEPENDENCY_MANIFEST_RESULT: ${{ needs.dependency-manifest.result }}
+          QA_RESULT: ${{ needs.qa.result }}
         with:
           script: |
+            const incidentLabel = "upstream-compatibility";
             const title = "Upstream compatibility workflow failed";
-            const body = [
-              "The scheduled upstream compatibility run failed.",
-              "",
-              `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            ].join("\n");
-            const { data: issues } = await github.rest.issues.listForRepo({
+            const runUrl =
+              `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}` +
+              `/actions/runs/${context.runId}`;
+            const qaResult = process.env.QA_RESULT;
+            const manifestResult = process.env.DEPENDENCY_MANIFEST_RESULT;
+            const succeeded = qaResult === "success" && manifestResult === "success";
+
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: incidentLabel,
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: incidentLabel,
+                color: "B60205",
+                description: "Open incident from the upstream compatibility workflow",
+              });
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
+              labels: incidentLabel,
               per_page: 100,
             });
             const existing = issues.find(
               (issue) => !issue.pull_request && issue.title === title,
             );
+
+            if (succeeded) {
+              if (!existing) {
+                core.info("No open upstream compatibility incident to close.");
+                return;
+              }
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Recovered in scheduled run: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: "closed",
+                state_reason: "completed",
+              });
+              return;
+            }
+
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRun,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId,
+                per_page: 100,
+              },
+            );
+            const unsuccessfulConclusions = new Set([
+              "action_required",
+              "cancelled",
+              "failure",
+              "startup_failure",
+              "timed_out",
+            ]);
+            const failedJobs = jobs
+              .filter((job) => unsuccessfulConclusions.has(job.conclusion))
+              .map((job) => `- [${job.name}](${job.html_url})`);
+            if (failedJobs.length === 0) {
+              failedJobs.push(
+                `- Reusable QA result: \`${qaResult}\``,
+                `- Dependency manifest result: \`${manifestResult}\``,
+              );
+            }
+
+            const body = [
+              "The scheduled upstream compatibility run did not complete successfully.",
+              "",
+              `Run: ${runUrl}`,
+              "",
+              "Failed jobs:",
+              ...failedJobs,
+              "",
+              "Dependency resolution:",
+              `- Result: \`${manifestResult}\``,
+              `- Artifact: [upstream-compatibility-dependency-manifest](${runUrl}#artifacts) (uv.lock diff only)`,
+            ].join("\n");
+
             if (existing) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -62,11 +186,13 @@ jobs:
                 issue_number: existing.number,
                 body,
               });
-            } else {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title,
-                body,
-              });
+              return;
             }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: [incidentLabel],
+            });
