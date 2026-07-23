@@ -11,16 +11,12 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   qa:
     uses: ./.github/workflows/_qa.yml
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
-      checks: write
     with:
       python-versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
       run-windows: true
@@ -30,7 +26,6 @@ jobs:
       test-latest-dependencies: true
       use-tach: false
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
 
   report-failure:

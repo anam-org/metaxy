@@ -47,6 +47,9 @@ jobs:
   qa-latest-deps:
     if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tests:latest-deps') }}
     uses: ./.github/workflows/_qa.yml
+    permissions:
+      contents: read
+      pull-requests: read
     with:
       python-versions: ${{ contains(github.event.pull_request.labels.*.name, 'tests:full') && '["3.10", "3.11", "3.12", "3.13", "3.14"]' || '["3.10"]' }}
       run-windows: ${{ contains(github.event.pull_request.labels.*.name, 'tests:full') }}
@@ -54,5 +57,4 @@ jobs:
       dependency-matrix: ${{ contains(github.event.pull_request.labels.*.name, 'tests:full') }}
       test-latest-dependencies: true
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}

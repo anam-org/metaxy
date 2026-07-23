@@ -229,9 +229,6 @@ jobs:
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
     permissions:
       contents: read
-      pull-requests: write
-      issues: write
-      checks: write
     runs-on: depot-ubuntu-latest
     env:
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
@@ -269,7 +266,7 @@ jobs:
           uv run coverage xml -o coverage.xml
 
       - name: Upload Coverage to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !inputs.test-latest-dependencies && !cancelled() }}
         uses: codecov/codecov-action@v5.5.2
         with:
           slug: anam-org/metaxy
@@ -277,7 +274,7 @@ jobs:
           flags: Python${{ matrix.python-version }}
 
       - name: Upload Test Results to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !inputs.test-latest-dependencies && !cancelled() }}
         uses: codecov/codecov-action@v5.5.2
         with:
           report_type: test_results
@@ -293,8 +290,6 @@ jobs:
     runs-on: depot-ubuntu-latest
     env:
       DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
-      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-      MOTHERDUCK_REGION: eu-central-1
     strategy:
       fail-fast: false
       matrix:
@@ -303,6 +298,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
       - name: Fetch main branch
         if: github.ref != 'refs/heads/main'
         run: git fetch origin main:main
@@ -322,8 +319,21 @@ jobs:
           -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
           ${{ inputs.use-tach && '--tach' || ' ' }}
 
+      # Keep service credentials out of checkout and dependency setup above.
+      - name: Run MotherDuck live tests
+        if: ${{ matrix.integration == 'duckdb' }}
+        env:
+          COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
+          COVERAGE_FILE: ${{ github.workspace }}/.coverage
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          MOTHERDUCK_REGION: eu-central-1
+        run: >
+          uv run --no-sync pytest tests/ext/duckdb/test_motherduck.py
+          --cov=src/metaxy --cov-append --cov-branch
+          --junit-xml=./junit-motherduck.xml -o junit_family=legacy
+
       - name: Upload Coverage to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !inputs.test-latest-dependencies && !cancelled() }}
         uses: codecov/codecov-action@v5.5.2
         with:
           slug: anam-org/metaxy
@@ -331,7 +341,7 @@ jobs:
           flags: Python${{ matrix.python-version }}
 
       - name: Upload Test Results to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !inputs.test-latest-dependencies && !cancelled() }}
         uses: codecov/codecov-action@v5.5.2
         with:
           report_type: test_results
