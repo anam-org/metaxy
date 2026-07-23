@@ -144,7 +144,7 @@ class TestConvertMapsToPolarsMap:
 
         assert isinstance(result, pl.LazyFrame)
         collected = result.collect()
-        assert collected.schema["metaxy_provenance_by_field"] == MAP_STR_STR  # ty: ignore[unresolved-attribute]
+        assert collected.schema["metaxy_provenance_by_field"] == MAP_STR_STR
 
     def test_explicit_columns_parameter(self, list_kv_df: pl.DataFrame) -> None:
         """Explicit columns parameter targets only specified columns."""

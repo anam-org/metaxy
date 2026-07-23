@@ -202,7 +202,7 @@ def truncate_struct_column(df: pl.DataFrame | pl.LazyFrame, struct_column: str) 
     # For LazyFrame, we need to collect once to get field names
     temp_df: pl.DataFrame
     if isinstance(df, pl.LazyFrame):
-        temp_df = df.limit(1).collect()  # ty: ignore[invalid-assignment]
+        temp_df = df.limit(1).collect()
     else:
         temp_df = df
 

@@ -69,7 +69,7 @@ def test_metadata_immutable() -> None:
     assert spec.metadata == {"key": "value"}
 
     with pytest.raises(Exception):
-        spec.metadata = {"key": "new_value"}
+        spec.metadata = {"key": "new_value"}  # ty: ignore[invalid-assignment]
 
 
 def test_metadata_defaults_to_empty_dict() -> None:

@@ -15,11 +15,11 @@ from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
-    from ibis import Expr as IbisExpr
+    import ibis.expr.types as ir
 
 
 class IbisHashFn(Protocol):
-    def __call__(self, expr: "IbisExpr") -> "IbisExpr": ...
+    def __call__(self, expr: "ir.Value") -> "ir.StringValue": ...
 
 
 class IbisVersioningEngine(VersioningEngine):
@@ -82,7 +82,7 @@ class IbisVersioningEngine(VersioningEngine):
 
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Get hash function
         hash_fn = self.hash_functions[hash_algo]
@@ -112,7 +112,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
         keys = ibis.array([ibis.literal(name) for name in field_columns])
         values = ibis.array([ibis_table[src_col].cast("string") for src_col in field_columns.values()])
         return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: ibis.map(keys, values)})))
@@ -135,7 +135,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Create window spec with ordering for deterministic results
         # Fall back to group_by columns for ordering if no explicit order_by columns
@@ -178,7 +178,7 @@ class IbisVersioningEngine(VersioningEngine):
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
 
         # Create a temporary column for ordering using coalesce
         ordering_expr = ibis.coalesce(*[ibis_table[col] for col in timestamp_columns])

@@ -130,4 +130,4 @@ def test_feature_spec_description_immutable():
     )
 
     with pytest.raises(Exception):
-        spec.description = "New description"
+        spec.description = "New description"  # ty: ignore[invalid-assignment]

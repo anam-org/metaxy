@@ -28,7 +28,7 @@ def config_with_features():
     config = MetaxyConfig(
         project="project_a",
         store="test_store",
-        stores={  # ty: ignore[invalid-argument-type]
+        stores={
             "test_store": {
                 "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -87,7 +87,7 @@ def test_get_metaxy_system_metadata():
     config = MetaxyConfig(
         project="test",
         store="test_store",
-        stores={  # ty: ignore[invalid-argument-type]
+        stores={
             "test_store": {
                 "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -110,7 +110,7 @@ def test_feature_versions_table_columns_match_polars_schema():
     config = MetaxyConfig(
         project="test",
         store="test_store",
-        stores={  # ty: ignore[invalid-argument-type]
+        stores={
             "test_store": {
                 "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                 "config": {"database": ":memory:"},
@@ -174,7 +174,7 @@ def test_get_store_sqlalchemy_url_default_store():
     config = MetaxyConfig(
         project="test",
         store="test_store",
-        stores={  # ty: ignore[invalid-argument-type]
+        stores={
             "test_store": {
                 "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                 "config": {"database": "test.db"},
@@ -192,7 +192,7 @@ def test_get_store_sqlalchemy_url_named_store():
     """Test getting sqlalchemy_url from named store."""
     config = MetaxyConfig(
         project="test",
-        stores={  # ty: ignore[invalid-argument-type]
+        stores={
             "store1": {
                 "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                 "config": {"database": "store1.db"},
@@ -221,7 +221,7 @@ class TestProtocolParameter:
         config = MetaxyConfig(
             project="test",
             store="test_store",
-            stores={  # ty: ignore[invalid-argument-type]
+            stores={
                 "test_store": {
                     "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                     "config": {"database": "test.db"},
@@ -243,7 +243,7 @@ class TestProtocolParameter:
         config = MetaxyConfig(
             project="test",
             store="test_store",
-            stores={  # ty: ignore[invalid-argument-type]
+            stores={
                 "test_store": {
                     "type": "metaxy.ext.duckdb.DuckDBMetadataStore",
                     "config": {"database": "mydb.db"},

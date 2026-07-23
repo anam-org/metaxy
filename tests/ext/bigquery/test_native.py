@@ -254,7 +254,7 @@ def test_bigquery_table_operations(
             dataset_id="test_dataset",
         ).open("w") as store:
             # Mock the write operation
-            store._write_feature = MagicMock()  # ty: ignore[invalid-assignment]
+            store._write_feature = MagicMock()
 
             metadata = pl.DataFrame(
                 {
@@ -269,6 +269,6 @@ def test_bigquery_table_operations(
             store.write(test_features["UpstreamFeatureA"], metadata)
 
             # Verify write was called with correct table name
-            assert store._write_feature.called  # ty: ignore[unresolved-attribute]
-            call_args = store._write_feature.call_args[0]  # ty: ignore[unresolved-attribute]
+            assert store._write_feature.called
+            call_args = store._write_feature.call_args[0]
             assert call_args[0].table_name == "test_stores__upstream_a"

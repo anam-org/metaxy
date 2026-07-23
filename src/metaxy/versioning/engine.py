@@ -409,9 +409,7 @@ class VersioningEngine(ABC):
         )
 
         # Build new struct columns from hashed fields
-        df = self.build_struct_column(  # ty: ignore[invalid-assignment]
-            df, renamed_data_version_by_field_col, hashed_field_cols
-        )
+        df = self.build_struct_column(df, renamed_data_version_by_field_col, hashed_field_cols)
         df = self.build_struct_column(
             df,
             renamed_prov_by_field_col,
@@ -422,18 +420,18 @@ class VersioningEngine(ABC):
         # Pre-extract fields, then concatenate with separator and hash
         sorted_fields = sorted(upstream_field_names)
         temp_field_cols = {fn: f"__field_{fn}" for fn in sorted_fields}
-        df = self._extract_metadata_fields(df, renamed_data_version_by_field_col, temp_field_cols)  # ty: ignore[invalid-assignment]
+        df = self._extract_metadata_fields(df, renamed_data_version_by_field_col, temp_field_cols)
         sample_concat = nw.concat_str([nw.col(c) for c in temp_field_cols.values()], separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(sample_concat.alias("__sample_concat"))
 
-        df = self.hash_string_column(  # ty: ignore[invalid-assignment]
+        df = self.hash_string_column(
             df,
             "__sample_concat",
             renamed_data_version_col,
             hash_algorithm,
             truncate_length=hash_length,
         )
-        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(
             nw.col(renamed_data_version_col).alias(renamed_prov_col),
         )
 
@@ -520,11 +518,11 @@ class VersioningEngine(ABC):
         df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)  # ty: ignore[invalid-argument-type]
 
         # Compute sample-level provenance hash
-        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)  # ty: ignore[invalid-assignment]
+        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
 
         # Drop all temporary columns
         temp_columns_to_drop = list(temp_concat_cols.values()) + list(temp_hash_cols.values()) + pre_extracted_temp_cols
-        df = df.drop(*temp_columns_to_drop)  # ty: ignore[invalid-argument-type]
+        df = df.drop(*temp_columns_to_drop)
 
         # Drop renamed upstream system columns
         current_columns = df.collect_schema().names()
@@ -587,13 +585,13 @@ class VersioningEngine(ABC):
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
         version_columns = ["metaxy_feature_version", "metaxy_project_version"]
-        current_columns = df.collect_schema().names()
+        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)
+            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
-        return df  # ty: ignore[invalid-return-type]
+        return df
 
     def compute_provenance_columns(
         self,
@@ -650,10 +648,10 @@ class VersioningEngine(ABC):
         temp_cols = {fn: f"__hsvf_{fn}" for fn in sorted_names}
         df = self._extract_metadata_fields(df, struct_column, temp_cols)
         sample_concat = nw.concat_str([nw.col(c) for c in temp_cols.values()], separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))
+        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
         # Hash the concatenation to produce final provenance hash
-        return self.hash_string_column(  # ty: ignore[invalid-return-type]
+        return self.hash_string_column(
             df,
             "__sample_concat",
             hash_column,
@@ -744,7 +742,7 @@ class VersioningEngine(ABC):
 
             # Validate that root features provide both required provenance columns
             self._check_required_provenance_columns(
-                expected,  # ty: ignore[invalid-argument-type]
+                expected,
                 "The `sample` DataFrame (must be provided to root features)",
             )
         else:

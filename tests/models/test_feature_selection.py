@@ -39,7 +39,7 @@ class TestValidation:
     def test_frozen(self):
         sel = FeatureSelection(projects=["x"])
         with pytest.raises(ValidationError, match="frozen"):
-            sel.projects = ["y"]
+            sel.projects = ["y"]  # ty: ignore[invalid-assignment]
 
 
 class TestOr:

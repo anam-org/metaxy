@@ -1181,7 +1181,7 @@ def test_store_config_accepts_class_directly(tmp_path: Path) -> None:
 
     # Passing a class directly should work
     config = StoreConfig(
-        type=DeltaMetadataStore,  # ty: ignore[invalid-argument-type]
+        type=DeltaMetadataStore,
         config={"root_path": str(tmp_path / "delta_store")},
     )
 

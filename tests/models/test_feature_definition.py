@@ -164,7 +164,7 @@ def test_feature_definition_is_frozen():
     )
 
     with pytest.raises(Exception):  # Pydantic's ValidationError for frozen models
-        definition.feature_class_path = "other.path"
+        definition.feature_class_path = "other.path"  # ty: ignore[invalid-assignment]
 
 
 class TestGetFeatureByKey:

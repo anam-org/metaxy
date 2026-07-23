@@ -194,7 +194,7 @@ def test_fallback_store_warning_issued(
         # Create primary store with native component support and fallback configured
         primary_store = create_store_for_fallback(
             primary_store_type,
-            versioning_engine=versioning_engine,  # ty: ignore[invalid-argument-type]
+            versioning_engine=versioning_engine,
             hash_algorithm=hash_algorithm,
             tmp_path=tmp_path,
             suffix=f"primary_{versioning_engine}",

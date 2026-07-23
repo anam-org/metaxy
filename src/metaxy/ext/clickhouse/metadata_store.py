@@ -52,10 +52,10 @@ class ClickHouseVersioningEngine(IbisVersioningEngine):
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
 
         @ibis.udf.scalar.builtin
-        def arrayStringConcat(arr: dt.Array[dt.String], sep: str) -> str:
+        def arrayStringConcat(arr: dt.Array[dt.String], sep: str) -> str:  # ty: ignore[empty-body]
             """ClickHouse arrayStringConcat() function."""
             ...
 

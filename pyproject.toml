@@ -144,7 +144,7 @@ dev = [
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
-  "ty==0.0.43",
+  "ty==0.0.63",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pytest-benchmark>=5.0.0",

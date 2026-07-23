@@ -58,7 +58,7 @@ def collect_to_polars(frame: PolarsCompatibleFrame) -> pl.DataFrame:
     if isinstance(frame, pl.DataFrame):
         return frame
     if isinstance(frame, pl.LazyFrame):
-        return cast(pl.DataFrame, frame.collect())
+        return frame.collect()
 
     if isinstance(frame, (nw.DataFrame, nw.LazyFrame)):
         if frame.implementation == nw.Implementation.POLARS:
@@ -132,4 +132,4 @@ def switch_implementation_to_polars(frame: FrameT) -> FrameT:
         native = convert_maps_to_polars_map(native, columns=map_columns)
         result = nw.from_native(native)
 
-    return result
+    return cast(FrameT, result)

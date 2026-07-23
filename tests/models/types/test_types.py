@@ -538,7 +538,7 @@ class TestCoercibleToFeatureKey:
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
 
-        model = MyModel(key="a/b/c")  # ty: ignore[invalid-argument-type]
+        model = MyModel(key="a/b/c")
         assert isinstance(model.key, FeatureKey)
         assert model.key.to_string() == "a/b/c"
 
@@ -550,7 +550,7 @@ class TestCoercibleToFeatureKey:
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
 
-        model = MyModel(key=["a", "b", "c"])  # ty: ignore[invalid-argument-type]
+        model = MyModel(key=["a", "b", "c"])
         assert isinstance(model.key, FeatureKey)
         assert model.key.to_string() == "a/b/c"
 
@@ -663,7 +663,7 @@ class TestCoercibleToFieldKey:
         class MyModel(BaseModel):
             key: ValidatedFieldKey
 
-        model = MyModel(key="a/b/c")  # ty: ignore[invalid-argument-type]
+        model = MyModel(key="a/b/c")
         assert isinstance(model.key, FieldKey)
         assert model.key.to_string() == "a/b/c"
 
@@ -675,7 +675,7 @@ class TestCoercibleToFieldKey:
         class MyModel(BaseModel):
             key: ValidatedFieldKey
 
-        model = MyModel(key=["a", "b", "c"])  # ty: ignore[invalid-argument-type]
+        model = MyModel(key=["a", "b", "c"])
         assert isinstance(model.key, FieldKey)
         assert model.key.to_string() == "a/b/c"
 
