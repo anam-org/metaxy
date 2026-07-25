@@ -37,7 +37,6 @@ dependencies = [
   "pydantic-settings>=2.11.0",
   "python-dotenv>=1.0.0",
   "pyyaml>=6.0.0",
-  "pytest-cases>=3.9.1",
   "sqlglot>=28.1.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
@@ -308,7 +307,7 @@ dagster-shared = ["dagster_shared"]
 google-auth = ["google"]
 
 [tool.deptry.per_rule_ignores]
-DEP004 = ["metaxy_testing", "sybil"]
+DEP004 = ["metaxy_testing", "pytest_cases", "sybil"]
 
 [[tool.uv.index]]
 name = "testpypi"
