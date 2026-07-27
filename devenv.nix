@@ -26,6 +26,7 @@
     stdenv.cc
     git
     uv
+    just
   ];
 
   # System packages per integration (only those needing native deps)
