@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, overload
 if TYPE_CHECKING:
     from metaxy.config import MetaxyConfig
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.versioning.types import HashAlgorithm
 
 
 class FallbackStoreList(Sequence["MetadataStore"]):
@@ -22,11 +21,9 @@ class FallbackStoreList(Sequence["MetadataStore"]):
         entries: Sequence[MetadataStore | str] | None = None,
         *,
         config: MetaxyConfig | None = None,
-        parent_hash_algorithm: HashAlgorithm | None = None,
     ) -> None:
         self._entries: list[MetadataStore | str] = list(entries) if entries else []
         self._config = config
-        self._parent_hash_algorithm = parent_hash_algorithm
 
     def _resolve(self, index: int) -> MetadataStore:
         entry = self._entries[index]
@@ -35,12 +32,6 @@ class FallbackStoreList(Sequence["MetadataStore"]):
         if self._config is None:
             raise ValueError(f"Cannot resolve fallback store '{entry}': no MetaxyConfig provided")
         store = self._config.get_store(entry)
-        if self._parent_hash_algorithm is not None and store.hash_algorithm != self._parent_hash_algorithm:
-            raise ValueError(
-                f"Fallback store '{entry}' uses hash_algorithm='{store.hash_algorithm.value}' "
-                f"but parent store uses '{self._parent_hash_algorithm.value}'. "
-                f"All stores in a fallback chain must use the same hash algorithm."
-            )
         self._entries[index] = store
         return store
 

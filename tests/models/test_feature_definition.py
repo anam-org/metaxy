@@ -1,7 +1,7 @@
 """Tests for FeatureDefinition model."""
 
 import pytest
-from metaxy import CoercibleToFieldKey, FeatureDefinition
+from metaxy import CoercibleToFieldKey, FeatureDefinition, HashAlgorithm
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -29,6 +29,58 @@ def test_feature_definition_from_feature_class(graph):
     assert definition.feature_class_path is not None and definition.feature_class_path.endswith(TestFeature.__name__)
     assert definition.project == TestFeature.metaxy_project()
     assert definition.feature_definition_version  # non-empty hash
+
+
+def test_hash_settings_are_attached_to_feature_definition(graph, config):
+    from metaxy import BaseFeature
+    from metaxy.ext.polars.versioning import PolarsVersioningEngine
+    from metaxy_testing.models import SampleFeatureSpec
+
+    sha256_config = config.model_copy(update={"hash_algorithm": HashAlgorithm.SHA256, "hash_truncation_length": 12})
+    with sha256_config.use():
+
+        class TestFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "hash_settings"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    definition = graph.get_feature_definition(TestFeature)
+    engine = PolarsVersioningEngine(graph.get_feature_plan(TestFeature))
+
+    assert definition.hash_algorithm == engine.hash_algorithm == HashAlgorithm.SHA256
+    assert definition.hash_truncation_length == engine.hash_truncation_length == 12
+
+    alternate_config = config.model_copy(update={"hash_algorithm": HashAlgorithm.MD5, "hash_truncation_length": 20})
+    with alternate_config.use():
+
+        class AlternateFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "alternate_hash_settings"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        alternate_definition = graph.get_feature_definition(AlternateFeature)
+        assert alternate_definition.hash_algorithm == HashAlgorithm.MD5
+        assert alternate_definition.hash_truncation_length == 20
+
+    with alternate_config.use():
+        restored_graph = graph.from_snapshot(graph.to_snapshot())
+
+    expected_settings = {
+        TestFeature: (HashAlgorithm.SHA256, 12),
+        AlternateFeature: (HashAlgorithm.MD5, 20),
+    }
+    for feature, expected in expected_settings.items():
+        definition = restored_graph.get_feature_definition(feature)
+        assert (definition.hash_algorithm, definition.hash_truncation_length) == expected
+    assert restored_graph.project_version == graph.project_version
 
 
 def test_feature_definition_project_field():

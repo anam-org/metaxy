@@ -15,12 +15,16 @@ Either TOML-based or environment-based configuration is **required** to use the 
 
     ```toml title="metaxy.toml"
     project = "my_package"
+    hash_algorithm = "xxhash32"
+    hash_truncation_length = 8
 
     [stores.dev]
     type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
     [stores.dev.config]
     root_path = "${HOME}/.metaxy/metadata"
     ```
+
+Hash settings are attached to feature definitions when they are loaded, so stored definitions keep the settings that produced their hashes.
 
 ### Configuration Priority
 

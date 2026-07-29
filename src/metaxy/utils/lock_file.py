@@ -270,6 +270,8 @@ def _load_all_features_from_store(
                 feature_schema=row["feature_schema"],
                 feature_class_path=row["feature_class_path"],
                 project=row["project"],
+                hash_algorithm=row.get("hash_algorithm") or storage.store.hash_algorithm,
+                hash_truncation_length=row.get("hash_truncation_length") or storage.store.hash_truncation_length,
             )
         except Exception as e:
             from metaxy._warnings import InvalidStoredFeatureWarning
