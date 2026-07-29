@@ -13,6 +13,17 @@ description: "Learn how to store Metaxy metadata in DuckLake."
 
 Currently, there is only one production-ready implementation of DuckLake - via DuckDB, and the built-in [`DuckDBMetadataStore`][metaxy.ext.duckdb.DuckDBMetadataStore] can be configured to use DuckLake as its storage backend. Learn more about the DuckDB integration [here](/integrations/metadata-stores/databases/duckdb.md).
 
+!!! warning "Current MotherDuck limitation"
+
+    MotherDuck-backed DuckLake stores currently hit a limitation tracked in [issue #1043](https://github.com/anam-org/metaxy/issues/1043): as community extensions for `hashfuncs` are not yet available in MotherDuck.
+
+    Two workarounds are possible:
+
+    - Set `versioning_engine = "polars"` to keep versioning on the client side and avoid the failing MotherDuck SQL path.
+    - Change `hash_algorithm` to a server-supported hash such as `sha256` if you want to keep versioning native.
+
+    Changing the versioning engine is the safer workaround if you want to preserve current `xxhash`-based version semantics. Changing the hash algorithm also works, but it changes the computed version / provenance values, so keep it consistent across existing stores and fallback chains.
+
 ## Configuration
 
 There are two main parts that configure DuckLake: a **catalog** (where the transaction log and other metadata is stored) and a **storage** (where the data files (1) live).
@@ -50,6 +61,26 @@ Each piece of configuration that manages secrets (e.g. PostgreSQL, S3, R2, GCS) 
     secret = "..."
     region = "eu-central-1"
     ```
+
+## MotherDuck workarounds
+
+If you are using a MotherDuck catalog and run into the limitation above, use one of these configurations for now.
+
+### Keep `xxhash` semantics: use the Polars versioning engine
+
+```toml
+[stores.dev.config]
+versioning_engine = "polars"
+```
+
+### Keep native execution: switch to a server-supported hash
+
+```toml
+[stores.dev.config]
+hash_algorithm = "sha256"
+```
+
+Use the second option only if you are comfortable changing hash semantics for that store. In particular, avoid mixing different hash algorithms across fallback stores.
 
 See the [DuckLake example](/examples/ducklake.md) to learn more.
 
