@@ -6,11 +6,11 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.models.constants import (
-    _COLUMNS_TO_DROP_BEFORE_JOIN,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
+    get_columns_to_drop_before_join,
 )
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.plan import FeaturePlan
@@ -126,11 +126,11 @@ class FeatureDepTransformer:
             combined_filters.extend(filters)
 
         # Drop columns that should not be carried through joins
-        # (e.g., metaxy_created_at, metaxy_materialization_id, metaxy_feature_version)
+        # (e.g., the configured creation timestamp and fixed system columns)
         # These are recalculated for the downstream feature and would cause column name
         # conflicts when joining 3+ upstream features
         existing_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
-        columns_to_drop = [col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns]
+        columns_to_drop = [col for col in get_columns_to_drop_before_join() if col in existing_columns]
         if columns_to_drop:
             df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 

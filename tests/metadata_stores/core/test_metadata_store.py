@@ -16,6 +16,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store import (
     FeatureNotFoundError,
@@ -177,6 +178,36 @@ def test_write_and_read(
         assert len(result) == 3
         assert "sample_uid" in result.columns
         assert "metaxy_provenance_by_field" in result.columns
+
+
+def test_configurable_lifecycle_columns(
+    store: DeltaMetadataStore,
+    UpstreamFeatureA: type[BaseFeature],
+    make_upstream_a_data: Callable[..., pl.DataFrame],
+) -> None:
+    config = MetaxyConfig(
+        project="test",
+        created_at_column="created_at",
+        updated_at_column="updated_at",
+        deleted_at_column="deleted_at",
+    )
+    with config.use(), store.open("w"):
+        created_at = pl.datetime(2024, 1, 1, time_zone="UTC")
+        store.write(
+            UpstreamFeatureA,
+            make_upstream_a_data(sample_uids=[1], prefix="hash", include_path=False).with_columns(
+                created_at.alias("created_at")
+            ),
+        )
+
+        active = collect_to_polars(store.read(UpstreamFeatureA))
+        assert {"created_at", "updated_at", "deleted_at"} <= set(active.columns)
+        assert not {"metaxy_created_at", "metaxy_updated_at", "metaxy_deleted_at"} & set(active.columns)
+        assert active["created_at"].item() == active.select(created_at).item()
+
+        store.delete(UpstreamFeatureA, filters=None)
+        deleted = collect_to_polars(store.read(UpstreamFeatureA, include_soft_deleted=True))
+        assert deleted["deleted_at"].is_not_null().all()
 
 
 def test_write_invalid_schema(store: DeltaMetadataStore, UpstreamFeatureA: type[BaseFeature]) -> None:

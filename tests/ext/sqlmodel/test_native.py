@@ -1807,3 +1807,36 @@ def test_sqlmodel_has_materialization_id_field() -> None:
     if hasattr(TestFeature, "__table__"):
         table_columns = {col.name for col in TestFeature.__table__.columns}
         assert METAXY_MATERIALIZATION_ID in table_columns
+
+
+def test_sqlmodel_uses_configured_lifecycle_columns() -> None:
+    from metaxy.config import MetaxyConfig
+
+    with MetaxyConfig(
+        project="test",
+        created_at_column="created_at",
+        updated_at_column="updated_at",
+        deleted_at_column="deleted_at",
+    ).use():
+
+        class CustomLifecycleFeature(
+            BaseSQLModelFeature,
+            table=True,
+            spec=SampleFeatureSpec(key=FeatureKey(["custom", "lifecycle"])),
+        ):
+            uid: str = Field(primary_key=True)
+
+        with pytest.raises(ValueError, match="reserved Metaxy system columns"):
+
+            class ConflictingLifecycleFeature(
+                BaseSQLModelFeature,
+                table=True,
+                spec=SampleFeatureSpec(key=FeatureKey(["conflicting", "lifecycle"])),
+            ):
+                uid: str = Field(primary_key=True)
+                metaxy_created_at: int
+
+    table = CustomLifecycleFeature.__table__  # ty: ignore[unresolved-attribute]
+    table_columns = {column.name for column in table.columns}
+    assert {"created_at", "updated_at", "deleted_at"} <= table_columns
+    assert not {"metaxy_created_at", "metaxy_updated_at", "metaxy_deleted_at"} & table_columns

@@ -93,7 +93,7 @@ class MetaxyDatasource(Datasource):
         allow_fallback: If `True`, check fallback stores on main store miss.
         with_feature_history: If `True`, only return rows with current feature version.
         feature_version: Explicit feature version to filter by (mutually exclusive with `with_feature_history=False`).
-        with_sample_history: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+        with_sample_history: Whether to include historical materializations within `id_columns` groups.
         include_soft_deleted: If `True`, include soft-deleted rows in the result.
     """
 
