@@ -50,6 +50,9 @@ map = [
   "polars-map>=0.2.1",
   "narwhals-map>=0.1.1",
 ]
+rivers = [
+  "rivers>=0.4.0",
+]
 ibis = [
   "pyarrow>=18.0.0",
   "ibis-framework>=11.0.0",
