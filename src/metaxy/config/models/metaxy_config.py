@@ -15,6 +15,7 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
+from typing_extensions import deprecated
 
 from metaxy._decorators import public
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
@@ -189,11 +190,6 @@ class MetaxyConfig(BaseSettings):
 
     hash_truncation_length: int = PydanticField(default=8, description="Truncate hash values to this length.", ge=8)
 
-    enable_map_datatype: bool = PydanticField(
-        default=False,
-        description="Preserve [`Map` datatype](/guide/concepts/metadata-stores.md/#map-datatype) across Metaxy operations. Requires `polars-map` to be installed. Experimental.",
-    )
-
     auto_create_tables: bool = PydanticField(
         default=False,
         description="Auto-create tables when opening stores. It is not advised to enable this setting in production.",
@@ -226,6 +222,35 @@ class MetaxyConfig(BaseSettings):
 
     # Private attribute to track which config file was used (set by load())
     _config_file: Path | None = PrivateAttr(default=None)
+
+    @property
+    @deprecated(
+        "`enable_map_datatype` is deprecated and will be removed in Metaxy 0.3.0; the Map datatype is always enabled."
+    )
+    def enable_map_datatype(self) -> bool:
+        """Whether the native `Map` datatype is preserved across Metaxy operations.
+
+        Always `True`.
+        """
+        return True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_disabled_map_datatype(cls, data: Any) -> Any:
+        """Reject attempts to disable the always-on `Map` datatype."""
+        if not isinstance(data, dict) or "enable_map_datatype" not in data:
+            return data
+
+        if not data.pop("enable_map_datatype"):
+            raise ValueError("enable_map_datatype cannot be disabled; the Map datatype is always enabled")
+
+        warnings.warn(
+            "`enable_map_datatype` is deprecated and will be removed in Metaxy 0.3.0; "
+            "it has no effect because the Map datatype is always enabled.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return data
 
     @property
     def config_file(self) -> Path | None:
@@ -382,9 +407,6 @@ class MetaxyConfig(BaseSettings):
         global _global_config
         _global_config = config
 
-        if config is not None:
-            config._apply_extensions()
-
     @classmethod
     def is_set(cls) -> bool:
         """Check if the current Metaxy configuration is set."""
@@ -395,11 +417,6 @@ class MetaxyConfig(BaseSettings):
         """Reset the current Metaxy configuration to None."""
         global _global_config
         _global_config = None
-
-    def _apply_extensions(self) -> None:
-        """Register optional narwhals extensions based on config."""
-        if self.enable_map_datatype:
-            import narwhals_map  # noqa: F401  # registers Map dtype and .map namespace on narwhals
 
     @contextmanager
     def use(self) -> Iterator[Self]:
@@ -414,7 +431,6 @@ class MetaxyConfig(BaseSettings):
             # Previous config restored
             ```
         """
-        self._apply_extensions()
         token = _config_override.set(self)
         try:
             yield self

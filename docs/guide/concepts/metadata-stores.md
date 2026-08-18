@@ -294,53 +294,9 @@ Fallback stores can be chained at arbitrary depth.
 
 ## `Map` Datatype
 
-Metaxy uses dictionary-like columns internally for Metaxy's field-level versioning columns. Most storage systems and Apache Arrow represent have native support for the [`Map`](https://arrow.apache.org/docs/python/generated/pyarrow.map_.html) type, but [Polars doesn't](https://github.com/pola-rs/polars/issues/8385). Polars converts `Map` columns to `List(Struct(key, value))` (physically equivalent to `Map`). This means that:
+Metaxy uses dictionary-like columns internally for its field-level versioning columns. Most storage systems and Apache Arrow have native support for the [`Map`](https://arrow.apache.org/docs/python/generated/pyarrow.map_.html) datatype that expresses exactly that. Metaxy uses the native `Map` datatype of Narwhals and Polars for these columns.
 
-1. user-defined `Map` columns lose their type when round-tripped through Polars
-
-2. Metaxy has to represent field-versioning columns as `Struct` instead, which is very much not ideal as the fields **will** change over time, causing problems with some storage systems.
-
-!!! note
-
-    This is also known as "The `Map` Hell" problem (the term invented by me).
-
-### Experimental `Map` Datatype Support
-
-These problems can be solved with the [`enable_map_datatype`](../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) configuration option:
-
-```toml title="metaxy.toml"
-enable_map_datatype = true
-```
-
-!!! warning "Experimental"
-
-    `Map` datatype support is experimental and requires the [`narwhals-map`](https://pypi.org/project/narwhals-map/) and [`polars-map`](https://pypi.org/project/polars-map/) packages to be installed. They are shipped with `metaxy[map]` extra.
-
-When enabled, Metaxy uses [`narwhals-map`](https://pypi.org/project/narwhals-map/) to represent `Map` columns as `narwhals_map.Map` across all dataframe backends. Metadata stores consume and return Narwhals frames with `narwhals_map.Map` and `polars_map.Map` columns, keeping `Map` columns intact across operations and preserving user-defined `Map` columns.
-
-The following metadata stores support `Map` columns when `enable_map_datatype` is enabled:
-
-- [DuckDB](../../integrations/metadata-stores/databases/duckdb.md)
-- [ClickHouse](../../integrations/metadata-stores/databases/clickhouse.md)
-- [Delta Lake](../../integrations/metadata-stores/storage/delta.md)
-- [Apache Iceberg](../../integrations/metadata-stores/storage/iceberg.md)
-
-!!! info "`Map` support in Narwhals"
-
-    Narwhals does not have native `Map` support yet (see the [tracking issue](https://github.com/narwhals-dev/narwhals/issues/3525)). Metaxy uses [`narwhals-map`](https://pypi.org/project/narwhals-map/) to bridge this gap, providing a `narwhals_map.Map` datatype and the `nw.Expr.map` namespace for working with `Map` columns across backends.
-
-!!! tip "Collecting results with `Map` columns"
-
-    Standard `narwhals.DataFrame.to_polars()` and other conversion methods are not aware of `narwhals_map.Map` columns and will lose them when converting from other dataframe backends.
-    Use [`collect_to_polars`][metaxy.utils.collect_to_polars] or [`collect_to_arrow`][metaxy.utils.collect_to_arrow] to materialize lazy frames while preserving `Map` columns.
-
-    <!-- skip next -->
-    ```py
-    from metaxy.utils import collect_to_polars, collect_to_arrow
-
-    df = collect_to_polars(lazy_frame)    # -> pl.DataFrame with `polars_map.Map` columns
-    table = collect_to_arrow(lazy_frame)  # -> pa.Table with native `MapArray` columns
-    ```
+Stores whose storage engine has no native `Map` type still present `Map` columns to Metaxy: they convert the versioning columns to a storable representation on write and reconstruct `Map` on read. [PostgreSQL](../../integrations/metadata-stores/databases/postgresql.md) stores them as JSON.
 
 ## Metadata Store Implementations
 

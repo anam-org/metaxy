@@ -29,7 +29,7 @@ dependencies = [
   "cyclopts>=4.4.0",
   "narwhals>=2.20.0",
   "pydantic-core>=2.0.0",
-  "polars>=1.35.0",
+  "polars>=2.0.0",
   "polars-hash>=0.5.1",
   "pydantic>=2.11.9",
   "pydantic-settings>=2.16.2",
@@ -41,13 +41,10 @@ dependencies = [
   "packaging>=25.0",
   "tomli-w>=1.2.0",
   "tomlkit>=0.13.2",
+  "typing-extensions>=4.15.0",
 ]
 
 [project.optional-dependencies]
-map = [
-  "polars-map>=0.2.1",
-  "narwhals-map>=0.1.1",
-]
 ibis = [
   "pyarrow>=18.0.0",
   "ibis-framework>=11.0.0",
@@ -87,11 +84,11 @@ dagster = [
 iceberg = [
   "pyiceberg[sql-sqlite]>=0.9.0",
   "ibis-framework>=11.0.0",
-  "polars>=1.39.0",
+  "polars>=2.0.0",
 ]
 lancedb = [
-  "lancedb>=0.15.0",
-  "polars>=1.36.1",
+  "lancedb>=0.39.0",
+  "polars>=2.0.0",
 ]
 postgres = [
   "ibis-framework[postgres]>=11.0.0",
@@ -156,8 +153,6 @@ dev = [
   "mkdocs-metaxy",
   "pytest-postgresql>=8.0.0",
   "tach>=0.34.0",
-  "polars-map>=0.2.1",
-  "narwhals-map>=0.1.1",
 ]
 
 examples = [
@@ -202,7 +197,8 @@ examples = { workspace = true }
 mkdocs-metaxy = { workspace = true }
 metaxy-testing = { workspace = true }
 griffe-pydantic = { git = "https://github.com/danielgafni/griffe-pydantic.git", branch = "feat/configurable-bases" }
-# narwhals-map = { git = "https://github.com/danielgafni/narwhals-map.git" }
+# TODO: switch to a narwhals release once https://github.com/narwhals-dev/narwhals/pull/4115 is merged
+narwhals = { git = "https://github.com/danielgafni/narwhals", branch = "10-27-feat_add_map_namespace" }
 # cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "docstring-parser-skipped-sections" }
 
 [tool.coverage.run]
@@ -276,6 +272,7 @@ env = [
 ]
 filterwarnings = [
   "error::polars.exceptions.PerformanceWarning",
+  "ignore:Iceberg scan planning with the polars_iceberg plugin:polars.exceptions.PerformanceWarning",
   "error::metaxy._warnings.MovedMetadataStoreWarning",
   "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
   "ignore:Global Metaxy configuration not initialized:UserWarning",

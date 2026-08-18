@@ -2,60 +2,42 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-
 import narwhals as nw
 import polars as pl
 import pyarrow as pa
-import pytest
-from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.base import _is_map_column
-from polars_map import Map
+from metaxy.utils.dataframes import find_map_columns
 
 
-@pytest.fixture
-def polars_map_config() -> Iterator[MetaxyConfig]:
-    config = MetaxyConfig(enable_map_datatype=True)
-    with config.use():
-        yield config
+class TestFindMapColumns:
+    """Tests for find_map_columns — detects narwhals columns of Map type."""
 
-
-class TestIsMapColumn:
-    """Tests for _is_map_column — checks if a narwhals column is a Map type."""
-
-    def test_polars_map_detected(self, polars_map_config: MetaxyConfig) -> None:
-        """A polars_map.Map column is detected."""
-        s = pl.Series("x", [[("k", "v")]], dtype=Map(pl.String(), pl.String()))
+    def test_polars_map_detected(self) -> None:
+        """A pl.Map column is detected."""
+        s = pl.Series("x", [{"k": "v"}], dtype=pl.Map(pl.String(), pl.String()))
         nw_df = nw.from_native(pl.DataFrame([s]))
-        assert _is_map_column(nw_df, "x") is True
+        assert find_map_columns(nw_df) == ["x"]
 
-    def test_arrow_map_detected(self, polars_map_config: MetaxyConfig) -> None:
+    def test_arrow_map_detected(self) -> None:
         """A native Arrow MapArray column is detected."""
         arrow_table = pa.table({"x": pa.array([[("k", "v")]], type=pa.map_(pa.string(), pa.string()))})
         nw_df = nw.from_native(arrow_table)
-        assert _is_map_column(nw_df, "x") is True
+        assert find_map_columns(nw_df) == ["x"]
 
-    def test_returns_false_without_config(self) -> None:
-        """Returns False when enable_map_datatype is not set."""
-        s = pl.Series("x", [[("k", "v")]], dtype=Map(pl.String(), pl.String()))
-        nw_df = nw.from_native(pl.DataFrame([s]))
-        assert _is_map_column(nw_df, "x") is False
-
-    def test_struct_is_not_map(self, polars_map_config: MetaxyConfig) -> None:
+    def test_struct_is_not_map(self) -> None:
         """A Polars Struct column is not Map."""
         nw_df = nw.from_native(pl.DataFrame({"x": [{"a": "1", "b": "2"}]}))
-        assert _is_map_column(nw_df, "x") is False
+        assert find_map_columns(nw_df) == []
 
-    def test_string_is_not_map(self, polars_map_config: MetaxyConfig) -> None:
+    def test_string_is_not_map(self) -> None:
         """A scalar String column is not Map."""
         nw_df = nw.from_native(pl.DataFrame({"x": ["hello"]}))
-        assert _is_map_column(nw_df, "x") is False
+        assert find_map_columns(nw_df) == []
 
-    def test_polars_list_of_kv_struct_is_not_map(self, polars_map_config: MetaxyConfig) -> None:
-        """A Polars List(Struct({key, value})) without polars_map.Map dtype is not Map."""
+    def test_polars_list_of_kv_struct_is_not_map(self) -> None:
+        """A Polars List(Struct({key, value})) without pl.Map dtype is not Map."""
         df = pl.DataFrame(
             {"x": [[{"key": "k", "value": "v"}]]},
             schema={"x": pl.List(pl.Struct({"key": pl.String, "value": pl.String}))},
         )
         nw_df = nw.from_native(df)
-        assert _is_map_column(nw_df, "x") is False
+        assert find_map_columns(nw_df) == []

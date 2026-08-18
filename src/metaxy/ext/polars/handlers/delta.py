@@ -11,11 +11,9 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
-from packaging.version import Version
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -27,13 +25,6 @@ from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
     import deltalake
-
-
-def _map_columns_from_delta_schema(schema: deltalake.Schema) -> list[str]:
-    """Return column names that have a native Arrow Map type in the Delta schema."""
-    from deltalake.schema import MapType
-
-    return [field.name for field in schema.fields if isinstance(field.type, MapType)]
 
 
 @public
@@ -78,10 +69,6 @@ class DeltaMetadataStore(MetadataStore):
 
     It stores feature metadata in Delta Lake tables located under ``root_path``.
     It uses the Polars versioning engine for provenance calculations.
-
-    !!! tip
-        If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
-        `LazyFrame.sink_delta`, avoiding unnecessary materialization.
 
     Example:
 
@@ -267,11 +254,7 @@ class DeltaMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata
-            **kwargs: Backend-specific parameters that are passed to `write_delta` or `sink_delta`.
-
-        !!! tip
-            If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
-            `LazyFrame.sink_delta`, avoiding unnecessary materialization.
+            **kwargs: Backend-specific parameters that are passed to `write_deltalake`.
         """
         table_uri = self._feature_uri(feature_key)
 
@@ -280,36 +263,7 @@ class DeltaMetadataStore(MetadataStore):
         mode = write_opts.pop("mode", "append")
         storage_options = write_opts.pop("storage_options", None)
 
-        if MetaxyConfig.get().enable_map_datatype:
-            self._write_with_map_columns(df, table_uri, mode, storage_options, write_opts)
-            return
-
-        # Check if we can use sink_delta (Polars >= 1.37, native Polars LazyFrame)
-        can_sink = (
-            df.implementation == nw.Implementation.POLARS
-            and isinstance(df, nw.LazyFrame)
-            and Version(pl.__version__) >= Version("1.37.0")
-        )
-
-        if can_sink:
-            lf_native = df.to_native()
-            assert isinstance(lf_native, pl.LazyFrame)
-
-            self._cast_enum_to_string(lf_native).sink_delta(
-                table_uri,
-                mode=mode,
-                storage_options=storage_options,
-                delta_write_options=write_opts or None,
-            )
-        else:
-            df_native = collect_to_polars(df)
-
-            self._cast_enum_to_string(df_native).write_delta(
-                table_uri,
-                mode=mode,
-                storage_options=storage_options,
-                delta_write_options=write_opts or None,
-            )
+        self._write_with_map_columns(df, table_uri, mode, storage_options, write_opts)
 
     def _write_with_map_columns(
         self,
@@ -321,7 +275,6 @@ class DeltaMetadataStore(MetadataStore):
     ) -> None:
         """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
         import deltalake
-        import polars_map
 
         from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
         from metaxy.utils._arrow_map import convert_structs_to_maps
@@ -330,7 +283,7 @@ class DeltaMetadataStore(MetadataStore):
         df_native = convert_structs_to_maps(
             df_native, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
         )
-        arrow_table = polars_map.to_arrow(df_native)
+        arrow_table = df_native.to_arrow()
         deltalake.write_deltalake(
             table_uri,
             arrow_table,
@@ -338,16 +291,6 @@ class DeltaMetadataStore(MetadataStore):
             storage_options=storage_options,
             **(write_opts or {}),
         )
-
-    def _read_map_columns(self, lf: pl.LazyFrame, feature_key: FeatureKey) -> pl.LazyFrame:
-        """Convert native Delta Map columns back to Polars Map dtype on read."""
-        delta_table = self._open_delta_table(feature_key, without_files=True)
-        map_columns = _map_columns_from_delta_schema(delta_table.schema())
-        if map_columns:
-            from metaxy.utils._arrow_map import convert_maps_to_polars_map
-
-            return convert_maps_to_polars_map(lf, columns=map_columns)
-        return lf
 
     def _drop_feature(self, feature_key: FeatureKey) -> None:
         """Drop Delta table for the specified feature using soft delete.
@@ -431,9 +374,6 @@ class DeltaMetadataStore(MetadataStore):
             table_uri,
             storage_options=self.storage_options or None,
         )
-
-        if MetaxyConfig.get().enable_map_datatype:
-            lf = self._read_map_columns(lf, feature_key)
 
         # Convert to Narwhals
         nw_lazy = nw.from_native(lf)

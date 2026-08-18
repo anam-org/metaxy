@@ -84,10 +84,7 @@ class Increment(NamedTuple):
         return self
 
     def to_polars(self) -> PolarsIncrement:
-        """Convert to Polars.
-
-        Preserves `polars_map.Map` columns when `MetaxyConfig.enable_map_datatype` is set.
-        """
+        """Convert to Polars."""
         return PolarsIncrement(
             new=collect_to_polars(self.new),
             stale=collect_to_polars(self.stale),

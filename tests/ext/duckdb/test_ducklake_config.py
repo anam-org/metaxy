@@ -21,8 +21,9 @@ from metaxy.ext.duckdb import (
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars
-from polars.testing import assert_frame_equal
 from polars.testing.parametric import column, dataframes
+
+from metaxy_testing import assert_metadata_frame_equal
 
 
 # Hypothesis strategies for generating metadata dataframes using Polars parametric testing
@@ -326,7 +327,7 @@ def test_ducklake_store_read_write_roundtrip(
             result = collect_to_polars(store.read(feature))
             actual = result.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"])
             expected = payload.sort("sample_uid")
-            assert_frame_equal(actual, expected)
+            assert_metadata_frame_equal(actual, expected)
 
         assert any(cmd.startswith("ATTACH IF NOT EXISTS 'ducklake:") for cmd in _test_recorded_commands)
         assert _test_recorded_commands[-1] == "USE lake;"
@@ -418,11 +419,11 @@ def test_ducklake_e2e_with_dependencies(
                 result_a = collect_to_polars(store.read(upstream_a))
                 result_b = collect_to_polars(store.read(upstream_b))
 
-                assert_frame_equal(
+                assert_metadata_frame_equal(
                     result_a.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     upstream_a_data.sort("sample_uid"),
                 )
-                assert_frame_equal(
+                assert_metadata_frame_equal(
                     result_b.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     upstream_b_data.sort("sample_uid"),
                 )
@@ -439,7 +440,7 @@ def test_ducklake_e2e_with_dependencies(
 
                 # Verify downstream feature can be read back
                 result_d = collect_to_polars(store.read(downstream))
-                assert_frame_equal(
+                assert_metadata_frame_equal(
                     result_d.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"]),
                     downstream_data.sort("sample_uid"),
                 )
@@ -605,7 +606,7 @@ def test_ducklake_s3_storage_roundtrip(
             store.write(feature, payload)
             result = collect_to_polars(store.read(feature))
             actual = result.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"])
-            assert_frame_equal(actual, payload.sort("sample_uid"))
+            assert_metadata_frame_equal(actual, payload.sort("sample_uid"))
 
             # Verify DuckLake tracks data files for the written table
             table_name = store.get_table_name(feature.spec.key)

@@ -18,6 +18,7 @@ from metaxy import (
 )
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.lineage import LineageRelationship
+from metaxy.utils import collect_to_polars
 from metaxy_testing.models import SampleFeatureSpec
 
 from metaxy_testing import add_metaxy_provenance_column
@@ -146,7 +147,7 @@ class TestCalculateInputProgress:
 
             # Write downstream metadata for only 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(3)
+            partial_data = collect_to_polars(increment.new).head(3)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 30% (3/10)
@@ -238,7 +239,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for 2 out of 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(2)
+            partial_data = collect_to_polars(increment.new).head(2)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 66.67% (2/3)
@@ -307,7 +308,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for only 1 hour (1 out of 2 groups)
             increment = store.resolve_update(HourlyStats, lazy=False)
-            partial_data = increment.new.to_polars().head(1)
+            partial_data = collect_to_polars(increment.new).head(1)
             store.write(HourlyStats, partial_data)
 
             # Progress should count by aggregation groups, not individual readings
@@ -368,7 +369,7 @@ class TestCalculateInputProgress:
                 }
             )
             # Read upstream from store to get metaxy_data_version_by_field column
-            upstream_from_store = store.read(Video).collect().to_polars()
+            upstream_from_store = collect_to_polars(store.read(Video))
             # Join with upstream to get provenance info
             frames_with_upstream = frames_data.join(
                 upstream_from_store.select(
@@ -433,7 +434,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for 2 out of 4 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(2)
+            partial_data = collect_to_polars(increment.new).head(2)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 50% (2/4)
@@ -500,7 +501,7 @@ class TestCalculateInputProgress:
 
             # Write downstream for 1 out of 3 samples
             increment = store.resolve_update(Downstream, lazy=False)
-            partial_data = increment.new.to_polars().head(1)
+            partial_data = collect_to_polars(increment.new).head(1)
             store.write(Downstream, partial_data)
 
             # Check progress - should be 33.33% (1/3)

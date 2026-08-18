@@ -1,6 +1,9 @@
 """Shared fixtures for integration tests."""
 
 import socket
+import subprocess
+import sys
+import time
 import uuid
 from collections.abc import Generator
 from typing import Any
@@ -9,7 +12,6 @@ import boto3
 import pytest
 from metaxy import BaseFeature
 from metaxy.config import MetaxyConfig
-from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
 from tests.metadata_stores.shared.resolve_update import (
@@ -35,12 +37,29 @@ def _find_free_port() -> int:
 
 @pytest.fixture(scope="session")
 def s3_endpoint_url() -> Any:
-    """Start a moto S3 server on a random free port."""
+    """Start a moto S3 server on a random free port.
+
+    The server runs in a separate process: Polars holds the GIL while delta-rs waits
+    for S3 responses, which deadlocks a server running in the test process.
+    """
     port = _find_free_port()
-    server = ThreadedMotoServer(ip_address="127.0.0.1", port=port)
-    server.start()
+    server = subprocess.Popen(
+        [sys.executable, "-m", "moto.server", "-H", "127.0.0.1", "-p", str(port)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    deadline = time.monotonic() + 30
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) == 0:
+                break
+        if time.monotonic() > deadline:
+            server.kill()
+            raise RuntimeError(f"moto S3 server did not start on port {port}")
+        time.sleep(0.1)
     yield f"http://127.0.0.1:{port}"
-    server.stop()
+    server.terminate()
+    server.wait()
 
 
 @pytest.fixture(scope="function")

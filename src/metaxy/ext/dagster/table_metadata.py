@@ -381,14 +381,12 @@ def _prepare_dataframe_for_table_record(df: pl.DataFrame) -> pl.DataFrame:
     Returns:
         A DataFrame with complex/temporal types converted to strings.
     """
-    from metaxy.utils.dataframes import _is_polars_map_dtype
-
     exprs: list[pl.Expr] = []
 
     for col_name in df.columns:
         dtype = df[col_name].dtype
-        if _is_polars_map_dtype(dtype):
-            # Map extension types: convert to {"key": "value", ...} JSON string
+        if isinstance(dtype, pl.Map):
+            # Map types: convert to {"key": "value", ...} JSON string
             exprs.append(_map_to_json_expr(pl.col(col_name).to_physical(), alias=col_name))
         elif isinstance(dtype, pl.Struct):
             # Struct types: use json_encode for a clean JSON representation

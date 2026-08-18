@@ -6,7 +6,6 @@ read and write, for both metaxy-managed (*_by_field) and user-defined Map column
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
 
@@ -21,12 +20,10 @@ from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_arrow, collect_to_polars
-from narwhals_map import Map as NwMap
 from polars.testing.parametric.strategies.data import data as pl_data
-from polars_map import Map
 from syrupy.assertion import SnapshotAssertion
 
-MAP_STR_STR = Map(pl.String(), pl.String())
+MAP_STR_STR = pl.Map(pl.String(), pl.String())
 
 # Hashable types suitable as Map keys.
 # Only types that survive roundtrip without promotion through Parquet-based
@@ -85,8 +82,8 @@ def map_series(draw: st.DrawFn) -> pl.Series:
     )
     return pl.Series(
         "user_map",
-        [list(zip(keys, values))],
-        dtype=Map(key_dtype, val_dtype),
+        [dict(zip(keys, values))],
+        dtype=pl.Map(key_dtype, val_dtype),
     )
 
 
@@ -96,18 +93,10 @@ class MapDtypeTests:
     Requires ``store`` and ``test_features`` fixtures from the consuming test class.
     """
 
-    @pytest.fixture
-    def polars_map_config(self) -> Iterator[MetaxyConfig]:
-        """Activate enable_map_datatype for the duration of the test."""
-        config = MetaxyConfig(enable_map_datatype=True)
-        with config.use():
-            yield config
-
     # ── enable_map_datatype: Struct → Map on write, Map on read ──────────
 
     def test_write_stores_native_map_type(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -133,14 +122,13 @@ class MapDtypeTests:
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         df = df.sort("sample_uid")
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
         assert frames == ["h1", "h3"]
         assert audio == ["h2", "h4"]
 
     def test_read_map_values_accessible(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -165,8 +153,8 @@ class MapDtypeTests:
             assert result is not None
             df = collect_to_polars(result).sort("sample_uid")
 
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
         assert frames == ["a1", "a2", "a3"]
         assert audio == ["b1", "b2", "b3"]
 
@@ -174,7 +162,6 @@ class MapDtypeTests:
 
     def test_user_map_column_roundtrip(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -182,7 +169,7 @@ class MapDtypeTests:
         feature = test_features["UpstreamFeatureA"]
         user_map = pl.Series(
             "tags",
-            [[("env", "prod"), ("region", "us")], [("env", "dev"), ("region", "eu")]],
+            [{"env": "prod", "region": "us"}, {"env": "dev", "region": "eu"}],
             dtype=MAP_STR_STR,
         )
         metadata = pl.DataFrame(
@@ -204,14 +191,13 @@ class MapDtypeTests:
             df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["tags"] == MAP_STR_STR
-        envs = df["tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
+        envs = df["tags"].map.get("env").to_list()
         assert envs == ["prod", "dev"]
 
     # ── Write accepts pre-built Map columns ────────────────────────────
 
     def test_write_accepts_map_provenance_column(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -219,7 +205,7 @@ class MapDtypeTests:
         feature = test_features["UpstreamFeatureA"]
         prov_map = pl.Series(
             "metaxy_provenance_by_field",
-            [[("frames", "h1"), ("audio", "h2")]],
+            [{"frames": "h1", "audio": "h2"}],
             dtype=MAP_STR_STR,
         )
         metadata = pl.DataFrame({"sample_uid": [1]}).with_columns(prov_map)
@@ -233,14 +219,13 @@ class MapDtypeTests:
             df = collect_to_polars(result)
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
         assert frames == ["h1"]
         assert audio == ["h2"]
 
     def test_non_map_columns_unchanged(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -265,7 +250,6 @@ class MapDtypeTests:
 
     def test_append_with_different_map_keys(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -296,8 +280,8 @@ class MapDtypeTests:
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.height == 2
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
-        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()  # ty: ignore[unresolved-attribute]
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
+        audio = df["metaxy_provenance_by_field"].map.get("audio").to_list()
         assert frames == ["f1", "f2"]
         assert audio == ["a1", "a2"]
 
@@ -305,7 +289,6 @@ class MapDtypeTests:
 
     def test_write_arrow_table_with_map_columns(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -343,15 +326,14 @@ class MapDtypeTests:
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.schema["user_tags"] == MAP_STR_STR
 
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
         assert frames == ["f1", "f2"]
 
-        envs = df["user_tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
+        envs = df["user_tags"].map.get("env").to_list()
         assert envs == ["prod", "dev"]
 
     def test_arrow_schema_after_roundtrip(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
         arrow_map_table: pa.Table,
@@ -376,7 +358,6 @@ class MapDtypeTests:
 
     def test_user_struct_columns_not_converted_to_map(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -407,16 +388,15 @@ class MapDtypeTests:
 
     def test_user_map_with_non_string_types(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
         """User-defined Map(Int32, Float64) columns survive write→read roundtrip."""
         feature = test_features["UpstreamFeatureA"]
-        map_int_float = Map(pl.Int32(), pl.Float64())
+        map_int_float = pl.Map(pl.Int32(), pl.Float64())
         scores = pl.Series(
             "scores",
-            [[(1, 0.95), (2, 0.87)], [(1, 0.91), (2, 0.82)]],
+            [{1: 0.95, 2: 0.87}, {1: 0.91, 2: 0.82}],
             dtype=map_int_float,
         )
         metadata = pl.DataFrame(
@@ -438,8 +418,8 @@ class MapDtypeTests:
             df = collect_to_polars(result).sort("sample_uid")
 
         assert df.schema["scores"] == map_int_float
-        assert df["scores"].map.get(1).to_list() == [0.95, 0.91]  # ty: ignore[unresolved-attribute]
-        assert df["scores"].map.get(2).to_list() == [0.87, 0.82]  # ty: ignore[unresolved-attribute]
+        assert df["scores"].map.get(1).to_list() == [0.95, 0.91]
+        assert df["scores"].map.get(2).to_list() == [0.87, 0.82]
 
     # ── Hypothesis: random Map type roundtrip ───────────────────────────
 
@@ -461,7 +441,6 @@ class MapDtypeTests:
     )
     def test_random_map_type_roundtrip(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
         user_map: pl.Series,
@@ -486,15 +465,13 @@ class MapDtypeTests:
             df = collect_to_polars(result)
 
         assert df.schema["user_map"] == user_map.dtype
-        # Compare sorted by key since backends may reorder map entries
-        for actual, expected in zip(df["user_map"].to_list(), user_map.to_list()):
-            assert sorted(actual, key=lambda e: e["key"]) == sorted(expected, key=lambda e: e["key"])
+        # Maps materialize as dicts, so entry order does not affect the comparison
+        assert df["user_map"].to_list() == user_map.to_list()
 
     # ── resolve_update: user-defined Map columns ────────────────────
 
     def test_resolve_update_with_user_map_columns(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -505,9 +482,9 @@ class MapDtypeTests:
         user_map = pl.Series(
             "tags",
             [
-                [("env", "prod"), ("region", "us")],
-                [("env", "dev"), ("region", "eu")],
-                [("env", "staging"), ("region", "ap")],
+                {"env": "prod", "region": "us"},
+                {"env": "dev", "region": "eu"},
+                {"env": "staging", "region": "ap"},
             ],
             dtype=MAP_STR_STR,
         )
@@ -530,14 +507,13 @@ class MapDtypeTests:
         result = collect_to_polars(increment.new).sort("sample_uid")
 
         assert result.schema["tags"] == MAP_STR_STR
-        assert result["tags"].map.get("env").to_list() == ["prod", "dev", "staging"]  # ty: ignore[unresolved-attribute]
+        assert result["tags"].map.get("env").to_list() == ["prod", "dev", "staging"]
 
         # metaxy-managed columns are also Map
         assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
 
     def test_resolve_update_lazy_with_user_map_columns(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -548,8 +524,8 @@ class MapDtypeTests:
         user_map = pl.Series(
             "tags",
             [
-                [("env", "prod"), ("region", "us")],
-                [("env", "dev"), ("region", "eu")],
+                {"env": "prod", "region": "us"},
+                {"env": "dev", "region": "eu"},
             ],
             dtype=MAP_STR_STR,
         )
@@ -572,7 +548,7 @@ class MapDtypeTests:
         result = collected.sort("sample_uid")
 
         assert result.schema["tags"] == MAP_STR_STR
-        assert result["tags"].map.get("env").to_list() == ["prod", "dev"]  # ty: ignore[unresolved-attribute]
+        assert result["tags"].map.get("env").to_list() == ["prod", "dev"]
 
     # ── narwhals-map: write narwhals DataFrames with Map columns ─────
 
@@ -601,7 +577,6 @@ class MapDtypeTests:
 
     def test_write_narwhals_arrow_backed_with_map_columns(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
         arrow_map_table: pa.Table,
@@ -610,8 +585,8 @@ class MapDtypeTests:
         feature = test_features["UpstreamFeatureA"]
 
         df_nw = nw.from_native(arrow_map_table)
-        assert isinstance(df_nw.schema["tags"], NwMap)
-        assert isinstance(df_nw.schema["metaxy_provenance_by_field"], NwMap)
+        assert isinstance(df_nw.schema["tags"], nw.Map)
+        assert isinstance(df_nw.schema["metaxy_provenance_by_field"], nw.Map)
 
         with store.open("w") as s:
             s.write(feature, df_nw)
@@ -623,14 +598,13 @@ class MapDtypeTests:
 
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert df.schema["tags"] == MAP_STR_STR
-        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()  # ty: ignore[unresolved-attribute]
+        frames = df["metaxy_provenance_by_field"].map.get("frames").to_list()
         assert frames == ["f1", "f2"]
-        envs = df["tags"].map.get("env").to_list()  # ty: ignore[unresolved-attribute]
+        envs = df["tags"].map.get("env").to_list()
         assert envs == ["prod", "dev"]
 
     def test_write_narwhals_arrow_backed_with_non_string_map(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
         arrow_map_table: pa.Table,
@@ -649,7 +623,7 @@ class MapDtypeTests:
             ),
         )
         df_nw = nw.from_native(table)
-        assert isinstance(df_nw.schema["scores"], NwMap)
+        assert isinstance(df_nw.schema["scores"], nw.Map)
 
         with store.open("w") as s:
             s.write(feature, df_nw)
@@ -659,10 +633,10 @@ class MapDtypeTests:
             assert result is not None
             df = collect_to_polars(result).sort("sample_uid")
 
-        map_int_float = Map(pl.Int32(), pl.Float32())
+        map_int_float = pl.Map(pl.Int32(), pl.Float32())
         assert df.schema["scores"] == map_int_float
-        assert df["scores"].map.get(1).to_list() == [pytest.approx(0.95), pytest.approx(0.91)]  # ty: ignore[unresolved-attribute]
-        assert df["scores"].map.get(2).to_list() == [pytest.approx(0.87), pytest.approx(0.82)]  # ty: ignore[unresolved-attribute]
+        assert df["scores"].map.get(1).to_list() == [pytest.approx(0.95), pytest.approx(0.91)]
+        assert df["scores"].map.get(2).to_list() == [pytest.approx(0.87), pytest.approx(0.82)]
 
     # ── Fallback store: resolve_update with Map columns ──────────────
 
@@ -681,13 +655,12 @@ class MapDtypeTests:
            joins it with local downstream data, and computes the increment.
         """
         from metaxy import FeatureDep, FeatureKey
-        from metaxy.config import MetaxyConfig
         from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
         from metaxy.models.field import FieldSpec
         from metaxy.models.types import FieldKey
         from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
-        config = MetaxyConfig(enable_map_datatype=True)
+        config = MetaxyConfig()
         with config.use():
 
             class UpstreamMap(

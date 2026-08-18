@@ -2,7 +2,6 @@
 
 import warnings
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from metaxy.config import (
@@ -1667,10 +1666,23 @@ def test_env_var_store_config_merged_with_parent_via_extend(tmp_path: Path, monk
     assert config.stores["prod"].config["root_path"] == "/from-env"
 
 
-def test_use_calls_apply_extensions() -> None:
-    """MetaxyConfig.use() calls _apply_extensions, same as set()."""
-    config = MetaxyConfig(enable_map_datatype=True)
-    with patch.object(MetaxyConfig, "_apply_extensions") as mock:
-        with config.use():
-            pass
-    mock.assert_called_once()
+def test_enable_map_datatype_property_is_deprecated() -> None:
+    """The deprecated enable_map_datatype property warns on access and always returns True."""
+    config = MetaxyConfig()
+    with pytest.warns(DeprecationWarning, match="will be removed in Metaxy 0.3.0"):
+        assert config.enable_map_datatype is True
+
+
+def test_enable_map_datatype_config_key_is_deprecated_noop() -> None:
+    """Passing the deprecated enable_map_datatype setting warns but is accepted as a no-op."""
+    with pytest.warns(DeprecationWarning, match="will be removed in Metaxy 0.3.0"):
+        config = MetaxyConfig.model_validate({"enable_map_datatype": True})
+    assert "enable_map_datatype" not in config.model_dump()
+
+
+def test_enable_map_datatype_cannot_be_disabled() -> None:
+    """Setting enable_map_datatype to False is rejected."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError, match="cannot be disabled"):
+        MetaxyConfig.model_validate({"enable_map_datatype": False})

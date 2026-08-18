@@ -112,7 +112,7 @@ class TestDuckDBPreCreatedMapTable:
         """)
         con.close()
 
-        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        config = MetaxyConfig(auto_create_tables=False)
         with config.use():
             metadata = pl.DataFrame(
                 {
@@ -141,7 +141,6 @@ class TestDuckDBPreCreatedMapTable:
         import duckdb
         from metaxy.config import MetaxyConfig
         from metaxy.utils import collect_to_polars
-        from polars_map import Map
 
         db_path = tmp_path / "test.duckdb"
         store = DuckDBMetadataStore(database=db_path, hash_algorithm=HashAlgorithm.XXHASH64, auto_create_tables=False)
@@ -167,12 +166,12 @@ class TestDuckDBPreCreatedMapTable:
         """)
         con.close()
 
-        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        config = MetaxyConfig(auto_create_tables=False)
         with config.use():
             user_map = pl.Series(
                 "user_tags",
-                [[("env", "prod"), ("region", "us")]],
-                dtype=Map(pl.String(), pl.String()),
+                [{"env": "prod", "region": "us"}],
+                dtype=pl.Map(pl.String(), pl.String()),
             )
             metadata = pl.DataFrame(
                 {
@@ -247,7 +246,7 @@ class TestDuckDBPreCreatedMapTable:
         raw_con.close()
 
         # Write using Ibis-backed frame (via the store's own read -> write roundtrip)
-        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        config = MetaxyConfig(auto_create_tables=False)
         with config.use():
             with store.open("w") as s:
                 s.write(feature, metadata)

@@ -350,10 +350,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Apply backend-specific transformations before writing
         df = self.transform_before_write(df, feature_key, table_name)
 
-        from metaxy.config import MetaxyConfig
-
-        if MetaxyConfig.get().enable_map_datatype:
-            df = self._handle_map_columns(df, table_name)
+        df = self._handle_map_columns(df, table_name)
 
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
@@ -626,7 +623,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Convert Struct columns to Map format for metaxy system columns.
 
         For Ibis-backed frames, the conversion stays lazy using ibis.map() expressions.
-        For non-Ibis frames, converts through Arrow using polars-map utilities.
+        For non-Ibis frames, converts through Arrow.
         """
         import ibis.expr.datatypes as dt
 
@@ -696,14 +693,12 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def _handle_polars_map_columns(self, df: Frame, map_columns: set[str]) -> Frame:
         """Convert Polars Struct columns to native Arrow Map columns."""
-        import polars_map
-
         from metaxy.utils import collect_to_polars
         from metaxy.utils._arrow_map import convert_structs_to_maps
 
         polars_df = collect_to_polars(df)
         polars_df = convert_structs_to_maps(polars_df, columns=list(map_columns))
-        return nw.from_native(polars_map.to_arrow(polars_df), eager_only=False)
+        return nw.from_native(polars_df.to_arrow(), eager_only=False)
 
     def _can_compute_native(self) -> bool:
         """

@@ -614,15 +614,20 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion, t
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
 
-                # Convert to dict for snapshot (exclude timestamps for stability)
-                versions_dict = versions_df.select(
-                    [
-                        "feature_key",
-                        "metaxy_feature_version",
-                        "metaxy_definition_version",
-                        "metaxy_project_version",
-                    ]
-                ).to_dicts()
+                # Convert to dict for snapshot (exclude timestamps for stability).
+                # Sort for a deterministic row order independent of store read order.
+                versions_dict = (
+                    versions_df.select(
+                        [
+                            "feature_key",
+                            "metaxy_feature_version",
+                            "metaxy_definition_version",
+                            "metaxy_project_version",
+                        ]
+                    )
+                    .sort(["metaxy_project_version", "feature_key"])
+                    .to_dicts()
+                )
 
                 # Snapshot all results
                 assert {
