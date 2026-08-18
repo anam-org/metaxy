@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import polars as pl
 import pytest
@@ -12,7 +11,7 @@ from metaxy.ext.polars.handlers.iceberg import IcebergMetadataStore
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
-from packaging.version import Version
+from metaxy.utils import collect_to_polars
 
 from tests.metadata_stores.shared import (
     CRUDTests,
@@ -130,14 +129,14 @@ def test_iceberg_custom_namespace(
         assert ("metaxy",) not in store.catalog.list_namespaces()
 
 
-@pytest.mark.skipif(
-    Version(pl.__version__) < Version("1.39.0"),
-    reason="sink_iceberg requires Polars >= 1.39.0",
-)
-def test_iceberg_sink_lazyframe(
+def test_iceberg_write_lazyframe(
     iceberg_store: IcebergMetadataStore, test_features: dict[str, FeatureDefinition]
 ) -> None:
-    """Verify LazyFrame.sink_iceberg is used for lazy writes."""
+    """Verify lazy writes are materialized and round-trip correctly.
+
+    The Map conversion path collects lazy frames to Arrow before appending, so a
+    LazyFrame input is written and read back with the expected rows.
+    """
     feature_cls = test_features["UpstreamFeatureA"]
 
     metadata_lazy = pl.LazyFrame(
@@ -152,10 +151,9 @@ def test_iceberg_sink_lazyframe(
     )
 
     with iceberg_store.open("w") as store:
-        with patch.object(pl.LazyFrame, "sink_iceberg", autospec=True) as mock_sink:
-            mock_sink.side_effect = lambda self_lf, *args, **kwargs: None
-            store.write(feature_cls, metadata_lazy)
-        mock_sink.assert_called_once()
-        args, kwargs = mock_sink.call_args
-        assert len(args) == 2
-        assert kwargs == {"mode": "append"}
+        store.write(feature_cls, metadata_lazy)
+
+        result = store.read(feature_cls)
+        assert result is not None
+        df = collect_to_polars(result).sort("sample_uid")
+        assert df["sample_uid"].to_list() == [1, 2, 3]

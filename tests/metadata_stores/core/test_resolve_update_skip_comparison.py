@@ -29,7 +29,7 @@ from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing import add_metaxy_provenance_column, by_field_maps_to_structs
 from tests.metadata_stores.conftest import (
     BasicStoreCases,
 )
@@ -110,8 +110,8 @@ class TestResolveUpdateSkipComparisonRootFeatures:
             assert METAXY_DATA_VERSION in result.new.columns
             assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
-            # Verify provenance_by_field matches input
-            added_df = result.new.to_polars().sort("sample_uid")
+            # Verify provenance_by_field matches input (Map columns rendered as Structs for comparison)
+            added_df = by_field_maps_to_structs(result.new.to_polars().sort("sample_uid"))
             assert added_df[METAXY_PROVENANCE_BY_FIELD].to_list() == [
                 {"embedding": "hash1"},
                 {"embedding": "hash2"},

@@ -112,7 +112,7 @@ class TestDuckDBPreCreatedMapTable:
         """)
         con.close()
 
-        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        config = MetaxyConfig(auto_create_tables=False)
         with config.use():
             metadata = pl.DataFrame(
                 {
@@ -167,7 +167,7 @@ class TestDuckDBPreCreatedMapTable:
         """)
         con.close()
 
-        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        config = MetaxyConfig(auto_create_tables=False)
         with config.use():
             user_map = pl.Series(
                 "user_tags",
@@ -247,7 +247,7 @@ class TestDuckDBPreCreatedMapTable:
         raw_con.close()
 
         # Write using Ibis-backed frame (via the store's own read -> write roundtrip)
-        config = MetaxyConfig(enable_map_datatype=True, auto_create_tables=False)
+        config = MetaxyConfig(auto_create_tables=False)
         with config.use():
             with store.open("w") as s:
                 s.write(feature, metadata)

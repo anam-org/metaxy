@@ -12,15 +12,66 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
+from metaxy.utils._arrow_map import convert_maps_to_polars_map, convert_structs_to_maps
 from narwhals.typing import IntoFrameT
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from metaxy import CoercibleToFeatureKey
     from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_definition import FeatureDefinition
     from metaxy.versioning.types import HashAlgorithm
 
 FrameT = TypeVar("FrameT", bound=nw.DataFrame | nw.LazyFrame)
+PolarsFrameT = TypeVar("PolarsFrameT", pl.DataFrame, pl.LazyFrame)
+
+# The metaxy system columns that the versioning engine and stores emit as the
+# ``polars_map.Map(String, String)`` extension dtype (always-on Map behavior).
+BY_FIELD_MAP_COLUMNS: tuple[str, ...] = (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD)
+
+
+def normalize_by_field_maps(
+    df: PolarsFrameT,
+    columns: Sequence[str] = BY_FIELD_MAP_COLUMNS,
+) -> PolarsFrameT:
+    """Canonicalize metaxy ``*_by_field`` columns to the ``polars_map.Map`` extension dtype.
+
+    Store output collected through Narwhals surfaces these columns as plain
+    ``List(Struct({key, value}))``, while the versioning engine emits the
+    ``polars_map.Map`` extension type. Test data may also build them as ``Struct``.
+    This normalizes any of those three representations to ``polars_map.Map`` so both
+    sides of a comparison (or a frame about to be written) share one representation.
+    Only the requested columns are touched, and only when they need converting.
+    """
+    df = convert_structs_to_maps(df, columns)
+    return convert_maps_to_polars_map(df, columns)
+
+
+def by_field_maps_to_structs(
+    df: pl.DataFrame,
+    columns: Sequence[str] = BY_FIELD_MAP_COLUMNS,
+) -> pl.DataFrame:
+    """Convert metaxy ``*_by_field`` Map columns back to ``Struct`` for element access.
+
+    Map scalars do not support ``value["field"]`` indexing, so tests that inspect
+    individual field hashes convert the Map columns to Struct first. Accepts Struct,
+    ``List(Struct({key, value}))``, or ``polars_map.Map`` inputs.
+    """
+    import polars_map  # noqa: F401  # registers the ``.map`` accessor
+
+    df = normalize_by_field_maps(df, columns)
+    struct_exprs: list[pl.Expr] = []
+    for col in columns:
+        if col not in df.schema:
+            continue
+        field_names = df[col].map.keys().explode().drop_nulls().unique().sort().to_list()  # ty: ignore[unresolved-attribute]
+        struct_exprs.append(
+            pl.struct([pl.col(col).map.get(name).alias(name) for name in field_names]).alias(col)  # ty: ignore[unresolved-attribute]
+        )
+    if struct_exprs:
+        df = df.with_columns(struct_exprs)
+    return df
 
 
 def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:

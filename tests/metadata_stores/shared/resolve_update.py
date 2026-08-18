@@ -51,7 +51,11 @@ from metaxy_testing.parametric import (
     feature_metadata_strategy,
 )
 
-from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing import (
+    add_metaxy_provenance_column,
+    by_field_maps_to_structs,
+    normalize_by_field_maps,
+)
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan]
@@ -280,7 +284,9 @@ def _setup_upstream_and_downstream(
         )
         downstream_df = downstream_df.join(extra_df, on="sample_uid", how="left")
 
-    store.write(downstream_cls, downstream_df)
+    # resolve_update output surfaces the *_by_field columns as List(Struct); restore
+    # the Map dtype the store expects on write.
+    store.write(downstream_cls, normalize_by_field_maps(downstream_df))
 
 
 def _make_features(graph: FeatureGraph) -> tuple[Any, Any]:
@@ -452,8 +458,8 @@ class ResolveUpdateTests:
             assert len(increment.orphaned) == 0
 
             # Verify provenance_by_field structure matches input
-            added_df = increment.new.lazy().collect().to_polars().sort(id_columns)
-            samples_sorted = samples_df.sort(id_columns)
+            added_df = normalize_by_field_maps(increment.new.lazy().collect().to_polars().sort(id_columns))
+            samples_sorted = normalize_by_field_maps(samples_df.sort(id_columns))
 
             pl_testing.assert_series_equal(
                 added_df["metaxy_provenance_by_field"],
@@ -523,8 +529,8 @@ class ResolveUpdateTests:
             common_columns = [
                 col for col in added_sorted.columns if col in golden_sorted.columns and col != METAXY_CREATED_AT
             ]
-            added_selected = added_sorted.select(common_columns)
-            golden_selected = golden_sorted.select(common_columns)
+            added_selected = normalize_by_field_maps(added_sorted.select(common_columns))
+            golden_selected = normalize_by_field_maps(golden_sorted.select(common_columns))
 
             pl_testing.assert_frame_equal(
                 added_selected,
@@ -776,7 +782,7 @@ class ResolveUpdateTests:
                 assert len(increment1.new) > 0, "Expected resolve_update to detect added samples"
 
                 # Write the increment
-                added_df = increment1.new.lazy().collect().to_polars()
+                added_df = normalize_by_field_maps(increment1.new.lazy().collect().to_polars())
                 store.write(child_key, added_df)
 
                 # Second resolve_update - should be empty
@@ -1095,7 +1101,7 @@ class ResolveUpdateTests:
                 }
             )
             # Join with upstream to get proper data_version columns
-            upstream_df = store.read(Video).collect().to_polars()
+            upstream_df = normalize_by_field_maps(store.read(Video).collect().to_polars())
             first_batch_joined = first_batch.join(
                 upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                     {
@@ -1228,7 +1234,7 @@ class ResolveUpdateTests:
             frames_df = pl.DataFrame(frame_rows)
 
             # Join with upstream to compute proper provenance
-            upstream_df = store.read(Video).collect().to_polars()
+            upstream_df = normalize_by_field_maps(store.read(Video).collect().to_polars())
             frames_joined = frames_df.join(
                 upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                     {
@@ -1347,7 +1353,7 @@ class ResolveUpdateTests:
                     "embedding": ["emb_v1_0", "emb_v1_1", "emb_v2_0", "emb_v2_1"],
                 }
             )
-            upstream_df = store.read(Video).collect().to_polars()
+            upstream_df = normalize_by_field_maps(store.read(Video).collect().to_polars())
             first_batch_joined = first_batch.join(
                 upstream_df.select(["video_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                     {
@@ -1460,7 +1466,7 @@ class ResolveUpdateTests:
                     "result": [f"result_{i}" for i in range(10)],
                 }
             )
-            upstream_df = store.read(Upstream).collect().to_polars()
+            upstream_df = normalize_by_field_maps(store.read(Upstream).collect().to_polars())
             downstream_joined = downstream_batch.join(
                 upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                     {
@@ -1572,7 +1578,7 @@ class ResolveUpdateTests:
                     "result": [f"result_{i}" for i in range(10)],
                 }
             )
-            upstream_df = store.read(Upstream).collect().to_polars()
+            upstream_df = normalize_by_field_maps(store.read(Upstream).collect().to_polars())
             downstream_joined = downstream_batch.join(
                 upstream_df.select(["chunk_id", "metaxy_data_version_by_field", "metaxy_provenance"]).rename(
                     {
@@ -1690,7 +1696,7 @@ class ResolveUpdateTests:
 
             # User reads upstream from fallback (via local_store) and materializes downstream
             # This should read 100 chunks from fallback
-            upstream_df = local_store.read(Upstream).collect().to_polars()
+            upstream_df = normalize_by_field_maps(local_store.read(Upstream).collect().to_polars())
             assert len(upstream_df) == 100, f"Expected 100 upstream rows from fallback, got {len(upstream_df)}"
 
             # User computes and writes downstream for all 100 chunks
@@ -1814,8 +1820,8 @@ class ResolveUpdateTests:
                 ]
 
                 # Sort by all comparable columns for deterministic comparison
-                actual_sorted = actual_added.sort(common_columns).select(common_columns)
-                golden_sorted = golden_added.sort(common_columns).select(common_columns)
+                actual_sorted = normalize_by_field_maps(actual_added.sort(common_columns).select(common_columns))
+                golden_sorted = normalize_by_field_maps(golden_added.sort(common_columns).select(common_columns))
 
                 pl_testing.assert_frame_equal(
                     actual_sorted,
@@ -1943,7 +1949,8 @@ class ResolveUpdateTests:
 
                 # Initial resolve
                 increment_v1 = store.resolve_update(ChildFeature)
-                initial_downstream = increment_v1.new.lazy().collect().to_polars()
+                # Convert Map *_by_field columns to Struct so per-field values are indexable.
+                initial_downstream = by_field_maps_to_structs(increment_v1.new.lazy().collect().to_polars())
 
                 # === VERIFY NULL HANDLING ===
                 # Should have all 3 samples (left join keeps s2 even though optional parent is missing)
@@ -1988,7 +1995,7 @@ class ResolveUpdateTests:
                 # === VERIFY PROVENANCE STABILITY FOR MISSING OPTIONAL DEP ===
                 changed_df = increment_v2.stale
                 assert changed_df is not None, "Expected changed to not be None"
-                changed_downstream = changed_df.lazy().collect().to_polars()
+                changed_downstream = by_field_maps_to_structs(changed_df.lazy().collect().to_polars())
 
                 # s1 and s3 should be in changed (they had actual optional dep values)
                 changed_uids = set(changed_downstream["sample_uid"].to_list())
@@ -2238,7 +2245,8 @@ class ResolveUpdateTests:
 
                 # Initial resolve - creates downstream
                 increment_v1 = store.resolve_update(HourlyStats)
-                initial_downstream = increment_v1.new.lazy().collect().to_polars()
+                # Convert Map *_by_field columns to Struct so per-field values are indexable.
+                initial_downstream = by_field_maps_to_structs(increment_v1.new.lazy().collect().to_polars())
                 store.write(HourlyStats, initial_downstream)
 
                 # Get initial provenance
@@ -2273,7 +2281,7 @@ class ResolveUpdateTests:
                 # Here sensor s1 has 2 readings (r1, r2), so we expect 2 changed rows.
                 changed_df = increment_v2.stale
                 assert changed_df is not None, "Expected changed to not be None"
-                changed_downstream = changed_df.lazy().collect().to_polars()
+                changed_downstream = by_field_maps_to_structs(changed_df.lazy().collect().to_polars())
                 assert len(changed_downstream) == 2, "Expected 2 changed rows (one per reading in aggregation group)"
 
                 # All rows in the aggregation group have identical provenance
@@ -2400,7 +2408,7 @@ class ResolveUpdateTests:
 
                     increment_v1 = store.resolve_update(HourlyStatsV1)
 
-                    result_v1 = increment_v1.new.lazy().collect().to_polars()
+                    result_v1 = by_field_maps_to_structs(increment_v1.new.lazy().collect().to_polars())
                     v1_prov_by_field = result_v1["metaxy_provenance_by_field"][0]
                     v1_avg_temp = v1_prov_by_field["avg_temp"]
                     v1_avg_humidity = v1_prov_by_field["avg_humidity"]
@@ -2490,7 +2498,7 @@ class ResolveUpdateTests:
 
                     increment_v2 = store.resolve_update(HourlyStatsV2)
 
-                    result_v2 = increment_v2.new.lazy().collect().to_polars()
+                    result_v2 = by_field_maps_to_structs(increment_v2.new.lazy().collect().to_polars())
                     v2_prov_by_field = result_v2["metaxy_provenance_by_field"][0]
                     v2_avg_temp = v2_prov_by_field["avg_temp"]
                     v2_avg_humidity = v2_prov_by_field["avg_humidity"]
@@ -2836,7 +2844,7 @@ class ResolveUpdateTests:
 
             # Resolve and write downstream for sample 1 with extra column
             inc = store.resolve_update(DownstreamFeature)
-            downstream_df = inc.new.to_polars().with_columns(pl.Series("dataset", ["mead"]))
+            downstream_df = normalize_by_field_maps(inc.new.to_polars().with_columns(pl.Series("dataset", ["mead"])))
             store.write(DownstreamFeature, downstream_df)
 
             # Now add sample 2 to upstream
@@ -2875,7 +2883,7 @@ class ResolveUpdateTests:
             store.write(UpstreamFeature, upstream_data)
 
             inc = store.resolve_update(DownstreamFeature)
-            downstream_df = inc.new.to_polars().with_columns(pl.Series("needs_reprocess", [1]))
+            downstream_df = normalize_by_field_maps(inc.new.to_polars().with_columns(pl.Series("needs_reprocess", [1])))
             store.write(DownstreamFeature, downstream_df)
 
             result = store.resolve_update(

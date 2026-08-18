@@ -28,8 +28,8 @@ class IbisMapTests:
 
     @pytest.fixture()
     def polars_map_config(self) -> Iterator[MetaxyConfig]:
-        """Activate enable_map_datatype for the duration of the test."""
-        config = MetaxyConfig(enable_map_datatype=True)
+        """Provide an active MetaxyConfig for the duration of the test."""
+        config = MetaxyConfig()
         with config.use():
             yield config
 

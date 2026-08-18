@@ -33,6 +33,8 @@ from metaxy_testing.models import SampleFeatureSpec
 from sqlmodel import Field
 from syrupy.assertion import SnapshotAssertion
 
+from metaxy_testing import by_field_maps_to_structs
+
 # Basic Creation and Registration Tests
 
 
@@ -724,8 +726,11 @@ def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAs
         assert "metaxy_feature_version" in result_df.columns
         assert all(v == VideoFeature.feature_version() for v in result_df["metaxy_feature_version"].to_list())
 
-        # Snapshot result (exclude timestamps which vary between runs)
-        result_for_snapshot = result_df.drop("metaxy_created_at", "metaxy_updated_at").to_dicts()
+        # Snapshot result (exclude timestamps which vary between runs).
+        # Metaxy Map columns are rendered as Structs so the snapshot stays a readable field->hash mapping.
+        result_for_snapshot = by_field_maps_to_structs(
+            result_df.drop("metaxy_created_at", "metaxy_updated_at")
+        ).to_dicts()
         assert result_for_snapshot == snapshot
 
 
@@ -918,12 +923,13 @@ def test_sqlmodel_duckdb_custom_id_columns(tmp_path: Path, snapshot: SnapshotAss
         )
         assert sorted(child_composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30)]
 
-        # Snapshot results (exclude timestamps which vary between runs)
+        # Snapshot results (exclude timestamps which vary between runs).
+        # Metaxy Map columns are rendered as Structs so the snapshot stays a readable field->hash mapping.
         assert {
-            "parent": parent_result_df.drop("metaxy_created_at", "metaxy_updated_at")
+            "parent": by_field_maps_to_structs(parent_result_df.drop("metaxy_created_at", "metaxy_updated_at"))
             .sort(["user_id", "session_id"])
             .to_dicts(),
-            "child": child_result_df.drop("metaxy_created_at", "metaxy_updated_at")
+            "child": by_field_maps_to_structs(child_result_df.drop("metaxy_created_at", "metaxy_updated_at"))
             .sort(["user_id", "session_id"])
             .to_dicts(),
         } == snapshot

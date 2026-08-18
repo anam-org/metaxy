@@ -14,8 +14,11 @@ from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+from metaxy_testing import by_field_maps_to_structs
 
 
 def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
@@ -105,7 +108,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
         filters={},
     )
 
-    result_df = result.collect()
+    result_df = by_field_maps_to_structs(collect_to_polars(result))
 
     # Snapshot the provenance
     provenance_data = []
@@ -210,7 +213,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
     )
-    result_df = result.collect().to_polars()
+    result_df = by_field_maps_to_structs(collect_to_polars(result))
 
     provenance_data = sorted(
         [
@@ -335,7 +338,7 @@ def test_multi_upstream_join_on_common_id_columns(graph: FeatureGraph, snapshot)
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
     )
-    result_df = result.collect().to_polars()
+    result_df = by_field_maps_to_structs(collect_to_polars(result))
 
     provenance_data = sorted(
         [
@@ -452,7 +455,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         hash_algo=HashAlgorithm.XXHASH64,
         filters=filters,
     )
-    result_df = result.collect().to_polars()
+    result_df = by_field_maps_to_structs(collect_to_polars(result))
 
     provenance_data = sorted(
         [

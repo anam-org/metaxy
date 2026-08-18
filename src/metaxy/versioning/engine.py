@@ -218,35 +218,6 @@ class VersioningEngine(ABC):
         """
         raise NotImplementedError()
 
-    def build_struct_column(
-        self,
-        df: FrameT,
-        struct_name: str,
-        field_columns: dict[str, str],
-    ) -> FrameT:
-        """Build a metadata column from existing columns.
-
-        Args:
-            df: Input DataFrame.
-            struct_name: Name for the new metadata column.
-            field_columns: Mapping of struct field names to source column names.
-
-        Returns:
-            DataFrame with a new Struct column, or a Map column when
-            ``enable_map_datatype`` is set.
-        """
-        if MetaxyConfig.get().enable_map_datatype:
-            return self.build_map_column(df, struct_name, field_columns)
-
-        return cast(
-            FrameT,
-            df.with_columns(  # ty: ignore[invalid-argument-type]
-                nw.struct([nw.col(src_col).alias(field_name) for field_name, src_col in field_columns.items()]).alias(
-                    struct_name
-                )
-            ),
-        )
-
     @staticmethod
     @abstractmethod
     def build_map_column(
@@ -408,9 +379,9 @@ class VersioningEngine(ABC):
             *aggregated_cols.values(),
         )
 
-        # Build new struct columns from hashed fields
-        df = self.build_struct_column(df, renamed_data_version_by_field_col, hashed_field_cols)
-        df = self.build_struct_column(
+        # Build new Map columns from hashed fields
+        df = self.build_map_column(df, renamed_data_version_by_field_col, hashed_field_cols)
+        df = self.build_map_column(
             df,
             renamed_prov_by_field_col,
             hashed_field_cols,
@@ -514,8 +485,8 @@ class VersioningEngine(ABC):
                 truncate_length=hash_length,
             )
 
-        # Build provenance_by_field struct
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)  # ty: ignore[invalid-argument-type]
+        # Build provenance_by_field Map column
+        df = self.build_map_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)  # ty: ignore[invalid-argument-type]
 
         # Compute sample-level provenance hash
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)

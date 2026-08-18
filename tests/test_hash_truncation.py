@@ -18,7 +18,10 @@ from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.utils import collect_to_polars
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+from metaxy_testing import by_field_maps_to_structs
 
 
 class TestHashTruncationUtils:
@@ -447,8 +450,7 @@ class TestMetadataStoreTruncation:
 
                 # Read back and verify
 
-                result = store.read(TestFeature).collect()
-                result_pl = result.to_polars()
+                result_pl = by_field_maps_to_structs(collect_to_polars(store.read(TestFeature)))
                 assert result_pl.height == 2
 
                 # Field provenance should be truncated
@@ -515,8 +517,7 @@ class TestEndToEnd:
 
                 # Verify stored versions are truncated
 
-                result = store.read(ParentFeature).collect()
-                result_pl = result.to_polars()
+                result_pl = by_field_maps_to_structs(collect_to_polars(store.read(ParentFeature)))
 
                 for row in result_pl.iter_rows(named=True):
                     assert len(row["metaxy_feature_version"]) == 16

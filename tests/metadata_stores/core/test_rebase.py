@@ -19,9 +19,13 @@ from metaxy import (
 from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system.storage import SystemTableStorage
+from metaxy.utils import collect_to_polars
+from metaxy.utils._arrow_map import convert_structs_to_maps
 from metaxy_testing.models import SampleFeatureSpec
 
-from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
+from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column, by_field_maps_to_structs
+
+BY_FIELD_COLUMNS = ["metaxy_provenance_by_field", "metaxy_data_version_by_field"]
 
 UPSTREAM_KEY = FeatureKey(["test", "upstream"])
 DOWNSTREAM_KEY = FeatureKey(["test", "downstream"])
@@ -99,7 +103,7 @@ def test_rebase_updates_provenance(store: MetadataStore, make_graph: list[TempFe
         store.write(UPSTREAM_KEY, upstream_data)
 
         increment = store.resolve_update(DOWNSTREAM_KEY)
-        store.write(DOWNSTREAM_KEY, increment.new.to_polars())
+        store.write(DOWNSTREAM_KEY, collect_to_polars(increment.new))
 
         old_feature_version = temp_module_v1.graph.get_feature_version(DOWNSTREAM_KEY)
 
@@ -132,16 +136,14 @@ def test_rebase_updates_provenance(store: MetadataStore, make_graph: list[TempFe
             to_feature_version=new_feature_version,
         )
 
-        store.write(DOWNSTREAM_KEY, rebased.to_native(), preserve_feature_version=True)
+        store.write(DOWNSTREAM_KEY, collect_to_polars(rebased), preserve_feature_version=True)
 
-        result = (
+        result = collect_to_polars(
             store.read(
                 DOWNSTREAM_KEY,
                 with_feature_history=True,
                 filters=[nw.col("metaxy_feature_version") == new_feature_version],
             )
-            .collect()
-            .to_polars()
         )
 
         assert result.height == 3
@@ -152,7 +154,8 @@ def test_rebase_updates_provenance(store: MetadataStore, make_graph: list[TempFe
         assert result["metaxy_project_version"].unique().to_list() == [expected_project_version]
 
         # provenance_by_field should have entries for all downstream fields
-        for row_pbf in result["metaxy_provenance_by_field"].to_list():
+        result_structs = by_field_maps_to_structs(result, ["metaxy_provenance_by_field"])
+        for row_pbf in result_structs["metaxy_provenance_by_field"].to_list():
             for field_key in expected_version_by_field:
                 assert field_key in row_pbf
 
@@ -200,10 +203,10 @@ def test_rebase_recalculates_provenance_by_field(tmp_path: Path, make_graph: lis
         store.write(UPSTREAM_KEY, upstream_data)
 
         increment = store.resolve_update(DOWNSTREAM_KEY)
-        store.write(DOWNSTREAM_KEY, increment.new.to_polars())
+        store.write(DOWNSTREAM_KEY, collect_to_polars(increment.new))
 
         old_feature_version = temp_v1.graph.get_feature_version(DOWNSTREAM_KEY)
-        old_pbf = increment.new.to_polars()["metaxy_provenance_by_field"].to_list()
+        old_pbf = by_field_maps_to_structs(collect_to_polars(increment.new))["metaxy_provenance_by_field"].to_list()
 
         storage = SystemTableStorage(store)
         storage.push_graph_snapshot()
@@ -244,22 +247,20 @@ def test_rebase_recalculates_provenance_by_field(tmp_path: Path, make_graph: lis
         )
 
         rebased = store.rebase(DOWNSTREAM_KEY, existing, to_feature_version=new_feature_version)
-        store.write(DOWNSTREAM_KEY, rebased.to_native(), preserve_feature_version=True)
+        store.write(DOWNSTREAM_KEY, collect_to_polars(rebased), preserve_feature_version=True)
 
-        result = (
+        result = collect_to_polars(
             store.read(
                 DOWNSTREAM_KEY,
                 with_feature_history=True,
                 filters=[nw.col("metaxy_feature_version") == new_feature_version],
             )
-            .collect()
-            .to_polars()
         )
 
         assert result.height == 2
 
         # provenance_by_field must differ from v1 — it should now have the "extra" key
-        new_pbf = result["metaxy_provenance_by_field"].to_list()
+        new_pbf = by_field_maps_to_structs(result)["metaxy_provenance_by_field"].to_list()
         assert new_pbf != old_pbf
         for row_pbf in new_pbf:
             assert "default" in row_pbf
@@ -281,7 +282,7 @@ def test_rebase_defaults_to_current_version(store: MetadataStore, make_graph: li
         store.write(UPSTREAM_KEY, upstream_data)
 
         increment = store.resolve_update(DOWNSTREAM_KEY)
-        store.write(DOWNSTREAM_KEY, increment.new.to_polars())
+        store.write(DOWNSTREAM_KEY, collect_to_polars(increment.new))
 
         old_feature_version = temp_module_v1.graph.get_feature_version(DOWNSTREAM_KEY)
 
@@ -302,21 +303,19 @@ def test_rebase_defaults_to_current_version(store: MetadataStore, make_graph: li
             existing,
         )
 
-        collected = rebased.lazy().collect().to_polars()
+        collected = collect_to_polars(rebased)
         assert collected.height == 3
         # Feature version should be set to the current graph's version
         assert collected["metaxy_feature_version"][0] == new_feature_version
 
         store.write(DOWNSTREAM_KEY, collected, preserve_feature_version=True)
 
-        result = (
+        result = collect_to_polars(
             store.read(
                 DOWNSTREAM_KEY,
                 with_feature_history=True,
                 filters=[nw.col("metaxy_feature_version") == new_feature_version],
             )
-            .collect()
-            .to_polars()
         )
         assert result.height == 3
 
@@ -336,7 +335,7 @@ def test_rebase_unknown_version_raises(store: MetadataStore, make_graph: list[Te
         store.write(UPSTREAM_KEY, upstream_data)
 
         increment = store.resolve_update(DOWNSTREAM_KEY)
-        store.write(DOWNSTREAM_KEY, increment.new.to_polars())
+        store.write(DOWNSTREAM_KEY, collect_to_polars(increment.new))
 
         existing = store.read(DOWNSTREAM_KEY)
 
@@ -383,9 +382,11 @@ def test_rebase_preserves_user_data_version(store: MetadataStore, make_graph: li
         store.write(UPSTREAM_KEY, upstream_data)
 
         increment = store.resolve_update(DOWNSTREAM_KEY)
-        store.write(DOWNSTREAM_KEY, increment.new.to_polars())
+        store.write(DOWNSTREAM_KEY, collect_to_polars(increment.new))
 
-        v1_data = store.read(DOWNSTREAM_KEY).collect().to_polars()
+        # Read back with the *_by_field Map columns converted to Struct so the Struct
+        # literal override below unifies with the existing column dtype.
+        v1_data = by_field_maps_to_structs(collect_to_polars(store.read(DOWNSTREAM_KEY)))
         old_provenance = v1_data["metaxy_provenance"].to_list()
         old_data_version = v1_data["metaxy_data_version"].to_list()
         assert old_provenance == old_data_version  # default: data_version == provenance
@@ -403,7 +404,7 @@ def test_rebase_preserves_user_data_version(store: MetadataStore, make_graph: li
             .otherwise(pl.col("metaxy_data_version_by_field"))
             .alias("metaxy_data_version_by_field"),
         )
-        store.write(DOWNSTREAM_KEY, overridden)
+        store.write(DOWNSTREAM_KEY, convert_structs_to_maps(overridden, BY_FIELD_COLUMNS))
 
         old_feature_version = temp_module_v1.graph.get_feature_version(DOWNSTREAM_KEY)
 
@@ -431,24 +432,22 @@ def test_rebase_preserves_user_data_version(store: MetadataStore, make_graph: li
             to_feature_version=new_feature_version,
         )
 
-        store.write(DOWNSTREAM_KEY, rebased.to_native(), preserve_feature_version=True)
+        store.write(DOWNSTREAM_KEY, collect_to_polars(rebased), preserve_feature_version=True)
 
-        result = (
+        result = collect_to_polars(
             store.read(
                 DOWNSTREAM_KEY,
                 with_feature_history=True,
                 filters=[nw.col("metaxy_feature_version") == new_feature_version],
             )
-            .collect()
-            .to_polars()
-            .sort("sample_uid")
-        )
+        ).sort("sample_uid")
 
         assert result.height == 3
 
         # Row 0 (sample_uid=1): user-overridden data_version should be preserved
+        result_structs = by_field_maps_to_structs(result)
         assert result["metaxy_data_version"][0] == custom_dv
-        assert result["metaxy_data_version_by_field"][0] == custom_dv_by_field
+        assert result_structs["metaxy_data_version_by_field"][0] == custom_dv_by_field
 
         # Rows 1-2 (sample_uid=2,3): default data_version should match new provenance
         for i in [1, 2]:
@@ -470,7 +469,7 @@ def test_write_fills_null_data_version_from_provenance(store: MetadataStore, mak
         store.write(UPSTREAM_KEY, upstream_data)
 
         increment = store.resolve_update(DOWNSTREAM_KEY)
-        base_data = increment.new.to_polars()
+        base_data = collect_to_polars(increment.new)
 
         custom_dv_by_field = {"default": "custom_hash"}
         df_with_nulls = base_data.with_columns(
@@ -480,15 +479,26 @@ def test_write_fills_null_data_version_from_provenance(store: MetadataStore, mak
             .alias("metaxy_data_version_by_field"),
         ).drop("metaxy_data_version")
 
+        # data_version_by_field was rebuilt as a Struct literal above while
+        # provenance_by_field stays Map — normalize both to Map before writing.
+        # Struct->Map conversion turns null structs into non-null maps holding null
+        # values, so re-mask the non-custom rows to true nulls that write() then fills.
+        df_with_nulls = convert_structs_to_maps(df_with_nulls, BY_FIELD_COLUMNS).with_columns(
+            pl.when(pl.col("sample_uid") == 1)
+            .then(pl.col("metaxy_data_version_by_field"))
+            .otherwise(None)
+            .alias("metaxy_data_version_by_field")
+        )
         store.write(DOWNSTREAM_KEY, df_with_nulls)
 
-        result = store.read(DOWNSTREAM_KEY).collect().to_polars().sort("sample_uid")
+        result = collect_to_polars(store.read(DOWNSTREAM_KEY)).sort("sample_uid")
 
         assert result.height == 3
 
         # Row 0 (sample_uid=1): custom data_version_by_field preserved
-        assert result["metaxy_data_version_by_field"][0] == custom_dv_by_field
+        result_structs = by_field_maps_to_structs(result)
+        assert result_structs["metaxy_data_version_by_field"][0] == custom_dv_by_field
 
         # Rows 1-2: null data_version_by_field filled from provenance
         for i in [1, 2]:
-            assert result["metaxy_data_version_by_field"][i] == result["metaxy_provenance_by_field"][i]
+            assert result_structs["metaxy_data_version_by_field"][i] == result_structs["metaxy_provenance_by_field"][i]

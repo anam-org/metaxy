@@ -5,8 +5,9 @@ from pathlib import Path
 
 import polars as pl
 import pytest
+from metaxy.utils import collect_to_polars
 
-from metaxy_testing import TempMetaxyProject
+from metaxy_testing import TempMetaxyProject, by_field_maps_to_structs
 
 
 @pytest.mark.parametrize("output_format", ["plain", "json"])
@@ -56,7 +57,7 @@ def test_metadata_status_up_to_date(
             increment = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write(feature_key, increment.new.to_polars())
+            store.write(feature_key, collect_to_polars(increment.new))
 
         # Check status for the non-root feature
         result = metaxy_project.run_cli(
@@ -411,7 +412,7 @@ def test_metadata_status_with_explicit_store(
             increment = store.resolve_update(feature_key, lazy=False)
 
             # Write the computed metadata to the store
-            store.write(feature_key, increment.new.to_polars())
+            store.write(feature_key, collect_to_polars(increment.new))
 
         # Check status with explicit store
         result = metaxy_project.run_cli(
@@ -737,7 +738,7 @@ def test_metadata_status_with_global_filter(
             # Resolve the full increment first
             increment = store.resolve_update(feature_key, lazy=False)
             # Filter to only category A samples and write
-            added_df = increment.new.to_polars().filter(pl.col("category") == "A")
+            added_df = collect_to_polars(increment.new).filter(pl.col("category") == "A")
             store.write(feature_key, added_df)
 
         # Check status with global-filter for category A - should be up-to-date
@@ -893,7 +894,7 @@ def test_metadata_status_with_multiple_global_filters(
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
-            store.write(feature_key, increment.new.to_polars())
+            store.write(feature_key, collect_to_polars(increment.new))
 
         # Check status with multiple global-filters: category A AND status active
         # Should match sample_uids 1 and 5
@@ -1160,7 +1161,7 @@ def test_metadata_status_with_progress_flag(
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
-            partial_data = increment.new.to_polars().head(2)
+            partial_data = collect_to_polars(increment.new).head(2)
             store.write(feature_key, partial_data)
 
         # Check status with --progress flag
@@ -1240,7 +1241,7 @@ def test_metadata_status_verbose_includes_progress(
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
-            partial_data = increment.new.to_polars().head(1)
+            partial_data = collect_to_polars(increment.new).head(1)
             store.write(feature_key, partial_data)
 
         # Check status with --verbose (should also include progress)
@@ -1361,7 +1362,7 @@ def test_metadata_status_progress_100_percent(
             feature_key = FeatureKey(["video", "files"])
             # feature_cls removed - using feature_key directly
             increment = store.resolve_update(feature_key, lazy=False)
-            store.write(feature_key, increment.new.to_polars())
+            store.write(feature_key, collect_to_polars(increment.new))
 
         # Check status with --progress flag
         result = metaxy_project.run_cli(
@@ -2929,7 +2930,7 @@ def test_metadata_status_stale_if_basic(
         with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             increment = store.resolve_update(feature_key, lazy=False)
-            downstream_df = increment.new.to_polars()
+            downstream_df = collect_to_polars(increment.new)
 
             extra_df = pl.DataFrame(
                 {
@@ -3026,7 +3027,7 @@ def test_metadata_status_stale_if_multiple_predicates(
         with graph.use(), store.open("w"):
             feature_key = FeatureKey(["video", "files"])
             increment = store.resolve_update(feature_key, lazy=False)
-            downstream_df = increment.new.to_polars()
+            downstream_df = collect_to_polars(increment.new)
 
             extra_df = pl.DataFrame(
                 {
@@ -3124,7 +3125,7 @@ def test_metadata_rebase_command(metaxy_project: TempMetaxyProject, capsys: pyte
         with graph.use(), store.open("w"):
             downstream_key = FeatureKey(["video", "downstream"])
             increment = store.resolve_update(downstream_key)
-            store.write(downstream_key, increment.new.to_polars())
+            store.write(downstream_key, collect_to_polars(increment.new))
             old_feature_version = graph.get_feature_version(downstream_key)
 
             # Push v1 graph snapshot so rebase can look up graphs
@@ -3196,21 +3197,22 @@ def test_metadata_rebase_command(metaxy_project: TempMetaxyProject, capsys: pyte
 
         # Read back and verify versioning columns
         with graph.use(), store.open("r"):
-            rebased = (
+            rebased = collect_to_polars(
                 store.read(
                     downstream_key,
                     with_feature_history=True,
                     filters=[nw.col("metaxy_feature_version") == new_feature_version],
                 )
-                .collect()
-                .to_polars()
             )
             assert rebased.height == 3
             assert rebased["metaxy_feature_version"].unique().to_list() == [new_feature_version]
 
-            # provenance_by_field should have entries for all downstream fields
+            # provenance_by_field should have entries for all downstream fields.
+            # The metaxy *_by_field columns are stored as Map, so convert them back to
+            # Struct to inspect field-keyed hashes as plain dicts.
             expected_version_by_field = graph.get_feature_version_by_field(downstream_key)
-            for row_pbf in rebased["metaxy_provenance_by_field"].to_list():
+            rebased_structs = by_field_maps_to_structs(rebased)
+            for row_pbf in rebased_structs["metaxy_provenance_by_field"].to_list():
                 for field_key in expected_version_by_field:
                     assert field_key in row_pbf
 
@@ -3220,14 +3222,12 @@ def test_metadata_rebase_command(metaxy_project: TempMetaxyProject, capsys: pyte
             assert rebased["metaxy_data_version"].to_list() == provenance_values
 
             # No rows should remain with the old feature version
-            old_rows = (
+            old_rows = collect_to_polars(
                 store.read(
                     downstream_key,
                     with_feature_history=True,
                     filters=[nw.col("metaxy_feature_version") == old_feature_version],
                 )
-                .collect()
-                .to_polars()
             )
             assert old_rows.height == 0
 
@@ -3278,7 +3278,7 @@ def test_metadata_rebase_defaults_to_current_version(
         with graph.use(), store.open("w"):
             downstream_key = FeatureKey(["video", "downstream"])
             increment = store.resolve_update(downstream_key)
-            store.write(downstream_key, increment.new.to_polars())
+            store.write(downstream_key, collect_to_polars(increment.new))
             old_feature_version = graph.get_feature_version(downstream_key)
 
     # Create v2 with new code_version
@@ -3338,21 +3338,22 @@ def test_metadata_rebase_defaults_to_current_version(
 
         # Verify rebased rows have the new feature version and correct provenance
         with graph.use(), store.open("r"):
-            rebased = (
+            rebased = collect_to_polars(
                 store.read(
                     downstream_key,
                     with_feature_history=True,
                     filters=[nw.col("metaxy_feature_version") == new_feature_version],
                 )
-                .collect()
-                .to_polars()
             )
             assert rebased.height == 3
             assert rebased["metaxy_feature_version"].unique().to_list() == [new_feature_version]
 
-            # provenance_by_field should have entries for all downstream fields
+            # provenance_by_field should have entries for all downstream fields.
+            # The metaxy *_by_field columns are stored as Map, so convert them back to
+            # Struct to inspect field-keyed hashes as plain dicts.
             expected_version_by_field = graph.get_feature_version_by_field(downstream_key)
-            for row_pbf in rebased["metaxy_provenance_by_field"].to_list():
+            rebased_structs = by_field_maps_to_structs(rebased)
+            for row_pbf in rebased_structs["metaxy_provenance_by_field"].to_list():
                 for field_key in expected_version_by_field:
                     assert field_key in row_pbf
 
