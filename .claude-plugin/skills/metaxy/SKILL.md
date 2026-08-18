@@ -1,6 +1,6 @@
 ---
 name: metaxy
-description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", "metaxy lock", "lock features", "external features", "multi-environment", "monorepo features", "enable Map datatype", "enable_map_datatype", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, testing patterns, feature locking, Map datatype configuration, or multi-environment configuration.
+description: This skill should be used when the user asks to "define a feature", "create a BaseFeature class", "track feature versions", "set up metadata store", "field-level lineage", "FieldSpec", "FeatureDep", "run metaxy CLI", "metaxy migrations", "metaxy lock", "lock features", "external features", "multi-environment", "monorepo features", or needs guidance on metaxy feature definitions, versioning, metadata stores, CLI commands, testing patterns, feature locking, or multi-environment configuration.
 ---
 
 # Metaxy
@@ -110,12 +110,6 @@ def metaxy_env(tmp_path):
         ).use() as config:
             yield config
 ```
-
-#### Map Datatype (Experimental)
-
-To enable native Arrow Map column support (recommended for stores that support it), set `enable_map_datatype = true` in `metaxy.toml`. Requires the `polars-map` package. See https://docs.metaxy.io/stable/guide/concepts/metadata-stores/#map-datatype
-
-When working with Map columns, use `metaxy.utils.collect_to_polars`, `metaxy.utils.collect_to_arrow`, or `metaxy.utils.switch_implementation_to_polars` to materialize or convert frames. These utilities preserve Map column types that would otherwise be lost with standard Narwhals backend conversions. See https://docs.metaxy.io/stable/guide/concepts/metadata-stores/#map-datatype
 
 ## Examples
 

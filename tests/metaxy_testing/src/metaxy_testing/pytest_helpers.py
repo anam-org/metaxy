@@ -12,15 +12,64 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
 )
+from metaxy.utils._arrow_map import convert_maps_to_structs, convert_structs_to_maps
 from narwhals.typing import IntoFrameT
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from metaxy import CoercibleToFeatureKey
     from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_definition import FeatureDefinition
     from metaxy.versioning.types import HashAlgorithm
 
 FrameT = TypeVar("FrameT", bound=nw.DataFrame | nw.LazyFrame)
+PolarsFrameT = TypeVar("PolarsFrameT", pl.DataFrame, pl.LazyFrame)
+
+# The metaxy system columns that the versioning engine and stores emit as the
+# ``Map(String, String)`` dtype (always-on Map behavior).
+BY_FIELD_MAP_COLUMNS: tuple[str, ...] = (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD)
+
+
+def normalize_by_field_maps(
+    df: PolarsFrameT,
+    columns: Sequence[str] = BY_FIELD_MAP_COLUMNS,
+) -> PolarsFrameT:
+    """Canonicalize metaxy ``*_by_field`` columns to the ``Map`` dtype.
+
+    Stores and the versioning engine emit these columns as ``Map``, while test data
+    may build them as ``Struct``. This normalizes both representations to ``Map`` so
+    both sides of a comparison (or a frame about to be written) share one representation.
+    Only the requested columns are touched, and only when they need converting.
+    """
+    return convert_structs_to_maps(df, columns)
+
+
+def assert_metadata_frame_equal(left: pl.DataFrame, right: pl.DataFrame, **kwargs: object) -> None:
+    """`polars.testing.assert_frame_equal` after canonicalizing metaxy `*_by_field` columns.
+
+    Metadata frames carry the `*_by_field` columns in one of several equivalent representations
+    (`Struct` or `Map`) depending on how they were built
+    or materialized. Both sides are canonicalized to `Map` so the comparison checks
+    values rather than incidental dtype. Extra keyword arguments are forwarded to
+    `assert_frame_equal` (e.g. `check_row_order`, `check_column_order`).
+    """
+    from polars.testing import assert_frame_equal
+
+    assert_frame_equal(normalize_by_field_maps(left), normalize_by_field_maps(right), **kwargs)  # ty: ignore[invalid-argument-type]
+
+
+def by_field_maps_to_structs(
+    df: pl.DataFrame,
+    columns: Sequence[str] = BY_FIELD_MAP_COLUMNS,
+) -> pl.DataFrame:
+    """Convert metaxy ``*_by_field`` Map columns back to ``Struct`` for element access.
+
+    Map scalars do not support ``value["field"]`` indexing, so tests that inspect
+    individual field hashes convert the Map columns to Struct first. Accepts Struct
+    or ``Map`` inputs.
+    """
+    return convert_maps_to_structs(normalize_by_field_maps(df, columns), columns)
 
 
 def add_metaxy_system_columns(df: IntoFrameT) -> IntoFrameT:

@@ -83,11 +83,10 @@ def ray_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConf
 
 @pytest.fixture
 def ray_map_config(tmp_path: Path, delta_store: DeltaMetadataStore) -> mx.MetaxyConfig:
-    """Create a MetaxyConfig with enable_map_datatype=True."""
+    """Create a MetaxyConfig for the Map datatype tests."""
     return mx.MetaxyConfig(
         project="test",
         entrypoints=[RAY_FEATURES_MODULE],
-        enable_map_datatype=True,
         stores={
             "dev": StoreConfig(
                 type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
@@ -135,8 +134,7 @@ def make_test_data_with_tags(
     """Create test data as a native Arrow table with a user-defined Map column.
 
     Uses native Arrow ``pa.map_`` for the ``tags`` and ``metaxy_provenance_by_field``
-    columns so that Map types survive Ray's Arrow serialization boundary
-    (Ray strips Polars extension types like ``polars_map.Map``).
+    columns so that Map types survive Ray's Arrow serialization boundary.
     """
     return pa.table(
         {

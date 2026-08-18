@@ -27,6 +27,7 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeatureSpec
 from metaxy_testing.pytest_helpers import skip_exception
@@ -37,6 +38,7 @@ from metaxy_testing import (
     HashAlgorithmCases,
     add_metaxy_provenance_column,
     assert_all_results_equal,
+    by_field_maps_to_structs,
 )
 
 # ============= HELPERS =============
@@ -220,9 +222,8 @@ def test_fallback_store_warning_issued(
                     result = primary_store.resolve_update(DownstreamFeature)
 
             # Collect field provenances for comparison
-            added_sorted = (result.new.to_polars() if isinstance(result.new, nw.DataFrame) else result.added).sort(
-                "sample_uid"
-            )
+            added = collect_to_polars(result.new) if isinstance(result.new, nw.DataFrame) else result.added
+            added_sorted = by_field_maps_to_structs(added).sort("sample_uid")
             versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
             results[(primary_store_type, fallback_store_type, versioning_engine)] = {
@@ -356,8 +357,12 @@ def test_fallback_store_switches_to_polars_components(
             result_local = store_all_local.resolve_update(DownstreamFeature)
 
         # Collect field provenances from result
-        added_local = result_local.new.to_polars() if isinstance(result_local.new, nw.DataFrame) else result_local.added
-        versions_local = added_local.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
+        added_local = (
+            collect_to_polars(result_local.new) if isinstance(result_local.new, nw.DataFrame) else result_local.added
+        )
+        versions_local = (
+            by_field_maps_to_structs(added_local).sort("sample_uid")["metaxy_provenance_by_field"].to_list()
+        )
 
         results[(primary_store_type, fallback_store_type, "all_local")] = {
             "added": len(result_local.new),
@@ -397,9 +402,13 @@ def test_fallback_store_switches_to_polars_components(
 
         # Collect field provenances from result
         added_fallback = (
-            result_fallback.new.to_polars() if isinstance(result_fallback.new, nw.DataFrame) else result_fallback.added
+            collect_to_polars(result_fallback.new)
+            if isinstance(result_fallback.new, nw.DataFrame)
+            else result_fallback.added
         )
-        versions_fallback = added_fallback.sort("sample_uid")["metaxy_provenance_by_field"].to_list()
+        versions_fallback = (
+            by_field_maps_to_structs(added_fallback).sort("sample_uid")["metaxy_provenance_by_field"].to_list()
+        )
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
             "added": len(result_fallback.new),

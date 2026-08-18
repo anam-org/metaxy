@@ -52,40 +52,32 @@ def test_narwhals_pandas_dataframe() -> None:
 
 
 @pytest.fixture
-def polars_map_df() -> pl.DataFrame:
-    """Build a Polars DataFrame with a polars_map.Map column from a native Arrow map."""
-    pytest.importorskip("polars_map")
-    from metaxy.utils._arrow_map import convert_maps_to_polars_map
-
-    arrow_table = pa.table(
+def map_df() -> pl.DataFrame:
+    """Polars DataFrame with a native `Map` column."""
+    return pl.DataFrame(
         {
             "id": [1, 2],
-            "tags": pa.array(
-                [[("a", "x"), ("b", "y")], [("c", "z")]],
-                type=pa.map_(pa.string(), pa.string()),
-            ),
+            "tags": pl.Series([{"a": "x", "b": "y"}, {"c": "z"}], dtype=pl.Map(pl.String, pl.String)),
         }
     )
-    df: pl.DataFrame = pl.from_arrow(arrow_table)  # ty: ignore[invalid-assignment]
-    return convert_maps_to_polars_map(df, columns=["tags"])
 
 
-def test_polars_map_columns_become_native_arrow_map(polars_map_df: pl.DataFrame) -> None:
-    result = collect_to_arrow(polars_map_df)
+def test_pl_map_columns_become_native_arrow_map(map_df: pl.DataFrame) -> None:
+    result = collect_to_arrow(map_df)
 
     assert pa.types.is_map(result.schema.field("tags").type)
     assert dict(result.column("tags")[0].as_py()) == {"a": "x", "b": "y"}
     assert dict(result.column("tags")[1].as_py()) == {"c": "z"}
 
 
-def test_polars_map_columns_from_lazyframe(polars_map_df: pl.DataFrame) -> None:
-    result = collect_to_arrow(polars_map_df.lazy())
+def test_pl_map_columns_from_lazyframe(map_df: pl.DataFrame) -> None:
+    result = collect_to_arrow(map_df.lazy())
 
     assert pa.types.is_map(result.schema.field("tags").type)
     assert dict(result.column("tags")[0].as_py()) == {"a": "x", "b": "y"}
 
 
-def test_non_polars_map_columns_unaffected() -> None:
+def test_non_polars_arrow_map_columns_unaffected() -> None:
     """Arrow map columns from non-Polars backends stay as-is (already native)."""
     arrays = [
         pa.array([1, 2]),

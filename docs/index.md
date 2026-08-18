@@ -23,11 +23,6 @@ description: "A high level introduction to Metaxy."
 
 ---
 
-!!! success "Published in JOSS"
-
-    Metaxy is published in the [Journal of Open Source Software](https://joss.theoj.org/papers/10.21105/joss.10449).
-    Read the [docs copy of the paper](./publications/2026-introducing-metaxy/paper.md).
-
 ## Metaxy
 
 Metaxy is a pluggable metadata layer for building multimodal Data and ML pipelines. Metaxy manages and tracks **metadata** across complex computational graphs and provides sample and sub-sample versioning, allowing the codebase to evolve over time without friction.
