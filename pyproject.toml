@@ -141,7 +141,7 @@ dev = [
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.4.2", # 1.4.2 fixed Ibis-generated datafusion dialect
   "mistune>=3.1.4",
-  "ty==0.0.63",
+  "ty==0.0.72",
   "datafusion>=51.0.0",
   "pytest-asyncio>=0.26.0",
   "pytest-benchmark>=5.0.0",
@@ -291,6 +291,7 @@ markers = [
   "delta: Delta Lake store tests",
   "iceberg: Apache Iceberg store tests",
   "motherduck: MotherDuck live integration tests (requires MOTHERDUCK_TOKEN)",
+  "lance: Lance storage format tests",
   "lancedb: LanceDB store tests",
   "postgresql: PostgreSQL store tests",
   "integration: Integration tests (require external services)",

@@ -216,7 +216,7 @@ class Runbook(BaseModel):
     _execution_state: RunbookExecutionState | None = PrivateAttr(default=None)
 
     def set_execution_state(self, state: RunbookExecutionState) -> None:
-        self._execution_state = state  # ty: ignore[invalid-assignment]
+        self._execution_state = state
 
     @property
     def execution_state(self) -> RunbookExecutionState | None:

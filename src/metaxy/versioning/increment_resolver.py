@@ -29,7 +29,7 @@ class IncrementResolver(Generic[FrameT]):
     comparison (e.g., collapsing expanded rows).
     """
 
-    def __init__(self, plan: FeaturePlan, engine: VersioningEngine[FrameT]):
+    def __init__(self, plan: FeaturePlan, engine: VersioningEngine):
         self.plan = plan
         self.engine = engine
 

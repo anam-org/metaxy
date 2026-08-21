@@ -79,7 +79,7 @@ class FeatureDefinition(FrozenBaseModel):
             feature_class_path=class_path,
             project=project,
         )
-        definition._feature_class = feature_cls  # ty: ignore[invalid-assignment]
+        definition._feature_class = feature_cls
         return definition
 
     @classmethod
@@ -119,7 +119,7 @@ class FeatureDefinition(FrozenBaseModel):
             feature_class_path=feature_class_path,
             project=project,
         )
-        definition._source = source  # ty: ignore[invalid-assignment]
+        definition._source = source
         return definition
 
     @staticmethod
@@ -204,10 +204,10 @@ class FeatureDefinition(FrozenBaseModel):
             feature_class_path=None,
             project=project,
         )
-        definition._is_external = True  # ty: ignore[invalid-assignment]
-        definition._provenance_by_field = normalized_provenance  # ty: ignore[invalid-assignment]
-        definition._on_version_mismatch = on_version_mismatch  # ty: ignore[invalid-assignment]
-        definition._source = source  # ty: ignore[invalid-assignment]
+        definition._is_external = True
+        definition._provenance_by_field = normalized_provenance
+        definition._on_version_mismatch = on_version_mismatch
+        definition._source = source
         return definition
 
     def _get_feature_class(self) -> type[BaseFeature]:
