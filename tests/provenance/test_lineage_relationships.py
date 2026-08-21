@@ -17,8 +17,11 @@ from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
+
+from metaxy_testing import by_field_maps_to_structs
 
 # ============================================================================
 # Fixtures for Aggregation (N:1) scenarios
@@ -291,7 +294,7 @@ def test_identity_lineage_load_upstream(
     assert set(result_df["sample_uid"].to_list()) == {1, 2, 3}
 
     # Snapshot the identity lineage provenance
-    result_polars = result_df.to_polars()
+    result_polars = by_field_maps_to_structs(collect_to_polars(result_df))
     provenance_data = sorted(
         [
             {
@@ -717,7 +720,7 @@ def test_expansion_lineage_load_upstream(
     assert set(result_df["video_id"].to_list()) == {"v1", "v2"}
 
     # Snapshot the expansion upstream provenance
-    result_polars = result_df.to_polars()
+    result_polars = by_field_maps_to_structs(collect_to_polars(result_df))
     provenance_data = sorted(
         [
             {
@@ -761,7 +764,7 @@ def test_expansion_lineage_resolve_increment_no_current(
     assert len(added) == 2  # Two videos
 
     # Snapshot the added videos
-    added_polars = added.to_polars()
+    added_polars = by_field_maps_to_structs(collect_to_polars(added))
     added_data = sorted(
         [
             {
@@ -2679,7 +2682,7 @@ def test_aggregation_field_level_provenance_isolation(graph: FeatureGraph) -> No
     ).collect()
 
     # Get initial provenance values
-    result_v1_polars = result_v1.to_polars()
+    result_v1_polars = by_field_maps_to_structs(collect_to_polars(result_v1))
     initial_prov_by_field = result_v1_polars["metaxy_provenance_by_field"][0]
     initial_avg_temp_prov = initial_prov_by_field["avg_temp"]
     initial_avg_humidity_prov = initial_prov_by_field["avg_humidity"]
@@ -2713,7 +2716,7 @@ def test_aggregation_field_level_provenance_isolation(graph: FeatureGraph) -> No
         filters={},
     ).collect()
 
-    result_v2_polars = result_v2.to_polars()
+    result_v2_polars = by_field_maps_to_structs(collect_to_polars(result_v2))
     updated_prov_by_field = result_v2_polars["metaxy_provenance_by_field"][0]
     updated_avg_temp_prov = updated_prov_by_field["avg_temp"]
     updated_avg_humidity_prov = updated_prov_by_field["avg_humidity"]
@@ -2826,7 +2829,7 @@ def test_aggregation_field_level_provenance_multiple_groups(
         filters={},
     ).collect()
 
-    result_polars = result.to_polars().sort("sensor_id", "reading_id")
+    result_polars = by_field_maps_to_structs(collect_to_polars(result)).sort("sensor_id", "reading_id")
     # With window functions, all 4 original rows are preserved
     assert len(result_polars) == 4  # 4 rows (2 per sensor)
 
@@ -2951,7 +2954,7 @@ def test_aggregation_field_level_provenance_definition_change() -> None:
         filters={},
     ).collect()
 
-    result_v1_polars = result_v1.to_polars()
+    result_v1_polars = by_field_maps_to_structs(collect_to_polars(result_v1))
     v1_prov_by_field = result_v1_polars["metaxy_provenance_by_field"][0]
     v1_avg_temp_prov = v1_prov_by_field["avg_temp"]
     v1_avg_humidity_prov = v1_prov_by_field["avg_humidity"]
@@ -3041,7 +3044,7 @@ def test_aggregation_field_level_provenance_definition_change() -> None:
         filters={},
     ).collect()
 
-    result_v2_polars = result_v2.to_polars()
+    result_v2_polars = by_field_maps_to_structs(collect_to_polars(result_v2))
     v2_prov_by_field = result_v2_polars["metaxy_provenance_by_field"][0]
     v2_avg_temp_prov = v2_prov_by_field["avg_temp"]
     v2_avg_humidity_prov = v2_prov_by_field["avg_humidity"]

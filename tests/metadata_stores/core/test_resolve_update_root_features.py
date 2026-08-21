@@ -17,7 +17,7 @@ from metaxy.models.types import FeatureKey, FieldKey
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from pytest_cases import parametrize_with_cases
 
-from metaxy_testing import add_metaxy_provenance_column
+from metaxy_testing import add_metaxy_provenance_column, by_field_maps_to_structs
 from tests.metadata_stores.conftest import (
     BasicStoreCases,
 )
@@ -273,8 +273,9 @@ class TestResolveUpdateRootFeatures:
             assert METAXY_DATA_VERSION in result.new.columns
             assert METAXY_DATA_VERSION_BY_FIELD in result.new.columns
 
-            # Verify custom data_version values are preserved (different from provenance)
-            added_df = result.new.to_polars()
+            # Verify custom data_version values are preserved (different from provenance).
+            # Map columns are rendered as Structs so the by-field values compare as dicts.
+            added_df = by_field_maps_to_structs(result.new.to_polars())
             for row in added_df.iter_rows(named=True):
                 # Data version should be the custom value, not provenance
                 assert row[METAXY_DATA_VERSION] == "custom_v1"

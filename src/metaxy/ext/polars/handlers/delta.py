@@ -11,11 +11,9 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
-from packaging.version import Version
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -78,10 +76,6 @@ class DeltaMetadataStore(MetadataStore):
 
     It stores feature metadata in Delta Lake tables located under ``root_path``.
     It uses the Polars versioning engine for provenance calculations.
-
-    !!! tip
-        If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
-        `LazyFrame.sink_delta`, avoiding unnecessary materialization.
 
     Example:
 
@@ -267,11 +261,7 @@ class DeltaMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata
-            **kwargs: Backend-specific parameters that are passed to `write_delta` or `sink_delta`.
-
-        !!! tip
-            If Polars 1.37 or greater is installed, lazy Polars frames are sinked via
-            `LazyFrame.sink_delta`, avoiding unnecessary materialization.
+            **kwargs: Backend-specific parameters that are passed to `write_deltalake`.
         """
         table_uri = self._feature_uri(feature_key)
 
@@ -280,36 +270,7 @@ class DeltaMetadataStore(MetadataStore):
         mode = write_opts.pop("mode", "append")
         storage_options = write_opts.pop("storage_options", None)
 
-        if MetaxyConfig.get().enable_map_datatype:
-            self._write_with_map_columns(df, table_uri, mode, storage_options, write_opts)
-            return
-
-        # Check if we can use sink_delta (Polars >= 1.37, native Polars LazyFrame)
-        can_sink = (
-            df.implementation == nw.Implementation.POLARS
-            and isinstance(df, nw.LazyFrame)
-            and Version(pl.__version__) >= Version("1.37.0")
-        )
-
-        if can_sink:
-            lf_native = df.to_native()
-            assert isinstance(lf_native, pl.LazyFrame)
-
-            self._cast_enum_to_string(lf_native).sink_delta(
-                table_uri,
-                mode=mode,
-                storage_options=storage_options,
-                delta_write_options=write_opts or None,
-            )
-        else:
-            df_native = collect_to_polars(df)
-
-            self._cast_enum_to_string(df_native).write_delta(
-                table_uri,
-                mode=mode,
-                storage_options=storage_options,
-                delta_write_options=write_opts or None,
-            )
+        self._write_with_map_columns(df, table_uri, mode, storage_options, write_opts)
 
     def _write_with_map_columns(
         self,
@@ -432,8 +393,7 @@ class DeltaMetadataStore(MetadataStore):
             storage_options=self.storage_options or None,
         )
 
-        if MetaxyConfig.get().enable_map_datatype:
-            lf = self._read_map_columns(lf, feature_key)
+        lf = self._read_map_columns(lf, feature_key)
 
         # Convert to Narwhals
         nw_lazy = nw.from_native(lf)

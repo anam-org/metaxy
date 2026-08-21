@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import narwhals as nw
+import polars as pl
 from narwhals.typing import Frame
 from pydantic import Field
 
@@ -238,6 +239,40 @@ class LanceDBMetadataStore(MetadataStore):
         """Use XXHASH32 by default."""
         return HashAlgorithm.XXHASH32
 
+    # Map compatibility --------------------------------------------------------
+    # LanceDB has no native Map type (https://github.com/lance-format/lance/issues/2341),
+    # so metaxy `Map` columns are stored as named Structs and reconstructed on read.
+
+    def _maps_to_structs(self, df: pl.DataFrame, feature_key: FeatureKey) -> pl.DataFrame:
+        """Decompose `Map` columns into named `Struct` columns Lance can store."""
+        from metaxy.utils._arrow_map import convert_maps_to_structs
+        from metaxy.utils.dataframes import find_map_columns
+
+        map_columns = find_map_columns(nw.from_native(df))
+        # Empty frames carry no keys, so fall back to the feature's field names to keep the schema stable.
+        fallback = {col: self._map_field_names(feature_key, col) for col in map_columns}
+        return convert_maps_to_structs(df, map_columns, fallback_field_names=fallback)
+
+    @staticmethod
+    def _structs_to_maps(lf: pl.LazyFrame) -> pl.LazyFrame:
+        """Reconstruct metaxy system `Map` columns from the named `Struct` columns stored in Lance."""
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+        from metaxy.utils._arrow_map import convert_structs_to_maps
+
+        return convert_structs_to_maps(lf, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD])
+
+    def _map_field_names(self, feature_key: FeatureKey, column: str) -> list[str]:
+        """Struct field names for a metaxy system `Map` column, taken from the active graph."""
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.feature import FeatureGraph
+
+        if column not in {METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD}:
+            return []
+        definition = FeatureGraph.get_active().feature_definitions_by_key.get(feature_key)
+        if definition is None:
+            return []
+        return [f.key.to_struct_key() for f in definition.spec.fields]
+
     # Storage ------------------------------------------------------------------
 
     def _write_feature(
@@ -256,7 +291,7 @@ class LanceDBMetadataStore(MetadataStore):
             df: Narwhals Frame with metadata (already validated by base class)
         """
         # Convert Narwhals frame to Polars DataFrame
-        df_polars = collect_to_polars(df)
+        df_polars = self._maps_to_structs(collect_to_polars(df), feature_key)
 
         table_name = self._table_name(feature_key)
 
@@ -353,8 +388,7 @@ class LanceDBMetadataStore(MetadataStore):
         table = self._get_table(table_name)
         # LanceDB's to_polars() returns a Polars LazyFrame directly
         # (fixed in Polars via https://github.com/pola-rs/polars/pull/25654)
-        pl_lazy = table.to_polars()
-        nw_lazy = nw.from_native(pl_lazy)
+        nw_lazy = nw.from_native(self._structs_to_maps(table.to_polars()))
 
         if filters:
             nw_lazy = nw_lazy.filter(*filters)

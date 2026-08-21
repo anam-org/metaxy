@@ -16,7 +16,9 @@ from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENA
 from metaxy.models.feature import FeatureGraph, current_graph
 from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
+from metaxy.utils._arrow_map import convert_maps_to_structs
 from metaxy.versioning.types import HashAlgorithm
+from polars_map import Map
 
 from tests.ext.postgres.conftest import _with_search_path
 from tests.metadata_stores.shared import (
@@ -183,9 +185,13 @@ def test_postgresql_struct_to_jsonb_roundtrip(
         )
         store.write(test_features["UpstreamFeatureA"], original_metadata)
 
-        # Read data back and verify full roundtrip of user-provided columns
-        # JSONB does not preserve struct field order, so compare with check_dtypes=False
+        # Read data back and verify full roundtrip of user-provided columns.
+        # The Metaxy system column comes back as polars_map.Map, so normalize it
+        # back to Struct before comparing. JSONB does not preserve struct field
+        # order, so compare with check_dtypes=False.
         result = collect_to_polars(store.read(test_features["UpstreamFeatureA"]))
+        assert result.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        result = convert_maps_to_structs(result, [METAXY_PROVENANCE_BY_FIELD])
         result_sorted = result.sort("sample_uid").select(original_metadata.columns)
         pl.testing.assert_frame_equal(result_sorted, original_metadata.sort("sample_uid"), check_dtypes=False)
 
@@ -319,7 +325,7 @@ def test_postgresql_auto_cast_false_only_decodes_system_columns_on_read(
 
         result = collect_to_polars(store.read(feature)).sort("sample_uid")
 
-        assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
+        assert result.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
         assert result.schema["user_struct"] == pl.Utf8
         assert result.sort("sample_uid")["user_struct"].to_list() == [
             '{"model":"resnet","version":"1"}',
@@ -406,7 +412,7 @@ def test_postgresql_user_defined_jsonb_column(
 
         result = collect_to_polars(store.read(feature)).sort("sample_uid")
 
-        assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
+        assert result.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
         assert isinstance(result.schema["user_metadata"], pl.Struct)
         assert result["user_metadata"].to_list() == [
             {"source": "camera1", "quality": "high", "resolution": None},
@@ -759,8 +765,10 @@ def test_postgresql_auto_create_struct_columns_use_jsonb(
             f"SELECT pg_typeof(user_struct)::text FROM {table_name} ORDER BY sample_uid"
         ).fetchall()
 
-        assert isinstance(result_sorted.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
-        assert result_sorted[METAXY_PROVENANCE_BY_FIELD].to_list() == [
+        assert result_sorted.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        assert convert_maps_to_structs(result_sorted, [METAXY_PROVENANCE_BY_FIELD])[
+            METAXY_PROVENANCE_BY_FIELD
+        ].to_list() == [
             {"frames": "h1", "audio": "h2"},
             {"frames": "h3", "audio": "h4"},
         ]
@@ -805,9 +813,13 @@ def test_postgresql_auto_cast_struct_for_jsonb_all_null_values(
             f"SELECT pg_typeof(user_struct)::text FROM {table_name} ORDER BY sample_uid"
         ).fetchall()
 
-        # Metaxy system columns should decode back to Struct with expected fields
+        # Metaxy system columns should decode back to Map, with field names still
+        # recoverable as Struct keys.
         for system_column in (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD):
-            system_dtype = result.schema[system_column]
+            assert result.schema[system_column] == Map(pl.String(), pl.String())
+        system_structs = convert_maps_to_structs(result, [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD])
+        for system_column in (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD):
+            system_dtype = system_structs.schema[system_column]
             assert isinstance(system_dtype, pl.Struct)
             assert {field.name for field in system_dtype.fields} == {"frames", "audio"}
 
@@ -883,7 +895,7 @@ def test_postgresql_auto_cast_struct_for_jsonb_user_jsonb_all_null_values(
 
         result = collect_to_polars(store.read(feature)).sort("sample_uid")
 
-        assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
+        assert result.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
         assert result.schema["user_struct"] == pl.Utf8
         assert result["user_struct"].to_list() == [None, None]
         assert raw_types == [("jsonb",), ("jsonb",)]
@@ -913,7 +925,10 @@ def test_postgresql_auto_cast_struct_for_jsonb_false_all_null_values(
         result = collect_to_polars(store.read(test_features["UpstreamFeatureA"])).sort("sample_uid")
 
         for system_column in (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD):
-            system_dtype = result.schema[system_column]
+            assert result.schema[system_column] == Map(pl.String(), pl.String())
+        system_structs = convert_maps_to_structs(result, [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD])
+        for system_column in (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD):
+            system_dtype = system_structs.schema[system_column]
             assert isinstance(system_dtype, pl.Struct)
             assert {field.name for field in system_dtype.fields} == {"frames", "audio"}
 
@@ -1099,13 +1114,14 @@ def test_postgresql_read_missing_feature_schema_decodes_system_columns(
             )
         ).sort("sample_uid")
 
-        assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
-        assert isinstance(result.schema[METAXY_DATA_VERSION_BY_FIELD], pl.Struct)
-        assert result[METAXY_PROVENANCE_BY_FIELD].to_list() == [
+        assert result.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        assert result.schema[METAXY_DATA_VERSION_BY_FIELD] == Map(pl.String(), pl.String())
+        system_structs = convert_maps_to_structs(result, [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD])
+        assert system_structs[METAXY_PROVENANCE_BY_FIELD].to_list() == [
             {"frames": "h1", "audio": "h2"},
             {"frames": "h3", "audio": "h4"},
         ]
-        assert result[METAXY_DATA_VERSION_BY_FIELD].to_list() == [
+        assert system_structs[METAXY_DATA_VERSION_BY_FIELD].to_list() == [
             {"frames": "v1", "audio": "v2"},
             {"frames": "v3", "audio": "v4"},
         ]
@@ -1283,8 +1299,8 @@ def test_postgresql_known_feature_empty_result_preserves_system_struct_schema(
         )
 
         assert result.is_empty()
-        assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
-        assert isinstance(result.schema[METAXY_DATA_VERSION_BY_FIELD], pl.Struct)
+        assert result.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        assert result.schema[METAXY_DATA_VERSION_BY_FIELD] == Map(pl.String(), pl.String())
 
 
 def test_postgresql_read_missing_feature_schema_empty_result_returns_empty(

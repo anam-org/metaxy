@@ -31,11 +31,12 @@ from metaxy.metadata_store import (
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FieldKey
-from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm, Increment
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.parametric import downstream_metadata_strategy
 from syrupy.assertion import SnapshotAssertion
+
+from metaxy_testing import normalize_by_field_maps
 
 if TYPE_CHECKING:
     pass
@@ -588,8 +589,8 @@ def assert_increment_matches_golden(
         common_columns = [
             col for col in actual_sorted.columns if col in golden_sorted.columns and col != METAXY_CREATED_AT
         ]
-        actual_selected = actual_sorted.select(common_columns)
-        golden_selected = golden_sorted.select(common_columns)
+        actual_selected = normalize_by_field_maps(actual_sorted.select(common_columns))
+        golden_selected = normalize_by_field_maps(golden_sorted.select(common_columns))
 
         pl_testing.assert_frame_equal(
             actual_selected,
@@ -861,7 +862,7 @@ class VersioningTests:
                 # Add older duplicates to upstream metadata
                 for feature_key, upstream_feature in upstream_features.items():
                     # Read existing upstream data
-                    existing_df = store_.read(upstream_feature).lazy().collect().to_polars()
+                    existing_df = normalize_by_field_maps(store_.read(upstream_feature).lazy().collect().to_polars())
 
                     # Create older duplicates (same IDs, older timestamps)
                     older_df = existing_df.clone()
@@ -913,8 +914,8 @@ class VersioningTests:
             added_sorted = added_df.sort(common_columns)
             golden_sorted = golden_downstream.sort(common_columns)
 
-            added_selected = added_sorted.select(common_columns)
-            golden_selected = golden_sorted.select(common_columns)
+            added_selected = normalize_by_field_maps(added_sorted.select(common_columns))
+            golden_selected = normalize_by_field_maps(golden_sorted.select(common_columns))
 
             # Verify that computed provenance matches golden reference
             # This proves deduplication worked correctly - only latest versions were used
@@ -1051,7 +1052,7 @@ class VersioningTests:
 
                 # Add older duplicates for only HALF of the samples in each upstream
                 for feature_key, upstream_feature in upstream_features.items():
-                    existing_df = store_.read(upstream_feature).lazy().collect().to_polars()
+                    existing_df = normalize_by_field_maps(store_.read(upstream_feature).lazy().collect().to_polars())
 
                     # Get half of samples
                     num_samples = len(existing_df)
@@ -1092,8 +1093,8 @@ class VersioningTests:
                 added_sorted = added_df.sort(common_columns)
                 golden_sorted = golden_downstream.sort(common_columns)
 
-                added_selected = added_sorted.select(common_columns)
-                golden_selected = golden_sorted.select(common_columns)
+                added_selected = normalize_by_field_maps(added_sorted.select(common_columns))
+                golden_selected = normalize_by_field_maps(golden_sorted.select(common_columns))
 
                 # Verify provenance matches golden reference
                 pl_testing.assert_frame_equal(
@@ -1196,7 +1197,9 @@ class VersioningTests:
                             }
                         )
 
-                expanded_df = pl.DataFrame(expanded_rows)
+                # Rebuilding a DataFrame from Map values read back from the store yields
+                # List(Struct({key, value})); normalize back to the Map dtype before writing.
+                expanded_df = normalize_by_field_maps(pl.DataFrame(expanded_rows))
                 store.write(VideoFrames, expanded_df)
 
                 # Verify 6 rows stored (2 videos x 3 frames)
@@ -1245,65 +1248,6 @@ class VersioningTests:
 
         except HashAlgorithmNotSupportedError:
             pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
-
-    def test_enable_map_datatype_does_not_affect_versioning(
-        self,
-        store: MetadataStore,
-        feature_plan_sequence: FeaturePlanSequence,
-    ) -> None:
-        """Toggling enable_map_datatype must not change versioning results.
-
-        Writes upstream data once, then runs resolve_update with the flag off
-        and on, asserting both produce identical increments.
-        """
-        feature_plan_config = feature_plan_sequence[0]
-        graph, upstream_features, child_feature_plan = feature_plan_config
-        child_key = child_feature_plan.feature.key
-        child_version = graph.get_feature_version(child_key)
-
-        upstream_data, _ = generate_plan_data(store, feature_plan_config)
-
-        try:
-            with store.open("w"), graph.use():
-                write_upstream_to_store(store, feature_plan_config, upstream_data)
-
-                def _resolve_with_map_flag(enabled: bool) -> pl.DataFrame:
-                    config = MetaxyConfig.get().model_copy(update={"enable_map_datatype": enabled})
-                    with config.use():
-                        increment = store.resolve_update(
-                            child_key,
-                            target_version=child_version,
-                            project_version=graph.project_version,
-                        )
-                        return collect_to_polars(increment.new)
-
-                result_off = _resolve_with_map_flag(False)
-                result_on = _resolve_with_map_flag(True)
-
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")
-
-        assert len(result_off) > 0, "Expected non-empty versioning result"
-
-        from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.utils._arrow_map import convert_structs_to_maps
-
-        # Normalize result_off's Struct _by_field columns to polars_map.Map so
-        # both frames have the same type and values can be compared.
-        by_field_columns = [
-            c
-            for c in (METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD)
-            if c in result_off.columns and c in result_on.columns
-        ]
-        result_off = convert_structs_to_maps(result_off, columns=by_field_columns)
-
-        common_columns = [c for c in result_off.columns if c in result_on.columns and c != METAXY_CREATED_AT]
-        pl_testing.assert_frame_equal(
-            result_off.select(common_columns).sort(common_columns),
-            result_on.select(common_columns).sort(common_columns),
-            check_row_order=True,
-            check_column_order=False,
-        )
 
     @pytest.mark.parametrize("truncation_length", [16])
     def test_hash_truncation_any_store(

@@ -15,7 +15,7 @@ from polars_map import Map
 
 @pytest.fixture
 def polars_map_config() -> Iterator[MetaxyConfig]:
-    config = MetaxyConfig(enable_map_datatype=True)
+    config = MetaxyConfig()
     with config.use():
         yield config
 
@@ -34,12 +34,6 @@ class TestIsMapColumn:
         arrow_table = pa.table({"x": pa.array([[("k", "v")]], type=pa.map_(pa.string(), pa.string()))})
         nw_df = nw.from_native(arrow_table)
         assert _is_map_column(nw_df, "x") is True
-
-    def test_returns_false_without_config(self) -> None:
-        """Returns False when enable_map_datatype is not set."""
-        s = pl.Series("x", [[("k", "v")]], dtype=Map(pl.String(), pl.String()))
-        nw_df = nw.from_native(pl.DataFrame([s]))
-        assert _is_map_column(nw_df, "x") is False
 
     def test_struct_is_not_map(self, polars_map_config: MetaxyConfig) -> None:
         """A Polars Struct column is not Map."""

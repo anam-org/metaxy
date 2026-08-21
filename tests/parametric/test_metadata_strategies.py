@@ -18,6 +18,9 @@ from metaxy_testing.parametric import (
     feature_metadata_strategy,
     upstream_metadata_strategy,
 )
+from polars_map import Map
+
+from metaxy_testing import by_field_maps_to_structs
 
 # System columns expected in test-generated metadata (excludes metaxy_materialization_id
 # which is only added when an external materialization ID is provided)
@@ -413,15 +416,18 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
         assert len(downstream_df) == len(parent_df)  # Same number of rows after join
         assert EXPECTED_SYSTEM_COLUMNS.issubset(set(downstream_df.columns))
 
-        # Check downstream provenance structure
-        provenance_schema = downstream_df.schema[METAXY_PROVENANCE_BY_FIELD]
+        # Downstream metaxy *_by_field columns are Map; convert to Struct to inspect
+        # field-keyed hashes as plain dicts.
+        assert downstream_df.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        downstream_structs = by_field_maps_to_structs(downstream_df)
+        provenance_schema = downstream_structs.schema[METAXY_PROVENANCE_BY_FIELD]
         assert isinstance(provenance_schema, pl.Struct)
         field_names = {field.name for field in provenance_schema.fields}
         assert field_names == {"child_field"}
 
         # Check that provenance values are correctly truncated
         # Note: xxhash64 as decimal can be up to 20 chars, test uses hash_truncation_length
-        for row in downstream_df.iter_rows(named=True):
+        for row in downstream_structs.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert "child_field" in provenance
             assert isinstance(provenance["child_field"], str)
@@ -505,13 +511,15 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         # Check downstream has correct structure
         assert EXPECTED_SYSTEM_COLUMNS.issubset(set(downstream_df.columns))
 
-        provenance_dtype = downstream_df.schema[METAXY_PROVENANCE_BY_FIELD]
+        assert downstream_df.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        downstream_structs = by_field_maps_to_structs(downstream_df)
+        provenance_dtype = downstream_structs.schema[METAXY_PROVENANCE_BY_FIELD]
         assert isinstance(provenance_dtype, pl.Struct)
         field_names = {field.name for field in provenance_dtype.fields}
         assert field_names == {"result"}
 
         # Verify provenance is calculated (non-empty hashes)
-        for row in downstream_df.iter_rows(named=True):
+        for row in downstream_structs.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert len(provenance["result"]) > 0
 
@@ -562,8 +570,13 @@ def test_downstream_metadata_strategy_no_truncation(graph: FeatureGraph) -> None
     def property_test(data: tuple[dict[str, pl.DataFrame], pl.DataFrame]) -> None:
         _, downstream_df = data
 
+        # Downstream metaxy *_by_field columns are Map; convert to Struct to inspect
+        # field-keyed hashes as plain dicts.
+        assert downstream_df.schema[METAXY_PROVENANCE_BY_FIELD] == Map(pl.String(), pl.String())
+        downstream_structs = by_field_maps_to_structs(downstream_df)
+
         # Without truncation, check that hashes are non-empty strings
-        for row in downstream_df.iter_rows(named=True):
+        for row in downstream_structs.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             hash_value = provenance["result"]
             # Hash should be a non-empty string

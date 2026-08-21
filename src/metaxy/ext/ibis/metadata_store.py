@@ -350,10 +350,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Apply backend-specific transformations before writing
         df = self.transform_before_write(df, feature_key, table_name)
 
-        from metaxy.config import MetaxyConfig
-
-        if MetaxyConfig.get().enable_map_datatype:
-            df = self._handle_map_columns(df, table_name)
+        df = self._handle_map_columns(df, table_name)
 
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
