@@ -2171,6 +2171,91 @@ def test_metadata_delete_dry_run_count_matches_actual_deletion(
             assert dry_run_count == 2, f"Expected 2 rows for with_feature_history=False, got {dry_run_count}"
 
 
+def test_metadata_delete_dry_run_multiple_features_counts_mapped_correctly(
+    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]
+):
+    """Test that dry-run row counts are mapped to the correct features when deleting multiple features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy_testing.models import SampleFeatureSpec
+
+        class Logs(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["logs"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+        class Metrics(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["metrics"]),
+                fields=[FieldSpec(key=FieldKey(["level"]), code_version="1")],
+            ),
+        ):
+            level: str | None = None
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        logs_key = FeatureKey(["logs"])
+        metrics_key = FeatureKey(["metrics"])
+
+        logs_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2"],
+                "level": ["debug", "info"],
+                METAXY_PROVENANCE_BY_FIELD: [{"level": "p1"}, {"level": "p2"}],
+            }
+        )
+        metrics_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3", "s4", "s5"],
+                "level": ["debug", "debug", "debug", "debug", "info"],
+                METAXY_PROVENANCE_BY_FIELD: [
+                    {"level": "p1"},
+                    {"level": "p2"},
+                    {"level": "p3"},
+                    {"level": "p4"},
+                    {"level": "p5"},
+                ],
+            }
+        )
+
+        with graph.use(), store.open("w"):
+            store.write(logs_key, logs_data)
+            store.write(metrics_key, metrics_data)
+
+        # Run dry-run with filter matching 1 log row and 4 metrics rows
+        result = metaxy_project.run_cli(
+            [
+                "metadata",
+                "delete",
+                "logs",
+                "metrics",
+                "--filter",
+                "level = 'debug'",
+                "--dry-run",
+            ],
+            capsys=capsys,
+        )
+
+        assert result.returncode == 0
+        output = result.stdout + result.stderr
+        assert "Dry run" in output
+        # Verify counts are associated with the right features
+        assert "logs (1 rows)" in output
+        assert "metrics (4 rows)" in output
+        assert "Total rows to delete: 5" in output
+
+
 # ============================================================================
 
 
