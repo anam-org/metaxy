@@ -489,8 +489,10 @@ def _count_rows_to_delete(
                     with_sample_history=False,  # matches delete default
                     allow_fallback=soft,  # soft deletes use fallback, hard deletes don't
                 )
-                # Pre-aggregate to count per feature
-                count_frame = lazy.select(nw.len().alias("count"))
+                # Pre-aggregate to count per feature with feature key column
+                count_frame = lazy.select(nw.len().alias("count")).with_columns(
+                    nw.lit(feature_key.to_string()).alias("feature")
+                )
                 count_frames.append((feature_key, count_frame))
             except Exception as e:
                 row_counts[feature_key] = f"error: {e}"
@@ -500,9 +502,18 @@ def _count_rows_to_delete(
             combined = nw.concat([cf for _, cf in count_frames])
             counts_dicts = combined.collect().to_polars().to_dicts()
 
-            # Map counts back to feature keys (order preserved from concat)
-            for (feature_key, _), row in zip(count_frames, counts_dicts):
-                row_counts[feature_key] = row["count"]
+            # Map counts back to feature keys via feature column (order-independent)
+            feature_counts: dict[str, int] = {}
+            for row in counts_dicts:
+                if "feature" in row and "count" in row:
+                    feature_counts[str(row["feature"])] = row["count"]
+
+            for feature_key, _ in count_frames:
+                key_str = feature_key.to_string()
+                if key_str in feature_counts:
+                    row_counts[feature_key] = feature_counts[key_str]
+                elif feature_key not in row_counts:
+                    row_counts[feature_key] = 0
 
     return row_counts
 
