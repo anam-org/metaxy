@@ -15,11 +15,9 @@ if TYPE_CHECKING:
 import narwhals as nw
 import polars as pl
 from narwhals.typing import Frame
-from packaging.version import Version
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -100,10 +98,6 @@ class IcebergMetadataStore(MetadataStore):
 
     Stores feature metadata in Iceberg tables managed by a PyIceberg catalog.
     It uses the Polars versioning engine for provenance calculations.
-
-    !!! tip
-        If Polars 1.39 or greater is installed, lazy Polars frames are sinked via
-        `LazyFrame.sink_iceberg`, avoiding unnecessary materialization.
 
     Example:
 
@@ -251,38 +245,10 @@ class IcebergMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata
-            **kwargs: Forwarded to `sink_iceberg` or `Table.append`.
-
-        !!! tip
-            If Polars 1.39 or greater is installed, lazy Polars frames are sinked via
-            `LazyFrame.sink_iceberg`, avoiding unnecessary materialization.
+            **kwargs: Forwarded to `Table.append`.
         """
         self._ensure_namespace()
-        identifier = self._table_identifier(feature_key)
-
-        can_sink = (
-            df.implementation == nw.Implementation.POLARS
-            and isinstance(df, nw.LazyFrame)
-            and Version(pl.__version__) >= Version("1.39.0")
-        )
-
-        if MetaxyConfig.get().enable_map_datatype:
-            self._write_with_map_columns(df, identifier, **kwargs)
-        elif can_sink:
-            lf_native = df.to_native()
-            assert isinstance(lf_native, pl.LazyFrame)
-            arrow_schema = pl.DataFrame(schema=self._cast_enum_to_string(lf_native).collect_schema()).to_arrow().schema
-            iceberg_table = self._ensure_table(identifier, arrow_schema)
-            # sink_iceberg requires columns in the same order as the Iceberg table schema
-            schema_col_order = [f.name for f in iceberg_table.schema().as_arrow()]
-            self._cast_enum_to_string(lf_native).select(schema_col_order).sink_iceberg(
-                iceberg_table, mode="append", **kwargs
-            )
-        else:
-            df_polars = self._cast_enum_to_string(collect_to_polars(df))
-            arrow_table = df_polars.to_arrow()
-            iceberg_table = self._ensure_table(identifier, arrow_table.schema)
-            iceberg_table.append(arrow_table, **kwargs)
+        self._write_with_map_columns(df, self._table_identifier(feature_key), **kwargs)
 
     def _read_feature(
         self,
@@ -310,8 +276,7 @@ class IcebergMetadataStore(MetadataStore):
         iceberg_table = self.catalog.load_table(identifier)
         lf = pl.scan_iceberg(iceberg_table)
 
-        if MetaxyConfig.get().enable_map_datatype:
-            lf = self._read_map_columns(lf, iceberg_table)
+        lf = self._read_map_columns(lf, iceberg_table)
 
         nw_lazy = nw.from_native(lf)
 

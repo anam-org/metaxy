@@ -7,8 +7,12 @@ import polars as pl
 import pytest
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.models.feature import FeatureGraph
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeature
+from polars_map import Map
+
+from metaxy_testing import by_field_maps_to_structs
 
 
 def test_polars_engine_initialization(graph: FeatureGraph, simple_features: dict[str, type[SampleFeature]]) -> None:
@@ -47,22 +51,25 @@ def test_compute_provenance_single_upstream(
     assert "metaxy_provenance_by_field" in result_df.columns
     assert "metaxy_provenance" in result_df.columns
 
-    # Verify provenance_by_field is a struct
-    result_pl = result_df.to_native()
-    assert isinstance(result_pl.schema["metaxy_provenance_by_field"], pl.Struct)
+    # Verify provenance_by_field is the always-on Map dtype
+    result_pl = collect_to_polars(result_df)
+    assert result_pl.schema["metaxy_provenance_by_field"] == Map(pl.String(), pl.String())
+
+    # Convert Map to Struct for field access and snapshotting
+    result_pl = by_field_maps_to_structs(result_pl)
 
     # Verify provenance_by_field has the expected field
-    first_prov = result_df["metaxy_provenance_by_field"][0]
+    first_prov = result_pl["metaxy_provenance_by_field"][0]
     assert "default" in first_prov
 
     # Snapshot the provenance values
     provenance_data = []
-    for i in range(len(result_df)):
+    for i in range(len(result_pl)):
         provenance_data.append(
             {
-                "sample_uid": result_df["sample_uid"][i],
-                "field_provenance": result_df["metaxy_provenance_by_field"][i],
-                "sample_provenance": result_df["metaxy_provenance"][i],
+                "sample_uid": result_pl["sample_uid"][i],
+                "field_provenance": result_pl["metaxy_provenance_by_field"][i],
+                "sample_provenance": result_pl["metaxy_provenance"][i],
             }
         )
 
@@ -100,24 +107,29 @@ def test_compute_provenance_multiple_upstreams(
     assert "metaxy_provenance_by_field" in result_df.columns
     assert "metaxy_provenance" in result_df.columns
 
+    # Convert the always-on Map dtype to Struct to inspect fields
+    result_pl = collect_to_polars(result_df)
+    assert result_pl.schema["metaxy_provenance_by_field"] == Map(pl.String(), pl.String())
+    result_pl = by_field_maps_to_structs(result_pl)
+
     # Verify provenance_by_field has both fields
-    result_pl = result_df.to_native()
     provenance_schema = result_pl.schema["metaxy_provenance_by_field"]
+    assert isinstance(provenance_schema, pl.Struct)
     field_names = {f.name for f in provenance_schema.fields}
     assert field_names == {"fusion", "analysis"}
 
     # Different code versions should produce different field hashes
-    first_prov = result_df["metaxy_provenance_by_field"][0]
+    first_prov = result_pl["metaxy_provenance_by_field"][0]
     assert first_prov["fusion"] != first_prov["analysis"]
 
     # Snapshot the results
     provenance_data = []
-    for i in range(len(result_df)):
+    for i in range(len(result_pl)):
         provenance_data.append(
             {
-                "sample_uid": result_df["sample_uid"][i],
-                "field_provenance": result_df["metaxy_provenance_by_field"][i],
-                "sample_provenance": result_df["metaxy_provenance"][i],
+                "sample_uid": result_pl["sample_uid"][i],
+                "field_provenance": result_pl["metaxy_provenance_by_field"][i],
+                "sample_provenance": result_pl["metaxy_provenance"][i],
             }
         )
 
@@ -147,25 +159,30 @@ def test_compute_provenance_selective_field_deps(
 
     result_df = result.collect()
 
+    # Convert the always-on Map dtype to Struct to inspect fields
+    result_pl = collect_to_polars(result_df)
+    assert result_pl.schema["metaxy_provenance_by_field"] == Map(pl.String(), pl.String())
+    result_pl = by_field_maps_to_structs(result_pl)
+
     # Verify provenance_by_field has all three fields
-    result_pl = result_df.to_native()
     provenance_schema = result_pl.schema["metaxy_provenance_by_field"]
+    assert isinstance(provenance_schema, pl.Struct)
     field_names = {f.name for f in provenance_schema.fields}
     assert field_names == {"visual", "audio_only", "mixed"}
 
     # All fields should have different hashes (different deps + code versions)
-    first_prov = result_df["metaxy_provenance_by_field"][0]
+    first_prov = result_pl["metaxy_provenance_by_field"][0]
     hashes = [first_prov["visual"], first_prov["audio_only"], first_prov["mixed"]]
     assert len(set(hashes)) == 3
 
     # Snapshot the results
     provenance_data = []
-    for i in range(len(result_df)):
+    for i in range(len(result_pl)):
         provenance_data.append(
             {
-                "sample_uid": result_df["sample_uid"][i],
-                "field_provenance": result_df["metaxy_provenance_by_field"][i],
-                "sample_provenance": result_df["metaxy_provenance"][i],
+                "sample_uid": result_pl["sample_uid"][i],
+                "field_provenance": result_pl["metaxy_provenance_by_field"][i],
+                "sample_provenance": result_pl["metaxy_provenance"][i],
             }
         )
 
@@ -352,7 +369,7 @@ def test_compute_provenance_different_algorithms_snapshot(
         filters={},
     )
 
-    result_df = result.collect()
+    result_df = by_field_maps_to_structs(collect_to_polars(result))
 
     # Extract field hashes for snapshot
     field_hashes = [result_df["metaxy_provenance_by_field"][i]["default"] for i in range(len(result_df))]

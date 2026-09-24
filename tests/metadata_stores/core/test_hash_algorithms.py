@@ -20,14 +20,16 @@ import pytest
 from metaxy import BaseFeature, FeatureDep, FeatureGraph
 from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.parametric import (
     downstream_metadata_strategy,
 )
+from polars_map import Map
 from pytest_cases import parametrize_with_cases
 
-from metaxy_testing import HashAlgorithmCases
+from metaxy_testing import HashAlgorithmCases, by_field_maps_to_structs
 
 # ============= TEST: HASH ALGORITHM CORRECTNESS =============
 
@@ -268,16 +270,16 @@ def test_field_level_provenance_structure(
             project_version=graph.project_version,
         )
 
-        result = increment.new.lazy().collect().to_polars()
+        result = collect_to_polars(increment.new)
 
         # Check provenance_by_field structure
         provenance_by_field = result["metaxy_provenance_by_field"]
 
-        # Verify it's a struct column
-        assert provenance_by_field.dtype == pl.Struct, "provenance_by_field should be a Struct column"
+        # Verify it's a Map column
+        assert provenance_by_field.dtype == Map(pl.String(), pl.String()), "provenance_by_field should be a Map column"
 
-        # Unnest to check field structure
-        unnested = result.unnest("metaxy_provenance_by_field")
+        # Convert Map -> Struct, then unnest to check field structure
+        unnested = by_field_maps_to_structs(result).unnest("metaxy_provenance_by_field")
 
         # Check that we have one column per child field
         expected_fields = {"result_x", "result_y"}

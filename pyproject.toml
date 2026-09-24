@@ -43,13 +43,11 @@ dependencies = [
   "packaging>=25.0",
   "tomli-w>=1.2.0",
   "tomlkit>=0.13.2",
-]
-
-[project.optional-dependencies]
-map = [
   "polars-map>=0.2.1",
   "narwhals-map>=0.1.1",
 ]
+
+[project.optional-dependencies]
 ibis = [
   "pyarrow>=18.0.0",
   "ibis-framework>=11.0.0",
@@ -158,8 +156,6 @@ dev = [
   "mkdocs-metaxy",
   "pytest-postgresql>=8.0.0",
   "tach>=0.34.0",
-  "polars-map>=0.2.1",
-  "narwhals-map>=0.1.1",
 ]
 
 examples = [

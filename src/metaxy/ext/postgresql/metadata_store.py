@@ -1,7 +1,8 @@
 """PostgreSQL metadata store with storage/compute separation.
 
 Uses PostgreSQL for storage and Polars for versioning compute.
-Metaxy system struct columns are round-tripped via JSON serialization.
+PostgreSQL has no native `Map` type, so Metaxy's `Map` versioning columns are decomposed into
+named `Struct` columns, JSON-serialized for storage, and reconstructed as `Map` on read.
 User struct columns are JSON-encoded on write and decode behavior on read depends on
 the effective SQL column type (JSON/JSONB).
 Always uses PolarsVersioningEngine since PostgreSQL lacks native struct support.
@@ -188,6 +189,38 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
         transforms = [pl.col(col_name).struct.json_encode().alias(col_name) for col_name in struct_columns]
         return pl_df.with_columns(transforms)
 
+    # Map compatibility --------------------------------------------------------
+    # PostgreSQL has no native Map type, so Metaxy's Map columns are decomposed into
+    # named Structs (then JSON-encoded) on write and reconstructed as Map on read.
+
+    def _map_fallback_field_names(self, feature_key: FeatureKey) -> dict[str, list[str]]:
+        """Fallback Struct field names for the metaxy Map columns, from the active graph.
+
+        Used for empty result sets that carry no keys to infer field names from.
+        """
+        try:
+            plan = self._resolve_feature_plan(feature_key)
+        except (KeyError, RuntimeError):
+            return {}
+        field_names = [field_spec.key.to_struct_key() for field_spec in plan.feature.fields]
+        return {col_name: field_names for col_name in _METAXY_STRUCT_COLUMNS}
+
+    def _maps_to_structs(self, pl_df: pl.DataFrame, feature_key: FeatureKey) -> pl.DataFrame:
+        """Convert metaxy Map columns to named Struct columns for JSON encoding."""
+        from metaxy.utils._arrow_map import convert_maps_to_structs
+
+        return convert_maps_to_structs(
+            pl_df,
+            list(_METAXY_STRUCT_COLUMNS),
+            fallback_field_names=self._map_fallback_field_names(feature_key),
+        )
+
+    def _structs_to_maps(self, pl_df: pl.DataFrame) -> pl.DataFrame:
+        """Reconstruct metaxy Map columns from the Struct columns decoded from JSON."""
+        from metaxy.utils._arrow_map import convert_structs_to_maps
+
+        return convert_structs_to_maps(pl_df, list(_METAXY_STRUCT_COLUMNS))
+
     def _build_auto_create_schema(
         self,
         original_pl_df: pl.DataFrame,
@@ -274,7 +307,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
         Uses Polars' struct.json_encode() to serialize structs to JSON strings.
         Stored SQL type depends on target table schema (JSON/JSONB vs TEXT).
         """
-        pl_df = collect_to_polars(df)
+        pl_df = self._maps_to_structs(collect_to_polars(df), feature_key)
         return nw.from_native(self._encode_struct_columns(pl_df))
 
     def _write_feature(
@@ -285,7 +318,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
     ) -> None:
         """Write feature metadata, preserving JSONB for auto-created Struct columns."""
         table_name = self.get_table_name(feature_key)
-        original_pl_df = collect_to_polars(df)
+        original_pl_df = self._maps_to_structs(collect_to_polars(df), feature_key)
         transformed_pl_df = self._encode_struct_columns(original_pl_df)
 
         if table_name not in self.conn.list_tables():
@@ -532,5 +565,8 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
             json_columns_to_parse,
             require_all_system_columns=columns is None and not self._is_system_table(feature_key),
         )
+
+        # Present the metaxy versioning columns as Map to callers, matching every other store.
+        pl_df = self._structs_to_maps(pl_df)
 
         return nw.from_native(pl_df.lazy())

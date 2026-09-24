@@ -22,8 +22,11 @@ from metaxy_testing.metaxy_project import (
 )
 from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 from metaxy_testing.pytest_helpers import (
+    BY_FIELD_MAP_COLUMNS,
     add_metaxy_provenance_column,
     add_metaxy_system_columns,
+    by_field_maps_to_structs,
+    normalize_by_field_maps,
 )
 from metaxy_testing.runbook import (
     ApplyPatchStep,
@@ -76,6 +79,9 @@ __all__ = [
     # Pytest helpers
     "add_metaxy_provenance_column",
     "add_metaxy_system_columns",
+    "normalize_by_field_maps",
+    "by_field_maps_to_structs",
+    "BY_FIELD_MAP_COLUMNS",
     # Testing models
     "SampleFeatureSpec",
     "SampleFeature",

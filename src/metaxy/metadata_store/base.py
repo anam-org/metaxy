@@ -63,12 +63,8 @@ if TYPE_CHECKING:
 def _is_map_column(df: Frame, col_name: str) -> bool:
     """Check if a column in a narwhals frame is a Map type.
 
-    Returns False immediately if enable_map_datatype is not set.
     Delegates to find_map_columns for backend-specific detection.
     """
-    if not MetaxyConfig.get().enable_map_datatype:
-        return False
-
     from metaxy.utils.dataframes import find_map_columns
 
     return col_name in find_map_columns(df)
@@ -555,10 +551,10 @@ class MetadataStore(ABC):
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
-        # Convert _by_field Struct columns to Map when enable_map_datatype is set.
+        # Convert _by_field Struct columns to Map.
         # User-provided samples may have these as Struct (the natural Polars literal form);
         # the store normalizes them to Map so downstream processing and output are consistent.
-        if MetaxyConfig.get().enable_map_datatype and samples_nw is not None:
+        if samples_nw is not None:
             import polars as pl
 
             native = samples_nw.to_native()

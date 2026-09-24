@@ -11,6 +11,7 @@ import pyarrow as pa
 import pytest
 import ray
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from metaxy.utils import collect_to_polars
 from polars_map import Map
 
 from metaxy_testing import RAY_FEATURES_MODULE
@@ -18,6 +19,25 @@ from metaxy_testing import RAY_FEATURES_MODULE
 from .conftest import DERIVED_FEATURE_KEY, FEATURE_KEY, make_test_data
 
 MAP_STR_STR = Map(pl.String(), pl.String())
+
+
+def _map_row_value_to_dict(map_value: object) -> dict[str, str]:
+    """Decode a Ray row's Map column value into a plain ``dict``.
+
+    Under the always-on Map datatype, Ray materializes an Arrow map column as a
+    list of ``(key, value)`` entries. The ``{"key", "value"}`` dict form and a
+    plain ``dict`` are handled defensively.
+    """
+    if isinstance(map_value, dict):
+        return {str(key): str(value) for key, value in map_value.items()}
+    result: dict[str, str] = {}
+    for entry in map_value:  # ty: ignore[not-iterable]
+        if isinstance(entry, dict):
+            result[entry["key"]] = entry["value"]
+        else:
+            key, value = entry
+            result[key] = value
+    return result
 
 
 def test_datasource_reads_metadata(
@@ -362,7 +382,17 @@ def test_datasource_and_datasink_end_to_end(
         row["value"] = row["value"] * 2
         # Update provenance to reflect the transformation
         row["metaxy_provenance"] = f"transformed_{row['metaxy_provenance']}"
-        row["metaxy_provenance_by_field"] = {"value": f"transformed_{row['metaxy_provenance_by_field']['value']}"}
+        # With the always-on Map datatype, the by-field columns arrive as Arrow
+        # map row-values: a list of (key, value) entries. Decode the provenance
+        # map, apply the transformation, and write every by-field map back as a
+        # plain dict, which Ray infers as a Struct and the store converts to Map
+        # on write. The data-version map must be normalized too, otherwise it
+        # stays a raw list-of-entries and clashes with the Struct provenance
+        # inside the store's write path.
+        provenance_by_field = _map_row_value_to_dict(row["metaxy_provenance_by_field"])
+        row["metaxy_provenance_by_field"] = {"value": f"transformed_{provenance_by_field['value']}"}
+        if "metaxy_data_version_by_field" in row:
+            row["metaxy_data_version_by_field"] = _map_row_value_to_dict(row["metaxy_data_version_by_field"])
         return row
 
     transformed_ds = read_ds.map(transform_row)
@@ -377,13 +407,20 @@ def test_datasource_and_datasink_end_to_end(
 
     # Verify the result by reading from destination
     with dest_store:
-        result = dest_store.read(FEATURE_KEY)
-        df = result.collect()
+        df = collect_to_polars(dest_store.read(FEATURE_KEY)).sort("sample_uid")
 
-        assert len(df) == 3
-        assert set(df["sample_uid"].to_list()) == {"a", "b", "c"}
-        # Values should be doubled
-        assert set(df["value"].to_list()) == {20, 40, 60}
+    assert len(df) == 3
+    assert df["sample_uid"].to_list() == ["a", "b", "c"]
+    # Values should be doubled
+    assert df["value"].to_list() == [20, 40, 60]
+    # The transformed per-field provenance survives the round-trip as a Map,
+    # carrying the "transformed_" prefix applied to each original hash.
+    assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
+    assert df["metaxy_provenance_by_field"].map.get("value").to_list() == [  # ty: ignore[unresolved-attribute]
+        "transformed_hash_10",
+        "transformed_hash_20",
+        "transformed_hash_30",
+    ]
 
 
 def test_datasource_incremental_all_new(

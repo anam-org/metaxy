@@ -10,10 +10,6 @@ description: "Learn how to use ClickHouse as a Metaxy metadata store."
 
 1. extremely fast
 
-!!! tip "Recommended: enable [`Map` datatype](../../../guide/concepts/metadata-stores.md#map-datatype)"
-
-    ClickHouse natively supports the `Map` type. Enabling [`enable_map_datatype`](../../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) preserves `Map` columns across read and write operations.
-
 ## Installation
 
 ```shell
@@ -41,16 +37,6 @@ ClickHouse offers multiple approaches to represent Metaxy's structured versionin
     - **No migrations required** when feature fields change
 
     - **Good performance** for key-value lookups
-
-??? info "Legacy: Struct-to-Map conversion without `enable_map_datatype`"
-
-    When [`enable_map_datatype`](../../../reference/configuration.md#metaxy.config.MetaxyConfig.enable_map_datatype) is **not** enabled, Metaxy transforms its system columns (`metaxy_provenance_by_field`, `metaxy_data_version_by_field`):
-
-    - **Reading**: System Map columns are converted into [Ibis Structs](https://ibis-project.org/reference/datatypes#ibis.expr.datatypes.core.Struct) (e.g., `Struct[{"field_a": str, "field_b": str}]`)
-
-    - **Writing**: If the input comes from Polars, then [Polars Structs][polars.datatypes.Struct] are converted into expected ClickHouse Map format
-
-    User-defined Map columns are **not transformed**. They remain as `List[Struct[{"key": str, "value": str}]]` (Arrow's Map representation). Make sure to use the right format when providing a Polars DataFrame for writing.
 
 ### SQLAlchemy and Alembic Migrations
 

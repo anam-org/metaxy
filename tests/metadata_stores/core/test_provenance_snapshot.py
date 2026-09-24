@@ -52,8 +52,11 @@ def test_provenance_snapshot(
         METAXY_PROVENANCE,
         METAXY_PROVENANCE_BY_FIELD,
     )
+    from metaxy.utils import collect_to_polars
     from metaxy.versioning.types import HashAlgorithm
     from metaxy_testing.models import SampleFeatureSpec
+
+    from metaxy_testing import by_field_maps_to_structs
 
     graph = FeatureGraph()
 
@@ -279,11 +282,11 @@ def test_provenance_snapshot(
         id_columns = list(child_plan.feature.id_columns)
         available_cols = [c for c in id_columns + provenance_cols if c in added_df.columns]
 
-        # Sort for deterministic output and convert to dicts
-        result_df = added_df.select(available_cols).sort(available_cols)
-        # Convert to native Polars for to_dicts()
-        result_pl = result_df.to_native()
-        snapshot_data = result_pl.to_dicts()
+        # The versioning engine emits the *_by_field columns as polars_map.Map. Preserve
+        # them through collection, convert back to Struct for readable snapshot dicts, then
+        # sort on the (now Struct) columns for deterministic output.
+        result_pl = by_field_maps_to_structs(collect_to_polars(added_df).select(available_cols))
+        snapshot_data = result_pl.sort(available_cols).to_dicts()
 
         # Assert against snapshot
         assert snapshot_data == snapshot

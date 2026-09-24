@@ -13,6 +13,10 @@ description: "Learn how to use LanceDB as a Metaxy metadata store."
 
 It runs embedded (local directory) or against external storage (object stores, HTTP endpoints, LanceDB Cloud), so you can use the same store type for local development and cloud workloads.
 
+!!! info "[`Map` datatype](../../../guide/concepts/metadata-stores.md#map-datatype)"
+
+    LanceDB has no native `Map` type yet ([lance#2341](https://github.com/lance-format/lance/issues/2341)). Metaxy transparently stores the field-versioning columns as named `Struct` and reconstructs them as `Map` on read, so downstream code always sees `Map` columns.
+
 ## Installation
 
 The backend relies on [`lancedb`](https://lancedb.com/), which is shipped with Metaxy's `lancedb` extras.

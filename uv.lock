@@ -3345,9 +3345,11 @@ source = { editable = "." }
 dependencies = [
     { name = "cyclopts" },
     { name = "narwhals" },
+    { name = "narwhals-map" },
     { name = "packaging" },
     { name = "polars" },
     { name = "polars-hash" },
+    { name = "polars-map" },
     { name = "pydantic" },
     { name = "pydantic-core" },
     { name = "pydantic-settings" },
@@ -3396,10 +3398,6 @@ lancedb = [
     { name = "lancedb" },
     { name = "polars" },
 ]
-map = [
-    { name = "narwhals-map" },
-    { name = "polars-map" },
-]
 mcp = [
     { name = "fastmcp" },
 ]
@@ -3441,13 +3439,11 @@ dev = [
     { name = "mistune" },
     { name = "mkdocs-metaxy" },
     { name = "moto", extra = ["s3", "server"] },
-    { name = "narwhals-map" },
     { name = "nox" },
     { name = "nox-uv" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas" },
-    { name = "polars-map" },
     { name = "prek" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -3508,13 +3504,13 @@ requires-dist = [
     { name = "lancedb", marker = "extra == 'lancedb'", specifier = ">=0.15.0" },
     { name = "mermaid-py", marker = "extra == 'mermaid'", specifier = ">=0.8.0" },
     { name = "narwhals", specifier = ">=2.20.0" },
-    { name = "narwhals-map", marker = "extra == 'map'", specifier = ">=0.1.1" },
+    { name = "narwhals-map", specifier = ">=0.1.1" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "polars", specifier = ">=1.35.0" },
     { name = "polars", marker = "extra == 'iceberg'", specifier = ">=1.39.0" },
     { name = "polars", marker = "extra == 'lancedb'", specifier = ">=1.36.1" },
     { name = "polars-hash", specifier = ">=0.5.1" },
-    { name = "polars-map", marker = "extra == 'map'", specifier = ">=0.2.1" },
+    { name = "polars-map", specifier = ">=0.2.1" },
     { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
@@ -3535,7 +3531,7 @@ requires-dist = [
     { name = "tomlkit", specifier = ">=0.13.2" },
     { name = "typing-extensions", specifier = ">=4.0.0" },
 ]
-provides-extras = ["map", "ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
+provides-extras = ["ibis", "mermaid", "sqlalchemy", "sqlmodel", "bigquery", "clickhouse", "duckdb", "delta", "dagster", "iceberg", "lancedb", "postgres", "mcp", "ray"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3556,12 +3552,10 @@ dev = [
     { name = "mistune", specifier = ">=3.1.4" },
     { name = "mkdocs-metaxy", editable = "docs/.mkdocs-metaxy" },
     { name = "moto", extras = ["s3", "server"], specifier = ">=5.1.16" },
-    { name = "narwhals-map", specifier = ">=0.1.1" },
     { name = "nox", specifier = ">=2025.2.9" },
     { name = "nox-uv", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "pandas", specifier = ">=2.3.3" },
-    { name = "polars-map", specifier = ">=0.2.1" },
     { name = "prek", specifier = ">=0.2.11" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
