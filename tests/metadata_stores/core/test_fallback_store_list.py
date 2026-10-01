@@ -71,7 +71,6 @@ class TestLazyResolution:
         fsl = FallbackStoreList(
             ["dev"],
             config=mock_config,
-            parent_hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
         assert fsl[0] is mock_store
@@ -85,7 +84,6 @@ class TestLazyResolution:
         fsl = FallbackStoreList(
             ["dev"],
             config=mock_config,
-            parent_hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
         assert fsl[0] is fsl[0]
@@ -98,25 +96,11 @@ class TestLazyResolution:
         fsl = FallbackStoreList(
             ["dev"],
             config=mock_config,
-            parent_hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
         assert not fsl.all_resolved
         _ = fsl[0]
         assert fsl.all_resolved
-
-    def test_hash_algorithm_mismatch_on_resolve(self) -> None:
-        mock_config = MagicMock()
-        mock_config.get_store.return_value = _make_mock_store(HashAlgorithm.XXHASH32)
-
-        fsl = FallbackStoreList(
-            ["prod"],
-            config=mock_config,
-            parent_hash_algorithm=HashAlgorithm.XXHASH64,
-        )
-
-        with pytest.raises(ValueError, match="hash_algorithm"):
-            _ = fsl[0]
 
     def test_missing_config_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="no MetaxyConfig provided"):
@@ -131,7 +115,6 @@ class TestLazyResolution:
         fsl = FallbackStoreList(
             [resolved_store, "prod"],
             config=mock_config,
-            parent_hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
         assert not fsl.all_resolved
@@ -149,7 +132,6 @@ class TestLazyResolution:
         fsl = FallbackStoreList(
             ["a", "b"],
             config=mock_config,
-            parent_hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
         assert len(list(fsl)) == 2

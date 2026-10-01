@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Literal, cast
 import narwhals as nw
 from narwhals.typing import FrameT
 
-from metaxy._hashing import get_hash_truncation_length
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
@@ -49,6 +48,8 @@ class VersioningEngine(ABC):
     def __init__(self, plan: FeaturePlan):
         validate_column_configuration(plan)
         self.plan = plan
+        self.hash_algorithm = plan.hash_algorithm
+        self.hash_truncation_length = plan.hash_truncation_length
 
     @classmethod
     @abstractmethod
@@ -383,7 +384,7 @@ class VersioningEngine(ABC):
             )
 
         # Step 3: Hash each aggregated field
-        hash_length = get_hash_truncation_length()
+        hash_length = self.hash_truncation_length
         hashed_field_cols: dict[str, str] = {}  # field_name -> hashed_col_name
 
         for field_name, aggregated_col in aggregated_cols.items():
@@ -451,7 +452,7 @@ class VersioningEngine(ABC):
         drop_renamed_data_version_col: bool = False,
     ) -> FrameT:
         """Compute provenance columns from a DataFrame with upstream data_version_by_field columns."""
-        hash_length = MetaxyConfig.get().hash_truncation_length
+        hash_length = self.hash_truncation_length
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
@@ -656,7 +657,7 @@ class VersioningEngine(ABC):
             "__sample_concat",
             hash_column,
             hash_algorithm,
-            truncate_length=get_hash_truncation_length(),
+            truncate_length=self.hash_truncation_length,
         ).drop("__sample_concat", *temp_cols.values())
 
     def resolve_increment_with_provenance(

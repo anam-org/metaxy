@@ -497,7 +497,7 @@ root_path = "{dev_path}"
     assert "environment variables" in warning_msg
 
 
-def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
+def test_hash_algorithm_is_independent_across_fallback_chain(tmp_path: Path) -> None:
     from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
@@ -514,7 +514,7 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
                 type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_staging"),
-                    "hash_algorithm": "sha256",
+                    "hash_algorithm": "md5",
                     "fallback_stores": ["prod"],
                 },
             ),
@@ -522,7 +522,7 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
                 type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
                 config={
                     "root_path": str(tmp_path / "delta_prod"),
-                    "hash_algorithm": "sha256",
+                    "hash_algorithm": "xxhash32",
                 },
             ),
         },
@@ -532,10 +532,10 @@ def test_hash_algorithm_must_match_in_fallback_chain(tmp_path: Path) -> None:
     assert dev_store.hash_algorithm == HashAlgorithm.SHA256
 
     staging_store = dev_store.fallback_stores[0]
-    assert staging_store.hash_algorithm == HashAlgorithm.SHA256
+    assert staging_store.hash_algorithm == HashAlgorithm.MD5
 
     prod_store = staging_store.fallback_stores[0]
-    assert prod_store.hash_algorithm == HashAlgorithm.SHA256
+    assert prod_store.hash_algorithm == HashAlgorithm.XXHASH32
 
 
 def test_hash_algorithm_defaults_to_xxhash32(tmp_path: Path) -> None:
@@ -562,35 +562,6 @@ def test_hash_algorithm_defaults_to_xxhash32(tmp_path: Path) -> None:
 
     prod_store = dev_store.fallback_stores[0]
     assert prod_store.hash_algorithm == HashAlgorithm.XXHASH32
-
-
-def test_hash_algorithm_conflict_raises_error(tmp_path: Path) -> None:
-    config = MetaxyConfig(
-        stores={
-            "dev": StoreConfig(
-                type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
-                config={
-                    "root_path": str(tmp_path / "delta_dev"),
-                    "hash_algorithm": "sha256",
-                    "fallback_stores": ["prod"],
-                },
-            ),
-            "prod": StoreConfig(
-                type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
-                config={
-                    "root_path": str(tmp_path / "delta_prod"),
-                    "hash_algorithm": "md5",
-                },
-            ),
-        },
-    )
-
-    dev_store = config.get_store("dev")
-    with pytest.raises(
-        ValueError,
-        match="Fallback store 'prod' uses hash_algorithm='md5' but parent store uses 'sha256'",
-    ):
-        _ = dev_store.fallback_stores[0]
 
 
 def test_store_respects_configured_hash_algorithm(tmp_path: Path) -> None:

@@ -355,6 +355,8 @@ def test_feature_definition_version_recorded_in_metadata_store(snapshot: Snapsho
                 "metaxy_feature_version": feature_row["metaxy_feature_version"],
                 "metaxy_definition_version": feature_row["metaxy_definition_version"],
                 "metaxy_project_version": feature_row["metaxy_project_version"],
+                "hash_algorithm": feature_row["hash_algorithm"],
+                "hash_truncation_length": feature_row["hash_truncation_length"],
             } == snapshot
 
 

@@ -373,6 +373,8 @@ class SystemTableStorage:
             - recorded_at: When this version was recorded
             - feature_spec: JSON serialized feature specification
             - feature_class_path: Python import path to the feature class
+            - hash_algorithm: Hash algorithm used by the feature
+            - hash_truncation_length: Maximum hash length used by the feature
             - project_version: Graph snapshot this feature belongs to
 
         Raises:
@@ -572,6 +574,8 @@ class SystemTableStorage:
                         feature_schema=row["feature_schema"],
                         feature_class_path=row["feature_class_path"],
                         project=row["project"],
+                        hash_algorithm=row.get("hash_algorithm") or self.store.hash_algorithm,
+                        hash_truncation_length=row.get("hash_truncation_length") or self.store.hash_truncation_length,
                         source=source,
                     )
                 )

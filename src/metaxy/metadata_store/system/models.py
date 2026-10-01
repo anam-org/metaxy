@@ -22,11 +22,13 @@ FEATURE_VERSIONS_SCHEMA = {
     "project": pl.String,
     "feature_key": pl.String,
     METAXY_FEATURE_VERSION: pl.String,
-    METAXY_DEFINITION_VERSION: pl.String,  # Hash of feature definition (spec + schema), excludes project
+    METAXY_DEFINITION_VERSION: pl.String,  # Hash of feature definition, excludes project
     "recorded_at": pl.Datetime("us"),
     "feature_spec": pl.String,  # Full serialized FeatureSpec
     "feature_schema": pl.String,  # Full Pydantic model schema as JSON
     "feature_class_path": pl.String,
+    "hash_algorithm": pl.String,
+    "hash_truncation_length": pl.Int64,
     METAXY_PROJECT_VERSION: pl.String,
     "tags": pl.String,
     "deleted_at": pl.Datetime("us"),  # Timestamp when feature was removed from the project (nullable)
@@ -51,12 +53,14 @@ class FeatureVersionsModel(BaseModel):
         description="Hash of versioned feature topology (combined versions of fields on this feature)",
     )
     metaxy_definition_version: str = Field(
-        ..., description="Hash of feature definition (spec + schema), excludes project"
+        ..., description="Hash of feature definition, including hash settings and excluding project"
     )
     recorded_at: datetime = Field(..., description="Timestamp when feature version was recorded")
     feature_spec: str = Field(..., description="Full serialized FeatureSpec as JSON string")
     feature_schema: str = Field(..., description="Full Pydantic model schema as JSON string")
     feature_class_path: str = Field(..., description="Python import path to Feature class")
+    hash_algorithm: str = Field(default="xxhash32", description="Hash algorithm used by the feature")
+    hash_truncation_length: int = Field(default=8, description="Maximum hash length used by the feature")
     metaxy_project_version: str = Field(..., description="Deterministic hash of entire Metaxy project")
     tags: dict[str, str] | str = Field(
         default="{}",

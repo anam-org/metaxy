@@ -19,6 +19,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy.config import MetaxyConfig
 from metaxy.ext.duckdb import DuckDBMetadataStore
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store import (
@@ -87,7 +88,16 @@ def create_store_for_fallback(
 
 
 @pytest.fixture
-def features(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
+def features(
+    graph: FeatureGraph,
+    hash_algorithm: HashAlgorithm,
+    request: pytest.FixtureRequest,
+) -> dict[str, type[BaseFeature]]:
+    if not isinstance(hash_algorithm, HashAlgorithm):
+        hash_algorithm = hash_algorithm.get(request)
+    config = MetaxyConfig.get().model_copy(update={"hash_algorithm": hash_algorithm})
+    MetaxyConfig.set(config)
+
     class RootFeature(
         BaseFeature,
         spec=SampleFeatureSpec(

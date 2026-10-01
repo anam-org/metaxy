@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import polars as pl
+from metaxy._hashing import HashAlgorithm
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep, FeatureKey, FeatureSpec
@@ -75,6 +76,9 @@ ParentFeature._spec = _PARENT_FEATURE_SPEC
 ParentFeature.__metaxy_project__ = "docs"
 ChildFeature._spec = _CHILD_FEATURE_SPEC
 ChildFeature.__metaxy_project__ = "docs"
+for feature in (MyFeature, ParentFeature, ChildFeature):
+    feature.__metaxy_hash_algorithm__ = HashAlgorithm.XXHASH32
+    feature.__metaxy_hash_truncation_length__ = 8
 
 
 def register_doctest_fixtures(graph: FeatureGraph) -> None:

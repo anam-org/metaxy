@@ -10,7 +10,7 @@ from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
 from metaxy._decorators import public
-from metaxy._hashing import truncate_hash
+from metaxy._hashing import HashAlgorithm
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
     METAXY_FEATURE_VERSION,
@@ -45,6 +45,8 @@ class SerializedFeature(TypedDict):
     metaxy_definition_version: str
     feature_class_path: str
     project: str
+    hash_algorithm: str
+    hash_truncation_length: int
 
 
 @public
@@ -251,15 +253,17 @@ class FeatureGraph:
             feature=spec,
             deps=dep_specs or None,
             feature_deps=spec.deps,
+            hash_algorithm=definition.hash_algorithm,
+            hash_truncation_length=definition.hash_truncation_length,
         )
 
     def get_field_version(self, key: "FQFieldKey") -> str:
-        definition = self.feature_definitions_by_key.get(key.feature)
+        definition = self.get_feature_definition(key.feature)
 
         # check for special case: external feature with provenance override
         # TODO: this has to be done more elegantly
         # this check doesn't really belong here
-        if definition and definition.is_external and definition.has_provenance_override:
+        if definition.is_external and definition.has_provenance_override:
             provenance = definition.provenance_by_field_override
             field_str = key.field.to_string()
             if provenance and field_str in provenance:
@@ -276,7 +280,7 @@ class FeatureGraph:
         for k, v in sorted(plan.get_parent_fields_for_field(key.field).items()):
             hasher.update(self.get_field_version(k).encode())
 
-        return truncate_hash(hasher.hexdigest())
+        return hasher.hexdigest()[: definition.hash_truncation_length]
 
     def get_feature_version_by_field(self, key: CoercibleToFeatureKey) -> dict[str, str]:
         """Computes the field provenance map for a feature.
@@ -313,6 +317,7 @@ class FeatureGraph:
         """
         # Validate and coerce the key
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+        definition = self.get_feature_definition(validated_key)
 
         hasher = hashlib.sha256()
         provenance_by_field = self.get_feature_version_by_field(validated_key)
@@ -320,7 +325,7 @@ class FeatureGraph:
             hasher.update(field_key.encode())
             hasher.update(provenance_by_field[field_key].encode())
 
-        return truncate_hash(hasher.hexdigest())
+        return hasher.hexdigest()[: definition.hash_truncation_length]
 
     def get_downstream_features(self, sources: Sequence[CoercibleToFeatureKey]) -> list[FeatureKey]:
         """Get all features downstream of sources, topologically sorted.
@@ -502,12 +507,12 @@ class FeatureGraph:
             hasher.update(feature_key.to_string().encode("utf-8"))
             hasher.update(definition.feature_definition_version.encode("utf-8"))
 
-        return truncate_hash(hasher.hexdigest())
+        return hasher.hexdigest()[: max(definition.hash_truncation_length for _, definition in features)]
 
     def get_project_version(self, project: str) -> str:
         """Generate a project version for features belonging to a specific project.
 
-        Uses feature_definition_version (spec + schema only), excluding external features.
+        Uses feature_definition_version, excluding external features.
         This makes the project version independent of external feature changes.
 
         Args:
@@ -530,7 +535,7 @@ class FeatureGraph:
     def project_version(self) -> str:
         """Generate a project version for the current project's features.
 
-        Uses feature_definition_version (spec + schema only), excluding external features.
+        Uses feature_definition_version, excluding external features.
         The project is determined from MetaxyConfig.project if set, otherwise from the graph's
         single project (via the `project` property).
 
@@ -614,6 +619,8 @@ class FeatureGraph:
                 FEATURE_TRACKING_VERSION_COL: definition_version,
                 "feature_class_path": class_path,
                 "project": project,
+                "hash_algorithm": definition.hash_algorithm.value,
+                "hash_truncation_length": definition.hash_truncation_length,
             }
 
         return snapshot
@@ -667,6 +674,8 @@ class FeatureGraph:
                 feature_schema=feature_data["feature_schema"],
                 feature_class_path=feature_data["feature_class_path"],
                 project=feature_data["project"],
+                hash_algorithm=feature_data.get("hash_algorithm"),
+                hash_truncation_length=feature_data.get("hash_truncation_length"),
                 source="snapshot",
             )
             graph.add_feature_definition(definition)
@@ -794,6 +803,14 @@ class MetaxyMeta(ModelMetaclass):
             else:
                 new_cls.__metaxy_project__ = cls._detect_project(new_cls)
 
+            from metaxy.config import MetaxyConfig
+
+            config = MetaxyConfig.get()
+            new_cls.__metaxy_hash_algorithm__ = config.hash_algorithm or (
+                config.get_store().hash_algorithm if config.stores else HashAlgorithm.XXHASH32
+            )
+            new_cls.__metaxy_hash_truncation_length__ = config.hash_truncation_length
+
             active_graph.add_feature(new_cls)
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
@@ -830,11 +847,23 @@ class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
 
     graph: ClassVar[FeatureGraph]
     __metaxy_project__: ClassVar[str]
+    __metaxy_hash_algorithm__: ClassVar[HashAlgorithm]
+    __metaxy_hash_truncation_length__: ClassVar[int]
 
     @classmethod
     def metaxy_project(cls) -> str:
         """Return the project this feature belongs to."""
         return cls.__metaxy_project__
+
+    @classmethod
+    def metaxy_hash_algorithm(cls) -> HashAlgorithm:
+        """Return the hash algorithm captured when this feature was defined."""
+        return cls.__metaxy_hash_algorithm__
+
+    @classmethod
+    def metaxy_hash_truncation_length(cls) -> int:
+        """Return the hash length captured when this feature was defined."""
+        return cls.__metaxy_hash_truncation_length__
 
     # System columns - automatically managed by Metaxy
     # Most of them are optional since Metaxy injects them into dataframes at some point

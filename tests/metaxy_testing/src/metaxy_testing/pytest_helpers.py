@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, TypeVar
 
 import narwhals as nw
 import polars as pl
-from metaxy._hashing import get_hash_truncation_length
 from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
@@ -86,7 +85,7 @@ def add_metaxy_provenance_column(
     Args:
         df: Polars DataFrame with metaxy_provenance_by_field column
         feature: Feature class, FeatureDefinition, or value coercible to FeatureKey
-        hash_algorithm: Hash algorithm to use. If None, uses XXHASH64.
+        hash_algorithm: Hash algorithm to use. Defaults to the feature's algorithm.
 
     Returns:
         Polars DataFrame with metaxy_provenance column added
@@ -94,10 +93,6 @@ def add_metaxy_provenance_column(
     from metaxy import coerce_to_feature_key
     from metaxy.ext.polars.versioning import PolarsVersioningEngine
     from metaxy.models.feature import current_graph
-    from metaxy.versioning.types import HashAlgorithm as HashAlgo
-
-    if hash_algorithm is None:
-        hash_algorithm = HashAlgo.XXHASH64
 
     # Coerce to feature key and get plan from active graph
     feature_key = coerce_to_feature_key(feature)
@@ -109,13 +104,14 @@ def add_metaxy_provenance_column(
 
     # Convert to Narwhals, add provenance column, convert back
     df_nw = nw.from_native(df.lazy())
-    df_nw = engine.hash_struct_version_column(df_nw, hash_algorithm=hash_algorithm)
-    result_df = df_nw.collect().to_native()
-
-    # Apply hash truncation if specified
-    result_df = result_df.with_columns(pl.col("metaxy_provenance").str.slice(0, get_hash_truncation_length()))
-
-    return result_df
+    return (
+        engine.hash_struct_version_column(
+            df_nw,
+            hash_algorithm=hash_algorithm or engine.hash_algorithm,
+        )
+        .collect()
+        .to_native()
+    )
 
 
 def skip_exception(exception: type[Exception], reason: str):
