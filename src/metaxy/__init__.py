@@ -43,6 +43,11 @@ from metaxy.models.fields_mapping import (
     FieldsMappingType,
 )
 from metaxy.models.lineage import LineageRelationship
+from metaxy.models.metadata_query import (
+    MetadataQuery,
+    MetadataQueryParseError,
+    parse_metadata_uri,
+)
 from metaxy.models.types import (
     CoercibleToFeatureKey,
     CoercibleToFieldKey,
@@ -190,6 +195,9 @@ __all__ = [
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",
+    "MetadataQuery",
+    "MetadataQueryParseError",
+    "parse_metadata_uri",
     "AccessMode",
     "current_graph",
     "MetaxyMissingFeatureDependency",
