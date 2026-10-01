@@ -200,6 +200,44 @@ class MetaxyConfig(BaseSettings):
         description="Auto-create tables when opening stores. It is not advised to enable this setting in production.",
     )
 
+    created_at_column: str = PydanticField(
+        default="metaxy_created_at",
+        min_length=1,
+        description="System column used for metadata row creation timestamps.",
+    )
+
+    updated_at_column: str = PydanticField(
+        default="metaxy_updated_at",
+        min_length=1,
+        description="System column used for metadata row update timestamps.",
+    )
+
+    deleted_at_column: str = PydanticField(
+        default="metaxy_deleted_at",
+        min_length=1,
+        description="System column used for metadata row soft-deletion timestamps.",
+    )
+
+    @model_validator(mode="after")
+    def validate_lifecycle_columns(self) -> Self:
+        columns = {
+            self.created_at_column,
+            self.updated_at_column,
+            self.deleted_at_column,
+        }
+        if len(columns) != 3:
+            raise ValueError("created_at_column, updated_at_column, and deleted_at_column must be distinct")
+
+        conflicts = {
+            column
+            for column in columns
+            if column.startswith("metaxy_")
+            and column not in {"metaxy_created_at", "metaxy_updated_at", "metaxy_deleted_at"}
+        }
+        if conflicts:
+            raise ValueError(f"Lifecycle columns conflict with reserved Metaxy system columns: {sorted(conflicts)}")
+        return self
+
     project: str | None = PydanticField(
         default=None,
         description="[Project](/guide/concepts/projects.md) name. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",

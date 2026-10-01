@@ -1,7 +1,4 @@
-"""Shared constants for system-managed column names.
-
-All system columns use the metaxy_ prefix to avoid conflicts with user columns.
-"""
+"""Shared constants for system-managed column names."""
 
 from __future__ import annotations
 
@@ -64,7 +61,16 @@ _STALE_BY_PREDICATE = "__stale_by_predicate"
 
 # --- System Column Sets ------------------------------------------------------------
 
-ALL_SYSTEM_COLUMNS = frozenset(
+LIFECYCLE_SYSTEM_COLUMNS = frozenset(
+    {
+        METAXY_CREATED_AT,
+        METAXY_UPDATED_AT,
+        METAXY_DELETED_AT,
+    }
+)
+"""Default names for configurable lifecycle columns."""
+
+FIXED_SYSTEM_COLUMNS = frozenset(
     {
         METAXY_PROVENANCE_BY_FIELD,
         METAXY_PROVENANCE,
@@ -72,22 +78,19 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_PROJECT_VERSION,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
-        METAXY_CREATED_AT,
-        METAXY_UPDATED_AT,
-        METAXY_DELETED_AT,
         METAXY_MATERIALIZATION_ID,
     }
 )
-"""All Metaxy-managed column names that are injected into feature tables."""
+"""Metaxy-managed columns whose names are not configurable."""
+
+ALL_SYSTEM_COLUMNS = FIXED_SYSTEM_COLUMNS | LIFECYCLE_SYSTEM_COLUMNS
+"""Default names for all Metaxy-managed columns injected into feature tables."""
 
 # Columns that should be dropped when joining upstream features (will be recalculated)
-_DROPPABLE_COLUMNS = frozenset(
+_FIXED_DROPPABLE_COLUMNS = frozenset(
     {
         METAXY_FEATURE_VERSION,
         METAXY_PROJECT_VERSION,
-        METAXY_CREATED_AT,
-        METAXY_UPDATED_AT,
-        METAXY_DELETED_AT,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
         METAXY_MATERIALIZATION_ID,
@@ -97,12 +100,10 @@ _DROPPABLE_COLUMNS = frozenset(
 # Columns that should be dropped before joining upstream features in FeatureDepTransformer
 # These are NOT needed for provenance calculation and would cause column name conflicts
 # when joining 3+ upstream features (e.g., metaxy_created_at_right already exists error)
-_COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
+_FIXED_COLUMNS_TO_DROP_BEFORE_JOIN = frozenset(
     {
         METAXY_FEATURE_VERSION,
         METAXY_PROJECT_VERSION,
-        METAXY_CREATED_AT,
-        METAXY_UPDATED_AT,
         METAXY_MATERIALIZATION_ID,
     }
 )
@@ -126,7 +127,7 @@ def is_system_column(name: str) -> bool:
         >>> is_system_column("my_column")
         False
     """
-    return name in ALL_SYSTEM_COLUMNS
+    return name in get_system_columns()
 
 
 def is_droppable_system_column(name: str) -> bool:
@@ -147,7 +148,31 @@ def is_droppable_system_column(name: str) -> bool:
         >>> is_droppable_system_column("metaxy_provenance_by_field")
         False
     """
-    return name in _DROPPABLE_COLUMNS
+    return name in _FIXED_DROPPABLE_COLUMNS or name in get_lifecycle_system_columns()
+
+
+def get_lifecycle_system_columns() -> tuple[str, str, str]:
+    """Return configured created, updated, and deleted column names."""
+    from metaxy.config import MetaxyConfig
+
+    config = MetaxyConfig.get(_allow_default_config=True)
+    return config.created_at_column, config.updated_at_column, config.deleted_at_column
+
+
+def get_system_columns() -> frozenset[str]:
+    """Return all system column names for the active configuration."""
+    return FIXED_SYSTEM_COLUMNS | frozenset(get_lifecycle_system_columns())
+
+
+def get_reserved_system_columns() -> frozenset[str]:
+    """Return default and configured system column names."""
+    return ALL_SYSTEM_COLUMNS | get_system_columns()
+
+
+def get_columns_to_drop_before_join() -> frozenset[str]:
+    """Return system columns removed before upstream joins."""
+    created_at, updated_at, _ = get_lifecycle_system_columns()
+    return _FIXED_COLUMNS_TO_DROP_BEFORE_JOIN | {created_at, updated_at}
 
 
 # System columns that have lineage from upstream features

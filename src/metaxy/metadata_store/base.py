@@ -33,17 +33,15 @@ from metaxy.metadata_store.warnings import (
     PolarsMaterializationWarning,
 )
 from metaxy.models.constants import (
-    ALL_SYSTEM_COLUMNS,
-    METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
-    METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_UPDATED_AT,
+    get_lifecycle_system_columns,
+    get_system_columns,
 )
 from metaxy.models.feature import current_graph
 from metaxy.models.plan import FeaturePlan
@@ -119,14 +117,11 @@ VersioningEngineOptions: TypeAlias = Literal["auto", "native", "polars"]
 # Mapping of system columns to their expected Narwhals dtypes
 # Used to cast Null-typed columns to correct types
 # Note: Struct columns (METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD) are not cast
-_SYSTEM_COLUMN_DTYPES = {
+_FIXED_SYSTEM_COLUMN_DTYPES = {
     METAXY_PROVENANCE: nw.String,
     METAXY_FEATURE_VERSION: nw.String,
     METAXY_PROJECT_VERSION: nw.String,
     METAXY_DATA_VERSION: nw.String,
-    METAXY_CREATED_AT: nw.Datetime(time_zone="UTC"),
-    METAXY_UPDATED_AT: nw.Datetime(time_zone="UTC"),
-    METAXY_DELETED_AT: nw.Datetime(time_zone="UTC"),
     METAXY_MATERIALIZATION_ID: nw.String,
 }
 
@@ -149,7 +144,9 @@ def _cast_present_system_columns(
     schema = df.collect_schema()
     columns_to_cast = []
 
-    for col_name, expected_dtype in _SYSTEM_COLUMN_DTYPES.items():
+    timestamp_dtype = nw.Datetime(time_zone="UTC")
+    system_column_dtypes = _FIXED_SYSTEM_COLUMN_DTYPES | dict.fromkeys(get_lifecycle_system_columns(), timestamp_dtype)
+    for col_name, expected_dtype in system_column_dtypes.items():
         if col_name in schema and schema[col_name] == nw.Unknown:
             columns_to_cast.append(nw.col(col_name).cast(expected_dtype))
 
@@ -769,7 +766,7 @@ class MetadataStore(ABC):
         By default, does not include:
            - rows from historical feature versions (configured via `with_feature_history=False`)
            - rows that have been overwritten by subsequent writes with the same feature version (configured via `with_sample_history=False`)
-           - soft-deleted with `metaxy_deleted_at` set to a non-null value (configured via `include_soft_deleted=False`)
+           - soft-deleted with the configured deletion timestamp set to a non-null value
 
         Args:
             feature: Feature to read metadata for
@@ -781,7 +778,7 @@ class MetadataStore(ABC):
             with_feature_history: If True, include rows from all historical feature versions.
                 By default (False), only returns rows with the currently registered feature version.
             with_sample_history: If True, include all historical materializations per sample.
-                By default (False), deduplicates samples within `id_columns` groups ordered by `metaxy_created_at`.
+                By default (False), deduplicates samples within `id_columns` groups using the configured lifecycle timestamps.
             include_soft_deleted: If `True`, include soft-deleted rows in the result. Previous historical materializations of the same feature version will be effectively removed from the output otherwise.
             with_store_info: If `True`, return a tuple of (LazyFrame, MetadataStore) where
                 the MetadataStore is the store that actually contained the feature (which
@@ -796,7 +793,7 @@ class MetadataStore(ABC):
             ValueError: If both feature_version and with_feature_history=False are provided
 
         !!! info
-            When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
+            When this method is called with default arguments, it will return the latest
             metadata for the current feature version excluding soft-deleted rows. Therefore, it's perfectly suitable
             for most use cases.
 
@@ -808,6 +805,7 @@ class MetadataStore(ABC):
 
         self._check_open()
 
+        _, updated_at_column, deleted_at_column = get_lifecycle_system_columns()
         filters = filters or []
         columns = columns or []
 
@@ -851,7 +849,7 @@ class MetadataStore(ABC):
         elif columns and not is_system_table:
             # Add only system columns that aren't already in the user's columns list
             columns_set = set(columns)
-            missing_system_cols = [c for c in ALL_SYSTEM_COLUMNS if c not in columns_set]
+            missing_system_cols = [c for c in get_system_columns() if c not in columns_set]
             read_columns = [*columns, *missing_system_cols]
         else:
             read_columns = None
@@ -885,11 +883,11 @@ class MetadataStore(ABC):
                 lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                     df=lazy_frame,
                     group_columns=id_cols,
-                    timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
+                    timestamp_columns=[deleted_at_column, updated_at_column],
                 )
 
             if filter_deleted:
-                lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
+                lazy_frame = lazy_frame.filter(nw.col(deleted_at_column).is_null())
 
             # Apply user filters AFTER deduplication so they see the latest version of each row
             for user_filter in user_filters:
@@ -1457,16 +1455,16 @@ class MetadataStore(ABC):
     def _shared_transaction_timestamp(self, *, soft_delete: bool = False) -> Iterator[datetime]:
         """Context manager that establishes a shared timestamp for a write transaction.
 
-        All write operations (write, delete with soft=True) within
-        this context share the same timestamp for metaxy_created_at and metaxy_deleted_at
-        columns. This ensures consistency when a single logical operation affects
-        multiple system columns.
+        All write operations (write, delete with soft=True) within this context
+        share the same timestamp for the configured lifecycle columns. This
+        ensures consistency when a single logical operation affects multiple
+        system columns.
 
         If already within a transaction, returns the existing timestamp without
         creating a new one (reentrant).
 
         Args:
-            soft_delete: If True, preserves metaxy_updated_at during writes within this context.
+            soft_delete: If True, preserves the configured update timestamp during writes.
 
         Yields:
             datetime: The transaction timestamp (UTC)
@@ -1563,13 +1561,6 @@ class MetadataStore(ABC):
             )
 
         # These should normally be added by the provenance engine during resolve_update
-        from metaxy.models.constants import (
-            METAXY_CREATED_AT,
-            METAXY_DATA_VERSION,
-            METAXY_DATA_VERSION_BY_FIELD,
-            METAXY_UPDATED_AT,
-        )
-
         # Re-fetch columns since df may have been modified above
         columns = df.collect_schema().names()
 
@@ -1601,19 +1592,19 @@ class MetadataStore(ABC):
         # Re-fetch columns since df may have been modified
         columns = df.collect_schema().names()
 
-        # Use shared transaction timestamp to ensure consistency across
-        # metaxy_created_at and metaxy_updated_at columns
+        # Use a shared timestamp for the configured creation and update columns.
+        created_at_column, updated_at_column, deleted_at_column = get_lifecycle_system_columns()
         with self._shared_transaction_timestamp() as ts:
-            if METAXY_CREATED_AT not in columns:
-                df = df.with_columns(nw.lit(ts).alias(METAXY_CREATED_AT))
+            if created_at_column not in columns:
+                df = df.with_columns(nw.lit(ts).alias(created_at_column))
 
-            # metaxy_updated_at: set to current transaction time unless soft delete is in progress
+            # Set the update timestamp unless soft delete is in progress.
             # Soft delete preserves the original updated_at to reflect when data was last changed
             if not self._soft_delete_in_progress:
-                df = df.with_columns(nw.lit(ts).alias(METAXY_UPDATED_AT))
+                df = df.with_columns(nw.lit(ts).alias(updated_at_column))
 
-        if METAXY_DELETED_AT not in columns:
-            df = df.with_columns(nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT))
+        if deleted_at_column not in columns:
+            df = df.with_columns(nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(deleted_at_column))
 
         # Add materialization_id if not already present
         from metaxy.models.constants import METAXY_MATERIALIZATION_ID
@@ -1770,8 +1761,9 @@ class MetadataStore(ABC):
     ) -> None:
         """Delete records matching provided filters.
 
-        Performs a soft delete by default. This is achieved by setting metaxy_deleted_at to the current timestamp.
-        Subsequent [[MetadataStore.read]] calls would ignore these records by default.
+        Performs a soft delete by default by setting the configured deletion
+        timestamp. Subsequent [[MetadataStore.read]] calls ignore these records
+        by default.
 
         Args:
             feature: Feature to delete from.
@@ -1782,9 +1774,8 @@ class MetadataStore(ABC):
             with_sample_history: If True, include all historical materializations. If False (default), deduplicate to latest rows.
 
         !!! critical
-            By default, deletions target historical records. Even when `with_feature_history` is `False`,
-            records with the same feature version but an older `metaxy_created_at` would be targeted as
-            well. Consider adding additional conditions to `filters` if you want to avoid that.
+            With `with_sample_history=True`, matching historical materializations
+            are deleted as well. Add conditions to `filters` to narrow the target.
         """
         self._check_write_mode()
         feature_key = self._resolve_feature_key(feature)
@@ -1808,8 +1799,9 @@ class MetadataStore(ABC):
                 allow_fallback=True,
             )
             with self._shared_transaction_timestamp(soft_delete=True) as ts:
+                _, _, deleted_at_column = get_lifecycle_system_columns()
                 soft_deletion_marked = lazy.with_columns(
-                    nw.lit(ts).alias(METAXY_DELETED_AT),
+                    nw.lit(ts).alias(deleted_at_column),
                 )
                 self.write(feature_key, soft_deletion_marked.to_native())
         else:

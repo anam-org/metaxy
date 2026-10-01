@@ -18,16 +18,14 @@ from hypothesis import strategies as st
 from hypothesis.strategies import composite
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
-    METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
-    METAXY_DELETED_AT,
     METAXY_FEATURE_VERSION,
     METAXY_MATERIALIZATION_ID,
     METAXY_PROJECT_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_UPDATED_AT,
+    get_lifecycle_system_columns,
 )
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
@@ -317,10 +315,11 @@ def feature_metadata_strategy(
     from datetime import datetime, timezone
 
     ts = datetime.now(timezone.utc)
+    created_at_column, updated_at_column, deleted_at_column = get_lifecycle_system_columns()
     df = df.with_columns(
-        pl.lit(ts).alias(METAXY_CREATED_AT),
-        pl.lit(ts).alias(METAXY_UPDATED_AT),
-        pl.lit(None, dtype=pl.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
+        pl.lit(ts).alias(created_at_column),
+        pl.lit(ts).alias(updated_at_column),
+        pl.lit(None, dtype=pl.Datetime(time_zone="UTC")).alias(deleted_at_column),
     )
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
@@ -744,6 +743,7 @@ def downstream_metadata_strategy(
     from datetime import datetime, timezone
 
     ts = datetime.now(timezone.utc)
+    created_at_column, updated_at_column, deleted_at_column = get_lifecycle_system_columns()
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(project_version).alias(METAXY_PROJECT_VERSION),
@@ -751,10 +751,10 @@ def downstream_metadata_strategy(
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         # Add timestamp columns
-        nw.lit(ts).alias(METAXY_CREATED_AT),
-        nw.lit(ts).alias(METAXY_UPDATED_AT),
+        nw.lit(ts).alias(created_at_column),
+        nw.lit(ts).alias(updated_at_column),
         # Soft delete column defaults to NULL
-        nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(METAXY_DELETED_AT),
+        nw.lit(None, dtype=nw.Datetime(time_zone="UTC")).alias(deleted_at_column),
         # Add materialization_id (nullable)
         nw.lit(None, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID),
     )

@@ -246,6 +246,13 @@ class TestBuildColumnSchema:
         assert "metaxy_created_at" in column_names
         assert "metaxy_data_version" in column_names
 
+    def test_uses_configured_lifecycle_column(self, simple_feature: type[mx.BaseFeature]):
+        with mx.MetaxyConfig(created_at_column="created_at").use():
+            column_names = {column.name for column in build_column_schema(simple_feature).columns}
+
+        assert "created_at" in column_names
+        assert "metaxy_created_at" not in column_names
+
     def test_columns_sorted_alphabetically(self, simple_feature: type[mx.BaseFeature]):
         """Test that columns are sorted alphabetically."""
         schema = build_column_schema(simple_feature)

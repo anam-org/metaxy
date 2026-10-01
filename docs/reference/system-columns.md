@@ -25,7 +25,11 @@ the [metadata store][metaxy.MetadataStore]. Learn more about the storage layout 
 | `metaxy_deleted_at`            | Timestamp when the metadata row was soft-deleted (null if active)   | sample  | string |
 | `metaxy_materialization_id`    | External orchestration run ID (e.g., Dagster, Airflow) for tracking | run     | string |
 
-All system column names start with the `metaxy_` prefix.
+The three lifecycle column names can be changed with
+[`created_at_column`](./configuration.md#metaxy.config.MetaxyConfig.created_at_column),
+[`updated_at_column`](./configuration.md#metaxy.config.MetaxyConfig.updated_at_column), and
+[`deleted_at_column`](./configuration.md#metaxy.config.MetaxyConfig.deleted_at_column). This lets Metaxy reuse
+existing timestamp columns. All other system column names start with the `metaxy_` prefix.
 
 ## Example Table
 

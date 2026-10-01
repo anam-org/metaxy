@@ -34,7 +34,7 @@ def observable_metaxy_asset(
     """Decorator to create an observable source asset for a Metaxy feature.
 
     The observation reads the feature's metadata from the store, counts rows,
-    and uses `mean(metaxy_created_at)` as the data version to track changes.
+    and uses the mean configured creation timestamp as the data version.
     Using mean ensures that both additions and deletions are detected.
 
     The decorated function receives `(context, store, lazy_df)` and can return

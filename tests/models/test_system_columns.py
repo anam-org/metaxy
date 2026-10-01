@@ -1,8 +1,9 @@
+from metaxy.config import MetaxyConfig
 from metaxy.models import constants as sys_cols
 
 
-def test_is_system_column_recognises_canonical_names_only() -> None:
-    """Test that is_system_column recognizes canonical system column names."""
+def test_is_system_column_recognises_default_names() -> None:
+    """Test that is_system_column recognizes default system column names."""
     # Should recognize actual system columns
     assert sys_cols.is_system_column(sys_cols.METAXY_PROJECT_VERSION)
     assert sys_cols.is_system_column(sys_cols.METAXY_FEATURE_VERSION)
@@ -34,3 +35,15 @@ def test_materialization_id_is_system_column() -> None:
 def test_materialization_id_is_droppable() -> None:
     """Test that metaxy_materialization_id is droppable during joins."""
     assert sys_cols.is_droppable_system_column(sys_cols.METAXY_MATERIALIZATION_ID)
+
+
+def test_configured_lifecycle_columns_replace_canonical_names() -> None:
+    with MetaxyConfig(
+        created_at_column="created_at",
+        updated_at_column="updated_at",
+        deleted_at_column="deleted_at",
+    ).use():
+        assert sys_cols.is_system_column("created_at")
+        assert sys_cols.is_droppable_system_column("updated_at")
+        assert not sys_cols.is_system_column(sys_cols.METAXY_CREATED_AT)
+        assert sys_cols.METAXY_CREATED_AT in sys_cols.get_reserved_system_columns()

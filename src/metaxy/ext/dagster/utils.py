@@ -16,7 +16,7 @@ from metaxy.ext.dagster.constants import (
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
-from metaxy.models.constants import METAXY_CREATED_AT, METAXY_MATERIALIZATION_ID
+from metaxy.models.constants import METAXY_MATERIALIZATION_ID, get_lifecycle_system_columns
 
 
 @public
@@ -204,7 +204,7 @@ def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:
     """Compute statistics from a narwhals LazyFrame.
 
     Computes row count and data version from the frame.
-    The data version is based on mean(metaxy_created_at) to detect both
+    The data version is based on the mean creation timestamp to detect both
     additions and deletions.
 
     Args:
@@ -213,9 +213,10 @@ def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:
     Returns:
         FeatureStats with row_count and data_version.
     """
+    created_at_column, _, _ = get_lifecycle_system_columns()
     stats = lazy_df.select(
         nw.len().alias("__count"),
-        nw.col(METAXY_CREATED_AT).cast(nw.Float64).mean().alias("__mean_ts"),
+        nw.col(created_at_column).cast(nw.Float64).mean().alias("__mean_ts"),
     ).collect()
 
     row_count: int = stats.item(0, "__count")
@@ -233,7 +234,7 @@ def compute_feature_stats(
     """Compute statistics for a feature's metadata.
 
     Reads the feature metadata and computes row count and data version.
-    The data version is based on mean(metaxy_created_at) to detect both
+    The data version is based on the mean creation timestamp to detect both
     additions and deletions.
 
     Args:
