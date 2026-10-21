@@ -1755,6 +1755,74 @@ class ResolveUpdateTests:
                     f"Expected 0 added (all 20 local upstream chunks are in downstream), but got {added_count}."
                 )
 
+    @pytest.mark.parametrize("select", [("document_id",), ("document_id", "anchor_id"), None])
+    def test_aggregation_provenance_is_independent_of_row_order(
+        self, store: MetadataStore, select: tuple[str, ...] | None
+    ) -> None:
+        """Aggregated provenance does not depend on the order in which group members were written.
+
+        Every document aggregates the same anchors with the same provenance, written in a different order,
+        so all documents must receive the same provenance.
+        """
+        from metaxy.models.lineage import LineageRelationship
+
+        graph = FeatureGraph()
+        with graph.use():
+
+            class Anchor(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["order_anchor"]),
+                    id_columns=("document_id", "anchor_id"),
+                    fields=[FieldSpec(key=FieldKey(["payload"]), code_version="1")],
+                ),
+            ):
+                pass
+
+            class Document(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["order_document"]),
+                    id_columns=("document_id",),
+                    deps=[
+                        FeatureDep(
+                            feature=Anchor,
+                            select=select,
+                            lineage=LineageRelationship.aggregation(on=["document_id"]),
+                        )
+                    ],
+                    fields=[FieldSpec(key=FieldKey(["payload"]), code_version="1")],
+                ),
+            ):
+                pass
+
+            anchor_ids = ["a1", "a2", "a3", "a4", "a5"]
+            write_orders = {
+                "d1": anchor_ids,
+                "d2": anchor_ids[::-1],
+                "d3": ["a3", "a5", "a1", "a4", "a2"],
+                "d4": ["a2", "a4", "a1", "a5", "a3"],
+            }
+
+            with store.open("w"):
+                for position in range(len(anchor_ids)):
+                    rows = pl.DataFrame(
+                        {
+                            "document_id": list(write_orders),
+                            "anchor_id": [order[position] for order in write_orders.values()],
+                            METAXY_PROVENANCE_BY_FIELD: [
+                                {"payload": f"v-{order[position]}"} for order in write_orders.values()
+                            ],
+                        }
+                    )
+                    store.write(Anchor, add_metaxy_provenance_column(rows, Anchor))
+
+                new = store.resolve_update(Document).new.to_polars()
+
+                assert set(new["document_id"].to_list()) == set(write_orders)
+                assert new[METAXY_PROVENANCE].n_unique() == 1
+                assert ("anchor_id" in new.columns) == (select != ("document_id",))
+
     # ============= OPTIONAL DEPENDENCY TESTS =============
 
     def test_resolve_update_optional_dependencies(

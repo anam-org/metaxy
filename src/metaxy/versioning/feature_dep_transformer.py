@@ -13,6 +13,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.lineage import AggregationRelationship
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.renamed_df import RenamedDataFrame
@@ -189,11 +190,6 @@ class FeatureDepTransformer:
         return [self.renames.get(col, col) for col in self.upstream_feature_spec.id_columns]
 
     @cached_property
-    def selected_id_columns(self) -> list[str]:
-        """Upstream ID columns that are actually selected after column filtering."""
-        return list(self.id_column_tracker.selected)
-
-    @cached_property
     def id_column_tracker(self) -> IdColumnTracker:
         """ID column tracker for this dependency."""
         output_columns = self.plan.get_input_id_columns_for_dep(self.dep)
@@ -250,6 +246,22 @@ class FeatureDepTransformer:
         ]
 
     @cached_property
+    def aggregation_order_columns(self) -> list[str]:
+        """Upstream ID columns (after rename) selected only to order aggregation group members.
+
+        Aggregated provenance concatenates the members of a group in the order of all upstream ID columns,
+        so it does not depend on row order. These columns are dropped again after the aggregation.
+        """
+        if self.dep.select is None or not isinstance(self.dep.lineage.relationship, AggregationRelationship):
+            return []
+        already_selected = {
+            *self._user_requested_columns,
+            *self._lineage_required_columns,
+            *self._join_required_columns,
+        }
+        return [col for col in self.renamed_id_columns if col not in already_selected]
+
+    @cached_property
     def renamed_columns(self) -> list[str] | None:
         """Columns to select, or None to select all."""
         if self.dep.select is None:
@@ -259,5 +271,6 @@ class FeatureDepTransformer:
             *self._user_requested_columns,
             *self._lineage_required_columns,
             *self._join_required_columns,
+            *self.aggregation_order_columns,
             *self.renamed_metaxy_cols,
         ]

@@ -74,8 +74,10 @@ class UpstreamPreparer(Generic[FrameT]):
         if hash_algorithm is not None:
             dfs = self._apply_lineage_transforms(dfs, hash_algorithm)
 
-        # Step 3: Drop system columns that aren't needed for provenance calculation
+        # Step 3: Drop system columns that aren't needed for provenance calculation, and
+        # upstream ID columns that were only selected to order aggregation groups
         dfs = self._drop_unnecessary_system_columns(dfs)
+        dfs = self._drop_aggregation_order_columns(dfs)
 
         # Step 4: Validate no column collisions (except ID columns and required system columns)
         if len(dfs) > 1:
@@ -139,6 +141,23 @@ class UpstreamPreparer(Generic[FrameT]):
             if cols_to_drop:
                 result[feature_key] = RenamedDataFrame(
                     df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
+                    id_column_tracker=renamed_df.id_column_tracker,
+                )
+
+        return result
+
+    def _drop_aggregation_order_columns(
+        self,
+        dfs: dict[FeatureKey, RenamedDataFrame[FrameT]],
+    ) -> dict[FeatureKey, RenamedDataFrame[FrameT]]:
+        """Drop upstream ID columns that are selected only to order aggregation group members."""
+        result = dict(dfs)
+
+        for feature_key, renamed_df in dfs.items():
+            columns_to_drop = self.engine.feature_transformers_by_key[feature_key].aggregation_order_columns
+            if columns_to_drop:
+                result[feature_key] = RenamedDataFrame(
+                    df=renamed_df.df.drop(*columns_to_drop),  # ty: ignore[invalid-argument-type]
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
 

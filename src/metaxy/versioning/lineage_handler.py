@@ -142,7 +142,7 @@ class AggregationLineageHandler(LineageHandler):
         return self.engine.aggregate_metadata_columns(
             df,
             group_columns=self.output_id_columns,
-            order_by_columns=transformer.selected_id_columns,
+            order_by_columns=transformer.renamed_id_columns,
             upstream_field_names=upstream_field_names,
             renamed_data_version_col=transformer.renamed_data_version_col,
             renamed_data_version_by_field_col=transformer.renamed_data_version_by_field_col,
