@@ -149,9 +149,9 @@ plugins:
             - https://docs.pydantic.dev/latest/objects.inv
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
-            - https://docs.dagster.io/objects.inv
+            - https://dagster.io/docs/objects.inv
             - https://docs.ray.io/en/latest/objects.inv
-            - https://delta-io.github.io/delta-rs/objects.inv
+            - https://delta-io.github.io/delta-rs/latest/objects.inv
             - https://py.iceberg.apache.org/objects.inv
 
 markdown_extensions:
