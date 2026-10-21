@@ -146,12 +146,12 @@ plugins:
               - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_experimental.py:ExperimentalAPIExtension
           inventories:
             - https://docs.python.org/3/objects.inv
-            - https://docs.pydantic.dev/latest/objects.inv
+            - https://pydantic.dev/docs/validation/latest/objects.inv
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
-            - https://docs.dagster.io/objects.inv
+            - https://dagster.io/docs/objects.inv
             - https://docs.ray.io/en/latest/objects.inv
-            - https://delta-io.github.io/delta-rs/objects.inv
+            - https://delta-io.github.io/delta-rs/latest/objects.inv
             - https://py.iceberg.apache.org/objects.inv
 
 markdown_extensions:
@@ -237,6 +237,7 @@ nav:
       - Metaxy Projects: guide/concepts/projects.md
       - Filters: guide/concepts/filters.md
       - Syntactic Sugar: guide/concepts/syntactic-sugar.md
+      - SQL Views: guide/concepts/sql-views.md
     - ⚙️ Application Lifecycle:
       - Local Development: guide/concepts/lifecycle/development.md
       - Testing: guide/concepts/lifecycle/testing.md

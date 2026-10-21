@@ -17,6 +17,12 @@ description: "Learn how to deploy Metaxy code to Production and Branch Deploymen
 
     This will persist feature definitions in the metadata store, enabling feature history tracking and multi-project setups.
 
+3. Optionally, update the [SQL views](../sql-views.md) for readers that do not use Metaxy:
+
+    ```shell
+    mx views sync --store prod
+    ```
+
 !!! tip
 
     We strongly recommend setting `METAXY_LOCKED` to `true` in production when using [external features](../definitions/external-features.md#syncing-external-features).
