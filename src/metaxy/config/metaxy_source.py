@@ -21,11 +21,10 @@ def _expand_env_vars(value: Any) -> Any:
             var_name = match.group(1)
             default = match.group(2)
             env_value = os.environ.get(var_name)
-            if env_value is not None:
-                return env_value
-            if default is not None:
+            # As in POSIX shells, ``:-`` falls back to the default when the variable is unset or empty
+            if default is not None and not env_value:
                 return default
-            return ""
+            return env_value or ""
 
         return _ENV_VAR_PATTERN.sub(_replace, value)
     if isinstance(value, Mapping):

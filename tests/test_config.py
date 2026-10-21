@@ -673,6 +673,31 @@ unset_with_default = "${{ANOTHER_UNSET:-my-default}}"
     assert config.stores["dev"].config["unset_with_default"] == "my-default"
 
 
+def test_env_var_expansion_empty_value(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that ${VAR:-default} uses the default for an empty var, while ${VAR} expands to an empty string."""
+    monkeypatch.setenv("EMPTY_VAR", "")
+
+    dev_path = (tmp_path / "delta_dev").as_posix()
+
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text(f"""
+store = "dev"
+
+[stores.dev]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{dev_path}"
+with_default = "${{EMPTY_VAR:-fallback}}"
+without_default = "${{EMPTY_VAR}}"
+""")
+
+    config = MetaxyConfig.load(config_file)
+
+    assert config.stores["dev"].config["with_default"] == "fallback"
+    assert config.stores["dev"].config["without_default"] == ""
+
+
 def test_env_var_expansion_in_nested_structures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that env vars are expanded in nested dicts and lists."""
     monkeypatch.setenv("STORE_PATH", "/data/metadata")

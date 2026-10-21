@@ -45,6 +45,15 @@ Metaxy supports templating environment variables in configuration files using th
     root_path = "s3://my-bucket/${BRANCH_NAME}"
     ```
 
+A default value can be provided with the `${VARIABLE_NAME:-default}` syntax. As in POSIX shells, the default is used when the variable is unset or set to an empty string. A variable without a default that is unset or empty expands to an empty string.
+
+!!! example
+
+    ```toml {title="metaxy.toml"}
+    [stores.dev.config.connection_params]
+    user = "${CLICKHOUSE_USER:-default}"
+    ```
+
 ### Configuration Inheritance
 
 A configuration file can inherit settings from another file using the [`extend`](#metaxy.config.MetaxyConfig.extend) field. This is especially useful in monorepos: a shared `metaxy.toml` can define stores, plugins, and other common settings.
