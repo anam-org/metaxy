@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import narwhals as nw
 import polars as pl
@@ -14,12 +15,14 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
+    LineageRelationship,
     MetadataStore,
 )
 from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system.storage import SystemTableStorage
-from metaxy_testing.models import SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
 from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
 
@@ -492,3 +495,123 @@ def test_write_fills_null_data_version_from_provenance(store: MetadataStore, mak
         # Rows 1-2: null data_version_by_field filled from provenance
         for i in [1, 2]:
             assert result["metaxy_data_version_by_field"][i] == result["metaxy_provenance_by_field"][i]
+
+
+DOCUMENT_KEY = FeatureKey(["test", "document"])
+CHUNK_KEY = FeatureKey(["test", "chunk"])
+SUMMARY_KEY = FeatureKey(["test", "summary"])
+
+
+def _lineage_graph(chunk_code_version: str = "1", summary_code_version: str = "1") -> FeatureGraph:
+    """Documents expand into chunks (1:N) and anchors aggregate into summaries (N:1)."""
+    graph = FeatureGraph()
+    with graph.use():
+
+        class Document(
+            SampleFeature,
+            spec=SampleFeatureSpec(key=DOCUMENT_KEY, id_columns=("document_id",), fields=["content"]),
+        ):
+            pass
+
+        class Chunk(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=CHUNK_KEY,
+                id_columns=("chunk_id",),
+                deps=[FeatureDep(feature=Document, lineage=LineageRelationship.expansion(on=["document_id"]))],
+                fields=[FieldSpec(key=FieldKey(["content"]), code_version=chunk_code_version)],
+            ),
+        ):
+            pass
+
+        class Summary(
+            SampleFeature,
+            spec=SampleFeatureSpec(
+                key=SUMMARY_KEY,
+                id_columns=("document_id",),
+                deps=[FeatureDep(feature=Chunk, lineage=LineageRelationship.aggregation(on=["document_id"]))],
+                fields=[FieldSpec(key=FieldKey(["content"]), code_version=summary_code_version)],
+            ),
+        ):
+            pass
+
+    return graph
+
+
+def _read_version(store: MetadataStore, key: FeatureKey, feature_version: str) -> nw.LazyFrame[Any]:
+    return store.read(key, with_feature_history=True, filters=[nw.col("metaxy_feature_version") == feature_version])
+
+
+@pytest.fixture
+def lineage_metadata(store: MetadataStore) -> dict[FeatureKey, str]:
+    """Write v1 metadata for documents d1 and d2, their chunks, and their summaries.
+
+    Chunks carry custom data versions. Returns the v1 feature version of each downstream feature.
+    """
+    graph = _lineage_graph()
+    with graph.use(), store.open("w"):
+        documents = pl.DataFrame(
+            {"document_id": ["d1", "d2"], "metaxy_provenance_by_field": [{"content": "d1"}, {"content": "d2"}]}
+        )
+        store.write(DOCUMENT_KEY, add_metaxy_provenance_column(documents, DOCUMENT_KEY))
+
+        parents = (
+            store.resolve_update(CHUNK_KEY)
+            .new.to_polars()
+            .select("document_id", "metaxy_provenance", "metaxy_provenance_by_field")
+        )
+        chunks = pl.DataFrame(
+            {"document_id": ["d1", "d1", "d1", "d2"], "chunk_id": ["d1-a", "d1-b", "d1-c", "d2-a"]}
+        ).join(parents, on="document_id")
+        store.write(
+            CHUNK_KEY,
+            chunks.with_columns(
+                pl.concat_str(pl.lit("content-"), pl.col("chunk_id")).alias("metaxy_data_version"),
+                pl.struct(pl.concat_str(pl.lit("content-"), pl.col("chunk_id")).alias("content")).alias(
+                    "metaxy_data_version_by_field"
+                ),
+            ),
+        )
+
+        summaries = store.resolve_update(SUMMARY_KEY).new.to_polars()
+        store.write(
+            SUMMARY_KEY,
+            summaries.select("document_id", "metaxy_provenance", "metaxy_provenance_by_field").unique("document_id"),
+        )
+
+        return {key: graph.get_feature_version(key) for key in (CHUNK_KEY, SUMMARY_KEY)}
+
+
+def test_rebase_expansion_keeps_every_child_and_its_data_version(
+    store: MetadataStore, lineage_metadata: dict[FeatureKey, str]
+) -> None:
+    """Every child row survives the rebase, with its own data version and its parent's provenance."""
+    graph = _lineage_graph(chunk_code_version="2")
+    with graph.use(), store.open("w"):
+        existing = _read_version(store, CHUNK_KEY, lineage_metadata[CHUNK_KEY])
+        old_provenance = existing.collect().to_polars().sort("chunk_id")["metaxy_provenance"].to_list()
+        rebased = store.rebase(CHUNK_KEY, existing).collect().to_polars().sort("chunk_id")
+        expected_provenance = {
+            row["document_id"]: row["metaxy_provenance"]
+            for row in store.resolve_update(CHUNK_KEY, skip_comparison=True).new.to_polars().iter_rows(named=True)
+        }
+
+    assert rebased["chunk_id"].to_list() == ["d1-a", "d1-b", "d1-c", "d2-a"]
+    assert rebased["metaxy_data_version"].to_list() == ["content-d1-a", "content-d1-b", "content-d1-c", "content-d2-a"]
+    assert rebased["metaxy_feature_version"].unique().to_list() == [graph.get_feature_version(CHUNK_KEY)]
+    assert rebased["metaxy_provenance"].to_list() == [expected_provenance[d] for d in rebased["document_id"]]
+    assert rebased["metaxy_provenance"].to_list() != old_provenance
+
+
+def test_rebase_aggregation_returns_one_row_per_sample(
+    store: MetadataStore, lineage_metadata: dict[FeatureKey, str]
+) -> None:
+    """The recomputed provenance has one row per group member, but the rebase keeps one row per sample."""
+    graph = _lineage_graph(summary_code_version="2")
+    with graph.use(), store.open("w"):
+        existing = _read_version(store, SUMMARY_KEY, lineage_metadata[SUMMARY_KEY])
+        rebased = store.rebase(SUMMARY_KEY, existing).collect().to_polars().sort("document_id")
+
+    assert rebased["document_id"].to_list() == ["d1", "d2"]
+    assert rebased["metaxy_feature_version"].unique().to_list() == [graph.get_feature_version(SUMMARY_KEY)]
+    assert rebased["metaxy_provenance"].is_not_null().all()
