@@ -1,5 +1,7 @@
 """ClickHouse metadata store tests."""
 
+from typing import Any
+
 import ibis.backends.clickhouse  # noqa: F401
 import ibis.expr.datatypes as dt
 import polars as pl
@@ -114,6 +116,24 @@ def test_clickhouse_conn_property_enforcement(
     with clickhouse_store.open("w"):
         conn = clickhouse_store.conn
         assert conn is not None
+
+
+_UNMATCHED_LEFT_JOIN_SQL = "SELECT r.v FROM (SELECT 1 AS k) AS l LEFT JOIN (SELECT 2 AS k, 'x' AS v) AS r ON l.k = r.k"
+
+
+def test_clickhouse_left_join_produces_nulls(clickhouse_store: ClickHouseMetadataStore) -> None:
+    """Unmatched LEFT JOIN rows yield NULL instead of the column type's default value."""
+    with clickhouse_store.open():
+        assert clickhouse_store.conn.con.query(_UNMATCHED_LEFT_JOIN_SQL).result_rows == [(None,)]  # ty: ignore[unresolved-attribute]
+
+
+def test_clickhouse_left_join_produces_nulls_with_connection_params(clickhouse_server: dict[str, Any]) -> None:
+    """join_use_nulls is enforced for stores configured with connection_params, overriding user settings."""
+    store = ClickHouseMetadataStore(
+        connection_params={**clickhouse_server, "settings": {"join_use_nulls": 0}},
+    )
+    with store.open():
+        assert store.conn.con.query(_UNMATCHED_LEFT_JOIN_SQL).result_rows == [(None,)]  # ty: ignore[unresolved-attribute]
 
 
 def test_clickhouse_persistence(

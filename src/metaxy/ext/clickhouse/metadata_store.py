@@ -22,6 +22,7 @@ from metaxy.ext.ibis.metadata_store import (
     IbisMetadataStoreConfig,
 )
 from metaxy.ext.ibis.versioning import IbisVersioningEngine
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.types import HashAlgorithm
 
@@ -184,6 +185,12 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             fallback_stores=fallback_stores,
             **kwargs,
         )
+
+    def _open(self, mode: AccessMode) -> None:
+        super()._open(mode)
+        # Unmatched LEFT JOIN rows must produce NULLs (not type defaults) for the native
+        # versioning engine to agree with the Polars engine on optional dependencies.
+        self.conn.con.set_client_setting("join_use_nulls", 1)  # ty: ignore[unresolved-attribute]
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for ClickHouse stores.

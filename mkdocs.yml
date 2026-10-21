@@ -146,7 +146,7 @@ plugins:
               - docs/.mkdocs-metaxy/src/mkdocs_metaxy/griffe_experimental.py:ExperimentalAPIExtension
           inventories:
             - https://docs.python.org/3/objects.inv
-            - https://docs.pydantic.dev/latest/objects.inv
+            - https://pydantic.dev/docs/validation/latest/objects.inv
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
             - https://dagster.io/docs/objects.inv

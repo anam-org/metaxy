@@ -36,6 +36,7 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.models.constants import (
+    _STALE_BY_PREDICATE,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
@@ -2746,6 +2747,39 @@ class ResolveUpdateTests:
             assert len(result.new) == 0
             assert len(result.orphaned) == 0
             assert sorted(result.stale["sample_uid"].to_list()) == [1]
+
+    def test_predicate_column_not_in_orphaned(self, store: MetadataStore) -> None:
+        """Orphaned records should not carry the internal staleness predicate column."""
+        graph = FeatureGraph()
+        UpstreamFeature, DownstreamFeature = _make_features(graph)
+
+        with graph.use(), store.open("w"):
+            _setup_upstream_and_downstream(
+                store,
+                graph,
+                DownstreamFeature,
+                UpstreamFeature,
+                upstream_provenance=[{"value": "up1"}, {"value": "up2"}],
+                downstream_extra_columns={"dataset": ["mead", "voxceleb"]},
+            )
+            # sample_uid=99 exists only downstream, so it is orphaned
+            store.write(
+                DownstreamFeature,
+                store.read(DownstreamFeature)
+                .filter(nw.col("sample_uid") == 1)
+                .with_columns(nw.lit(99).cast(nw.Int64).alias("sample_uid"))
+                .collect()
+                .to_polars(),
+            )
+
+            result = store.resolve_update(
+                DownstreamFeature,
+                staleness_predicates=[nw.col("dataset") == "mead"],
+            )
+
+            assert sorted(result.stale["sample_uid"].to_list()) == [1]
+            assert result.orphaned["sample_uid"].to_list() == [99]
+            assert _STALE_BY_PREDICATE not in result.orphaned.columns
 
     def test_multiple_predicates_are_ored(self, store: MetadataStore) -> None:
         """Multiple staleness predicates should be OR'd together."""

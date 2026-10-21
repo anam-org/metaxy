@@ -85,14 +85,16 @@ class IncrementResolver(Generic[FrameT]):
 
         # Evaluate staleness predicates against current metadata before the join,
         # so predicates can reference user columns (e.g. dataset, extra) from stored metadata.
+        # The predicate column is internal and only exists on the frame used for the join.
         select_columns = [*join_columns, f"__current_{METAXY_PROVENANCE}"]
+        current_for_join = current
         if staleness_predicates:
-            current = current.with_columns(
+            current_for_join = current_for_join.with_columns(
                 functools.reduce(operator.or_, staleness_predicates).alias(_STALE_BY_PREDICATE),
             )
             select_columns.append(_STALE_BY_PREDICATE)
 
-        current_for_join = cast(FrameT, current.select(select_columns))
+        current_for_join = cast(FrameT, current_for_join.select(select_columns))
 
         expected_columns = expected.collect_schema().names()  # ty: ignore[invalid-argument-type]
 
