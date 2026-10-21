@@ -159,9 +159,8 @@ class IbisVersioningEngine(VersioningEngine):
     ) -> FrameT:
         """Keep only the latest row per group based on timestamp columns.
 
-        Uses argmax aggregation to get the value from each column where the
-        timestamp is maximum. This is simpler and more semantically clear than
-        window functions.
+        Selects rows matching each group's latest timestamp, then keeps one
+        whole row when timestamps tie. All operations remain lazy Ibis expressions.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Ibis
@@ -180,21 +179,16 @@ class IbisVersioningEngine(VersioningEngine):
 
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
 
-        # Create a temporary column for ordering using coalesce
-        ordering_expr = ibis.coalesce(*[ibis_table[col] for col in timestamp_columns])
-        ibis_table = ibis_table.mutate(**{TEMP_TABLE_NAME: ordering_expr})
-
-        # Use argmax aggregation: for each column, get the value where timestamp is maximum
-        # This directly expresses "get the row with the latest timestamp per group"
-        all_columns = set(ibis_table.columns)
-        non_group_columns = all_columns - set(group_columns) - {TEMP_TABLE_NAME}
-
-        # Build aggregation dict: for each non-group column, use argmax(timestamp)
-        agg_exprs = {col: ibis_table[col].argmax(ibis_table[TEMP_TABLE_NAME]) for col in non_group_columns}
-
-        # Perform groupby and aggregate
-        result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
-        # Note: TEMP_TABLE_NAME is not in result_table because we excluded it from aggregation
+        ordering_expr = cast(ibis.expr.types.Column, ibis.coalesce(*[ibis_table[col] for col in timestamp_columns]))
+        # Aggregate only keys and timestamps, keeping wide historical rows out of the aggregate state.
+        latest = ibis_table.group_by(group_columns).aggregate(**{TEMP_TABLE_NAME: ordering_expr.max()})
+        latest_rows = ibis_table.semi_join(
+            latest,
+            [ibis_table[col].identical_to(latest[col]) for col in group_columns]
+            + [ordering_expr.identical_to(latest[TEMP_TABLE_NAME])],
+        )
+        # Rank only the latest candidates; per-column aggregates can mix tied rows and skip nulls.
+        result_table = latest_rows.filter(ibis.row_number().over(group_by=group_columns) == 0)
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
