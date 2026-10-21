@@ -25,6 +25,7 @@ from tests.metadata_stores.shared import (
     MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
+    ViewsTests,
     WriteTests,
 )
 
@@ -59,6 +60,7 @@ class TestDuckDB(
     MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
+    ViewsTests,
     WriteTests,
 ):
     @pytest.fixture

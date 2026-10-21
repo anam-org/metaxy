@@ -12,6 +12,7 @@ from .ibis_map import IbisMapTests
 from .map_dtype import MapDtypeTests
 from .resolve_update import ResolveUpdateTests
 from .versioning import VersioningTests
+from .views import ViewsTests
 from .write import WriteTests
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "MapDtypeTests",
     "ResolveUpdateTests",
     "VersioningTests",
+    "ViewsTests",
     "WriteTests",
 ]

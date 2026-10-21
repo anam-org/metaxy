@@ -21,6 +21,7 @@ from tests.metadata_stores.shared import (
     MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
+    ViewsTests,
     WriteTests,
 )
 
@@ -49,6 +50,7 @@ class TestClickHouse(
     MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
+    ViewsTests,
     WriteTests,
 ):
     @pytest.fixture
