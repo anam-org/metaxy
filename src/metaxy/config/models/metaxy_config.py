@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
+from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
@@ -12,12 +13,14 @@ from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
+    EnvSettingsSource,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
 from typing_extensions import Self
 
 from metaxy._decorators import public
+from metaxy.config.env_source import MetaxyEnvSettingsSource
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
 from metaxy.config.models.plugin_config import PluginConfig
 from metaxy.config.models.store_config import StoreConfig
@@ -348,7 +351,17 @@ class MetaxyConfig(BaseSettings):
         except LookupError:
             config_file = None
         toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
-        return (init_settings, env_settings, toml_settings)
+        assert isinstance(env_settings, EnvSettingsSource)
+        # Preserve instance options, including options added by newer pydantic-settings releases.
+        stable_env_settings = MetaxyEnvSettingsSource(
+            settings_cls,
+            **{
+                name: getattr(env_settings, name)
+                for name in signature(EnvSettingsSource).parameters
+                if name != "settings_cls"
+            },
+        )
+        return (init_settings, stable_env_settings, toml_settings)
 
     @classmethod
     def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":

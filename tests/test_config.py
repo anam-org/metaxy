@@ -1,5 +1,6 @@
 """Tests for configuration system."""
 
+import json
 import warnings
 from collections.abc import Mapping
 from pathlib import Path
@@ -555,6 +556,60 @@ def test_store_config_invalid_list_env_override(
         config.get_store("dev")
 
     assert f"Config file: {delta_config_file}" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("env_name", ["METAXY_STORES", "METAXY_STORES__DEV", "METAXY_STORES__DEV__CONFIG"])
+def test_store_env_json_objects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env_name: str) -> None:
+    monkeypatch.chdir(tmp_path)
+    store_config = {"root_path": "123", "fallback_stores": [], "storage_options": {"token": "123"}}
+    store_definition = {"type": "metaxy.ext.polars.handlers.delta.DeltaMetadataStore", "config": store_config}
+    payload = {"dev": store_definition} if env_name == "METAXY_STORES" else store_definition
+    if env_name.endswith("__CONFIG"):
+        payload = store_config
+        monkeypatch.setenv("METAXY_STORES__DEV__TYPE", store_definition["type"])
+    monkeypatch.setenv(env_name, json.dumps(payload))
+
+    store = MetaxyConfig().get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store._root_uri == str(tmp_path / "123")
+    assert store.fallback_stores == []
+    assert store.storage_options == {"token": "123"}
+
+
+def test_custom_env_settings_options(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CUSTOM_stores--dev--type", "metaxy.ext.polars.handlers.delta.DeltaMetadataStore")
+    monkeypatch.setenv("CUSTOM_stores--dev--config--root_path", "123")
+    monkeypatch.setenv("CUSTOM_stores--dev--config--fallback_stores", "[]")
+    monkeypatch.setenv("CUSTOM_store", "")
+
+    config = MetaxyConfig(
+        _env_prefix="CUSTOM_", _env_nested_delimiter="--", _case_sensitive=True, _env_ignore_empty=True
+    )
+    store = config.get_store(expected_type=DeltaMetadataStore)
+
+    assert config.store == "dev"
+    assert store._root_uri == str(tmp_path / "123")
+    assert store.fallback_stores == []
+
+
+def test_typed_collection_env_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_ENTRYPOINTS", '["package.features"]')
+
+    assert MetaxyConfig().entrypoints == ["package.features"]
+
+
+def test_nested_store_collection_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    from metaxy.ext.duckdb import DuckDBMetadataStore
+
+    monkeypatch.setenv("METAXY_STORES__DEV__TYPE", "metaxy.ext.duckdb.DuckDBMetadataStore")
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__DATABASE", ":memory:")
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__DUCKLAKE__CATALOG", '{"type": "motherduck", "database": "lake"}')
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__DUCKLAKE__ATTACH_OPTIONS", '{"read_only": true}')
+
+    store = MetaxyConfig().get_store("dev", expected_type=DuckDBMetadataStore)
+
+    assert store.ducklake_attachment_config.attach_options == {"read_only": True}
 
 
 def test_partial_env_var_store_config_filtered_out_with_warning(
