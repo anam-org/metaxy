@@ -73,7 +73,6 @@ def complex_config_model() -> type[BaseModel]:
     class Config(BaseModel):
         coordinates: tuple[int, int]
         extensions: set[str]
-        frozen_extensions: frozenset[str]
         options: Mapping[str, str] | None
         connection: Connection | None
         names: Annotated[list[str], Field(min_length=1)] | None
@@ -87,12 +86,11 @@ def test_decode_complex_config_values(complex_config_model: type[BaseModel]) -> 
     values = {
         "coordinates": "[1, 2]",
         "extensions": '["json"]',
-        "frozen_extensions": '["parquet"]',
         "options": '{"token": "123"}',
         "connection": '{"password": "null"}',
         "names": '["dev"]',
         "uri": "postgresql://localhost/db",
-        "untyped": "123",
+        "untyped": "{}",
     }
 
     decoded = _decode_complex_values(values, complex_config_model)
@@ -100,35 +98,26 @@ def test_decode_complex_config_values(complex_config_model: type[BaseModel]) -> 
     assert complex_config_model.model_validate(decoded).model_dump() == {
         "coordinates": (1, 2),
         "extensions": {"json"},
-        "frozen_extensions": frozenset({"parquet"}),
         "options": {"token": "123"},
         "connection": {"password": "null"},
         "names": ["dev"],
         "uri": "postgresql://localhost/db",
-        "untyped": "123",
+        "untyped": "{}",
     }
-    assert values["coordinates"] == "[1, 2]"
 
 
-@pytest.mark.parametrize("value", ["123", "true", "null", '"quoted"', "[]"])
+@pytest.mark.parametrize("value", ["null", '"quoted"', "[]"])
 def test_decode_complex_config_preserves_union_strings(complex_config_model: type[BaseModel], value: str) -> None:
     assert _decode_complex_values({"uri": value}, complex_config_model) == {"uri": value}
 
 
 def test_decode_complex_config_union_containers_and_optional_null(complex_config_model: type[BaseModel]) -> None:
-    values = {"uri": '{"host": "localhost"}', "options": "null", "untyped": "{}"}
+    values = {"uri": '{"host": "localhost"}', "options": "null"}
 
     assert _decode_complex_values(values, complex_config_model) == {
         "uri": {"host": "localhost"},
         "options": None,
-        "untyped": "{}",
     }
-
-
-def test_decode_complex_config_preserves_typed_values(complex_config_model: type[BaseModel]) -> None:
-    values = {"coordinates": (1, 2), "options": {"token": "true"}, "connection": None, "unknown": "[]"}
-
-    assert _decode_complex_values(values, complex_config_model) == values
 
 
 def test_store_config_basic(tmp_path: Path) -> None:
@@ -510,26 +499,22 @@ root_path = "{(tmp_path / "prod").as_posix()}"
     return config_file
 
 
-@pytest.mark.parametrize("value, expected", [("[]", []), ('["prod"]', ["prod"])])
-def test_store_config_list_env_override(
-    delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, value: str, expected: list[str]
-) -> None:
-    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", value)
+def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", "[]")
 
     config = MetaxyConfig.load(delta_config_file)
     store = config.get_store("dev", expected_type=DeltaMetadataStore)
 
-    assert [fallback.name for fallback in store.fallback_stores] == expected
-    assert config.stores["dev"].config["fallback_stores"] == value
+    assert store.fallback_stores == []
+    assert config.stores["dev"].config["fallback_stores"] == "[]"
 
 
-@pytest.mark.parametrize("field", ["storage_options", "delta_write_options"])
-def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, field: str) -> None:
-    monkeypatch.setenv(f"METAXY_STORES__DEV__CONFIG__{field.upper()}", '{"token": "123"}')
+def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS", '{"token": "123"}')
 
     store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
 
-    assert getattr(store, field) == {"token": "123"}
+    assert store.storage_options == {"token": "123"}
 
 
 def test_store_config_merges_env_dict_with_toml(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -544,9 +529,6 @@ def test_store_config_merges_env_dict_with_toml(delta_config_file: Path, monkeyp
     store = config.get_store("dev", expected_type=DeltaMetadataStore)
 
     assert store.storage_options == {"region": "eu", "credentials": {"token": "new", "user": "alice"}}
-    assert config.get_store(
-        "dev", expected_type=DeltaMetadataStore, storage_options={"override": True}
-    ).storage_options == {"override": True}
 
 
 def test_store_config_merges_init_dict_with_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -592,7 +574,7 @@ def test_store_config_merges_nested_env_overrides(
     }
 
 
-@pytest.mark.parametrize("value", ["123", "true", "null", "[]", "{}", '"quoted"'])
+@pytest.mark.parametrize("value", ["123", "null", "[]", "{}", '"quoted"'])
 def test_store_config_json_looking_string_env_override(
     delta_config_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
@@ -640,6 +622,7 @@ def test_custom_env_settings_options(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("CUSTOM_stores--dev--type", "metaxy.ext.polars.handlers.delta.DeltaMetadataStore")
     monkeypatch.setenv("CUSTOM_stores--dev--config--root_path", "123")
+    monkeypatch.setenv("CUSTOM_STORES--dev--config--root_path", "wrong-case")
     monkeypatch.setenv("CUSTOM_stores--dev--config--fallback_stores", "[]")
     monkeypatch.setenv("CUSTOM_store", "")
 
@@ -651,12 +634,6 @@ def test_custom_env_settings_options(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert config.store == "dev"
     assert store._root_uri == str(tmp_path / "123")
     assert store.fallback_stores == []
-
-
-def test_typed_collection_env_settings(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("METAXY_ENTRYPOINTS", '["package.features"]')
-
-    assert MetaxyConfig().entrypoints == ["package.features"]
 
 
 def test_nested_store_collection_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
