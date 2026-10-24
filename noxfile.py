@@ -54,8 +54,12 @@ def integration(session: nox.Session, integration: str) -> None:
     """Run tests for a single integration."""
     session.install("-e", f".[{integration}]")
     _install_coverage_subprocess(session)
-    session.run("pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
-    if any(arg.startswith("--cov") for arg in session.posargs):
+    coverage_enabled = bool(os.environ.get("COVERAGE_PROCESS_START"))
+    if coverage_enabled:
+        session.run("coverage", "run", "-m", "pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
+    else:
+        session.run("pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
+    if coverage_enabled or any(arg.startswith("--cov") for arg in session.posargs):
         session.run("coverage", "combine", "--keep", success_codes=[0, 1])
         session.run("coverage", "xml", "-o", "coverage.xml")
 
