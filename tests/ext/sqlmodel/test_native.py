@@ -724,8 +724,8 @@ def test_sqlmodel_feature_with_duckdb_store(tmp_path: Path, snapshot: SnapshotAs
         assert "metaxy_feature_version" in result_df.columns
         assert all(v == VideoFeature.feature_version() for v in result_df["metaxy_feature_version"].to_list())
 
-        # Snapshot result (exclude timestamps which vary between runs)
-        result_for_snapshot = result_df.drop("metaxy_created_at", "metaxy_updated_at").to_dicts()
+        # Snapshot in a stable row order, excluding timestamps which vary between runs.
+        result_for_snapshot = result_df.sort("sample_uid").drop("metaxy_created_at", "metaxy_updated_at").to_dicts()
         assert result_for_snapshot == snapshot
 
 
