@@ -21,7 +21,7 @@ from metaxy._decorators import public
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
 from metaxy.config.models.plugin_config import PluginConfig
 from metaxy.config.models.store_config import StoreConfig
-from metaxy.config.utils import _collect_dict_keys, _remove_none_values
+from metaxy.config.utils import _collect_dict_keys, _decode_complex_values, _remove_none_values
 from metaxy.models.feature_selection import FeatureSelection
 
 if TYPE_CHECKING:
@@ -584,6 +584,7 @@ class MetaxyConfig(BaseSettings):
 
         # Get the store's config model class and create typed config
         config_model_cls = store_class.config_model()
+        config_copy = _decode_complex_values(config_copy, config_model_cls)
 
         # Get auto_create_tables from global config only if the config model supports it
         if (

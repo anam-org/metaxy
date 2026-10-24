@@ -1,7 +1,9 @@
 """Tests for configuration system."""
 
 import warnings
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Annotated, Any
 from unittest.mock import patch
 
 import pytest
@@ -10,8 +12,9 @@ from metaxy.config import (
     MetaxyConfig,
     StoreConfig,
 )
-from metaxy.config.utils import _collect_dict_keys
+from metaxy.config.utils import _collect_dict_keys, _decode_complex_values
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from pydantic import BaseModel, Field
 
 
 class TestCollectDictKeys:
@@ -59,6 +62,72 @@ class TestCollectDictKeys:
             "list",
             "none",
         }
+
+
+@pytest.fixture
+def complex_config_model() -> type[BaseModel]:
+    class Connection(BaseModel):
+        password: str
+
+    class Config(BaseModel):
+        coordinates: tuple[int, int]
+        extensions: set[str]
+        frozen_extensions: frozenset[str]
+        options: Mapping[str, str] | None
+        connection: Connection | None
+        names: Annotated[list[str], Field(min_length=1)] | None
+        uri: dict[str, str] | str
+        untyped: Any
+
+    return Config
+
+
+def test_decode_complex_config_values(complex_config_model: type[BaseModel]) -> None:
+    values = {
+        "coordinates": "[1, 2]",
+        "extensions": '["json"]',
+        "frozen_extensions": '["parquet"]',
+        "options": '{"token": "123"}',
+        "connection": '{"password": "null"}',
+        "names": '["dev"]',
+        "uri": "postgresql://localhost/db",
+        "untyped": "123",
+    }
+
+    decoded = _decode_complex_values(values, complex_config_model)
+
+    assert complex_config_model.model_validate(decoded).model_dump() == {
+        "coordinates": (1, 2),
+        "extensions": {"json"},
+        "frozen_extensions": frozenset({"parquet"}),
+        "options": {"token": "123"},
+        "connection": {"password": "null"},
+        "names": ["dev"],
+        "uri": "postgresql://localhost/db",
+        "untyped": "123",
+    }
+    assert values["coordinates"] == "[1, 2]"
+
+
+@pytest.mark.parametrize("value", ["123", "true", "null", '"quoted"', "[]"])
+def test_decode_complex_config_preserves_union_strings(complex_config_model: type[BaseModel], value: str) -> None:
+    assert _decode_complex_values({"uri": value}, complex_config_model) == {"uri": value}
+
+
+def test_decode_complex_config_union_containers_and_optional_null(complex_config_model: type[BaseModel]) -> None:
+    values = {"uri": '{"host": "localhost"}', "options": "null", "untyped": "{}"}
+
+    assert _decode_complex_values(values, complex_config_model) == {
+        "uri": {"host": "localhost"},
+        "options": None,
+        "untyped": "{}",
+    }
+
+
+def test_decode_complex_config_preserves_typed_values(complex_config_model: type[BaseModel]) -> None:
+    values = {"coordinates": (1, 2), "options": {"token": "true"}, "connection": None, "unknown": "[]"}
+
+    assert _decode_complex_values(values, complex_config_model) == values
 
 
 def test_store_config_basic(tmp_path: Path) -> None:
@@ -418,6 +487,74 @@ root_path = "{dev_path}"
     # Store from env var should be available
     assert "prod" in config.stores
     assert config.stores["prod"].type_cls == DeltaMetadataStore
+
+
+@pytest.fixture
+def delta_config_file(tmp_path: Path) -> Path:
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text(
+        f"""
+[stores.dev]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+[stores.dev.config]
+root_path = "{(tmp_path / "dev").as_posix()}"
+fallback_stores = ["prod"]
+[stores.prod]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+[stores.prod.config]
+root_path = "{(tmp_path / "prod").as_posix()}"
+""",
+        encoding="utf-8",
+    )
+    return config_file
+
+
+@pytest.mark.parametrize("value, expected", [("[]", []), ('["prod"]', ["prod"])])
+def test_store_config_list_env_override(
+    delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, value: str, expected: list[str]
+) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", value)
+
+    config = MetaxyConfig.load(delta_config_file)
+    store = config.get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert [fallback.name for fallback in store.fallback_stores] == expected
+    assert config.stores["dev"].config["fallback_stores"] == value
+
+
+@pytest.mark.parametrize("field", ["storage_options", "delta_write_options"])
+def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, field: str) -> None:
+    monkeypatch.setenv(f"METAXY_STORES__DEV__CONFIG__{field.upper()}", '{"token": "123"}')
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert getattr(store, field) == {"token": "123"}
+
+
+@pytest.mark.parametrize("value", ["123", "true", "null", "[]", "{}", '"quoted"'])
+def test_store_config_json_looking_string_env_override(
+    delta_config_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__ROOT_PATH", value)
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store._root_uri == str((tmp_path / value).resolve())
+
+
+@pytest.mark.parametrize("value", ["[invalid", "{}"])
+def test_store_config_invalid_list_env_override(
+    delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", value)
+
+    config = MetaxyConfig.load(delta_config_file)
+
+    with pytest.raises(InvalidConfigError, match="fallback_stores") as exc_info:
+        config.get_store("dev")
+
+    assert f"Config file: {delta_config_file}" in str(exc_info.value)
 
 
 def test_partial_env_var_store_config_filtered_out_with_warning(
