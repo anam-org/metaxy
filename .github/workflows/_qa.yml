@@ -79,6 +79,7 @@ jobs:
               - 'tests/**'
               - 'examples/**'
               - 'pyproject.toml'
+              - 'noxfile.py'
               - 'uv.lock'
             docs:
               - '.github/workflows/**'
@@ -92,6 +93,7 @@ jobs:
               - 'tests/ext/conftest.py'
               - 'tests/conftest.py'
               - 'pyproject.toml'
+              - 'noxfile.py'
               - 'uv.lock'
               - '.github/workflows/**'
               - '.github/actions/**'
@@ -251,7 +253,7 @@ jobs:
           SITE_PACKAGES=$(uv run python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
           cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
           TACH_FLAGS=${{ inputs.use-tach && '"--tach"' || '""' }}
-          uv run pytest --ignore=tests/ext $TACH_FLAGS --cov=src/metaxy --cov-branch --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
+          uv run coverage run -m pytest --ignore=tests/ext $TACH_FLAGS --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
 
       - name: Combine Coverage Data
         if: always()
@@ -308,7 +310,7 @@ jobs:
           COVERAGE_FILE: ${{ github.workspace }}/.coverage
         run: >
           uv run nox -s "integration(integration='${{ matrix.integration }}')"
-          -- --cov=src/metaxy --cov-branch --junit-xml=./junit.xml -o junit_family=legacy
+          -- --junit-xml=./junit.xml -o junit_family=legacy
           ${{ inputs.use-tach && '--tach' || ' ' }}
 
       - name: Upload Coverage to Codecov
