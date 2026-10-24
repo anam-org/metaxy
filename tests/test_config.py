@@ -1,7 +1,10 @@
 """Tests for configuration system."""
 
+import json
 import warnings
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Annotated, Any
 from unittest.mock import patch
 
 import pytest
@@ -10,8 +13,9 @@ from metaxy.config import (
     MetaxyConfig,
     StoreConfig,
 )
-from metaxy.config.utils import _collect_dict_keys
+from metaxy.config.utils import _collect_dict_keys, _decode_complex_values
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from pydantic import BaseModel, Field
 
 
 class TestCollectDictKeys:
@@ -59,6 +63,61 @@ class TestCollectDictKeys:
             "list",
             "none",
         }
+
+
+@pytest.fixture
+def complex_config_model() -> type[BaseModel]:
+    class Connection(BaseModel):
+        password: str
+
+    class Config(BaseModel):
+        coordinates: tuple[int, int]
+        extensions: set[str]
+        options: Mapping[str, str] | None
+        connection: Connection | None
+        names: Annotated[list[str], Field(min_length=1)] | None
+        uri: dict[str, str] | str
+        untyped: Any
+
+    return Config
+
+
+def test_decode_complex_config_values(complex_config_model: type[BaseModel]) -> None:
+    values = {
+        "coordinates": "[1, 2]",
+        "extensions": '["json"]',
+        "options": '{"token": "123"}',
+        "connection": '{"password": "null"}',
+        "names": '["dev"]',
+        "uri": "postgresql://localhost/db",
+        "untyped": "{}",
+    }
+
+    decoded = _decode_complex_values(values, complex_config_model)
+
+    assert complex_config_model.model_validate(decoded).model_dump() == {
+        "coordinates": (1, 2),
+        "extensions": {"json"},
+        "options": {"token": "123"},
+        "connection": {"password": "null"},
+        "names": ["dev"],
+        "uri": "postgresql://localhost/db",
+        "untyped": "{}",
+    }
+
+
+@pytest.mark.parametrize("value", ["null", '"quoted"', "[]"])
+def test_decode_complex_config_preserves_union_strings(complex_config_model: type[BaseModel], value: str) -> None:
+    assert _decode_complex_values({"uri": value}, complex_config_model) == {"uri": value}
+
+
+def test_decode_complex_config_union_containers_and_optional_null(complex_config_model: type[BaseModel]) -> None:
+    values = {"uri": '{"host": "localhost"}', "options": "null"}
+
+    assert _decode_complex_values(values, complex_config_model) == {
+        "uri": {"host": "localhost"},
+        "options": None,
+    }
 
 
 def test_store_config_basic(tmp_path: Path) -> None:
@@ -418,6 +477,176 @@ root_path = "{dev_path}"
     # Store from env var should be available
     assert "prod" in config.stores
     assert config.stores["prod"].type_cls == DeltaMetadataStore
+
+
+@pytest.fixture
+def delta_config_file(tmp_path: Path) -> Path:
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text(
+        f"""
+[stores.dev]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+[stores.dev.config]
+root_path = "{(tmp_path / "dev").as_posix()}"
+fallback_stores = ["prod"]
+[stores.prod]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+[stores.prod.config]
+root_path = "{(tmp_path / "prod").as_posix()}"
+""",
+        encoding="utf-8",
+    )
+    return config_file
+
+
+def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", "[]")
+
+    config = MetaxyConfig.load(delta_config_file)
+    store = config.get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.fallback_stores == []
+    assert config.stores["dev"].config["fallback_stores"] == "[]"
+
+
+def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS", '{"token": "123"}')
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.storage_options == {"token": "123"}
+
+
+def test_store_config_merges_env_dict_with_toml(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    with delta_config_file.open("a", encoding="utf-8") as config_file:
+        config_file.write(
+            '\n[stores.dev.config.storage_options]\nregion = "eu"\n[stores.dev.config.storage_options.credentials]\n'
+            'token = "old"\nuser = "alice"\n'
+        )
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS", '{"credentials": {"token": "new"}}')
+
+    config = MetaxyConfig.load(delta_config_file)
+    store = config.get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.storage_options == {"region": "eu", "credentials": {"token": "new", "user": "alice"}}
+
+
+def test_store_config_merges_init_dict_with_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS",
+        '{"region": "eu", "credentials": {"token": "env", "user": "alice"}}',
+    )
+    config = MetaxyConfig(
+        stores={
+            "dev": {
+                "type": "metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
+                "config": {"root_path": "/tmp/review", "storage_options": {"credentials": {"token": "init"}}},
+            }
+        }
+    )
+
+    assert config.get_store("dev", expected_type=DeltaMetadataStore).storage_options == {
+        "region": "eu",
+        "credentials": {"token": "init", "user": "alice"},
+    }
+
+
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_store_config_merges_nested_env_overrides(
+    delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, reverse_order: bool
+) -> None:
+    overrides = [
+        (
+            "METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS",
+            '{"region": "eu", "credentials": {"token": "old", "user": "alice"}}',
+        ),
+        ("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS__CREDENTIALS", '{"token": "intermediate", "role": "reader"}'),
+        ("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS__CREDENTIALS__TOKEN", "new"),
+    ]
+    for name, value in reversed(overrides) if reverse_order else overrides:
+        monkeypatch.setenv(name, value)
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.storage_options == {
+        "region": "eu",
+        "credentials": {"token": "new", "user": "alice", "role": "reader"},
+    }
+
+
+@pytest.mark.parametrize("value", ["123", "null", "[]", "{}", '"quoted"'])
+def test_store_config_json_looking_string_env_override(
+    delta_config_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__ROOT_PATH", value)
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store._root_uri == str((tmp_path / value).resolve())
+
+
+@pytest.mark.parametrize("value", ["[invalid", "{}"])
+def test_store_config_invalid_list_env_override(
+    delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", value)
+
+    config = MetaxyConfig.load(delta_config_file)
+
+    with pytest.raises(InvalidConfigError, match="fallback_stores") as exc_info:
+        config.get_store("dev")
+
+    assert f"Config file: {delta_config_file}" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("env_name", ["METAXY_STORES", "METAXY_STORES__DEV", "METAXY_STORES__DEV__CONFIG"])
+def test_store_env_json_objects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env_name: str) -> None:
+    monkeypatch.chdir(tmp_path)
+    store_config = {"root_path": "123", "fallback_stores": [], "storage_options": {"token": "123"}}
+    store_definition = {"type": "metaxy.ext.polars.handlers.delta.DeltaMetadataStore", "config": store_config}
+    payload = {"dev": store_definition} if env_name == "METAXY_STORES" else store_definition
+    if env_name.endswith("__CONFIG"):
+        payload = store_config
+        monkeypatch.setenv("METAXY_STORES__DEV__TYPE", store_definition["type"])
+    monkeypatch.setenv(env_name, json.dumps(payload))
+
+    store = MetaxyConfig().get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store._root_uri == str(tmp_path / "123")
+    assert store.fallback_stores == []
+    assert store.storage_options == {"token": "123"}
+
+
+def test_custom_env_settings_options(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CUSTOM_stores--dev--type", "metaxy.ext.polars.handlers.delta.DeltaMetadataStore")
+    monkeypatch.setenv("CUSTOM_stores--dev--config--root_path", "123")
+    monkeypatch.setenv("CUSTOM_STORES--dev--config--root_path", "wrong-case")
+    monkeypatch.setenv("CUSTOM_stores--dev--config--fallback_stores", "[]")
+    monkeypatch.setenv("CUSTOM_store", "")
+
+    config = MetaxyConfig(
+        _env_prefix="CUSTOM_", _env_nested_delimiter="--", _case_sensitive=True, _env_ignore_empty=True
+    )
+    store = config.get_store(expected_type=DeltaMetadataStore)
+
+    assert config.store == "dev"
+    assert store._root_uri == str(tmp_path / "123")
+    assert store.fallback_stores == []
+
+
+def test_nested_store_collection_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
+    from metaxy.ext.duckdb import DuckDBMetadataStore
+
+    monkeypatch.setenv("METAXY_STORES__DEV__TYPE", "metaxy.ext.duckdb.DuckDBMetadataStore")
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__DATABASE", ":memory:")
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__DUCKLAKE__CATALOG", '{"type": "motherduck", "database": "lake"}')
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__DUCKLAKE__ATTACH_OPTIONS", '{"read_only": true}')
+
+    store = MetaxyConfig().get_store("dev", expected_type=DuckDBMetadataStore)
+
+    assert store.ducklake_attachment_config.attach_options == {"read_only": True}
 
 
 def test_partial_env_var_store_config_filtered_out_with_warning(

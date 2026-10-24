@@ -4,6 +4,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
+from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
@@ -12,6 +13,7 @@ from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
+    EnvSettingsSource,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
@@ -21,7 +23,8 @@ from metaxy._decorators import public
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
 from metaxy.config.models.plugin_config import PluginConfig
 from metaxy.config.models.store_config import StoreConfig
-from metaxy.config.utils import _collect_dict_keys, _remove_none_values
+from metaxy.config.settings_source import MetaxySettingsSource
+from metaxy.config.utils import _collect_dict_keys, _decode_complex_values, _remove_none_values
 from metaxy.models.feature_selection import FeatureSelection
 
 if TYPE_CHECKING:
@@ -348,7 +351,19 @@ class MetaxyConfig(BaseSettings):
         except LookupError:
             config_file = None
         toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
-        return (init_settings, env_settings, toml_settings)
+        assert isinstance(env_settings, EnvSettingsSource)
+        # Preserve instance options, including options added by newer pydantic-settings releases.
+        settings_source = MetaxySettingsSource(
+            settings_cls,
+            init_values=init_settings(),
+            file_values=toml_settings(),
+            **{
+                name: getattr(env_settings, name)
+                for name in signature(EnvSettingsSource).parameters
+                if name != "settings_cls"
+            },
+        )
+        return (settings_source,)
 
     @classmethod
     def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":
@@ -584,6 +599,7 @@ class MetaxyConfig(BaseSettings):
 
         # Get the store's config model class and create typed config
         config_model_cls = store_class.config_model()
+        config_copy = _decode_complex_values(config_copy, config_model_cls)
 
         # Get auto_create_tables from global config only if the config model supports it
         if (
