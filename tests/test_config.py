@@ -532,6 +532,66 @@ def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: py
     assert getattr(store, field) == {"token": "123"}
 
 
+def test_store_config_merges_env_dict_with_toml(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    with delta_config_file.open("a", encoding="utf-8") as config_file:
+        config_file.write(
+            '\n[stores.dev.config.storage_options]\nregion = "eu"\n[stores.dev.config.storage_options.credentials]\n'
+            'token = "old"\nuser = "alice"\n'
+        )
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS", '{"credentials": {"token": "new"}}')
+
+    config = MetaxyConfig.load(delta_config_file)
+    store = config.get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.storage_options == {"region": "eu", "credentials": {"token": "new", "user": "alice"}}
+    assert config.get_store(
+        "dev", expected_type=DeltaMetadataStore, storage_options={"override": True}
+    ).storage_options == {"override": True}
+
+
+def test_store_config_merges_init_dict_with_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS",
+        '{"region": "eu", "credentials": {"token": "env", "user": "alice"}}',
+    )
+    config = MetaxyConfig(
+        stores={
+            "dev": {
+                "type": "metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
+                "config": {"root_path": "/tmp/review", "storage_options": {"credentials": {"token": "init"}}},
+            }
+        }
+    )
+
+    assert config.get_store("dev", expected_type=DeltaMetadataStore).storage_options == {
+        "region": "eu",
+        "credentials": {"token": "init", "user": "alice"},
+    }
+
+
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_store_config_merges_nested_env_overrides(
+    delta_config_file: Path, monkeypatch: pytest.MonkeyPatch, reverse_order: bool
+) -> None:
+    overrides = [
+        (
+            "METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS",
+            '{"region": "eu", "credentials": {"token": "old", "user": "alice"}}',
+        ),
+        ("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS__CREDENTIALS", '{"token": "intermediate", "role": "reader"}'),
+        ("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS__CREDENTIALS__TOKEN", "new"),
+    ]
+    for name, value in reversed(overrides) if reverse_order else overrides:
+        monkeypatch.setenv(name, value)
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.storage_options == {
+        "region": "eu",
+        "credentials": {"token": "new", "user": "alice", "role": "reader"},
+    }
+
+
 @pytest.mark.parametrize("value", ["123", "true", "null", "[]", "{}", '"quoted"'])
 def test_store_config_json_looking_string_env_override(
     delta_config_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str

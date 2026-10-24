@@ -20,10 +20,10 @@ from pydantic_settings import (
 from typing_extensions import Self
 
 from metaxy._decorators import public
-from metaxy.config.env_source import MetaxyEnvSettingsSource
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
 from metaxy.config.models.plugin_config import PluginConfig
 from metaxy.config.models.store_config import StoreConfig
+from metaxy.config.settings_source import MetaxySettingsSource
 from metaxy.config.utils import _collect_dict_keys, _decode_complex_values, _remove_none_values
 from metaxy.models.feature_selection import FeatureSelection
 
@@ -353,15 +353,17 @@ class MetaxyConfig(BaseSettings):
         toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
         assert isinstance(env_settings, EnvSettingsSource)
         # Preserve instance options, including options added by newer pydantic-settings releases.
-        stable_env_settings = MetaxyEnvSettingsSource(
+        settings_source = MetaxySettingsSource(
             settings_cls,
+            init_values=init_settings(),
+            file_values=toml_settings(),
             **{
                 name: getattr(env_settings, name)
                 for name in signature(EnvSettingsSource).parameters
                 if name != "settings_cls"
             },
         )
-        return (init_settings, stable_env_settings, toml_settings)
+        return (settings_source,)
 
     @classmethod
     def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":
