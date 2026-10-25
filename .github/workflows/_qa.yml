@@ -79,7 +79,6 @@ jobs:
               - 'tests/**'
               - 'examples/**'
               - 'pyproject.toml'
-              - 'noxfile.py'
               - 'uv.lock'
             docs:
               - '.github/workflows/**'
@@ -93,7 +92,6 @@ jobs:
               - 'tests/ext/conftest.py'
               - 'tests/conftest.py'
               - 'pyproject.toml'
-              - 'noxfile.py'
               - 'uv.lock'
               - '.github/workflows/**'
               - '.github/actions/**'
