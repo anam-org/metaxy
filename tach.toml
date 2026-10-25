@@ -6,8 +6,7 @@ exclude = [
   "**/tests",
   "**/venv",
 ]
-# Roots must not overlap: Tach uses them to resolve paths for test selection.
-source_roots = ["src", "tests"]
+source_roots = ["src", "."]
 layers = [
   "cli",
   "ext",

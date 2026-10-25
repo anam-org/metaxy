@@ -52,14 +52,15 @@ def _install_coverage_subprocess(session: nox.Session) -> None:
 @nox.parametrize("integration", INTEGRATIONS)
 def integration(session: nox.Session, integration: str) -> None:
     """Run tests for a single integration."""
+    coverage_enabled = bool(os.environ.get("COVERAGE_PROCESS_START"))
+    pytest_cov_enabled = any(arg.startswith("--cov") for arg in session.posargs)
+    if coverage_enabled and pytest_cov_enabled:
+        session.error("Coverage is enabled by COVERAGE_PROCESS_START; remove --cov arguments.")
     session.install("-e", f".[{integration}]")
     _install_coverage_subprocess(session)
-    coverage_enabled = bool(os.environ.get("COVERAGE_PROCESS_START"))
-    if coverage_enabled:
-        session.run("coverage", "run", "-m", "pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
-    else:
-        session.run("pytest", f"tests/ext/{integration}/", "--durations=10", *session.posargs)
-    if coverage_enabled or any(arg.startswith("--cov") for arg in session.posargs):
+    runner = ("coverage", "run", "-m", "pytest") if coverage_enabled else ("pytest",)
+    session.run(*runner, f"tests/ext/{integration}/", "--durations=10", *session.posargs)
+    if coverage_enabled or pytest_cov_enabled:
         session.run("coverage", "combine", "--keep", success_codes=[0, 1])
         session.run("coverage", "xml", "-o", "coverage.xml")
 
