@@ -2,9 +2,10 @@
 
 import json
 import warnings
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, NamedTuple
 from unittest.mock import patch
 
 import pytest
@@ -15,7 +16,7 @@ from metaxy.config import (
 )
 from metaxy.config.utils import _collect_dict_keys, _decode_complex_values
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore, DeltaMetadataStoreConfig
-from pydantic import AliasChoices, AliasPath, BaseModel, Field
+from pydantic import AliasChoices, AliasPath, BaseModel, Field, Json, RootModel, create_model
 from pydantic_settings import SettingsConfigDict
 
 
@@ -119,6 +120,74 @@ def test_decode_complex_config_union_containers_and_optional_null(complex_config
         "uri": {"host": "localhost"},
         "options": None,
     }
+
+
+class ConfigPayloadStore(DeltaMetadataStore):
+    def __init__(self, root_path: str | Path, *, custom_options: Any, **kwargs: Any) -> None:
+        self.custom_options = custom_options
+        super().__init__(root_path, **kwargs)
+
+
+@dataclass
+class ConfigDataclassOptions:
+    token: str
+
+
+class ConfigTupleOptions(NamedTuple):
+    token: str
+
+
+@pytest.fixture
+def config_payload_store(monkeypatch: pytest.MonkeyPatch) -> Callable[[Any], type[ConfigPayloadStore]]:
+    def configure(annotation: Any) -> type[ConfigPayloadStore]:
+        config_model = create_model(
+            "PayloadConfig", __base__=DeltaMetadataStoreConfig, custom_options=(annotation, ...)
+        )
+        monkeypatch.setattr(ConfigPayloadStore, "config_model", classmethod(lambda cls: config_model))
+        return ConfigPayloadStore
+
+    return configure
+
+
+@pytest.mark.parametrize(
+    "annotation", [Json[dict[str, str]], RootModel[Json[dict[str, str]]]], ids=["json", "root-json"]
+)
+def test_store_config_json_constructor_value(
+    config_payload_store: Callable[[Any], type[ConfigPayloadStore]],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    annotation: Any,
+) -> None:
+    store_type = config_payload_store(annotation)
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG", '{"custom_options": {"token": "env", "region": "eu"}}')
+    config = MetaxyConfig(
+        stores={"dev": {"type": store_type, "config": {"root_path": tmp_path, "custom_options": '{"token": "123"}'}}}
+    )
+
+    assert config.get_store("dev", expected_type=store_type).custom_options == {"token": "123"}
+
+
+@pytest.mark.parametrize(
+    ("annotation", "env_value", "expected"),
+    [
+        pytest.param(RootModel[list[str]], '["a", "b"]', ["a", "b"], id="root-model"),
+        pytest.param(ConfigDataclassOptions, '{"token": "123"}', {"token": "123"}, id="dataclass"),
+        pytest.param(ConfigTupleOptions, '{"token": "123"}', ("123",), id="named-tuple"),
+    ],
+)
+def test_store_config_typed_env_override(
+    config_payload_store: Callable[[Any], type[ConfigPayloadStore]],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    annotation: Any,
+    env_value: str,
+    expected: Any,
+) -> None:
+    store_type = config_payload_store(annotation)
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__CUSTOM_OPTIONS", env_value)
+    config = MetaxyConfig(stores={"dev": {"type": store_type, "config": {"root_path": tmp_path}}})
+
+    assert config.get_store("dev", expected_type=store_type).custom_options == expected
 
 
 def test_store_config_basic(tmp_path: Path) -> None:
@@ -507,7 +576,6 @@ def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: py
     store = config.get_store("dev", expected_type=DeltaMetadataStore)
 
     assert store.fallback_stores == []
-    assert config.stores["dev"].config["fallback_stores"] == "[]"
 
 
 @pytest.fixture(

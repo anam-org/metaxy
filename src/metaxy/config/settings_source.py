@@ -19,16 +19,18 @@ def _decode_json_object(value: str) -> dict[str, Any] | str:
     return decoded if isinstance(decoded, dict) else value
 
 
-def _merge_nested_overrides(values: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+def _merge_nested_overrides(
+    values: dict[str, Any], overrides: dict[str, Any], *, decode_override_objects: bool = True
+) -> dict[str, Any]:
     result = values.copy()
     for key, value in overrides.items():
         parent = result.get(key)
         if isinstance(value, dict) and isinstance(parent, str):
             parent = _decode_json_object(parent)
-        elif isinstance(value, str) and isinstance(parent, dict):
+        elif decode_override_objects and isinstance(value, str) and isinstance(parent, dict):
             value = _decode_json_object(value)
         if isinstance(value, dict) and isinstance(parent, dict):
-            value = _merge_nested_overrides(parent, value)
+            value = _merge_nested_overrides(parent, value, decode_override_objects=decode_override_objects)
         result[key] = value
     return result
 
@@ -47,9 +49,11 @@ class MetaxySettingsSource(EnvSettingsSource):
         self._init_values = init_values
 
     def __call__(self) -> dict[str, Any]:
-        # Merge JSON objects across sources before raw strings can replace dictionaries.
+        # Constructor strings replace lower-priority objects and remain available for field validation.
         return _merge_nested_overrides(
-            _merge_nested_overrides(self._file_values, super().__call__()), self._init_values
+            _merge_nested_overrides(self._file_values, super().__call__()),
+            self._init_values,
+            decode_override_objects=False,
         )
 
     def next_field(
