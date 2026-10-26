@@ -14,6 +14,10 @@ Start each task with the planner agent. Use python-dev to write code, python-tes
 
 The project has users. APIs marked with `@public` cannot have breaking changes between minor releases. Non-public internals can be refactored freely. Deprecated APIs must be preserved until a minor release.
 
+## Communication
+
+Use ASD-STE100 Simplified Technical English when you communicate with the user. Use short sentences, active voice, and consistent terms. Keep code identifiers, API names, and quoted source text exact. State the result and any limits clearly.
+
 ## Project Overview
 
 Metaxy is a feature metadata management system for multimodal ML pipelines. It tracks feature versions, dependencies, and data lineage with declarative definitions, automatic change detection, and smart migrations.
