@@ -14,8 +14,9 @@ from metaxy.config import (
     StoreConfig,
 )
 from metaxy.config.utils import _collect_dict_keys, _decode_complex_values
-from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
-from pydantic import BaseModel, Field
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore, DeltaMetadataStoreConfig
+from pydantic import AliasChoices, AliasPath, BaseModel, Field
+from pydantic_settings import SettingsConfigDict
 
 
 class TestCollectDictKeys:
@@ -507,6 +508,85 @@ def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: py
 
     assert store.fallback_stores == []
     assert config.stores["dev"].config["fallback_stores"] == "[]"
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(
+            (Field(default_factory=list, alias="fallbacks"), "fallbacks", "[]", 'fallbacks = ["prod"]'), id="alias"
+        ),
+        pytest.param(
+            (Field(default_factory=list, validation_alias="fallbacks"), "fallbacks", "[]", 'fallbacks = ["prod"]'),
+            id="validation-alias",
+        ),
+        pytest.param(
+            (
+                Field(default_factory=list, validation_alias=AliasChoices("fallbacks", "fallback_names")),
+                "fallback_names",
+                "[]",
+                'fallback_names = ["prod"]',
+            ),
+            id="alias-choice",
+        ),
+        pytest.param(
+            (
+                Field(default_factory=list, validation_alias=AliasPath("fallbacks")),
+                "fallbacks",
+                "[]",
+                'fallbacks = ["prod"]',
+            ),
+            id="alias-path",
+        ),
+        pytest.param(
+            (
+                Field(default_factory=list, validation_alias=AliasPath("options", "fallbacks")),
+                "options",
+                '{"fallbacks": []}',
+                "",
+            ),
+            id="nested-alias-path",
+        ),
+        pytest.param(
+            (
+                Field(default_factory=list, validation_alias=AliasPath("options", 0)),
+                "options",
+                "[[]]",
+                'options = [["prod"]]',
+            ),
+            id="indexed-alias-path",
+        ),
+        pytest.param(
+            (Field(default_factory=list, alias="fallbacks"), "fallback_stores", "[]", 'fallback_stores = ["prod"]'),
+            id="field-name",
+        ),
+    ]
+)
+def aliased_delta_config(request: pytest.FixtureRequest) -> tuple[type[DeltaMetadataStoreConfig], str, str, str]:
+    fallback_field, env_field, env_value, toml_value = request.param
+
+    class AliasedDeltaConfig(DeltaMetadataStoreConfig):
+        model_config = SettingsConfigDict(populate_by_name=True)
+        fallback_stores: list[str] = fallback_field
+
+    return AliasedDeltaConfig, env_field, env_value, toml_value
+
+
+def test_store_config_aliased_list_env_override(
+    aliased_delta_config: tuple[type[DeltaMetadataStoreConfig], str, str, str],
+    delta_config_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    aliased_delta_config_model, env_field, env_value, toml_value = aliased_delta_config
+    monkeypatch.setattr(DeltaMetadataStore, "config_model", classmethod(lambda cls: aliased_delta_config_model))
+    delta_config_file.write_text(
+        delta_config_file.read_text(encoding="utf-8").replace('fallback_stores = ["prod"]', toml_value),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(f"METAXY_STORES__DEV__CONFIG__{env_field.upper()}", env_value)
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store.fallback_stores == []
 
 
 def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:

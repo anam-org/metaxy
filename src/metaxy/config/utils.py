@@ -3,7 +3,7 @@ from collections.abc import Mapping, Sequence, Set
 from types import UnionType
 from typing import Annotated, Any, Union, get_args, get_origin
 
-from pydantic import BaseModel
+from pydantic import AliasChoices, AliasPath, BaseModel
 
 
 def _collect_dict_keys(d: dict[str, Any], prefix: str = "") -> list[str]:
@@ -48,18 +48,28 @@ def _decode_complex_values(config: dict[str, Any], model: type[BaseModel]) -> di
     """Decode JSON for collection and model fields, leaving other values for validation."""
     result = config.copy()
     for name, field in model.model_fields.items():
-        value = config.get(name)
-        if not isinstance(value, str):
-            continue
-        json_types = _complex_json_types(field.annotation)
-        if dict not in json_types and list not in json_types:
-            continue
-        try:
-            decoded = json.loads(value)
-        except json.JSONDecodeError:
-            # Field validators may accept non-JSON strings, such as connection URIs.
-            continue
-        # Preserve strings accepted by another union member when the JSON shape does not match.
-        if isinstance(decoded, json_types):
-            result[name] = decoded
+        input_paths: list[list[str | int]] = [[name]]
+        if model.model_config.get("validate_by_alias", True):
+            if isinstance(field.validation_alias, str):
+                input_paths.append([field.validation_alias])
+            elif isinstance(field.validation_alias, AliasPath):
+                input_paths.append(field.validation_alias.path)
+            elif isinstance(field.validation_alias, AliasChoices):
+                input_paths.extend(field.validation_alias.convert_to_aliases())
+        for input_path in input_paths:
+            name = str(input_path[0])
+            value = config.get(name)
+            if not isinstance(value, str):
+                continue
+            json_types = (dict, list) if len(input_path) > 1 else _complex_json_types(field.annotation)
+            if dict not in json_types and list not in json_types:
+                continue
+            try:
+                decoded = json.loads(value)
+            except json.JSONDecodeError:
+                # Field validators may accept non-JSON strings, such as connection URIs.
+                continue
+            # Preserve strings accepted by another union member when the JSON shape does not match.
+            if isinstance(decoded, json_types):
+                result[name] = decoded
     return result
