@@ -4,7 +4,6 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
-from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
@@ -13,7 +12,6 @@ from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
-    EnvSettingsSource,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
@@ -34,7 +32,15 @@ if TYPE_CHECKING:
 
 
 BUILTIN_PLUGINS = {}
-_ENV_SETTINGS_SOURCE_OPTIONS = tuple(name for name in signature(EnvSettingsSource).parameters if name != "settings_cls")
+_ENV_SETTINGS_SOURCE_OPTIONS = (
+    "case_sensitive",
+    "env_prefix",
+    "env_nested_delimiter",
+    "env_nested_max_split",
+    "env_ignore_empty",
+    "env_parse_none_str",
+    "env_parse_enums",
+)
 
 
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
@@ -352,12 +358,16 @@ class MetaxyConfig(BaseSettings):
         except LookupError:
             config_file = None
         toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
-        # Preserve instance options, including options added by newer pydantic-settings releases.
+        # Preserve per-instance environment options.
+        source_options = {name: getattr(env_settings, name) for name in _ENV_SETTINGS_SOURCE_OPTIONS}
+        env_prefix_target = getattr(env_settings, "env_prefix_target", None)
+        if env_prefix_target is not None:
+            source_options["env_prefix_target"] = env_prefix_target
         settings_source = MetaxySettingsSource(
             settings_cls,
             init_values=init_settings(),
             file_values=toml_settings(),
-            **{name: getattr(env_settings, name) for name in _ENV_SETTINGS_SOURCE_OPTIONS},
+            **source_options,
         )
         return (settings_source,)
 

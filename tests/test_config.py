@@ -4,6 +4,7 @@ import json
 import warnings
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, NamedTuple
 from unittest.mock import patch
@@ -783,16 +784,60 @@ def test_custom_env_settings_options(tmp_path: Path, monkeypatch: pytest.MonkeyP
     monkeypatch.setenv("CUSTOM_stores--dev--config--root_path", "123")
     monkeypatch.setenv("CUSTOM_STORES--dev--config--root_path", "wrong-case")
     monkeypatch.setenv("CUSTOM_stores--dev--config--fallback_stores", "[]")
+    monkeypatch.setenv("CUSTOM_stores--dev--config--storage_options--api--key", "token")
     monkeypatch.setenv("CUSTOM_store", "")
+    monkeypatch.setenv("CUSTOM_project", "unset")
 
     config = MetaxyConfig(
-        _env_prefix="CUSTOM_", _env_nested_delimiter="--", _case_sensitive=True, _env_ignore_empty=True
+        _env_prefix="CUSTOM_",
+        _env_nested_delimiter="--",
+        _env_nested_max_split=4,
+        _case_sensitive=True,
+        _env_ignore_empty=True,
+        _env_parse_none_str="unset",
     )
     store = config.get_store(expected_type=DeltaMetadataStore)
 
     assert config.store == "dev"
+    assert config.project is None
     assert store._root_uri == str(tmp_path / "123")
     assert store.fallback_stores == []
+    assert store.storage_options == {"api--key": "token"}
+
+
+class ConfigMode(Enum):
+    READ = "read"
+    WRITE = "write"
+
+
+@pytest.fixture
+def custom_env_config() -> type[MetaxyConfig]:
+    class CustomConfig(MetaxyConfig):
+        mode: ConfigMode = ConfigMode.READ
+        endpoint: str = Field(default="default", validation_alias="ENDPOINT")
+
+    return CustomConfig
+
+
+def test_custom_env_enum_parsing(custom_env_config: type[MetaxyConfig], monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_MODE", "WRITE")
+
+    config = custom_env_config(_env_parse_enums=True)
+
+    assert config.model_dump()["mode"] is ConfigMode.WRITE
+
+
+def test_custom_env_prefix_targets_alias(
+    custom_env_config: type[MetaxyConfig], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if "env_prefix_target" not in SettingsConfigDict.__annotations__:
+        pytest.skip("Installed pydantic-settings does not support env_prefix_target")
+    monkeypatch.setenv("ENDPOINT", "unprefixed")
+    monkeypatch.setenv("CUSTOM_ENDPOINT", "prefixed")
+
+    config = custom_env_config(_env_prefix="CUSTOM_", _env_prefix_target="all")  # ty: ignore[unknown-argument]
+
+    assert config.model_dump()["endpoint"] == "prefixed"
 
 
 def test_nested_store_collection_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
