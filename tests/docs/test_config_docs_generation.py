@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shlex
 from collections.abc import Callable
 from pathlib import Path
@@ -197,6 +198,17 @@ def test_plugin_directive_pattern_no_match() -> None:
 
     assert DIRECTIVE_PATTERN.search("::: metaxy.SomeClass\n") is None
     assert DIRECTIVE_PATTERN.search("regular text\n") is None
+
+
+def test_generated_required_store_field_env_placeholder() -> None:
+    field = next(field for field in extract_field_info(DeltaMetadataStoreConfig) if field["name"] == "root_path")
+    tabs = generate_field_tabs(field, ["stores", "dev", "config"], env_prefix="METAXY_")
+    export_line = next(line.strip() for line in tabs.splitlines() if line.strip().startswith("export "))
+    _, assignment = shlex.split(export_line)
+    name, value = assignment.split("=", 1)
+
+    assert name == "METAXY_STORES__DEV__CONFIG"
+    assert json.loads(value) == {"root_path": "..."}
 
 
 @pytest.fixture
