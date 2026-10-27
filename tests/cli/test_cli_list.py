@@ -1,11 +1,9 @@
 """Tests for list CLI commands."""
 
 import json
-from io import StringIO
+from pathlib import Path
 
-import metaxy.cli.list as list_commands
 import pytest
-from rich.console import Console
 
 from metaxy_testing import TempMetaxyProject
 
@@ -645,17 +643,30 @@ def test_list_stores_json_format(metaxy_project: TempMetaxyProject, capsys: pyte
         assert default_stores[0]["name"] == data["default_store"]
 
 
+@pytest.fixture
+def fallback_project(tmp_path: Path) -> TempMetaxyProject:
+    return TempMetaxyProject(
+        tmp_path,
+        config_content="""[stores.dev]
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
+[stores.dev.config]
+database = ":memory:"
+fallback_stores = ["staging"]
+""",
+    )
+
+
 @pytest.fixture(params=[pytest.param(["prod"], id="nonempty"), pytest.param([], id="empty")])
 def fallback_store_names(request: pytest.FixtureRequest) -> list[str]:
     return request.param
 
 
 def test_list_stores_json_env_fallbacks(
-    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], fallback_store_names: list[str]
+    fallback_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], fallback_store_names: list[str]
 ) -> None:
-    result = metaxy_project.run_cli(
+    result = fallback_project.run_cli(
         ["list", "stores", "--format", "json"],
-        env={"METAXY_STORES__DEV__CONFIG__FALLBACK_STORES": json.dumps(fallback_store_names)},
+        env={"METAXY_STORES__DEV__CONFIG": json.dumps({"fallback_stores": fallback_store_names})},
         capsys=capsys,
     )
 
@@ -665,28 +676,17 @@ def test_list_stores_json_env_fallbacks(
 
 
 def test_list_stores_plain_env_fallbacks(
-    metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], fallback_store_names: list[str]
+    fallback_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str], fallback_store_names: list[str]
 ) -> None:
-    result = metaxy_project.run_cli(
+    result = fallback_project.run_cli(
         ["list", "stores"],
-        env={"METAXY_STORES__DEV__CONFIG__FALLBACK_STORES": json.dumps(fallback_store_names), "COLUMNS": "240"},
+        env={"METAXY_STORES__DEV__CONFIG": json.dumps({"fallback_stores": fallback_store_names}), "COLUMNS": "240"},
         capsys=capsys,
     )
 
     assert result.returncode == 0
     dev_row = next(line for line in result.stdout.splitlines() if "dev (default)" in line)
     assert dev_row.split("│")[-2].strip() == (", ".join(fallback_store_names) or "-")
-
-
-def test_list_stores_plain_unnamed_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
-    output = StringIO()
-    monkeypatch.setattr(list_commands, "data_console", Console(file=output))
-
-    list_commands._output_stores_plain(
-        [{"name": "dev", "is_default": True, "info": "CustomStore", "fallbacks": [None]}], "dev"
-    )
-
-    assert "<unnamed>" in output.getvalue()
 
 
 def test_list_stores_short_flag(metaxy_project: TempMetaxyProject, capsys: pytest.CaptureFixture[str]):

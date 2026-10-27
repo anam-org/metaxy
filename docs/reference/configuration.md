@@ -30,6 +30,26 @@ When the same setting is defined in multiple places, Metaxy uses the following p
 2. **Environment variables** - Values from `METAXY_*` environment variables
 3. **Configuration files** - Values from `metaxy.toml` or `pyproject.toml`
 
+### Store Environment Overrides
+
+Metaxy requires `pydantic-settings>=2.13.1`. Put list and dictionary store options inside the containing `CONFIG` JSON object:
+
+```shell
+export METAXY_STORES__DEV__CONFIG='{"fallback_stores": [], "storage_options": {"AWS_REGION": "eu-central-1"}}'
+```
+
+This clears the configured fallback list. Dictionary values merge with the TOML configuration, so other storage options remain available.
+
+Replace collection overrides such as `METAXY_STORES__DEV__CONFIG__FALLBACK_STORES='[]'` with this form. Remove the old variables when migrating.
+
+Scalar options can still use individual variables:
+
+```shell
+export METAXY_STORES__DEV__CONFIG__ROOT_PATH=123
+```
+
+The root path remains the string `"123"`.
+
 ### Config Discovery
 
 Configuration files are discovered automatically by searching in the current or parent directories. `metaxy.toml` takes precedence over `pyproject.toml`.

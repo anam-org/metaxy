@@ -71,10 +71,5 @@ class FallbackStoreList(Sequence["MetadataStore"]):
         return NotImplemented
 
     @property
-    def names(self) -> list[str | None]:
-        """Return fallback names without resolving store references."""
-        return [entry if isinstance(entry, str) else entry.name for entry in self._entries]
-
-    @property
     def all_resolved(self) -> bool:
         return all(not isinstance(e, str) for e in self._entries)

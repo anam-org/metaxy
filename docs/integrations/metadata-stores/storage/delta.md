@@ -41,14 +41,13 @@ pip install 'metaxy[delta]'
 
 ## Configuration
 
-Use JSON arrays for list environment overrides and JSON objects for dictionary overrides. Quote the JSON so the shell passes it unchanged. For example, these overrides clear the configured fallback stores and set the storage region:
+For a configured `dev` store, put collection overrides in one JSON object:
 
 ```shell
-export METAXY_STORES__DEV__CONFIG__FALLBACK_STORES='[]'
-export METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS='{"AWS_REGION": "eu-central-1"}'
+export METAXY_STORES__DEV__CONFIG='{"fallback_stores": [], "storage_options": {"AWS_REGION": "eu-central-1"}}'
 ```
 
-JSON objects merge recursively with dictionaries from TOML; `{}` keeps the existing keys. Lists replace the configured list, so `[]` clears it.
+This clears the configured fallback stores and sets the storage region. See [store environment overrides](../../../reference/configuration.md#store-environment-overrides) for migration details and scalar examples.
 
 <!-- dprint-ignore-start -->
 ::: metaxy-config

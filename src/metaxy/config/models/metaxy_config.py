@@ -21,8 +21,7 @@ from metaxy._decorators import public
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
 from metaxy.config.models.plugin_config import PluginConfig
 from metaxy.config.models.store_config import StoreConfig
-from metaxy.config.settings_source import MetaxySettingsSource
-from metaxy.config.utils import _collect_dict_keys, _decode_complex_values, _remove_none_values
+from metaxy.config.utils import _collect_dict_keys, _remove_none_values
 from metaxy.models.feature_selection import FeatureSelection
 
 if TYPE_CHECKING:
@@ -32,15 +31,6 @@ if TYPE_CHECKING:
 
 
 BUILTIN_PLUGINS = {}
-_ENV_SETTINGS_SOURCE_OPTIONS = (
-    "case_sensitive",
-    "env_prefix",
-    "env_nested_delimiter",
-    "env_nested_max_split",
-    "env_ignore_empty",
-    "env_parse_none_str",
-    "env_parse_enums",
-)
 
 
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
@@ -358,18 +348,7 @@ class MetaxyConfig(BaseSettings):
         except LookupError:
             config_file = None
         toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
-        # Preserve per-instance environment options.
-        source_options = {name: getattr(env_settings, name) for name in _ENV_SETTINGS_SOURCE_OPTIONS}
-        env_prefix_target = getattr(env_settings, "env_prefix_target", None)
-        if env_prefix_target is not None:
-            source_options["env_prefix_target"] = env_prefix_target
-        settings_source = MetaxySettingsSource(
-            settings_cls,
-            init_values=init_settings(),
-            file_values=toml_settings(),
-            **source_options,
-        )
-        return (settings_source,)
+        return (init_settings, env_settings, toml_settings)
 
     @classmethod
     def get(cls, *, load: bool = False, _allow_default_config: bool = False) -> "MetaxyConfig":
@@ -605,7 +584,6 @@ class MetaxyConfig(BaseSettings):
 
         # Get the store's config model class and create typed config
         config_model_cls = store_class.config_model()
-        config_copy = _decode_complex_values(config_copy, config_model_cls)
 
         # Get auto_create_tables from global config only if the config model supports it
         if (

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import shlex
 import typing
 from typing import Any, Literal
 
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
-from pydantic_core import PydanticUndefined
+from pydantic_core import PydanticUndefined, to_jsonable_python
 from pydantic_settings import BaseSettings
 
 
@@ -266,10 +268,8 @@ def _format_env_example_value(value: Any) -> str:
         return value
     if isinstance(value, int | float):
         return str(value)
-    if isinstance(value, list):
-        return "[]"
-    if isinstance(value, dict):
-        return "{}"
+    if isinstance(value, list | dict):
+        return json.dumps(to_jsonable_python(value))
     return str(value)
 
 
@@ -358,10 +358,6 @@ def generate_field_tabs(
     pyproject_section = f"tool.metaxy.{section}" if section else "tool.metaxy"
     toml_section = section
 
-    # Env var
-    env_var = get_env_var_name(full_path, env_prefix, env_nested_delimiter)
-    env_val = _format_env_example_value(field["default"])
-
     parts: list[str] = []
 
     # metaxy.toml tab
@@ -387,7 +383,8 @@ def generate_field_tabs(
     parts.append('=== "Environment Variable"')
     parts.append("")
     parts.append(f"{indent}```bash")
-    parts.append(f"{indent}export {env_var}={env_val}")
+    for line in _build_env_lines([field], path_prefix, env_prefix, env_nested_delimiter):
+        parts.append(f"{indent}{line}")
     parts.append(f"{indent}```")
     parts.append("")
 
@@ -499,13 +496,26 @@ def _build_env_lines(
     env_prefix: str,
     env_nested_delimiter: str,
 ) -> list[str]:
-    """Build environment variable example lines."""
+    """Build shell-safe examples, grouping store options in their CONFIG object."""
     lines: list[str] = []
+    store_configs: dict[str, dict[str, Any]] = {}
     for field in fields:
         full_path = path_prefix + field["path"]
-        env_var = get_env_var_name(full_path, env_prefix, env_nested_delimiter)
-        example_value = _format_env_example_value(field["default"])
+        if len(full_path) > 3 and full_path[0] == "stores" and full_path[2] == "config":
+            env_var = get_env_var_name(full_path[:3], env_prefix, env_nested_delimiter)
+            config = store_configs.setdefault(env_var, {})
+            for key in full_path[3:-1]:
+                config = config.setdefault(key, {})
+            value = field["default"]
+            if value is None:
+                value = json.loads(_get_field_placeholder(field["field_info"]))
+            config[full_path[-1]] = value
+        else:
+            env_var = get_env_var_name(full_path, env_prefix, env_nested_delimiter)
+            example_value = _format_env_example_value(field["default"])
+            lines.append(f"export {env_var}={shlex.quote(example_value)}")
 
-        lines.append(f"export {env_var}={example_value}")
+    for env_var, config in store_configs.items():
+        lines.append(f"export {env_var}={shlex.quote(json.dumps(to_jsonable_python(config)))}")
 
     return lines

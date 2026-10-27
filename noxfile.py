@@ -24,7 +24,6 @@ INTEGRATIONS = [
 ]
 
 IBIS_VERSIONS = ["11", "12"]
-SETTINGS_VERSIONS = ["2.11.0", "2.13.1", "latest"]
 
 COVERAGE_SUBPROCESS_PTH = Path(".github/coverage_subprocess.pth")
 
@@ -78,31 +77,3 @@ def ibis(session: nox.Session, version: str) -> None:
     """Test ibis compatibility across major versions."""
     session.install(f"ibis-framework[duckdb,clickhouse,bigquery]=={version}.*")
     session.run("pytest", "-m", "ibis", "--durations=10")
-
-
-@nox_uv.session(
-    python="3.12",
-    uv_extras=["duckdb", "delta", "sqlalchemy", "map"],
-    uv_groups=["dev"],
-    uv_sync_locked=False,
-    tags=["compat", "settings-compat"],
-)
-@nox.parametrize("version", SETTINGS_VERSIONS)
-def settings(session: nox.Session, version: str) -> None:
-    """Test pydantic-settings compatibility at the supported version boundaries."""
-    if version == "latest":
-        session.install("--upgrade", "pydantic-settings")
-    else:
-        session.install(f"pydantic-settings=={version}")
-    # Disable the unused PostgreSQL plugin: it loads Nix's libpq, which needs
-    # a newer glibc than CI's system Python uses.
-    session.run(
-        "pytest",
-        "-p",
-        "no:tach",
-        "-p",
-        "no:pytest_postgresql",
-        "tests/test_config.py",
-        "tests/cli/test_cli_list.py",
-        *session.posargs,
-    )

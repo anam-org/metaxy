@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import shlex
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import pytest
+from metaxy.config import MetaxyConfig
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore, DeltaMetadataStoreConfig
 from metaxy_testing.config import SamplePluginConfig
 from mkdocs_metaxy.config_generator import (
     extract_field_info,
     format_toml_value,
     generate_config_tabs,
+    generate_field_tabs,
     get_env_var_name,
     get_toml_path,
 )
@@ -188,3 +197,106 @@ def test_plugin_directive_pattern_no_match() -> None:
 
     assert DIRECTIVE_PATTERN.search("::: metaxy.SomeClass\n") is None
     assert DIRECTIVE_PATTERN.search("regular text\n") is None
+
+
+@pytest.fixture
+def apply_generated_env(monkeypatch: pytest.MonkeyPatch) -> Callable[[str], None]:
+    def apply(tabs: str) -> None:
+        for line in tabs.splitlines():
+            if line.strip().startswith("export "):
+                _, assignment = shlex.split(line.strip())
+                name, value = assignment.split("=", 1)
+                monkeypatch.setenv(name, value)
+
+    return apply
+
+
+@pytest.fixture
+def delta_doc_config(tmp_path: Path) -> Path:
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text(
+        f'''[stores.dev]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+[stores.dev.config]
+root_path = "{(tmp_path / "original").as_posix()}"
+fallback_stores = ["prod"]
+''',
+        encoding="utf-8",
+    )
+    return config_file
+
+
+@pytest.mark.parametrize(
+    ("field_name", "example_value"),
+    [
+        pytest.param("fallback_stores", [], id="list"),
+        pytest.param("storage_options", {"token": "it's a token"}, id="dict"),
+        pytest.param("root_path", "123", id="scalar"),
+    ],
+)
+def test_generated_store_field_env_example(
+    delta_doc_config: Path,
+    tmp_path: Path,
+    apply_generated_env: Callable[[str], None],
+    monkeypatch: pytest.MonkeyPatch,
+    field_name: str,
+    example_value: Any,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    field = next(field for field in extract_field_info(DeltaMetadataStoreConfig) if field["name"] == field_name)
+    field["default"] = example_value
+    apply_generated_env(generate_field_tabs(field, ["stores", "dev", "config"], env_prefix="METAXY_"))
+
+    store = MetaxyConfig.load(delta_doc_config).get_store("dev", expected_type=DeltaMetadataStore)
+    expected: dict[str, Any] = {"root_path": "original", "fallback_stores": ["prod"], "storage_options": {}}
+    expected[field_name] = example_value
+    assert store._root_uri == str(tmp_path / expected["root_path"])
+    assert store.fallback_stores == expected["fallback_stores"]
+    assert store.storage_options == expected["storage_options"]
+
+
+def test_generated_store_config_env_example(
+    delta_doc_config: Path,
+    tmp_path: Path,
+    apply_generated_env: Callable[[str], None],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    examples = {"root_path": "123", "fallback_stores": [], "storage_options": {"token": "it's a token"}}
+    fields = [field for field in extract_field_info(DeltaMetadataStoreConfig) if field["name"] in examples]
+    for field in fields:
+        field["default"] = examples[field["name"]]
+    apply_generated_env(generate_config_tabs(fields, ["stores", "dev", "config"], env_prefix="METAXY_"))
+
+    store = MetaxyConfig.load(delta_doc_config).get_store("dev", expected_type=DeltaMetadataStore)
+
+    assert store._root_uri == str(tmp_path / "123")
+    assert store.fallback_stores == []
+    assert store.storage_options == {"token": "it's a token"}
+
+
+def test_generated_nested_store_env_example(apply_generated_env: Callable[[str], None]) -> None:
+    from metaxy.ext.duckdb import DuckDBMetadataStore, DuckDBMetadataStoreConfig
+
+    field = next(
+        field
+        for field in extract_field_info(DuckDBMetadataStoreConfig)
+        if field["path"] == ["ducklake", "attach_options"]
+    )
+    field["default"] = {"read_only": True}
+    apply_generated_env(generate_field_tabs(field, ["stores", "dev", "config"], env_prefix="METAXY_"))
+    config = MetaxyConfig(
+        stores={
+            "dev": {
+                "type": DuckDBMetadataStore,
+                "config": {
+                    "database": ":memory:",
+                    "ducklake": {"catalog": {"type": "motherduck", "database": "lake"}},
+                },
+            }
+        }
+    )
+
+    store = config.get_store("dev", expected_type=DuckDBMetadataStore)
+
+    assert store.ducklake_attachment_config.attach_options == {"read_only": True}
