@@ -271,14 +271,13 @@ def stores(
     # Collect store data
     stores_data: list[dict[str, Any]] = []
 
-    for name, store_config in config.stores.items():
+    for name in config.stores:
         store = config.get_store(name)
-        fallback_names = store_config.config.get("fallback_stores", [])
         store_data: dict[str, Any] = {
             "name": name,
             "is_default": name == config.store,
             "info": store.display(),
-            "fallbacks": fallback_names,
+            "fallbacks": store.fallback_stores.names,
         }
         stores_data.append(store_data)
 
@@ -313,7 +312,13 @@ def _output_stores_plain(stores_data: list[dict[str, Any]], default_store: str) 
         if store["is_default"]:
             name = f"[bold cyan]{name}[/bold cyan] [dim](default)[/dim]"
 
-        fallbacks = ", ".join(store["fallbacks"]) if store["fallbacks"] else "[dim]-[/dim]"
+        fallbacks = (
+            ", ".join(
+                fallback_name if fallback_name is not None else "<unnamed>" for fallback_name in store["fallbacks"]
+            )
+            if store["fallbacks"]
+            else "[dim]-[/dim]"
+        )
 
         table.add_row(name, store["info"], fallbacks)
 

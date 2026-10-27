@@ -49,6 +49,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
       core: ${{ steps.filter.outputs.core == 'true' || steps.core-filter.outputs.core-src == 'true' }}
+      settings-compat: ${{ steps.filter.outputs.settings-compat }}
       tach: ${{ steps.filter.outputs.tach }}
       duckdb: ${{ steps.filter.outputs.duckdb }}
       clickhouse: ${{ steps.filter.outputs.clickhouse }}
@@ -80,6 +81,7 @@ jobs:
               - 'examples/**'
               - 'pyproject.toml'
               - 'uv.lock'
+              - 'noxfile.py'
             docs:
               - '.github/workflows/**'
               - mkdocs.yml
@@ -102,6 +104,20 @@ jobs:
             tach:
               - 'src/**'
               - tach.toml
+            settings-compat:
+              - 'src/metaxy/config/**'
+              - 'src/metaxy/cli/list.py'
+              - 'src/metaxy/metadata_store/base.py'
+              - 'src/metaxy/metadata_store/fallback.py'
+              - 'tests/test_config.py'
+              - 'tests/cli/test_cli_list.py'
+              - 'tests/conftest.py'
+              - 'tests/metaxy_testing/**'
+              - 'noxfile.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/**'
+              - '.github/actions/**'
             duckdb:
               - 'src/metaxy/ext/duckdb/**'
               - 'tests/ext/duckdb/**'
@@ -347,6 +363,8 @@ jobs:
           FILTER_OUTPUTS: ${{ toJSON(needs.filter.outputs) }}
           RUN_ALL: ${{ inputs.run-all-checks }}
           CORE_CHANGED: ${{ needs.filter.outputs.core }}
+          SETTINGS_CHANGED: ${{ needs.filter.outputs.settings-compat }}
+          DEPENDENCY_MATRIX: ${{ inputs.dependency-matrix }}
         run: |
           NOX_JSON=$(uvx --with nox_uv nox -l --json)
           ALL_INTEGRATIONS=$(echo "$NOX_JSON" | jq -c '[.[] | select(.tags | index("integration")) | .call_spec.integration]')
@@ -359,18 +377,22 @@ jobs:
           fi
 
           echo "integrations=$INTEGRATIONS" >> "$GITHUB_OUTPUT"
-          echo "compat_sessions=$(echo "$NOX_JSON" | jq -c '[.[] | select(.tags | index("compat")) | .session]')" >> "$GITHUB_OUTPUT"
+          echo "compat_sessions=$(echo "$NOX_JSON" | jq -c \
+            --arg full "$DEPENDENCY_MATRIX" --arg settings "$SETTINGS_CHANGED" --arg run_all "$RUN_ALL" \
+            '[.[] | select(.tags | index("compat")) |
+              select($full == "true" or (($settings == "true" or $run_all == "true") and (.tags | index("settings-compat")))) |
+              {session, python}]')" >> "$GITHUB_OUTPUT"
 
   test-nox-compat:
     needs: [filter, generate-nox-matrix]
-    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+    if: ${{ (inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.settings-compat == 'true') && needs.generate-nox-matrix.outputs.compat-sessions != '[]' }}
     runs-on: depot-ubuntu-latest
     env:
-      DEVENV_PYTHON_VERSION: "3.10"
+      DEVENV_PYTHON_VERSION: ${{ matrix.python }}
     strategy:
       fail-fast: false
       matrix:
-        session: ${{ fromJSON(needs.generate-nox-matrix.outputs.compat-sessions) }}
+        include: ${{ fromJSON(needs.generate-nox-matrix.outputs.compat-sessions) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2

@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 
 BUILTIN_PLUGINS = {}
+_ENV_SETTINGS_SOURCE_OPTIONS = tuple(name for name in signature(EnvSettingsSource).parameters if name != "settings_cls")
 
 
 PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
@@ -351,17 +352,12 @@ class MetaxyConfig(BaseSettings):
         except LookupError:
             config_file = None
         toml_settings = MetaxyTomlSource(settings_cls, config_file=config_file)
-        assert isinstance(env_settings, EnvSettingsSource)
         # Preserve instance options, including options added by newer pydantic-settings releases.
         settings_source = MetaxySettingsSource(
             settings_cls,
             init_values=init_settings(),
             file_values=toml_settings(),
-            **{
-                name: getattr(env_settings, name)
-                for name in signature(EnvSettingsSource).parameters
-                if name != "settings_cls"
-            },
+            **{name: getattr(env_settings, name) for name in _ENV_SETTINGS_SOURCE_OPTIONS},
         )
         return (settings_source,)
 

@@ -679,7 +679,7 @@ def test_store_config_merges_env_dict_with_toml(delta_config_file: Path, monkeyp
     assert store.storage_options == {"region": "eu", "credentials": {"token": "new", "user": "alice"}}
 
 
-def test_store_config_merges_init_dict_with_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_store_config_merges_init_dict_with_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(
         "METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS",
         '{"region": "eu", "credentials": {"token": "env", "user": "alice"}}',
@@ -688,7 +688,7 @@ def test_store_config_merges_init_dict_with_env(monkeypatch: pytest.MonkeyPatch)
         stores={
             "dev": {
                 "type": "metaxy.ext.polars.handlers.delta.DeltaMetadataStore",
-                "config": {"root_path": "/tmp/review", "storage_options": {"credentials": {"token": "init"}}},
+                "config": {"root_path": tmp_path / "review", "storage_options": {"credentials": {"token": "init"}}},
             }
         }
     )
@@ -748,16 +748,27 @@ def test_store_config_invalid_list_env_override(
     assert f"Config file: {delta_config_file}" in str(exc_info.value)
 
 
-@pytest.mark.parametrize("env_name", ["METAXY_STORES", "METAXY_STORES__DEV", "METAXY_STORES__DEV__CONFIG"])
-def test_store_env_json_objects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env_name: str) -> None:
-    monkeypatch.chdir(tmp_path)
+@pytest.fixture(params=["stores", "store", "config"])
+def json_store_env_vars(request: pytest.FixtureRequest) -> dict[str, str]:
     store_config = {"root_path": "123", "fallback_stores": [], "storage_options": {"token": "123"}}
-    store_definition = {"type": "metaxy.ext.polars.handlers.delta.DeltaMetadataStore", "config": store_config}
-    payload = {"dev": store_definition} if env_name == "METAXY_STORES" else store_definition
-    if env_name.endswith("__CONFIG"):
-        payload = store_config
-        monkeypatch.setenv("METAXY_STORES__DEV__TYPE", store_definition["type"])
-    monkeypatch.setenv(env_name, json.dumps(payload))
+    store_type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+    store_definition = {"type": store_type, "config": store_config}
+    return {
+        "stores": {"METAXY_STORES": json.dumps({"dev": store_definition})},
+        "store": {"METAXY_STORES__DEV": json.dumps(store_definition)},
+        "config": {
+            "METAXY_STORES__DEV__TYPE": store_type,
+            "METAXY_STORES__DEV__CONFIG": json.dumps(store_config),
+        },
+    }[request.param]
+
+
+def test_store_env_json_objects(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, json_store_env_vars: dict[str, str]
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    for name, value in json_store_env_vars.items():
+        monkeypatch.setenv(name, value)
 
     store = MetaxyConfig().get_store("dev", expected_type=DeltaMetadataStore)
 

@@ -48,6 +48,8 @@ export METAXY_STORES__DEV__CONFIG__FALLBACK_STORES='[]'
 export METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS='{"AWS_REGION": "eu-central-1"}'
 ```
 
+JSON objects merge recursively with dictionaries from TOML; `{}` keeps the existing keys. Lists replace the configured list, so `[]` clears it.
+
 <!-- dprint-ignore-start -->
 ::: metaxy-config
     class: metaxy.ext.polars.handlers.delta.DeltaMetadataStoreConfig

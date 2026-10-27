@@ -68,8 +68,8 @@ def _decode_complex_values(config: dict[str, Any], model: type[BaseModel]) -> di
             elif isinstance(field.validation_alias, AliasChoices):
                 input_paths.extend(field.validation_alias.convert_to_aliases())
         for input_path in input_paths:
-            name = str(input_path[0])
-            value = config.get(name)
+            key = str(input_path[0])
+            value = config.get(key)
             if not isinstance(value, str):
                 continue
             json_types = (dict, list) if len(input_path) > 1 else _complex_json_types(field.rebuild_annotation())
@@ -82,5 +82,5 @@ def _decode_complex_values(config: dict[str, Any], model: type[BaseModel]) -> di
                 continue
             # Preserve strings accepted by another union member when the JSON shape does not match.
             if isinstance(decoded, json_types):
-                result[name] = decoded
+                result[key] = decoded
     return result
