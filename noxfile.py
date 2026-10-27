@@ -94,7 +94,8 @@ def settings(session: nox.Session, version: str) -> None:
         session.install("--upgrade", "pydantic-settings")
     else:
         session.install(f"pydantic-settings=={version}")
-    # These tests do not use PostgreSQL fixtures.
+    # Disable the unused PostgreSQL plugin: it loads Nix's libpq, which needs
+    # a newer glibc than CI's system Python uses.
     session.run(
         "pytest",
         "-p",
