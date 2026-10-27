@@ -569,29 +569,32 @@ root_path = "{(tmp_path / "prod").as_posix()}"
     return config_file
 
 
-def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_store_config_collection_env_overrides(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", "[]")
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS", '{"token": "123"}')
 
-    config = MetaxyConfig.load(delta_config_file)
-    store = config.get_store("dev", expected_type=DeltaMetadataStore)
+    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
 
     assert store.fallback_stores == []
+    assert store.storage_options == {"token": "123"}
 
 
 @pytest.fixture(
     params=[
         pytest.param(
-            (Field(default_factory=list, alias="fallbacks"), "fallbacks", "[]", 'fallbacks = ["prod"]'), id="alias"
-        ),
-        pytest.param(
-            (Field(default_factory=list, validation_alias="fallbacks"), "fallbacks", "[]", 'fallbacks = ["prod"]'),
+            (
+                Field(default_factory=list, validation_alias="fallbacks"),
+                "fallbacks",
+                '["backup"]',
+                'fallbacks = ["prod"]',
+            ),
             id="validation-alias",
         ),
         pytest.param(
             (
                 Field(default_factory=list, validation_alias=AliasChoices("fallbacks", "fallback_names")),
                 "fallback_names",
-                "[]",
+                '["backup"]',
                 'fallback_names = ["prod"]',
             ),
             id="alias-choice",
@@ -600,7 +603,7 @@ def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: py
             (
                 Field(default_factory=list, validation_alias=AliasPath("fallbacks")),
                 "fallbacks",
-                "[]",
+                '["backup"]',
                 'fallbacks = ["prod"]',
             ),
             id="alias-path",
@@ -609,7 +612,7 @@ def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: py
             (
                 Field(default_factory=list, validation_alias=AliasPath("options", "fallbacks")),
                 "options",
-                '{"fallbacks": []}',
+                '{"fallbacks": ["backup"]}',
                 "",
             ),
             id="nested-alias-path",
@@ -618,13 +621,18 @@ def test_store_config_list_env_override(delta_config_file: Path, monkeypatch: py
             (
                 Field(default_factory=list, validation_alias=AliasPath("options", 0)),
                 "options",
-                "[[]]",
+                '[["backup"]]',
                 'options = [["prod"]]',
             ),
             id="indexed-alias-path",
         ),
         pytest.param(
-            (Field(default_factory=list, alias="fallbacks"), "fallback_stores", "[]", 'fallback_stores = ["prod"]'),
+            (
+                Field(default_factory=list, alias="fallbacks"),
+                "fallback_stores",
+                '["backup"]',
+                'fallback_stores = ["prod"]',
+            ),
             id="field-name",
         ),
     ]
@@ -654,15 +662,7 @@ def test_store_config_aliased_list_env_override(
 
     store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
 
-    assert store.fallback_stores == []
-
-
-def test_store_config_dict_env_override(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__STORAGE_OPTIONS", '{"token": "123"}')
-
-    store = MetaxyConfig.load(delta_config_file).get_store("dev", expected_type=DeltaMetadataStore)
-
-    assert store.storage_options == {"token": "123"}
+    assert store.fallback_stores == ["backup"]
 
 
 def test_store_config_merges_env_dict_with_toml(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
