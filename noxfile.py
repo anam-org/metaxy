@@ -94,4 +94,14 @@ def settings(session: nox.Session, version: str) -> None:
         session.install("--upgrade", "pydantic-settings")
     else:
         session.install(f"pydantic-settings=={version}")
-    session.run("pytest", "-p", "no:tach", "tests/test_config.py", "tests/cli/test_cli_list.py", *session.posargs)
+    # These tests do not use PostgreSQL fixtures.
+    session.run(
+        "pytest",
+        "-p",
+        "no:tach",
+        "-p",
+        "no:pytest_postgresql",
+        "tests/test_config.py",
+        "tests/cli/test_cli_list.py",
+        *session.posargs,
+    )
