@@ -26,7 +26,7 @@ from pydantic import (
 from metaxy._decorators import public
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    from typing import Self
 
 KEY_SEPARATOR = "/"
 

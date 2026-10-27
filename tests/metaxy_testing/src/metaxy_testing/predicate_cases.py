@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import narwhals as nw
 import polars as pl
@@ -36,7 +36,7 @@ def predicate_cases() -> list[PredicateCase]:
         PredicateCase(
             name="tz_timestamp",
             schema=schema,
-            exprs=[nw.col("ts_tz") > datetime(2024, 1, 1, tzinfo=timezone.utc)],
+            exprs=[nw.col("ts_tz") > datetime(2024, 1, 1, tzinfo=UTC)],
         ),
         PredicateCase(
             name="naive_timestamp",
@@ -73,7 +73,7 @@ def predicate_cases() -> list[PredicateCase]:
             schema=schema,
             exprs=[
                 nw.col("price") > 5,
-                nw.col("ts_tz") > datetime(2024, 1, 1, tzinfo=timezone.utc),
+                nw.col("ts_tz") > datetime(2024, 1, 1, tzinfo=UTC),
             ],
         ),
         PredicateCase(

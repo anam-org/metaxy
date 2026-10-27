@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, TypeVar, overload
 
 import tomli_w
 from pydantic import Field as PydanticField
@@ -15,7 +15,6 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
-from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents

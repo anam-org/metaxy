@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from datetime import UTC
 from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
@@ -486,7 +487,7 @@ def generate_plan_data(
     else:
         # Transform base upstream data for this plan's feature versions
         # Update provenance columns to reflect new feature versions
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         upstream_data: dict[str, pl.DataFrame] = {}
 
@@ -522,7 +523,7 @@ def generate_plan_data(
         downstream_df = downstream_nw.with_columns(
             nw.lit(child_version).alias(METAXY_FEATURE_VERSION),
             nw.lit(graph.project_version).alias("metaxy_project_version"),
-            nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+            nw.lit(datetime.now(UTC)).alias(METAXY_CREATED_AT),
         )
 
         return upstream_data, downstream_df.to_native()
@@ -977,13 +978,13 @@ class VersioningTests:
 
         try:
             with empty_store.open("w"):
-                from datetime import datetime, timezone
+                from datetime import datetime
 
                 import polars as pl
                 from metaxy.models.constants import METAXY_CREATED_AT
 
                 # Create duplicates with SAME timestamp for ALL samples
-                same_timestamp = datetime.now(timezone.utc)
+                same_timestamp = datetime.now(UTC)
 
                 # Write first version
                 version1 = parent_df.with_columns(pl.lit(same_timestamp).alias(METAXY_CREATED_AT))

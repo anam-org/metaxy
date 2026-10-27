@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC
 from pathlib import Path
 
 import polars as pl
@@ -186,7 +187,7 @@ def test_feature_schema_field_in_polars_schema():
 
 def test_feature_versions_model_has_feature_schema():
     """Test that FeatureVersionsModel Pydantic model has feature_schema field."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from metaxy.metadata_store.system.models import FeatureVersionsModel
 
@@ -196,7 +197,7 @@ def test_feature_versions_model_has_feature_schema():
         feature_key="test/feature",
         metaxy_feature_version="abc123",
         metaxy_definition_version="ghi789",
-        recorded_at=datetime.now(timezone.utc),
+        recorded_at=datetime.now(UTC),
         feature_spec='{"key": "value"}',
         feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestClass",

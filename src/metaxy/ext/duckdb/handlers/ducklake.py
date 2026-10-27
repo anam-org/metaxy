@@ -1,7 +1,7 @@
 """Shared DuckLake configuration helpers."""
 
 from collections.abc import Mapping
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from duckdb import DuckDBPyConnection  # noqa: TID253
 from pydantic import (
@@ -10,7 +10,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import Self
 
 from metaxy._decorators import public
 

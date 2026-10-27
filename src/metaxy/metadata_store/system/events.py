@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Annotated, Literal
 
@@ -78,7 +78,7 @@ class Event(BaseModel):
     event_type: EventType
     project: str
     execution_id: str  # Generic ID for the execution (migration, job, etc.)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     feature_key: str | None = None  # Feature key for feature-level events, empty for execution-level events
     payload: Annotated[Payload, Field(default_factory=EmptyPayload, discriminator="type")]
 

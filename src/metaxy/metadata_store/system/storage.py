@@ -6,6 +6,7 @@ Provides type-safe access to system tables using struct-based storage.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
@@ -149,7 +150,7 @@ class SystemTableStorage:
         # Convert to DataFrame - need to serialize feature_spec dict to JSON string
         # and add metaxy_project_version and recorded_at columns
         import json
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         current_snapshot = pl.concat(
             [
@@ -161,7 +162,7 @@ class SystemTableStorage:
                             for field, val in v.items()
                         },
                         METAXY_PROJECT_VERSION: project_version,
-                        "recorded_at": datetime.now(timezone.utc),
+                        "recorded_at": datetime.now(UTC),
                         "tags": json.dumps(tags),
                     }
                 ).to_polars()

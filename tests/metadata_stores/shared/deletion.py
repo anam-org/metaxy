@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import narwhals as nw
 import polars as pl
@@ -27,7 +27,7 @@ class DeletionTests:
 
     @pytest.fixture
     def base_time(self) -> datetime:
-        return datetime(2024, 1, 1, tzinfo=timezone.utc)
+        return datetime(2024, 1, 1, tzinfo=UTC)
 
     @pytest.fixture
     def make_value_df(self) -> Callable[..., pl.DataFrame]:
@@ -106,16 +106,16 @@ class DeletionTests:
                     "active",
                 ],
                 "ts_tz": [
-                    datetime(2024, 1, 1, tzinfo=timezone.utc),
-                    datetime(2024, 1, 2, tzinfo=timezone.utc),
-                    datetime(2024, 1, 3, tzinfo=timezone.utc),
-                    datetime(2024, 1, 4, tzinfo=timezone.utc),
-                    datetime(2024, 1, 5, tzinfo=timezone.utc),
-                    datetime(2024, 1, 6, tzinfo=timezone.utc),
-                    datetime(2024, 1, 7, tzinfo=timezone.utc),
-                    datetime(2024, 1, 8, tzinfo=timezone.utc),
-                    datetime(2024, 1, 9, tzinfo=timezone.utc),
-                    datetime(2024, 1, 10, tzinfo=timezone.utc),
+                    datetime(2024, 1, 1, tzinfo=UTC),
+                    datetime(2024, 1, 2, tzinfo=UTC),
+                    datetime(2024, 1, 3, tzinfo=UTC),
+                    datetime(2024, 1, 4, tzinfo=UTC),
+                    datetime(2024, 1, 5, tzinfo=UTC),
+                    datetime(2024, 1, 6, tzinfo=UTC),
+                    datetime(2024, 1, 7, tzinfo=UTC),
+                    datetime(2024, 1, 8, tzinfo=UTC),
+                    datetime(2024, 1, 9, tzinfo=UTC),
+                    datetime(2024, 1, 10, tzinfo=UTC),
                 ],
                 "ts_naive": [
                     datetime(2024, 1, 1),
@@ -379,7 +379,7 @@ class DeletionTests:
             soft_deleted = store.read(RestoreFeature).collect().to_polars()
             assert soft_deleted.is_empty()
 
-            replacement_time = datetime.now(timezone.utc) + timedelta(seconds=1)
+            replacement_time = datetime.now(UTC) + timedelta(seconds=1)
             replacement = make_value_df(
                 sample_uids=["a"],
                 values=[2],
@@ -653,7 +653,7 @@ class DeletionTests:
         delete_filter_feature: type[SampleFeature],
         base_delete_filter_df: pl.DataFrame,
     ) -> None:
-        cutoff = datetime(2024, 1, 5, tzinfo=timezone.utc)
+        cutoff = datetime(2024, 1, 5, tzinfo=UTC)
         with store.open("w"):
             store.write(delete_filter_feature, base_delete_filter_df)
             store.delete(

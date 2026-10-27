@@ -43,7 +43,7 @@ def _install_coverage_subprocess(session: nox.Session) -> None:
 
 
 @nox_uv.session(
-    python="3.10",
+    python="3.11",
     uv_extras=["duckdb"],
     uv_all_groups=True,
     uv_sync_locked=False,
@@ -66,7 +66,7 @@ def integration(session: nox.Session, integration: str) -> None:
 
 
 @nox_uv.session(
-    python="3.10",
+    python="3.11",
     uv_all_extras=True,
     uv_all_groups=True,
     uv_sync_locked=False,

@@ -14,7 +14,7 @@ on:
       python-versions:
         description: "JSON array of Python versions to test"
         type: string
-        default: '["3.10"]'
+        default: '["3.11"]'
       run-windows:
         description: "Run Windows tests"
         type: boolean
@@ -366,7 +366,7 @@ jobs:
     if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
     runs-on: depot-ubuntu-latest
     env:
-      DEVENV_PYTHON_VERSION: "3.10"
+      DEVENV_PYTHON_VERSION: "3.11"
     strategy:
       fail-fast: false
       matrix:
@@ -485,7 +485,7 @@ jobs:
       - filter
     if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
     env:
-      DEVENV_PYTHON_VERSION: "3.10"
+      DEVENV_PYTHON_VERSION: "3.11"
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2

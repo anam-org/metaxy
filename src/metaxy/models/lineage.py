@@ -10,11 +10,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
-from typing_extensions import Self
 
 from metaxy._decorators import public
 

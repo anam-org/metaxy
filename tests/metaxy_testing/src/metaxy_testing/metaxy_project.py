@@ -6,7 +6,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-from contextlib import contextmanager
+from contextlib import chdir, contextmanager
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -23,22 +23,6 @@ from metaxy.models.feature_spec import (
     FeatureSpecWithIDColumns,
 )
 from metaxy.versioning.types import HashAlgorithm
-
-# Use stdlib chdir on Python 3.11+, otherwise provide our own
-if sys.version_info >= (3, 11):
-    from contextlib import chdir
-else:
-
-    @contextmanager
-    def chdir(path: Path):
-        """Context manager to temporarily change working directory."""
-        old_cwd = os.getcwd()
-        try:
-            os.chdir(path)
-            yield
-        finally:
-            os.chdir(old_cwd)
-
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 

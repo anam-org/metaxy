@@ -3,7 +3,7 @@
 import random
 import time
 import warnings
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import narwhals as nw
 import polars as pl
@@ -402,7 +402,7 @@ class WriteTests:
             value: int
 
         num_rows = 100
-        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         # The row with value=42 will have the LATEST timestamp
         latest_value = 42
         latest_time = base_time + timedelta(days=365)  # 1 year later than all others
@@ -518,7 +518,7 @@ class WriteTests:
             value: int
 
         # Create a timestamp far in the past
-        past_time = datetime(2020, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        past_time = datetime(2020, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         # Write data WITH metaxy_updated_at already set to past_time
         data = pl.DataFrame(
@@ -544,7 +544,7 @@ class WriteTests:
             )
 
             # Verify it's close to "now" (within last minute)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             time_diff = now - actual_ts
             assert time_diff.total_seconds() < 60, (
                 f"Expected metaxy_updated_at to be recent (within 60s of now), "

@@ -9,11 +9,9 @@
   pythonVersionEnv = builtins.getEnv "DEVENV_PYTHON_VERSION";
   pythonVersion =
     if pythonVersionEnv == ""
-    then "3.10"
+    then "3.11"
     else pythonVersionEnv;
   pythonPackages = {
-    # 3.10 is sourced from nixpkgs-python since nixpkgs-unstable dropped it after EOL
-    "3.10" = inputs.nixpkgs-python.packages.${pkgs.system}."3.10";
     "3.11" = pkgs.python311;
     "3.12" = pkgs.python312;
     "3.13" = pkgs.python313;

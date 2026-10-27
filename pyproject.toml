@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
   { name = "Daniel Gafni", email = "danielgafni16@gmail.com" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 4 - Beta",
   "License :: OSI Approved :: Apache Software License",
@@ -19,7 +19,6 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -29,7 +28,6 @@ classifiers = [
 dependencies = [
   "cyclopts>=4.4.0",
   "narwhals>=2.20.0",
-  "typing-extensions>=4.0.0",
   "pydantic-core>=2.0.0",
   "polars>=1.35.0",
   "polars-hash>=0.5.1",
@@ -249,7 +247,7 @@ show_missing = true
 skip_covered = false
 
 [tool.ty.environment]
-python-version = "3.10"
+python-version = "3.11"
 
 [tool.ty.src]
 include = [

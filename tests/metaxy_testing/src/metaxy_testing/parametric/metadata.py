@@ -10,6 +10,7 @@ Uses Polars' native parametric testing for efficient DataFrame generation.
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC
 from typing import TYPE_CHECKING, TypeVar, overload
 
 import polars as pl
@@ -314,9 +315,9 @@ def feature_metadata_strategy(
     )
 
     # Add timestamp columns
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    ts = datetime.now(timezone.utc)
+    ts = datetime.now(UTC)
     df = df.with_columns(
         pl.lit(ts).alias(METAXY_CREATED_AT),
         pl.lit(ts).alias(METAXY_UPDATED_AT),
@@ -741,9 +742,9 @@ def downstream_metadata_strategy(
         )
 
     # Use Narwhals lit since downstream_df is a Narwhals DataFrame
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    ts = datetime.now(timezone.utc)
+    ts = datetime.now(UTC)
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(project_version).alias(METAXY_PROJECT_VERSION),

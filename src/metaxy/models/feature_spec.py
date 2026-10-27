@@ -4,12 +4,11 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, overload
+from typing import TYPE_CHECKING, Annotated, Any, Self, TypeAlias, overload
 
 import narwhals as nw
 import pydantic
 from pydantic import BeforeValidator
-from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy._hashing import truncate_hash

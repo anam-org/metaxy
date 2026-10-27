@@ -1,11 +1,10 @@
-from typing import Any, TypeVar, overload
+from typing import Any, Self, TypeVar, overload
 
 import dagster as dg
 from dagster._core.definitions.events import (
     CoercibleToAssetKey,
     CoercibleToAssetKeyPrefix,
 )
-from typing_extensions import Self
 
 import metaxy as mx
 from metaxy._decorators import public

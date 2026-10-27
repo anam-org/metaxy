@@ -1,6 +1,6 @@
 """Tests for SQL generation helpers."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import datafusion
 import duckdb
@@ -43,16 +43,16 @@ def duckdb_datafusion_table() -> pa.Table:
             ),
             "ts_tz": pa.array(
                 [
-                    datetime(2024, 1, 1, tzinfo=timezone.utc),
-                    datetime(2024, 1, 2, tzinfo=timezone.utc),
-                    datetime(2024, 1, 3, tzinfo=timezone.utc),
-                    datetime(2024, 1, 4, tzinfo=timezone.utc),
-                    datetime(2024, 1, 5, tzinfo=timezone.utc),
-                    datetime(2024, 1, 6, tzinfo=timezone.utc),
-                    datetime(2024, 1, 7, tzinfo=timezone.utc),
-                    datetime(2024, 1, 8, tzinfo=timezone.utc),
-                    datetime(2024, 1, 9, tzinfo=timezone.utc),
-                    datetime(2024, 1, 10, tzinfo=timezone.utc),
+                    datetime(2024, 1, 1, tzinfo=UTC),
+                    datetime(2024, 1, 2, tzinfo=UTC),
+                    datetime(2024, 1, 3, tzinfo=UTC),
+                    datetime(2024, 1, 4, tzinfo=UTC),
+                    datetime(2024, 1, 5, tzinfo=UTC),
+                    datetime(2024, 1, 6, tzinfo=UTC),
+                    datetime(2024, 1, 7, tzinfo=UTC),
+                    datetime(2024, 1, 8, tzinfo=UTC),
+                    datetime(2024, 1, 9, tzinfo=UTC),
+                    datetime(2024, 1, 10, tzinfo=UTC),
                 ],
                 type=pa.timestamp("us", tz="UTC"),
             ),
@@ -127,8 +127,8 @@ def test_strip_table_qualifiers_handles_aliases() -> None:
 def test_narwhals_predicate_executes_in_datafusion() -> None:
     ctx = datafusion.SessionContext()
     ts_values = [
-        datetime(2024, 1, 1, tzinfo=timezone.utc),
-        datetime(2024, 1, 2, tzinfo=timezone.utc),
+        datetime(2024, 1, 1, tzinfo=UTC),
+        datetime(2024, 1, 2, tzinfo=UTC),
     ]
     batch = pa.record_batch(
         [pa.array([1.0, 10.0]), pa.array(ts_values, type=pa.timestamp("us", "UTC"))],
@@ -140,7 +140,7 @@ def test_narwhals_predicate_executes_in_datafusion() -> None:
         pl.DataFrame(schema={"price": pl.Float64, "ts": pl.Datetime(time_zone="UTC")})
     ).collect_schema()
     predicate = narwhals_expr_to_sql_predicate(
-        [nw.col("price") > 5, nw.col("ts") > datetime(2024, 1, 1, tzinfo=timezone.utc)],
+        [nw.col("price") > 5, nw.col("ts") > datetime(2024, 1, 1, tzinfo=UTC)],
         schema,
         dialect="datafusion",
     )

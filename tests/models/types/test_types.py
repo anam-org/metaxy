@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, assert_type
 
 import pytest
 from metaxy import BaseFeature
@@ -14,7 +14,6 @@ from metaxy.models.types import (
 )
 from metaxy_testing.models import SampleFeatureSpec
 from pydantic import ValidationError
-from typing_extensions import assert_type
 
 if TYPE_CHECKING:
     pass

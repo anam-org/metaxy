@@ -5,15 +5,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypeVar, cast, overload
 
 import narwhals as nw
 from narwhals.typing import Frame, FrameT, IntoFrame
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
 
 from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
@@ -1476,7 +1475,7 @@ class MetadataStore(ABC):
             yield self._transaction_timestamp
         else:
             # Start new transaction
-            self._transaction_timestamp = datetime.now(timezone.utc)
+            self._transaction_timestamp = datetime.now(UTC)
             if soft_delete:
                 self._soft_delete_in_progress = True
             try:

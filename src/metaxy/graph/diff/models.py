@@ -1,10 +1,9 @@
 """Core data models for graph rendering."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import Field
-from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey

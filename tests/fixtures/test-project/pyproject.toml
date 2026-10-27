@@ -2,7 +2,7 @@
 name = "test-metaxy-project"
 version = "0.1.0"
 description = "Test project for Metaxy project detection tests"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = []
 
 [project.entry-points."metaxy.project"]

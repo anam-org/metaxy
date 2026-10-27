@@ -3,11 +3,10 @@
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
-from typing_extensions import Self
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -23,7 +23,7 @@ def test_transaction_sets_and_clears_timestamp(store: DuckDBMetadataStore):
         assert store._transaction_timestamp is not None
         assert store._transaction_timestamp == ts
         assert isinstance(ts, datetime)
-        assert ts.tzinfo == timezone.utc
+        assert ts.tzinfo == UTC
 
     assert store._transaction_timestamp is None
 
