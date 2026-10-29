@@ -1,0 +1,14 @@
+{
+  "name": "slidev-theme-jubust",
+  "version": "0.1.0",
+  "engines": {
+    "slidev": ">=0.48.0"
+  },
+  "slidev": {
+    "colorSchema": "both",
+    "fonts": {
+      "sans": "Mona Sans",
+      "provider": "none"
+    }
+  }
+}

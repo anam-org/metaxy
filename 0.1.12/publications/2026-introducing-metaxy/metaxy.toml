@@ -1,0 +1,3 @@
+project = "metaxy_paper_benchmark"
+auto_create_tables = true
+enable_map_datatype = true

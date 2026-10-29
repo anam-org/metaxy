@@ -1,0 +1,230 @@
+/* ─────────────────────────────────────────────────────────
+   Jubust Deck Design System — slidev-theme-jubust
+   Surfaces: dark navy · dark-closing · deep slate · light · white
+   Typography: EB Garamond (display) · Mona Sans (UI/body)
+   Accent: teal-700 on light, teal-300/400 on dark
+───────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap');
+
+/* ── Design Tokens ──────────────────────────────────────
+   Override per deck via :root { --j-* } in the deck's
+   first <style> block.
+─────────────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --j-navy:           #08111d;
+  --j-deep:           #0f172a;
+  --j-light:          #f6f4ef;
+  --j-white:          #ffffff;
+
+  /* Accent */
+  --j-teal:           #0f766e;   /* teal-700 — on light */
+  --j-teal-dark:      #5eead4;   /* teal-300 — on dark  */
+  --j-teal-callout-bg:#f0fdf9;
+  --j-teal-callout-border: #0f766e;
+
+  /* Dark callout */
+  --j-dark-callout-bg:     rgba(19, 78, 74, 0.2);
+  --j-dark-callout-border: rgba(94, 234, 212, 0.3);
+
+  /* Typography scale */
+  --j-title-size:     5.5rem;
+  --j-heading-size:   3rem;
+  --j-subheading-size:1.875rem;
+  --j-lead-size:      1.25rem;
+
+  /* Spacing */
+  --j-slide-px:       4rem;    /* px-16 */
+  --j-slide-py:       2.5rem;  /* py-10 */
+}
+
+/* ── Base ───────────────────────────────────────────── */
+.slidev-layout {
+  font-family: 'Mona Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.slidev-slide-content {
+  font-weight: 300;
+}
+
+/* ── Slide surfaces ─────────────────────────────────── */
+
+.slide-dark {
+  background-color: var(--j-navy);
+  background-image:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.14), transparent 32%),
+    radial-gradient(circle at 80% 16%, rgba(59, 130, 246, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  color: #ffffff;
+}
+
+.slide-dark-closing {
+  background-color: var(--j-navy);
+  background-image:
+    radial-gradient(circle at bottom right, rgba(125, 211, 252, 0.12), transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+  color: #ffffff;
+}
+
+.slide-deep {
+  background-color: var(--j-deep);
+  color: #ffffff;
+}
+
+.slide-light {
+  background-color: var(--j-light);
+  color: #0a0a0a;
+}
+
+.slide-white {
+  background-color: var(--j-white);
+  color: #0a0a0a;
+}
+
+/* ── Grid overlay (dark slides) ─────────────────────── */
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.2;
+}
+
+/* ── Typography ─────────────────────────────────────── */
+
+.j-serif {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-optical-sizing: auto;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+.slide-title {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-size: var(--j-title-size);
+  line-height: 1.02;
+  font-optical-sizing: auto;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+.slide-heading {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-size: var(--j-heading-size);
+  line-height: 1.1;
+  font-optical-sizing: auto;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+.slide-subheading {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-size: var(--j-subheading-size);
+  line-height: 1.2;
+  font-optical-sizing: auto;
+}
+
+.slide-text-serif {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-optical-sizing: auto;
+}
+
+.font-display {
+  font-family: 'Mona Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: #737373;
+}
+
+.eyebrow-light {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: rgba(186, 230, 253, 0.7);
+}
+
+.mono-label {
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.lead {
+  font-size: var(--j-lead-size);
+  line-height: 1.75;
+  color: #404040;
+}
+
+.lead-dark {
+  font-size: var(--j-lead-size);
+  line-height: 1.75;
+  color: #cbd5e1;
+}
+
+/* ── Callout boxes ───────────────────────────────────── */
+
+.teal-callout {
+  border-left: 2px solid var(--j-teal-callout-border);
+  background-color: var(--j-teal-callout-bg);
+  padding: 1.5rem 2rem;
+}
+
+.dark-callout {
+  border: 1px solid var(--j-dark-callout-border);
+  background-color: var(--j-dark-callout-bg);
+  padding: 1rem 1.25rem;
+}
+
+/* ── Stage card (pipeline slide) ────────────────────── */
+.stage-card {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.04);
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Row dividers ────────────────────────────────────── */
+.divider-light {
+  border-top: 1px solid #d4d4d4;
+}
+
+.divider-dark {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ── Phase cards (v1 strategy) ───────────────────────── */
+.phase-card-solid {
+  border: 2px solid var(--j-teal);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.phase-card-dashed {
+  border: 1px dashed #a3a3a3;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  opacity: 0.75;
+}
