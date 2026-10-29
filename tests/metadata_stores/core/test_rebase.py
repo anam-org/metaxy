@@ -10,6 +10,7 @@ import polars as pl
 import pytest
 from metaxy import (
     FeatureDep,
+    FeatureGraph,
     FeatureKey,
     FieldDep,
     FieldKey,
@@ -19,7 +20,8 @@ from metaxy import (
 from metaxy.config import MetaxyConfig
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.metadata_store.system.storage import SystemTableStorage
-from metaxy_testing.models import SampleFeatureSpec
+from metaxy.models.lineage import LineageRelationship
+from metaxy_testing.models import SampleFeature, SampleFeatureSpec
 
 from metaxy_testing import TempFeatureModule, add_metaxy_provenance_column
 
@@ -492,3 +494,124 @@ def test_write_fills_null_data_version_from_provenance(store: MetadataStore, mak
         # Rows 1-2: null data_version_by_field filled from provenance
         for i in [1, 2]:
             assert result["metaxy_data_version_by_field"][i] == result["metaxy_provenance_by_field"][i]
+
+
+def _define_expansion_features(code_version: str) -> tuple[type[SampleFeature], type[SampleFeature]]:
+    class Document(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["rebase", "document"]),
+            id_columns=("document_id",),
+            fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class Chunk(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["rebase", "chunk"]),
+            id_columns=("chunk_id",),
+            deps=[FeatureDep(feature=Document, lineage=LineageRelationship.expansion(on=["document_id"]))],
+            fields=[FieldSpec(key=FieldKey(["content"]), code_version=code_version)],
+        ),
+    ):
+        pass
+
+    return Document, Chunk
+
+
+def _define_aggregation_features(code_version: str) -> tuple[type[SampleFeature], type[SampleFeature]]:
+    class Anchor(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["rebase", "anchor"]),
+            id_columns=("document_id", "anchor_id"),
+            fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    class Summary(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["rebase", "summary"]),
+            id_columns=("document_id",),
+            deps=[FeatureDep(feature=Anchor, lineage=LineageRelationship.aggregation(on=["document_id"]))],
+            fields=[FieldSpec(key=FieldKey(["content"]), code_version=code_version)],
+        ),
+    ):
+        pass
+
+    return Anchor, Summary
+
+
+def test_rebase_expansion_feature(store: MetadataStore):
+    """Rebase keeps every child row of an expansion feature and its custom data version."""
+    with FeatureGraph().use() as v1, store.open("w"):
+        Document, Chunk = _define_expansion_features("1")
+        store.write(
+            Document,
+            pl.DataFrame({"document_id": ["d1"], "metaxy_provenance_by_field": [{"content": "v1"}]}),
+        )
+        parent = store.resolve_update(Chunk).new.to_polars().row(0, named=True)
+        store.write(
+            Chunk,
+            pl.DataFrame(
+                {
+                    "document_id": ["d1", "d1"],
+                    "chunk_id": ["a", "b"],
+                    "metaxy_provenance_by_field": [parent["metaxy_provenance_by_field"]] * 2,
+                    "metaxy_provenance": [parent["metaxy_provenance"]] * 2,
+                    "metaxy_data_version_by_field": [{"content": "content-a"}, {"content": "content-b"}],
+                    "metaxy_data_version": ["content-a", "content-b"],
+                }
+            ),
+        )
+        old_version = v1.get_feature_version(Chunk.spec().key)
+
+    with FeatureGraph().use() as v2, store.open("w"):
+        _, Chunk = _define_expansion_features("2")
+        existing = store.read(
+            Chunk, with_feature_history=True, filters=[nw.col("metaxy_feature_version") == old_version]
+        )
+        rebased = store.rebase(Chunk, existing).collect().to_polars().sort("chunk_id")
+
+        assert rebased["chunk_id"].to_list() == ["a", "b"]
+        assert rebased["metaxy_data_version"].to_list() == ["content-a", "content-b"]
+        assert rebased["metaxy_feature_version"].unique().to_list() == [v2.get_feature_version(Chunk.spec().key)]
+        assert rebased["metaxy_provenance"].n_unique() == 1
+        assert rebased["metaxy_provenance"][0] != parent["metaxy_provenance"]
+
+
+def test_rebase_aggregation_feature(store: MetadataStore):
+    """Rebase returns one row per sample of an aggregation feature."""
+    with FeatureGraph().use() as v1, store.open("w"):
+        Anchor, Summary = _define_aggregation_features("1")
+        store.write(
+            Anchor,
+            pl.DataFrame(
+                {
+                    "document_id": ["d1", "d1", "d1"],
+                    "anchor_id": ["a1", "a2", "a3"],
+                    "metaxy_provenance_by_field": [{"content": v} for v in ("v1", "v2", "v3")],
+                }
+            ),
+        )
+        store.write(
+            Summary,
+            store.resolve_update(Summary)
+            .new.to_polars()
+            .select("document_id", "metaxy_provenance_by_field", "metaxy_provenance")
+            .unique("document_id"),
+        )
+        old_version = v1.get_feature_version(Summary.spec().key)
+
+    with FeatureGraph().use(), store.open("w"):
+        _, Summary = _define_aggregation_features("2")
+        existing = store.read(
+            Summary, with_feature_history=True, filters=[nw.col("metaxy_feature_version") == old_version]
+        )
+        rebased = store.rebase(Summary, existing).collect().to_polars()
+
+        assert rebased["document_id"].to_list() == ["d1"]
