@@ -21,6 +21,70 @@ While Metaxy's core functionality and versioning engine are **_stable_** and qui
 <!-- --8<-- [end:header] -->
 <!-- --8<-- [start:releases] -->
 
+## v0.1.12 (29-10-2026)
+
+### :bug: Bug Fixes
+
+#### Core
+
+- support expansion and aggregation lineage ([#1276](https://github.com/anam-org/metaxy/pull/1276) by [@danielgafni](https://github.com/danielgafni))
+- order aggregation group members by all upstream ID columns ([#1275](https://github.com/anam-org/metaxy/pull/1275) by [@danielgafni](https://github.com/danielgafni))
+
+#### Cli
+
+- ensure features are pushed when upstream features from another project have been updated in the lock file ([#1277](https://github.com/anam-org/metaxy/pull/1277) by [@danielgafni](https://github.com/danielgafni))
+- map dry-run delete row counts by feature key instead of concat position (by [@Voyagerroc-Pro](https://github.com/Voyagerroc-Pro))
+- resolve relative `--output` paths ([#1274](https://github.com/anam-org/metaxy/pull/1274) by [@danielgafni](https://github.com/danielgafni))
+- keep external features synced from the store in the lock file ([#1273](https://github.com/anam-org/metaxy/pull/1273) by [@danielgafni](https://github.com/danielgafni))
+- detect feature version changes when the definition is unchanged ([#1272](https://github.com/anam-org/metaxy/pull/1272) by [@danielgafni](https://github.com/danielgafni))
+
+#### Clickhouse
+- set `join_use_nulls=1` to enforce joining missing ([#1252](https://github.com/anam-org/metaxy/pull/1252) by [@geoHeil](https://github.com/geoHeil))
+- optional feature dependencies as nulls
+
+### :book: Docs
+
+- document how external consumers read Metaxy metadata ([#1265](https://github.com/anam-org/metaxy/pull/1265) by [@geoHeil](https://github.com/geoHeil))
+- require ASD-STE100 Simplified Technical English in agent communication ([#1264](https://github.com/anam-org/metaxy/pull/1264) by [@geoHeil](https://github.com/geoHeil))
+
+### :zap: Performance
+
+#### Ibis
+
+- Latest-row reads on Ibis stores aggregate only keys and timestamps and
+- preserve whole rows when timestamps tie. ([#1258](https://github.com/anam-org/metaxy/pull/1258) by [@geoHeil](https://github.com/geoHeil))
+
+### :hammer_and_wrench: Other Improvements
+
+- pin pydantic-settings to >= 2.16.2 ([#1267](https://github.com/anam-org/metaxy/pull/1267) by [@danielgafni](https://github.com/danielgafni))
+- drop support for Python 3.10 ([#1266](https://github.com/anam-org/metaxy/pull/1266) by [@danielgafni](https://github.com/danielgafni))
+- start coverage before pytest imports Metaxy ([#1262](https://github.com/anam-org/metaxy/pull/1262) by [@peterroelants](https://github.com/peterroelants))
+- add `just` to devenv ([#1236](https://github.com/anam-org/metaxy/pull/1236) by [@superstealthysheep](https://github.com/superstealthysheep))
+- update ty to 0.0.63 ([#1233](https://github.com/anam-org/metaxy/pull/1233) by [@danielgafni](https://github.com/danielgafni))
+
+#### Clickhouse
+
+- update clickhouse ([#1224](https://github.com/anam-org/metaxy/pull/1224) by [@geoHeil](https://github.com/geoHeil))
+
+#### Dependencies
+
+- do not leak pytest-cases to runtime deps ([#1234](https://github.com/anam-org/metaxy/pull/1234) by [@geoHeil](https://github.com/geoHeil))
+
+#### Publications
+
+- add doi ([#1223](https://github.com/anam-org/metaxy/pull/1223) by [@geoHeil](https://github.com/geoHeil))
+- fix references ([#1222](https://github.com/anam-org/metaxy/pull/1222) by [@geoHeil](https://github.com/geoHeil))
+
+#### Sqlmodel
+
+- stabilize DuckDB integration snapshot ([#1260](https://github.com/anam-org/metaxy/pull/1260) by [@peterroelants](https://github.com/peterroelants))
+
+### :heart: New Contributors
+
+- [@peterroelants](https://github.com/peterroelants) made their first contribution in [#1262](https://github.com/anam-org/metaxy/pull/1262)
+- [@Voyagerroc-Pro](https://github.com/Voyagerroc-Pro) made their first contribution in [#](https://github.com/anam-org/metaxy/pull/)
+- [@superstealthysheep](https://github.com/superstealthysheep) made their first contribution in [#1236](https://github.com/anam-org/metaxy/pull/1236)
+
 ## v0.1.11 (09-06-2026)
 
 ### :sparkles: Features

@@ -93,9 +93,9 @@ changelog tag="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ -n "{{tag}}" ]; then
-        git cliff --tag "{{tag}}" -o CHANGELOG.md
+        git cliff --unreleased --tag "{{tag}}" --prepend CHANGELOG.md
     else
-        git cliff -o CHANGELOG.md
+        git cliff --unreleased --prepend CHANGELOG.md
     fi
 
 # Create a release (version auto-detected from commits, or manually specified)
@@ -110,9 +110,9 @@ release bump="" message="":
     version="v$(uv version --short)"
     echo "__version__ = \"$(uv version --short)\"" > src/metaxy/_version.py
     if [ -n "{{message}}" ]; then
-        git cliff --tag "$version" --with-tag-message "{{message}}" -o CHANGELOG.md
+        git cliff --unreleased --tag "$version" --with-tag-message "{{message}}" --prepend CHANGELOG.md
     else
-        git cliff --tag "$version" -o CHANGELOG.md
+        git cliff --unreleased --tag "$version" --prepend CHANGELOG.md
     fi
 
 # Create an annotated tag for the current version, opening the editor for the message
