@@ -377,3 +377,6 @@ TSWLatexianTemp*
 *.glstex
 
 # End of https://www.toptal.com/developers/gitignore/api/latex
+
+# ClickHouse local access storage
+access/
