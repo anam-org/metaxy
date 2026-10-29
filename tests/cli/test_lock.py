@@ -220,6 +220,42 @@ database = "{store_path}"
         lock_content = tomli.loads(lock_file.read_text())
         assert lock_content["features"] == {}
 
+    def test_lock_relative_output_path(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+        """Test that a relative --output path resolves against the working directory."""
+        from metaxy_testing import TempMetaxyProject
+
+        store_path = (tmp_path / "store.duckdb").as_posix()
+
+        config = f'''project = "test"
+store = "dev"
+auto_create_tables = true
+
+[stores.dev]
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "{store_path}"
+'''
+        project = TempMetaxyProject(tmp_path / "project", config_content=config)
+
+        def local_features():
+            from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
+
+            class LocalFeature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["local", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        with project.with_features(local_features):
+            result = project.run_cli(["lock", "--output", "fresh.lock"], check=False, capsys=capsys)
+        assert result.returncode == 0
+        assert (project.project_dir / "fresh.lock").exists()
+
     def test_lock_multiple_features(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that lock command handles multiple external dependencies."""
         from metaxy_testing import TempMetaxyProject
