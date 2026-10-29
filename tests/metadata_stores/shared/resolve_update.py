@@ -2625,6 +2625,64 @@ class ResolveUpdateTests:
                 f"Missing columns in aggregation result: {missing_columns}. Got columns: {actual_columns}"
             )
 
+    def test_aggregation_lineage_provenance_ignores_upstream_row_order(self, store: MetadataStore) -> None:
+        """Aggregated provenance must not depend on the physical order of upstream rows.
+
+        Narrowing `select` to the aggregation key must give the same provenance as selecting all columns.
+        """
+        from metaxy.models.lineage import LineageRelationship
+
+        def document_provenance(select: tuple[str, ...] | None) -> list[str]:
+            with FeatureGraph().use():
+
+                class Anchor(
+                    SampleFeature,
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(["agg_order_anchor"]),
+                        id_columns=("document_id", "anchor_id"),
+                        fields=[FieldSpec(key=FieldKey(["payload"]), code_version="1")],
+                    ),
+                ):
+                    pass
+
+                class Document(
+                    SampleFeature,
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(["agg_order_document"]),
+                        id_columns=("document_id",),
+                        deps=[
+                            FeatureDep(
+                                feature=Anchor,
+                                select=select,
+                                lineage=LineageRelationship.aggregation(on=["document_id"]),
+                            )
+                        ],
+                        fields=[FieldSpec(key=FieldKey(["payload"]), code_version="1")],
+                    ),
+                ):
+                    pass
+
+                with store.open("w"):
+                    if select is None:
+                        # One write per row, in reverse ID order, to vary the physical row order
+                        for anchor_id in [f"a{i}" for i in reversed(range(10))]:
+                            store.write(
+                                Anchor,
+                                pl.DataFrame(
+                                    {
+                                        "document_id": ["d1"],
+                                        "anchor_id": [anchor_id],
+                                        "metaxy_provenance_by_field": [{"payload": f"v-{anchor_id}"}],
+                                    }
+                                ),
+                            )
+                    new = store.resolve_update(Document, lazy=False).new.lazy().collect().to_polars()
+                    return new[METAXY_PROVENANCE].unique().to_list()
+
+        expected = document_provenance(None)
+        assert len(expected) == 1
+        assert document_provenance(("document_id",)) == expected
+
     def test_aggregation_lineage_preserves_columns_with_global_filter(
         self,
         store: MetadataStore,
