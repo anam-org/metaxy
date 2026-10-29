@@ -420,6 +420,62 @@ root_path = "{dev_path}"
     assert config.stores["prod"].type_cls == DeltaMetadataStore
 
 
+@pytest.fixture
+def delta_config_file(tmp_path: Path) -> Path:
+    config_file = tmp_path / "metaxy.toml"
+    config_file.write_text(f"""
+[stores.dev]
+type = "metaxy.ext.polars.handlers.delta.DeltaMetadataStore"
+
+[stores.dev.config]
+root_path = "{(tmp_path / "delta_dev").as_posix()}"
+""")
+    return config_file
+
+
+@pytest.mark.parametrize(
+    ("env_key", "env_value", "expected"),
+    [
+        ("FALLBACK_STORES", "[]", []),
+        ("FALLBACK_STORES", '["prod"]', ["prod"]),
+        ("STORAGE_OPTIONS", '{"key": "value"}', {"key": "value"}),
+        ("ROOT_PATH", "123", "123"),
+        ("ROOT_PATH", "true", "true"),
+        ("ROOT_PATH", "[not json", "[not json"),
+    ],
+)
+def test_store_config_env_var_json_decoding(
+    delta_config_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    env_key: str,
+    env_value: str,
+    expected: object,
+) -> None:
+    """JSON arrays and objects in store config env vars are decoded, other values stay strings."""
+    monkeypatch.setenv(f"METAXY_STORES__DEV__CONFIG__{env_key}", env_value)
+
+    config = MetaxyConfig.load(delta_config_file)
+
+    assert config.stores["dev"].config[env_key.lower()] == expected
+
+
+def test_store_config_env_var_json_list_creates_store(delta_config_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("METAXY_STORES__DEV__CONFIG__FALLBACK_STORES", "[]")
+
+    store = MetaxyConfig.load(delta_config_file).get_store("dev")
+
+    assert isinstance(store, DeltaMetadataStore)
+    assert store.fallback_stores == []
+
+
+def test_store_config_accepts_non_json_python_values(tmp_path: Path) -> None:
+    root_path = tmp_path / "delta_store"
+
+    config = StoreConfig(type="metaxy.ext.polars.handlers.delta.DeltaMetadataStore", config={"root_path": root_path})
+
+    assert config.config["root_path"] is root_path
+
+
 def test_partial_env_var_store_config_filtered_out_with_warning(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

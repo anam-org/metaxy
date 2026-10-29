@@ -35,7 +35,10 @@ class StoreConfig(BaseSettings):
         description='Full import path to metadata store class (e.g., `"metaxy.ext.duckdb.DuckDBMetadataStore"`)',
     )
 
-    config: dict[str, Any] = PydanticField(
+    # The list and dict members make pydantic-settings decode JSON arrays and objects in
+    # environment variables, while other values such as `123` stay strings.
+    # The `Any` member accepts arbitrary Python objects passed programmatically.
+    config: dict[str, list[Any] | dict[str, Any] | Any] = PydanticField(
         default_factory=dict,
         description="Store-specific configuration parameters (constructor kwargs). Includes `fallback_stores`, database connection parameters, etc.",
     )

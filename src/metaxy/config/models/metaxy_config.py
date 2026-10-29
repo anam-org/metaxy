@@ -627,7 +627,7 @@ class MetaxyConfig(BaseSettings):
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)
         # Only check if we explicitly configured a hash algorithm
-        if configured_hash_algorithm is not None and store.hash_algorithm != configured_hash_algorithm:
+        if isinstance(configured_hash_algorithm, HashAlgorithm) and store.hash_algorithm != configured_hash_algorithm:
             raise InvalidConfigError.from_config(
                 self,
                 f"Store '{name}' ({store_class.__name__}) was configured with "
