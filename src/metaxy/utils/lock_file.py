@@ -434,7 +434,7 @@ def _diff_lock_files(output_path: Path, new_lock: LockFile) -> LockFileResult:
     for k in sorted(common):
         old_info = old_lock.features[k].info
         new_info = new_lock.features[k].info
-        if old_info.definition_version != new_info.definition_version:
+        if old_info != new_info:
             updated.append(
                 FeatureUpdate(
                     project=new_lock.features[k].data.project,
