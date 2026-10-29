@@ -16,7 +16,7 @@ Preview unreleased changelog entries:
 just changelog-preview
 ```
 
-Regenerate the full `CHANGELOG.md`:
+Prepend unreleased entries to `CHANGELOG.md` (existing entries are not regenerated):
 
 ```bash
 just changelog
