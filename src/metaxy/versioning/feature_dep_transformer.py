@@ -13,6 +13,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.lineage import AggregationRelationship
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
 from metaxy.versioning.renamed_df import RenamedDataFrame
@@ -250,6 +251,21 @@ class FeatureDepTransformer:
         ]
 
     @cached_property
+    def aggregation_order_columns(self) -> list[str]:
+        """Upstream ID columns (after rename) selected only to order aggregation group members.
+
+        These columns are dropped after aggregation.
+        """
+        if self.dep.select is None or not isinstance(self.dep.lineage.relationship, AggregationRelationship):
+            return []
+        already_selected = {
+            *self._user_requested_columns,
+            *self._lineage_required_columns,
+            *self._join_required_columns,
+        }
+        return [col for col in self.renamed_id_columns if col not in already_selected]
+
+    @cached_property
     def renamed_columns(self) -> list[str] | None:
         """Columns to select, or None to select all."""
         if self.dep.select is None:
@@ -259,5 +275,6 @@ class FeatureDepTransformer:
             *self._user_requested_columns,
             *self._lineage_required_columns,
             *self._join_required_columns,
+            *self.aggregation_order_columns,
             *self.renamed_metaxy_cols,
         ]
