@@ -1927,11 +1927,14 @@ class MetadataStore(ABC):
 
         # Join fresh provenance onto the user data from the original frame.
         # Only take provenance columns from increment.new; everything else comes from working.
-        id_columns = list(plan.feature.id_columns)
+        # Provenance is computed per input unit (e.g. the parent for expansion, the group for
+        # aggregation), so join on the input ID columns with one row per unit.
+        target_plan = target_graph.get_feature_plan(feature_key)
+        join_columns = target_plan.input_id_columns or list(target_plan.feature.id_columns)
         provenance_columns = [METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD]
         rebased = working.lazy().join(
-            increment.new.select([*id_columns, *provenance_columns]),
-            on=id_columns,
+            increment.new.select([*join_columns, *provenance_columns]).unique(subset=join_columns),
+            on=join_columns,
             how="inner",
         )
 
