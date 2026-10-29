@@ -194,12 +194,13 @@ def generate_lock_file(
 
     graph = FeatureGraph.get_active()
 
-    # Find all dependency keys referenced by non-external features in the graph
+    # Find all dependency keys referenced by features defined in this environment.
+    # Definitions taken from the lock file or synced from the store are not local.
     local_keys: set[FeatureKey] = set()
     referenced_dep_keys: set[FeatureKey] = set()
 
     for key, defn in graph.feature_definitions_by_key.items():
-        if not defn.is_external:
+        if not defn.is_external and not defn._is_synced:
             local_keys.add(key)
             for dep in defn.spec.deps:
                 referenced_dep_keys.add(dep.feature)

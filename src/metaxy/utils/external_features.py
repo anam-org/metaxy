@@ -143,6 +143,7 @@ def _load_selection(
             batch = storage.resolve_selection(current_selection)
             for defn in batch:
                 if defn.key not in loaded_keys:
+                    defn._is_synced = True  # ty: ignore[invalid-assignment]
                     result.append(defn)
                     loaded_keys.add(defn.key)
                     graph.add_feature_definition(defn, on_conflict="ignore")
