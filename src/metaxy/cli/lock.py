@@ -70,7 +70,7 @@ def lock(
 
     # Determine output path
     if output:
-        output_path = Path(output)
+        output_path = Path(output).absolute()
     elif config.lock_file:
         output_path = config.lock_file
     else:
