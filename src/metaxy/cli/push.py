@@ -78,7 +78,7 @@ def push(
 
         # Scenario 2: Feature info updates to existing snapshot
         elif result.updated_features:
-            console.print("[blue]ℹ[/blue] [cyan]Updated feature information[/cyan] (no topological changes)")
+            console.print("[blue]ℹ[/blue] [cyan]Updated feature information[/cyan] (project version unchanged)")
             console.print("  [dim]Updated features:[/dim]")
             for feature_key in result.updated_features:
                 console.print(f"    [yellow]- {feature_key}[/yellow]")
