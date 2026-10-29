@@ -77,6 +77,10 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://docs.metaxy.io/main/guide/concepts/lifecycle/connecting-external-consumers/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/lifecycle/deployment/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -210,6 +214,10 @@
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/system-columns/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.metaxy.io/main/reference/system-tables/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
