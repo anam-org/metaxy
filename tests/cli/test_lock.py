@@ -486,6 +486,82 @@ database = "{store_path}"
         assert "+" not in result.stderr
         assert "~" not in result.stderr
 
+    def test_lock_with_sync_keeps_external_features(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+        """Test that `--sync` does not drop synced external features from the lock file."""
+        from metaxy_testing import TempMetaxyProject
+
+        store_path = (tmp_path / "shared_store.duckdb").as_posix()
+
+        source_config = f'''project = "source"
+store = "shared"
+auto_create_tables = true
+
+[stores.shared]
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
+
+[stores.shared.config]
+database = "{store_path}"
+'''
+        source_project = TempMetaxyProject(tmp_path / "source", config_content=source_config)
+
+        def source_features():
+            from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
+
+            class Feature(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["ext", "feat"]),
+                    fields=[FieldSpec(key=FieldKey(["v"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        with source_project.with_features(source_features):
+            source_project.run_cli(["push"], capsys=capsys)
+
+        consumer_config = f'''project = "consumer"
+store = "shared"
+auto_create_tables = true
+
+[stores.shared]
+type = "metaxy.ext.duckdb.DuckDBMetadataStore"
+
+[stores.shared.config]
+database = "{store_path}"
+'''
+        consumer_project = TempMetaxyProject(tmp_path / "consumer", config_content=consumer_config)
+
+        def consumer_features():
+            from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+            from metaxy_testing.models import SampleFeatureSpec
+
+            class Local(
+                BaseFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["consumer", "local"]),
+                    deps=[FeatureDep(feature="ext/feat")],
+                    fields=[FieldSpec(key=FieldKey(["r"]), code_version="1")],
+                ),
+            ):
+                pass
+
+        # First lock: should add
+        with consumer_project.with_features(consumer_features):
+            result = consumer_project.run_cli(["lock"], capsys=capsys)
+        assert result.returncode == 0
+        assert "+ ext/feat" in result.stderr
+        assert "Updated metaxy.lock" in result.stderr
+
+        # Second lock with --sync: external features loaded from the store must stay locked
+        with consumer_project.with_features(consumer_features):
+            result = consumer_project.run_cli(["--sync", "lock"], capsys=capsys)
+        assert result.returncode == 0
+        assert "is up to date" in result.stderr
+        assert "+" not in result.stderr
+        assert "~" not in result.stderr
+        assert "ext/feat" in tomli.loads((consumer_project.project_dir / "metaxy.lock").read_text())["features"]
+
     def test_lock_shows_updated_features(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
         """Test that re-running lock after a feature change shows updated features."""
         from metaxy_testing import TempMetaxyProject

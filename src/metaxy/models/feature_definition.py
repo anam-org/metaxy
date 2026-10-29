@@ -56,6 +56,8 @@ class FeatureDefinition(FrozenBaseModel):
         return TypeAdapter(dict[str, Any]).dump_json(value, exclude_none=True).decode()
 
     _is_external: bool = PrivateAttr(default=False)
+    # Set when `sync_external_features` loads the definition from a metadata store.
+    _is_synced: bool = PrivateAttr(default=False)
     _provenance_by_field: dict[str, str] | None = PrivateAttr(default=None)
     _on_version_mismatch: Literal["warn", "error"] = PrivateAttr(default="warn")
     _source: str | None = PrivateAttr(default=None)
