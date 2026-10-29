@@ -23,6 +23,7 @@ from metaxy.metadata_store.system.keys import EVENTS_KEY
 from metaxy.metadata_store.system.models import POLARS_SCHEMAS, FeatureVersionsModel
 from metaxy.models.constants import (
     METAXY_DEFINITION_VERSION,
+    METAXY_FEATURE_VERSION,
     METAXY_PROJECT_VERSION,
 )
 from metaxy.models.feature import FeatureGraph
@@ -175,12 +176,15 @@ class SystemTableStorage:
 
         if already_pushed:
             latest_pushed_snapshot = self._read_latest_snapshot_data(project_version, project)
-            # let's identify features that have updated definitions since the last push
+            # let's identify features that have updated definitions or feature versions since the last push.
+            # The feature version can change without a definition change when an upstream feature
+            # from another project changes.
             # Join full current snapshot with latest pushed (keeping all columns)
             pushed_with_current = current_snapshot.join(
                 latest_pushed_snapshot.select(
                     "feature_key",
                     pl.col(METAXY_DEFINITION_VERSION).alias(f"{METAXY_DEFINITION_VERSION}_pushed"),
+                    pl.col(METAXY_FEATURE_VERSION).alias(f"{METAXY_FEATURE_VERSION}_pushed"),
                 ),
                 on=["feature_key"],
                 how="left",
@@ -192,10 +196,11 @@ class SystemTableStorage:
                     pushed_with_current.filter(pl.col(f"{METAXY_DEFINITION_VERSION}_pushed").is_null()),
                     # these are the records with actual changes
                     pushed_with_current.filter(pl.col(f"{METAXY_DEFINITION_VERSION}_pushed").is_not_null()).filter(
-                        pl.col(METAXY_DEFINITION_VERSION) != pl.col(f"{METAXY_DEFINITION_VERSION}_pushed")
+                        (pl.col(METAXY_DEFINITION_VERSION) != pl.col(f"{METAXY_DEFINITION_VERSION}_pushed"))
+                        | (pl.col(METAXY_FEATURE_VERSION) != pl.col(f"{METAXY_FEATURE_VERSION}_pushed"))
                     ),
                 ]
-            ).drop(f"{METAXY_DEFINITION_VERSION}_pushed")
+            ).drop(f"{METAXY_DEFINITION_VERSION}_pushed", f"{METAXY_FEATURE_VERSION}_pushed")
 
         if len(to_push) > 0:
             self.store.write(FEATURE_VERSIONS_KEY, to_push)

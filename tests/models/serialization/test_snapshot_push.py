@@ -914,3 +914,56 @@ def test_record_snapshot_version_cycle(tmp_path: Path):
         assert versions_lazy is not None
         versions_df = versions_lazy.collect().to_polars()
         assert versions_df.height == 3
+
+
+def test_push_records_feature_version_change_from_upstream_project(tmp_path: Path):
+    """Push records a new feature version caused by an upstream feature from another project.
+
+    The project version and the definition version stay the same, but downstream projects
+    must see the new feature version in the store.
+    """
+    from metaxy.models.feature_definition import FeatureDefinition
+    from metaxy.models.feature_spec import FeatureSpec
+
+    def make_graph(upstream_code_version: str) -> FeatureGraph:
+        graph = FeatureGraph()
+        graph.add_feature_definition(
+            FeatureDefinition(
+                spec=FeatureSpec(
+                    key=FeatureKey(["a"]),
+                    id_columns=["id"],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=upstream_code_version)],
+                ),
+                feature_schema={},
+                feature_class_path="a.A",
+                project="a",
+            )
+        )
+        graph.add_feature_definition(
+            FeatureDefinition(
+                spec=FeatureSpec(key=FeatureKey(["b"]), id_columns=["id"], deps=[FeatureDep(feature="a")]),
+                feature_schema={},
+                feature_class_path="b.B",
+                project="b",
+            )
+        )
+        return graph
+
+    graph_v1, graph_v2 = make_graph("1"), make_graph("2")
+    assert graph_v1.get_project_version("b") == graph_v2.get_project_version("b")
+    assert graph_v1.get_feature_version("b") != graph_v2.get_feature_version("b")
+
+    with DeltaMetadataStore(root_path=tmp_path / "delta_store").open("w") as store:
+        storage = SystemTableStorage(store)
+        with graph_v1.use():
+            storage.push_graph_snapshot(project="b")
+
+        with graph_v2.use():
+            result = storage.push_graph_snapshot(project="b")
+            repeated = storage.push_graph_snapshot(project="b")
+
+        assert result.already_pushed
+        assert result.updated_features == ["b"]
+        assert repeated.updated_features == []
+        latest = storage._read_latest_features_by_project(projects=["b"])
+        assert latest["metaxy_feature_version"].to_list() == [graph_v2.get_feature_version("b")]
