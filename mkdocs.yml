@@ -237,6 +237,7 @@ nav:
       - Metaxy Projects: guide/concepts/projects.md
       - Filters: guide/concepts/filters.md
       - Syntactic Sugar: guide/concepts/syntactic-sugar.md
+      - SQL Views: guide/concepts/sql-views.md
     - ⚙️ Application Lifecycle:
       - Local Development: guide/concepts/lifecycle/development.md
       - Testing: guide/concepts/lifecycle/testing.md
