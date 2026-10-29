@@ -241,6 +241,7 @@ nav:
       - Local Development: guide/concepts/lifecycle/development.md
       - Testing: guide/concepts/lifecycle/testing.md
       - Deployment: guide/concepts/lifecycle/deployment.md
+      - Connecting External Consumers: guide/concepts/lifecycle/connecting-external-consumers.md
     - ❓ Q&A: guide/qa.md
   - 🧩 Integrations:
     - integrations/index.md
@@ -306,6 +307,7 @@ nav:
     - Configuration: reference/configuration.md
     - CLI: reference/cli.md
     - System Columns: reference/system-columns.md
+    - System Tables: reference/system-tables.md
     - Publications:
       - Introducing Metaxy (2026): publications/2026-introducing-metaxy/paper.md
     - Slides:
