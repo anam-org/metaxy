@@ -53,21 +53,13 @@ def test_narwhals_pandas_dataframe() -> None:
 
 @pytest.fixture
 def polars_map_df() -> pl.DataFrame:
-    """Build a Polars DataFrame with a polars_map.Map column from a native Arrow map."""
-    pytest.importorskip("polars_map")
-    from metaxy.utils._arrow_map import convert_maps_to_polars_map
-
-    arrow_table = pa.table(
+    """Polars DataFrame with a native `Map` column."""
+    return pl.DataFrame(
         {
             "id": [1, 2],
-            "tags": pa.array(
-                [[("a", "x"), ("b", "y")], [("c", "z")]],
-                type=pa.map_(pa.string(), pa.string()),
-            ),
+            "tags": pl.Series([{"a": "x", "b": "y"}, {"c": "z"}], dtype=pl.Map(pl.String, pl.String)),
         }
     )
-    df: pl.DataFrame = pl.from_arrow(arrow_table)  # ty: ignore[invalid-assignment]
-    return convert_maps_to_polars_map(df, columns=["tags"])
 
 
 def test_polars_map_columns_become_native_arrow_map(polars_map_df: pl.DataFrame) -> None:

@@ -11,13 +11,12 @@ import pytest
 import ray
 from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
 from metaxy.utils import collect_to_polars
-from polars_map import Map
 
 from metaxy_testing import RAY_FEATURES_MODULE
 
 from .conftest import FEATURE_KEY, make_test_data
 
-MAP_STR_STR = Map(pl.String(), pl.String())
+MAP_STR_STR = pl.Map(pl.String(), pl.String())
 
 
 def test_datasink_writes_metadata(
@@ -417,7 +416,7 @@ def test_datasink_writes_user_map_columns(
         assert df.schema["tags"] == MAP_STR_STR
         assert df.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         df = df.sort("sample_uid")
-        assert df["tags"].map.get("env").to_list() == ["prod", "dev", "staging", "prod", "dev"]  # ty: ignore[unresolved-attribute]
+        assert df["tags"].map.get("env").to_list() == ["prod", "dev", "staging", "prod", "dev"]
 
 
 def test_datasink_map_columns_survive_map_batches(

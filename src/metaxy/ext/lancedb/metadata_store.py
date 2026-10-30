@@ -255,8 +255,12 @@ class LanceDBMetadataStore(MetadataStore):
             feature_key: Feature key to write to
             df: Narwhals Frame with metadata (already validated by base class)
         """
-        # Convert Narwhals frame to Polars DataFrame
-        df_polars = collect_to_polars(df)
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+        from metaxy.utils._arrow_map import convert_structs_to_maps
+
+        df_polars = convert_structs_to_maps(
+            collect_to_polars(df), columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
+        )
 
         table_name = self._table_name(feature_key)
 
@@ -353,8 +357,7 @@ class LanceDBMetadataStore(MetadataStore):
         table = self._get_table(table_name)
         # LanceDB's to_polars() returns a Polars LazyFrame directly
         # (fixed in Polars via https://github.com/pola-rs/polars/pull/25654)
-        pl_lazy = table.to_polars()
-        nw_lazy = nw.from_native(pl_lazy)
+        nw_lazy = nw.from_native(table.to_polars())
 
         if filters:
             nw_lazy = nw_lazy.filter(*filters)

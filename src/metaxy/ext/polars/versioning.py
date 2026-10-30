@@ -88,19 +88,23 @@ class PolarsVersioningEngine(VersioningEngine):
         col_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a polars_map.Map(String, String) column from existing columns."""
-        import polars_map  # noqa: F401  # registers .map accessor
+        """Build a `Map(String, String)` column from existing columns."""
 
         assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
         df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        # Skip entries whose value is null (e.g. an absent optional dependency).
         kv_pairs = [
-            pl.struct(
-                pl.lit(field_name).alias("key"),
-                pl.col(src_col).cast(pl.String).alias("value"),
+            pl.when(pl.col(src_col).is_not_null())
+            .then(
+                pl.struct(
+                    pl.lit(field_name).alias("key"),
+                    pl.col(src_col).cast(pl.String).alias("value"),
+                )
             )
+            .otherwise(None)
             for field_name, src_col in field_columns.items()
         ]
-        map_expr = pl.concat_list(kv_pairs).map.from_entries().alias(col_name)  # ty: ignore[unresolved-attribute]
+        map_expr = pl.concat_list(kv_pairs).list.drop_nulls().cast(pl.Map(pl.String, pl.String)).alias(col_name)
         return cast(FrameT, nw.from_native(df_pl.with_columns(map_expr)))
 
     def concat_strings_over_groups(

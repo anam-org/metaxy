@@ -6,7 +6,7 @@
   '"value" = 3'
 # ---
 # name: test_narwhals_expr_to_sql_predicate_outputs[datafusion-is_in]
-  '"status" IN (\'active\', \'pending\')'
+  'CASE WHEN "status" IS NULL THEN NULL ELSE "status" IN (\'active\', \'pending\') END'
 # ---
 # name: test_narwhals_expr_to_sql_predicate_outputs[datafusion-naive_timestamp]
   '"ts_naive" > ARROW_CAST(\'2024-01-01 00:00:00\', \'Timestamp(Microsecond, None)\')'
@@ -36,7 +36,7 @@
   '"value" = 3'
 # ---
 # name: test_narwhals_expr_to_sql_predicate_outputs[duckdb-is_in]
-  '"status" IN (\'active\', \'pending\')'
+  'CASE WHEN "status" IS NULL THEN NULL ELSE "status" IN (\'active\', \'pending\') END'
 # ---
 # name: test_narwhals_expr_to_sql_predicate_outputs[duckdb-naive_timestamp]
   '"ts_naive" > MAKE_TIMESTAMP(2024, 1, 1, 0, 0, 0.0)'
@@ -83,8 +83,8 @@
 # name: test_predicate_equality_duckdb_datafusion_snapshot[is_in]
   dict({
     'case': 'is_in',
-    'datafusion_predicate': '"status" IN (\'active\', \'pending\')',
-    'duckdb_predicate': '"status" IN (\'active\', \'pending\')',
+    'datafusion_predicate': 'CASE WHEN "status" IS NULL THEN NULL ELSE "status" IN (\'active\', \'pending\') END',
+    'duckdb_predicate': 'CASE WHEN "status" IS NULL THEN NULL ELSE "status" IN (\'active\', \'pending\') END',
     'ids': list([
       0,
       2,

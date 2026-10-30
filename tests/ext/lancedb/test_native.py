@@ -20,6 +20,7 @@ from tests.metadata_stores.shared import (
     DeletionTests,
     DisplayTests,
     FilterTests,
+    MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
     WriteTests,
@@ -33,6 +34,7 @@ class TestLanceDB(
     DeletionTests,
     DisplayTests,
     FilterTests,
+    MapDtypeTests,
     ResolveUpdateTests,
     VersioningTests,
     WriteTests,
@@ -86,6 +88,25 @@ def test_lancedb_table_naming(
 
         # Verify table was created (uses optimized _table_exists internally)
         assert store.has_feature(feature_cls, check_fallback=False)
+
+
+def test_lancedb_stores_native_map_columns(
+    lancedb_store: LanceDBMetadataStore, test_features: dict[str, FeatureDefinition]
+) -> None:
+    """Metaxy `*_by_field` columns are persisted as native Arrow `Map` in the Lance table."""
+    import pyarrow as pa
+
+    feature_key = test_features["UpstreamFeatureA"].spec.key
+
+    with lancedb_store.open("w") as store:
+        store.write(
+            feature_key,
+            pl.DataFrame({"sample_uid": [1], "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h2"}]}),
+        )
+        schema = store.conn.open_table(store._table_name(feature_key)).schema
+
+    assert pa.types.is_map(schema.field("metaxy_provenance_by_field").type)
+    assert pa.types.is_map(schema.field("metaxy_data_version_by_field").type)
 
 
 def test_lancedb_conn_property_enforcement(

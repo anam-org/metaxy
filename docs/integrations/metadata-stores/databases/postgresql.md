@@ -17,11 +17,12 @@ This results in the following limitations for [`MetadataStore.resolve_update`][m
 - **Increased I/O**: entire upstream metadata has to be fetched to memory
 - **Increased Memory footprint**: expect high memory usage, especially when having many upstream features
 
-## Metaxy's Versioning Struct Columns
+## Metaxy's Versioning Columns
 
-PostgreSQL doesn't have native map-like or struct types, so it's recommended to store Metaxy's versioning columns as `JSONB`.
-As a convenience feature, `PostgreSQLMetadataStore` will automatically json-encodes `pl.Struct` columns when writing metadata and parse them to `pl.Struct` when reading.
-This behavior can be disabled with [`auto_cast_struct_for_jsonb`](#metaxy.ext.postgresql.PostgreSQLMetadataStoreConfig.auto_cast_struct_for_jsonb) configuration parameter. This setting only affects user-defined columns, while Metaxy's versioning columns are always encoded/parsed.
+PostgreSQL doesn't have native map-like or struct types, so Metaxy's versioning columns are stored as `JSONB`.
+Metaxy's [`Map`](../../../guide/concepts/metadata-stores.md#map-datatype) versioning columns are decomposed into named `Struct` columns, JSON-encoded for storage, and reconstructed as `Map` on read, so callers always see `Map` columns.
+As a convenience feature, `PostgreSQLMetadataStore` also automatically json-encodes user-defined `pl.Struct` columns when writing metadata and parses them back to `pl.Struct` when reading.
+This convenience for user columns can be disabled with the [`auto_cast_struct_for_jsonb`](#metaxy.ext.postgresql.PostgreSQLMetadataStoreConfig.auto_cast_struct_for_jsonb) configuration parameter; Metaxy's versioning columns are always converted regardless.
 
 ## API Reference
 

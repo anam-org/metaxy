@@ -6,12 +6,9 @@ conversion path without materialization.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-
 import ibis
 import pyarrow as pa
 import pytest
-from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_arrow
@@ -26,13 +23,6 @@ class IbisMapTests:
     Requires ``store`` and ``test_features`` fixtures from the consuming test class.
     """
 
-    @pytest.fixture()
-    def polars_map_config(self) -> Iterator[MetaxyConfig]:
-        """Activate enable_map_datatype for the duration of the test."""
-        config = MetaxyConfig(enable_map_datatype=True)
-        with config.use():
-            yield config
-
     @staticmethod
     def _ibis_metadata(
         uids: list[int],
@@ -43,7 +33,6 @@ class IbisMapTests:
 
     def test_ibis_frame_write_roundtrip(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -68,7 +57,6 @@ class IbisMapTests:
 
     def test_ibis_frame_map_values_accessible(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -93,7 +81,6 @@ class IbisMapTests:
 
     def test_ibis_frame_stays_lazy(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -116,7 +103,6 @@ class IbisMapTests:
 
     def test_ibis_frame_append(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:
@@ -142,7 +128,6 @@ class IbisMapTests:
 
     def test_ibis_table_with_map_columns(
         self,
-        polars_map_config: MetaxyConfig,
         store: MetadataStore,
         test_features: dict[str, FeatureDefinition],
     ) -> None:

@@ -175,7 +175,7 @@ def narwhals_expr_to_sql_predicate(
     predicate_expr = simplify(predicate_expr)
 
     # Apply table qualifier stripping first
-    predicate_expr = predicate_expr.transform(_strip_table_qualifiers())
+    predicate_expr = predicate_expr.transform(_strip_table_qualifiers()).transform(_unwrap_null_guarded_in())
 
     # Apply extra transforms if provided
     if extra_transforms is not None:
@@ -205,6 +205,33 @@ def _strip_table_qualifiers() -> Callable[[exp.Expression], exp.Expression]:
         return cleaned
 
     return _strip
+
+
+def _unwrap_null_guarded_in() -> Callable[[exp.Expression], exp.Expression]:
+    """Return a transformer that rewrites `CASE WHEN x IS NULL THEN NULL ELSE x IN (...) END` to `x IN (...)`.
+
+    Narwhals guards `is_in` against null inputs with this `CASE` expression. Both forms are
+    equivalent because `NULL IN (...)` is already null, and the plain form is supported by
+    more SQL engines (e.g. LanceDB and PyIceberg reject the `CASE` form).
+    """
+
+    def _unwrap(node: exp.Expression) -> exp.Expression:
+        if not isinstance(node, exp.Case) or len(node.args.get("ifs") or []) != 1:
+            return node
+        (branch,) = node.args["ifs"]
+        condition = branch.this
+        default = node.args.get("default")
+        if (
+            isinstance(default, exp.In)
+            and isinstance(condition, exp.Is)
+            and isinstance(condition.expression, exp.Null)
+            and isinstance(branch.args.get("true"), exp.Null)
+            and condition.this == default.this
+        ):
+            return default
+        return node
+
+    return _unwrap
 
 
 def unquote_identifiers() -> Callable[[exp.Expression], exp.Expression]:
