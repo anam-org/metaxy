@@ -1,4 +1,63 @@
 # serializer version: 1
+# name: test_diamond_field_versions_match_snapshot[feature_version]
+  '95f5f412'
+# ---
+# name: test_diamond_field_versions_match_snapshot[version_by_field]
+  dict({
+    'a': '42f73d23',
+    'b': 'd9e548f5',
+  })
+# ---
+# name: test_diamond_field_versions_match_snapshot[version_by_field_per_layer]
+  dict({
+    'diamond/l0': dict({
+      'a': '62429ee1',
+      'b': 'd2806c91',
+    }),
+    'diamond/l1': dict({
+      'a': '01263773',
+      'b': 'f23c8cd7',
+    }),
+    'diamond/l2': dict({
+      'a': '5544cc50',
+      'b': '67f37557',
+    }),
+    'diamond/l3': dict({
+      'a': '329d90e3',
+      'b': 'a1bdd2b8',
+    }),
+    'diamond/l4': dict({
+      'a': '97d8c181',
+      'b': '9e7b917d',
+    }),
+    'diamond/l5': dict({
+      'a': 'ad7242f6',
+      'b': '74f1ce9a',
+    }),
+    'diamond/l6': dict({
+      'a': '42f73d23',
+      'b': 'd9e548f5',
+    }),
+  })
+# ---
+# name: test_external_middle_override_top_versions_match_snapshot[full][feature_version]
+  '987d9ec4'
+# ---
+# name: test_external_middle_override_top_versions_match_snapshot[full][version_by_field]
+  dict({
+    'a': 'e942ecba',
+    'b': '11112645',
+  })
+# ---
+# name: test_external_middle_override_top_versions_match_snapshot[partial][feature_version]
+  'e429a41f'
+# ---
+# name: test_external_middle_override_top_versions_match_snapshot[partial][version_by_field]
+  dict({
+    'a': 'b47f377a',
+    'b': 'b3c0c6cc',
+  })
+# ---
 # name: test_load_snapshot_data_computes_proper_field_versions[feature_version]
   '9a7207d5'
 # ---

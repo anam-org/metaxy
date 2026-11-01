@@ -252,7 +252,15 @@ class FeatureGraph:
             feature_deps=spec.deps,
         )
 
-    def get_field_version(self, key: "FQFieldKey") -> str:
+    def get_field_version(self, key: FQFieldKey) -> str:
+        """Get the version of one field.
+
+        The version is derived from the field's code version and the versions of its parent fields.
+        A field of an external feature with a provenance override uses the override value as its version.
+        """
+        return self._compute_field_version(key, {})
+
+    def _compute_field_version(self, key: FQFieldKey, memo: dict[FQFieldKey, str]) -> str:
         definition = self.feature_definitions_by_key.get(key.feature)
 
         # check for special case: external feature with provenance override
@@ -264,6 +272,9 @@ class FeatureGraph:
             if provenance and field_str in provenance:
                 return provenance[field_str]
 
+        if key in memo:
+            return memo[key]
+
         hasher = hashlib.sha256()
 
         plan = self.get_feature_plan(key.feature)
@@ -272,10 +283,11 @@ class FeatureGraph:
         hasher.update(key.to_string().encode())
         hasher.update(str(field.code_version).encode())
 
-        for k, v in sorted(plan.get_parent_fields_for_field(key.field).items()):
-            hasher.update(self.get_field_version(k).encode())
+        for k in sorted(plan.get_parent_fields_for_field(key.field)):
+            hasher.update(self._compute_field_version(k, memo).encode())
 
-        return truncate_hash(hasher.hexdigest())
+        memo[key] = truncate_hash(hasher.hexdigest())
+        return memo[key]
 
     def get_feature_version_by_field(self, key: CoercibleToFeatureKey) -> dict[str, str]:
         """Computes the field provenance map for a feature.
@@ -292,14 +304,12 @@ class FeatureGraph:
         # Validate and coerce the key
         validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
 
-        res = {}
+        memo: dict[FQFieldKey, str] = {}
 
-        plan = self.get_feature_plan(validated_key)
-
-        for k, v in plan.feature.fields_by_key.items():
-            res[k.to_string()] = self.get_field_version(FQFieldKey(field=k, feature=validated_key))
-
-        return res
+        return {
+            k.to_string(): self._compute_field_version(FQFieldKey(field=k, feature=validated_key), memo)
+            for k in self.get_feature_plan(validated_key).feature.fields_by_key
+        }
 
     def get_feature_version(self, key: CoercibleToFeatureKey) -> str:
         """Computes the feature version as a single string.
