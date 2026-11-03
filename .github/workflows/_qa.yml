@@ -36,6 +36,8 @@ on:
     secrets:
       DAGGER_CLOUD_TOKEN:
         required: false
+      CODECOV_TOKEN:
+        required: false
 
 jobs:
   filter:
@@ -108,8 +110,11 @@ jobs:
       - name: Run ${{ matrix.suite }} tests
         env:
           DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        # On main, the suites upload coverage to Codecov with the token.
         run: >
           dagger call --engine=cloud
+          ${{ github.ref == 'refs/heads/main' && '--codecov-token env://CODECOV_TOKEN' || '' }}
           extra-tests --python-version ${{ matrix.python-version }}
           get --key ${{ matrix.suite }}
           run

@@ -19,6 +19,9 @@ class MetaxyCi:
     motherduck_token: Annotated[
         Secret | None, Doc("MotherDuck token for the MotherDuck tests, which are skipped without it.")
     ] = None
+    codecov_token: Annotated[
+        Secret | None, Doc("Codecov token. With it, the test suites upload coverage to Codecov on the main branch.")
+    ] = None
 
     @function
     async def image(
@@ -45,6 +48,7 @@ class MetaxyCi:
             config=config,
             python_version=python_version,
             motherduck_token=self.motherduck_token,
+            codecov_token=self.codecov_token,
         )
 
     @function
@@ -57,6 +61,7 @@ class MetaxyCi:
             config=config,
             python_version=python_version,
             motherduck_token=self.motherduck_token,
+            codecov_token=self.codecov_token,
         )
 
     @check
@@ -84,10 +89,15 @@ class MetaxyCi:
         # Every file, so dprint also checks the files the suites leave out.
         await (
             (await dev_container(self.ws))
-            .with_directory(".", self.ws.directory("/", gitignore=True))
+            .with_directory(".", self.ws.directory("/", exclude=[".git"], gitignore=True))
             .with_exec(["dprint", "check"])
             .sync()
         )
+
+    @function
+    async def docs_container(self) -> Container:
+        """The container that builds the documentation, with the source tree."""
+        return await docs.docs_container(self.ws)
 
     @check
     @function

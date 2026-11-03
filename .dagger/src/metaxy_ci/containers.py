@@ -5,12 +5,14 @@ import tomllib
 from pathlib import Path
 
 import tomlkit
+from dagger.telemetry import get_tracer
 from dagger_clients.core import Container, Directory, Workspace, core
 from dagger_clients.uv import uv
 
 # Files that do not affect tests, so editing them does not rerun the suites.
 # Suites get what they need from tests.toml as environment variables.
-_SOURCE_EXCLUDE = [".dagger", "dagger.toml", "dagger.lock", "tests.toml"]
+# .git changes with every commit and git operation; what a step needs from it is passed in explicitly.
+_SOURCE_EXCLUDE = [".git", ".dagger", "dagger.toml", "dagger.lock", "tests.toml"]
 
 
 def pinned_image(name: str) -> str:
@@ -44,9 +46,12 @@ async def _with_overrides(ws: Workspace, overrides: list[str]) -> Workspace:
         .with_exec(["uv", "lock"])
         .directory("/src")
     )
+    with get_tracer().start_as_current_span(f"lock with overrides: {' '.join(overrides)}") as span:
+        span.set_attribute("uv.overrides", overrides)
+        locked = await locked.sync()
     # `as_workspace` reads dagger.toml, so only the module source is left out.
     return (
-        ws.directory("/", exclude=[".dagger"], gitignore=True)
+        ws.directory("/", exclude=[".git", ".dagger"], gitignore=True)
         .with_file("pyproject.toml", locked.file("pyproject.toml"))
         .with_file("uv.lock", locked.file("uv.lock"))
         .as_workspace()

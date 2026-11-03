@@ -4,6 +4,7 @@ import json
 import posixpath
 from pathlib import Path
 
+from dagger.telemetry import get_tracer
 from dagger_clients.core import Directory, ExistsType, Workspace, core
 
 from metaxy_ci.containers import pinned_image
@@ -37,19 +38,26 @@ async def _check_plugin_paths(plugin: Directory) -> None:
 
 async def validate(ws: Workspace) -> None:
     """Validate the plugin manifest with `claude plugin validate` and the paths it references."""
+    tracer = get_tracer()
     plugin = ws.directory("/", include=[".claude-plugin/**"])
-    await (
-        core()
-        .container()
-        .from_(_NODE_IMAGE)
-        .with_workdir("/opt/claude-code")
-        .with_new_file("package.json", (_CLAUDE_CODE / "package.json").read_text())
-        .with_new_file("package-lock.json", (_CLAUDE_CODE / "package-lock.json").read_text())
-        .with_exec(["npm", "ci", "--no-audit", "--no-fund"])
-        .with_env_variable("PATH", "/opt/claude-code/node_modules/.bin:${PATH}", expand=True)
-        .with_directory("/src", plugin)
-        .with_workdir("/src")
-        .with_exec(["claude", "plugin", "validate", "."])
-        .sync()
-    )
-    await _check_plugin_paths(plugin)
+    with tracer.start_as_current_span("install Claude Code"):
+        claude = await (
+            core()
+            .container()
+            .from_(_NODE_IMAGE)
+            .with_workdir("/opt/claude-code")
+            .with_new_file("package.json", (_CLAUDE_CODE / "package.json").read_text())
+            .with_new_file("package-lock.json", (_CLAUDE_CODE / "package-lock.json").read_text())
+            .with_exec(["npm", "ci", "--no-audit", "--no-fund"])
+            .with_env_variable("PATH", "/opt/claude-code/node_modules/.bin:${PATH}", expand=True)
+            .sync()
+        )
+    with tracer.start_as_current_span("validate the plugin manifest"):
+        await (
+            claude.with_directory("/src", plugin)
+            .with_workdir("/src")
+            .with_exec(["claude", "plugin", "validate", "."])
+            .sync()
+        )
+    with tracer.start_as_current_span("check the plugin's skill and MCP paths"):
+        await _check_plugin_paths(plugin)

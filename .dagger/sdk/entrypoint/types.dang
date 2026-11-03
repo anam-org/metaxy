@@ -82,6 +82,10 @@ type ModuleTypes {
             .withCheck
         )
         .withFunction(
+          function("docs_container", typeDef.withObject("Container"))
+            .withDescription("The container that builds the documentation, with the source tree.")
+        )
+        .withFunction(
           function("docs_snippets", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
             .withDescription("Test the code blocks in the documentation.")
             .withCheck
@@ -125,6 +129,7 @@ type ModuleTypes {
             .withDescription("CI pipelines for Metaxy.")
             .withArg("ws", typeDef.withObject("Workspace"), description: "A Dagger workspace detected from the current working directory or\nconstructed from a Directory.")
             .withArg("motherduck_token", typeDef.withOptional(true).withObject("Secret").withOptional(true), description: "MotherDuck token for the MotherDuck tests, which are skipped without it.", defaultValue: ("null" :: Dagger.JSON!))
+            .withArg("codecov_token", typeDef.withOptional(true).withObject("Secret").withOptional(true), description: "Codecov token. With it, the test suites upload coverage to Codecov on the main branch.", defaultValue: ("null" :: Dagger.JSON!))
         ),
     ]
   }

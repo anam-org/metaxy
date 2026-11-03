@@ -17,6 +17,7 @@
 ["","oci-sha",["docker.io/library/alpine:3.22"],"sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f"]
 ["","oci-sha",["docker.io/library/busybox:1.38.0"],"sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4"]
 ["","oci-sha",["docker.io/library/golang:1.25-alpine"],"sha256:1ae0735f00daffa3aaf1363a5184c0d2dc55c78e3db4ec70241cdac97bf84b59"]
+["","oci-sha",["docker.io/library/node:24-slim"],"sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c"]
 ["","oci-sha",["docker.io/library/python:3.11-slim"],"sha256:db20d8506e2f15b6db39b40b6015ca46bae855dec6dd326d462cfe79ae972893"]
 ["","oci-sha",["docker.io/library/python:3.13-slim"],"sha256:2d44738ebf4ce5f63b9d9ea871e9c7cfdc0426f7b0c97cac915fd88ded1d86bb"]
 ["","oci-sha",["docker.io/oven/bun:1.3.1"],"sha256:9c5d3c92b234b4708198577d2f39aab7397a242a40da7c2f059e51b9dc62b408"]

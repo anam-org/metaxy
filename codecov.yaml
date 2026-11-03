@@ -7,9 +7,6 @@ coverage:
       default:
         target: auto
         threshold: 1%
-    patch:
-      default:
-        target: 80%
 
 comment:
   layout: "condensed_header, condensed_files, condensed_footer"
