@@ -1,0 +1,83 @@
+# Test suites. Each suite is a `dagger check` that runs pytest in an image with
+# the suite's `extras` and `groups` (default: `dev`) installed.
+#
+# `overrides` are requirements that replace the matching locked requirements,
+# e.g. to test against another major version of a dependency.
+# `services` replaces images from the `[services]` table for one suite,
+# e.g. to test against another version of a database.
+
+# Debian packages installed in every suite's image, e.g. shared libraries.
+apt-packages = ["libpq5"]
+
+# Images of the services that test fixtures start with Dagger.
+# `METAXY_TEST_<NAME>_IMAGE` replaces one, e.g. for a local run.
+[services]
+clickhouse = "clickhouse/clickhouse-server:26.6"
+postgres = "postgres:18-alpine"
+
+[suites.core]
+extras = ["duckdb", "delta"]
+pytest-args = ["--ignore=tests/ext"]
+
+[suites.duckdb]
+extras = ["duckdb"]
+pytest-args = ["tests/ext/duckdb"]
+
+[suites.clickhouse]
+extras = ["duckdb", "clickhouse"]
+pytest-args = ["tests/ext/clickhouse"]
+
+[suites.clickhouse-25]
+extras = ["duckdb", "clickhouse"]
+pytest-args = ["tests/ext/clickhouse"]
+services = { clickhouse = "clickhouse/clickhouse-server:25.8" }
+
+[suites.postgres]
+extras = ["duckdb", "postgres"]
+pytest-args = ["tests/ext/postgres"]
+
+[suites.delta]
+extras = ["duckdb", "delta"]
+pytest-args = ["tests/ext/delta"]
+
+[suites.iceberg]
+extras = ["duckdb", "iceberg"]
+pytest-args = ["tests/ext/iceberg"]
+
+[suites.lancedb]
+extras = ["duckdb", "lancedb"]
+pytest-args = ["tests/ext/lancedb"]
+
+[suites.bigquery]
+extras = ["duckdb", "bigquery"]
+pytest-args = ["tests/ext/bigquery"]
+
+[suites.dagster]
+extras = ["duckdb", "dagster"]
+pytest-args = ["tests/ext/dagster"]
+
+[suites.ray]
+extras = ["duckdb", "ray"]
+pytest-args = ["tests/ext/ray"]
+
+[suites.sqlalchemy]
+extras = ["duckdb", "sqlalchemy"]
+pytest-args = ["tests/ext/sqlalchemy"]
+
+[suites.sqlmodel]
+extras = ["duckdb", "sqlmodel"]
+pytest-args = ["tests/ext/sqlmodel"]
+
+[suites.mcp]
+extras = ["duckdb", "mcp"]
+pytest-args = ["tests/ext/mcp"]
+
+[suites.ibis-11]
+extras = ["duckdb", "clickhouse", "bigquery", "postgres"]
+overrides = ["ibis-framework[duckdb,clickhouse,bigquery,postgres]==11.*"]
+pytest-args = ["-m", "ibis"]
+
+[suites.ibis-12]
+extras = ["duckdb", "clickhouse", "bigquery", "postgres"]
+overrides = ["ibis-framework[duckdb,clickhouse,bigquery,postgres]==12.*"]
+pytest-args = ["-m", "ibis"]

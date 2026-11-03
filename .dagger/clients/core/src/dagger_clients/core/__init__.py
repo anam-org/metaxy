@@ -2255,57 +2255,10 @@ class ArtifactPath(_Type):
         return await _ctx.execute(str)
 
 
-class ArtifactResult(_Type):
-
-    def artifact(self) -> Artifact:
-        """The artifact that was evaluated."""
-        _args: list[_Arg] = []
-        _ctx = self._select("artifact", _args)
-        return Artifact(_ctx)
-
-    def error(self) -> "Error":
-        """The evaluation failure, if any."""
-        _args: list[_Arg] = []
-        _ctx = self._select("error", _args)
-        return Error(_ctx)
-
-    async def id(self) -> str:
-        """A unique identifier for this ArtifactResult.
-
-        Note
-        ----
-        This is lazily evaluated, no operation is actually run.
-
-        Returns
-        -------
-        str
-            The `ID` scalar type represents a unique identifier, often used to
-            refetch an object or as key for a cache. The ID type appears in a
-            JSON response as a String; however, it is not intended to be
-            human-readable. When expected as an input type, any string (such
-            as `"4"`) or integer (such as `4`) input value will be accepted as
-            an ID.
-
-        Raises
-        ------
-        ExecuteTimeoutError
-            If the time to execute the query exceeds the configured timeout.
-        QueryError
-            If the API returns an error.
-        """
-        _args: list[_Arg] = []
-        _ctx = self._select("id", _args)
-        return await _ctx.execute(str)
-
-    def value(self) -> Node:
-        """The evaluated value, or null when evaluation failed."""
-        _args: list[_Arg] = []
-        _ctx = self._select("value", _args)
-        return _NodeClient(_ctx)
-
-
 class Artifacts(_Type):
-    """An immutable selection of workspace artifacts. Listed types,
+    """A selection of workspace artifacts and their immutable collection
+    view. Collection key filters replace collection references with
+    subsets. Static filters change only membership. Listed types,
     dimensions, and keys use OR; chained filters use AND. Empty
     alternatives match nothing; unknown names match nothing but module
     load failures. Filters never change addresses or dimension
@@ -2433,7 +2386,10 @@ class Artifacts(_Type):
         return await _ctx.execute(list[str])
 
     def filter_dimension_keys(self, dimension: str, keys: list[str]) -> _Self:
-        """Keep artifacts with any listed key in this dimension."""
+        """Keep artifacts with any listed key in this dimension. Replace
+        collection references with matching subsets. Skip absent keys and
+        leave the source view unchanged.
+        """
         if not (isinstance(dimension, str)):
             raise _type_error("Artifacts.filter_dimension_keys", "dimension", dimension, "str")
         if not (isinstance(keys, list) and all(isinstance(_v0, str) for _v0 in keys)):
@@ -2613,7 +2569,9 @@ class Artifacts(_Type):
         return await _ctx.execute(str)
 
     async def items(self) -> list[Artifact]:
-        """Enumerate complete artifacts without evaluating their values."""
+        """List artifact descriptions with their collection view. Discover
+        collection keys without evaluating leaf values.
+        """
         _args: list[_Arg] = []
         _ctx = self._select("items", _args)
         return await _ctx.execute_object_list(Artifact)
@@ -2693,48 +2651,10 @@ class Artifacts(_Type):
         _ctx = self._select("uri", _args)
         return await _ctx.execute(str)
 
-    async def values(self, *, fail_fast: bool | None = False, arguments: JSON | None = '{}', max_concurrency: int | None = 0,) -> list[ArtifactResult]:
-        """Evaluate the selection in parallel, retaining each result and error.
-
-        Parameters
-        ----------
-        fail_fast:
-            Cancel remaining work after the first failure.
-        arguments:
-            Field arguments applied to each artifact, as a JSON object.
-        max_concurrency:
-            Evaluate at most this many artifacts at once on this engine; the
-            rest wait. Checks that scale out to cloud engines are not counted.
-            0 means no limit.
-        """
-        if not (fail_fast is None or isinstance(fail_fast, bool)):
-            raise _type_error("Artifacts.values", "fail_fast", fail_fast, "bool | None")
-        if not (arguments is None or isinstance(arguments, JSON)):
-            raise _type_error("Artifacts.values", "arguments", arguments, "JSON | None")
-        if not (max_concurrency is None or isinstance(max_concurrency, int)):
-            raise _type_error("Artifacts.values", "max_concurrency", max_concurrency, "int | None")
-        _args = [
-            _Arg("failFast", fail_fast, False),
-            _Arg("arguments", arguments, '{}'),
-            _Arg("maxConcurrency", max_concurrency, 0),
-        ]
-        _ctx = self._select("values", _args)
-        return await _ctx.execute_object_list(ArtifactResult)
-
-    def with_artifacts(self, artifacts: _Self) -> _Self:
-        """Combine two selections, keeping each workspace address once. Different
-        addresses remain distinct even if they return the same object.
-        """
-        if not (isinstance(artifacts, Artifacts)):
-            raise _type_error("Artifacts.with_artifacts", "artifacts", artifacts, "Artifacts")
-        _args = [
-            _Arg("artifacts", artifacts),
-        ]
-        _ctx = self._select("withArtifacts", _args)
-        return Artifacts(_ctx)
-
     def without_uri(self, uri: str) -> _Self:
-        """Remove artifacts selected by a DAG address."""
+        """Remove artifacts selected by a DAG address. Retain the collection
+        view.
+        """
         if not (isinstance(uri, str)):
             raise _type_error("Artifacts.without_uri", "uri", uri, "str")
         _args = [
@@ -3323,12 +3243,6 @@ class CollectionDelta(_Type):
 
 class CollectionTypeDef(_Type):
 
-    def batch_type(self) -> "TypeDef":
-        """The type of batch operations, or null when there are none."""
-        _args: list[_Arg] = []
-        _ctx = self._select("batchType", _args)
-        return TypeDef(_ctx)
-
     async def id(self) -> str:
         """A unique identifier for this CollectionTypeDef.
 
@@ -3567,7 +3481,7 @@ class Container(_Type):
         _ctx = self._select("asService", _args)
         return Service(_ctx)
 
-    def as_tarball(self, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes,) -> "File":
+    def as_tarball(self, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes, source_date_epoch: int | None = None,) -> "File":
         """Package the container state as an OCI image, and return it as a tar
         archive
 
@@ -3589,6 +3503,14 @@ class Container(_Type):
             Defaults to OCI, which is largely compatible with most recent
             container runtimes, but Docker may be needed for older runtimes
             without OCI support.
+        source_date_epoch:
+            Clamp the image's timestamps to this time, so that rebuilding
+            unchanged files produces identical layers.
+            Formatted in seconds following Unix epoch (e.g., 1672531199). File
+            timestamps in every layer and the image's creation times that are
+            later than this are set to it, as with BuildKit's rewrite-
+            timestamp and SOURCE_DATE_EPOCH. Every layer is rewritten, so this
+            costs time on each export.
         """
         if not (platform_variants is None or (isinstance(platform_variants, list) and all(isinstance(_v0, Container) for _v0 in platform_variants))):
             raise _type_error("Container.as_tarball", "platform_variants", platform_variants, "list[Container] | None")
@@ -3596,10 +3518,13 @@ class Container(_Type):
             raise _type_error("Container.as_tarball", "forced_compression", forced_compression, "ImageLayerCompression | None")
         if not (media_types is None or isinstance(media_types, ImageMediaTypes)):
             raise _type_error("Container.as_tarball", "media_types", media_types, "ImageMediaTypes | None")
+        if not (source_date_epoch is None or isinstance(source_date_epoch, int)):
+            raise _type_error("Container.as_tarball", "source_date_epoch", source_date_epoch, "int | None")
         _args = [
             _Arg("platformVariants", [] if platform_variants is None else platform_variants, []),
             _Arg("forcedCompression", forced_compression, None),
             _Arg("mediaTypes", media_types, ImageMediaTypes.OCIMediaTypes),
+            _Arg("sourceDateEpoch", source_date_epoch, None),
         ]
         _ctx = self._select("asTarball", _args)
         return File(_ctx)
@@ -3854,7 +3779,7 @@ class Container(_Type):
         _ctx = self._select("experimentalWithGPU", _args)
         return Container(_ctx)
 
-    async def export(self, path: str, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes, expand: bool | None = False,) -> str:
+    async def export(self, path: str, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes, expand: bool | None = False, source_date_epoch: int | None = None,) -> str:
         """Writes the container as an OCI tarball to the destination file path on
         the host.
 
@@ -3885,6 +3810,14 @@ class Container(_Type):
             Replace "${VAR}" or "$VAR" in the value of path according to the
             current environment variables defined in the container (e.g.
             "/$VAR/foo").
+        source_date_epoch:
+            Clamp the image's timestamps to this time, so that rebuilding
+            unchanged files produces identical layers.
+            Formatted in seconds following Unix epoch (e.g., 1672531199). File
+            timestamps in every layer and the image's creation times that are
+            later than this are set to it, as with BuildKit's rewrite-
+            timestamp and SOURCE_DATE_EPOCH. Every layer is rewritten, so this
+            costs time on each export.
 
         Returns
         -------
@@ -3910,17 +3843,20 @@ class Container(_Type):
             raise _type_error("Container.export", "media_types", media_types, "ImageMediaTypes | None")
         if not (expand is None or isinstance(expand, bool)):
             raise _type_error("Container.export", "expand", expand, "bool | None")
+        if not (source_date_epoch is None or isinstance(source_date_epoch, int)):
+            raise _type_error("Container.export", "source_date_epoch", source_date_epoch, "int | None")
         _args = [
             _Arg("path", path),
             _Arg("platformVariants", [] if platform_variants is None else platform_variants, []),
             _Arg("forcedCompression", forced_compression, None),
             _Arg("mediaTypes", media_types, ImageMediaTypes.OCIMediaTypes),
             _Arg("expand", expand, False),
+            _Arg("sourceDateEpoch", source_date_epoch, None),
         ]
         _ctx = self._select("export", _args)
         return await _ctx.execute(str)
 
-    async def export_image(self, name: str, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes,) -> Void:
+    async def export_image(self, name: str, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes, source_date_epoch: int | None = None,) -> Void:
         """Exports the container as an image to the host's container image store.
 
         Parameters
@@ -3943,6 +3879,14 @@ class Container(_Type):
             Defaults to OCI, which is largely compatible with most recent
             container runtimes, but Docker may be needed for older runtimes
             without OCI support.
+        source_date_epoch:
+            Clamp the image's timestamps to this time, so that rebuilding
+            unchanged files produces identical layers.
+            Formatted in seconds following Unix epoch (e.g., 1672531199). File
+            timestamps in every layer and the image's creation times that are
+            later than this are set to it, as with BuildKit's rewrite-
+            timestamp and SOURCE_DATE_EPOCH. Every layer is rewritten, so this
+            costs time on each export.
 
         Returns
         -------
@@ -3965,11 +3909,14 @@ class Container(_Type):
             raise _type_error("Container.export_image", "forced_compression", forced_compression, "ImageLayerCompression | None")
         if not (media_types is None or isinstance(media_types, ImageMediaTypes)):
             raise _type_error("Container.export_image", "media_types", media_types, "ImageMediaTypes | None")
+        if not (source_date_epoch is None or isinstance(source_date_epoch, int)):
+            raise _type_error("Container.export_image", "source_date_epoch", source_date_epoch, "int | None")
         _args = [
             _Arg("name", name),
             _Arg("platformVariants", [] if platform_variants is None else platform_variants, []),
             _Arg("forcedCompression", forced_compression, None),
             _Arg("mediaTypes", media_types, ImageMediaTypes.OCIMediaTypes),
+            _Arg("sourceDateEpoch", source_date_epoch, None),
         ]
         _ctx = self._select("exportImage", _args)
         await _ctx.execute()
@@ -4271,7 +4218,7 @@ class Container(_Type):
         _ctx = self._select("platform", _args)
         return await _ctx.execute(Platform)
 
-    async def publish(self, address: str, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes, registry_service: "Service | None" = None, protocol: RegistryProtocol | None = None, insecure_skip_tls_verify: bool | None = False,) -> str:
+    async def publish(self, address: str, *, platform_variants: "list[Container] | None" = None, forced_compression: ImageLayerCompression | None = None, media_types: ImageMediaTypes | None = ImageMediaTypes.OCIMediaTypes, registry_service: "Service | None" = None, protocol: RegistryProtocol | None = None, insecure_skip_tls_verify: bool | None = False, source_date_epoch: int | None = None,) -> str:
         """Package the container state as an OCI image, and publish it to a
         registry
 
@@ -4309,6 +4256,14 @@ class Container(_Type):
         insecure_skip_tls_verify:
             Allow HTTPS registry communication without verifying the server
             certificate.
+        source_date_epoch:
+            Clamp the image's timestamps to this time, so that rebuilding
+            unchanged files produces identical layers.
+            Formatted in seconds following Unix epoch (e.g., 1672531199). File
+            timestamps in every layer and the image's creation times that are
+            later than this are set to it, as with BuildKit's rewrite-
+            timestamp and SOURCE_DATE_EPOCH. Every layer is rewritten, so this
+            costs time on each export.
 
         Returns
         -------
@@ -4338,6 +4293,8 @@ class Container(_Type):
             raise _type_error("Container.publish", "protocol", protocol, "RegistryProtocol | None")
         if not (insecure_skip_tls_verify is None or isinstance(insecure_skip_tls_verify, bool)):
             raise _type_error("Container.publish", "insecure_skip_tls_verify", insecure_skip_tls_verify, "bool | None")
+        if not (source_date_epoch is None or isinstance(source_date_epoch, int)):
+            raise _type_error("Container.publish", "source_date_epoch", source_date_epoch, "int | None")
         _args = [
             _Arg("address", address),
             _Arg("platformVariants", [] if platform_variants is None else platform_variants, []),
@@ -4346,6 +4303,7 @@ class Container(_Type):
             _Arg("registryService", registry_service, None),
             _Arg("protocol", protocol, None),
             _Arg("insecureSkipTLSVerify", insecure_skip_tls_verify, False),
+            _Arg("sourceDateEpoch", source_date_epoch, None),
         ]
         _ctx = self._select("publish", _args)
         return await _ctx.execute(str)
@@ -4904,7 +4862,7 @@ class Container(_Type):
         _ctx = self._select("withError", _args)
         return Container(_ctx)
 
-    def with_exec(self, args: list[str], *, use_entrypoint: bool | None = False, stdin: str | None = '', redirect_stdin: str | None = '', redirect_stdout: str | None = '', redirect_stderr: str | None = '', expect: ReturnType | None = ReturnType.SUCCESS, disable_dagger_in_dagger: bool | None = False, experimental_privileged_nesting: bool | None = False, dagger_in_dagger_new_session: bool | None = False, insecure_root_capabilities: bool | None = False, expand: bool | None = False, no_init: bool | None = False,) -> _Self:
+    def with_exec(self, args: list[str], *, use_entrypoint: bool | None = False, stdin: str | None = '', redirect_stdin: str | None = '', redirect_stdout: str | None = '', redirect_stderr: str | None = '', expect: ReturnType | None = ReturnType.SUCCESS, disable_dagger_in_dagger: bool | None = False, experimental_privileged_nesting: bool | None = False, dagger_in_dagger_new_session: bool | None = False, insecure_root_capabilities: bool | None = False, expand: bool | None = False, no_init: bool | None = False, transparent_huge_pages: bool | None = False,) -> _Self:
         """Execute a command in the container, and return a new snapshot of the
         container state after execution.
 
@@ -4964,6 +4922,22 @@ class Container(_Type):
             Only use this if you specifically need the command to be pid 1 in
             the container. Otherwise it may result in unexpected behavior. If
             you're not sure, you don't need this.
+        transparent_huge_pages:
+            Let the command, and the processes it starts, use the Linux
+            kernel's transparent huge pages. Large-memory programs such as
+            compilers can run faster with them, at some cost in memory.
+            Without this, a command gets huge pages only for memory its own
+            program asks huge pages for, as on a host set to "madvise". That
+            only matters on hosts with Linux 6.18 or later whose transparent
+            huge pages are set to "always"
+            (/sys/kernel/mm/transparent_hugepage/enabled, or a size under
+            /sys/kernel/mm/transparent_hugepage/hugepages-*). With the usual
+            default settings, this changes nothing. On older kernels, commands
+            get what the host's settings give them, whether they set this or
+            not.
+            It isn't part of the exec's cache key: an exec that differs from a
+            cached one only in this setting reuses the cached result,
+            whichever setting produced it.
         """
         if not (isinstance(args, list) and all(isinstance(_v0, str) for _v0 in args)):
             raise _type_error("Container.with_exec", "args", args, "list[str]")
@@ -4991,6 +4965,8 @@ class Container(_Type):
             raise _type_error("Container.with_exec", "expand", expand, "bool | None")
         if not (no_init is None or isinstance(no_init, bool)):
             raise _type_error("Container.with_exec", "no_init", no_init, "bool | None")
+        if not (transparent_huge_pages is None or isinstance(transparent_huge_pages, bool)):
+            raise _type_error("Container.with_exec", "transparent_huge_pages", transparent_huge_pages, "bool | None")
         _args = [
             _Arg("args", args),
             _Arg("useEntrypoint", use_entrypoint, False),
@@ -5005,6 +4981,7 @@ class Container(_Type):
             _Arg("insecureRootCapabilities", insecure_root_capabilities, False),
             _Arg("expand", expand, False),
             _Arg("noInit", no_init, False),
+            _Arg("transparentHugePages", transparent_huge_pages, False),
         ]
         _ctx = self._select("withExec", _args)
         return Container(_ctx)
@@ -5318,6 +5295,39 @@ class Container(_Type):
             _Arg("readOnly", read_only, False),
         ]
         _ctx = self._select("withMountedFile", _args)
+        return Container(_ctx)
+
+    def with_mounted_files(self, path: str, sources: list["File"], *, expand: bool | None = False,) -> _Self:
+        """Retrieves this container plus the given files mounted read-only in a
+        directory at the given path.
+
+        Each file appears under the base name of its path. The directory holds
+        nothing else, and nothing can be written to it.
+
+        Parameters
+        ----------
+        path:
+            Location of the directory holding the files (e.g., "/work/lib").
+        sources:
+            Identifiers of the files to mount. Two files with the same base
+            name are an error.
+        expand:
+            Replace "${VAR}" or "$VAR" in the value of path according to the
+            current environment variables defined in the container (e.g.
+            "/$VAR/lib").
+        """
+        if not (isinstance(path, str)):
+            raise _type_error("Container.with_mounted_files", "path", path, "str")
+        if not (isinstance(sources, list) and all(isinstance(_v0, File) for _v0 in sources)):
+            raise _type_error("Container.with_mounted_files", "sources", sources, "list[File]")
+        if not (expand is None or isinstance(expand, bool)):
+            raise _type_error("Container.with_mounted_files", "expand", expand, "bool | None")
+        _args = [
+            _Arg("path", path),
+            _Arg("sources", sources),
+            _Arg("expand", expand, False),
+        ]
+        _ctx = self._select("withMountedFiles", _args)
         return Container(_ctx)
 
     def with_mounted_secret(self, path: str, source: "Secret", *, owner: str | None = '', inherit_owner: bool | None = False, mode: int | None = 256, expand: bool | None = False,) -> _Self:
@@ -8994,6 +9004,44 @@ class File(_Type):
         ]
         _ctx = self._select("export", _args)
         return await _ctx.execute(str)
+
+    def extract(self, *, strip_components: int | None = 0, include: list[str] | None = None, exclude: list[str] | None = None,) -> Directory:
+        """Extracts this archive file into a directory.
+
+        The format is detected from the file's contents: zip, or tar, either
+        uncompressed or compressed with gzip, bzip2, xz or zstd.
+
+        An entry whose path would leave the directory is an error.
+
+        Parameters
+        ----------
+        strip_components:
+            Remove this many leading elements from each entry's path, as tar
+            --strip-components does.
+            Entries with no more elements than this are skipped.
+        include:
+            If set, only entries matching one of these glob patterns, or in a
+            directory that does, are extracted (e.g., ["src/", "*.go"]).
+            Patterns match entry paths after stripComponents is applied.
+        exclude:
+            If set, entries matching one of these glob patterns, or in a
+            directory that does, are not extracted (e.g., ["**/testdata",
+            "**/*_test.go"]).
+            Patterns match entry paths after stripComponents is applied.
+        """
+        if not (strip_components is None or isinstance(strip_components, int)):
+            raise _type_error("File.extract", "strip_components", strip_components, "int | None")
+        if not (include is None or (isinstance(include, list) and all(isinstance(_v0, str) for _v0 in include))):
+            raise _type_error("File.extract", "include", include, "list[str] | None")
+        if not (exclude is None or (isinstance(exclude, list) and all(isinstance(_v0, str) for _v0 in exclude))):
+            raise _type_error("File.extract", "exclude", exclude, "list[str] | None")
+        _args = [
+            _Arg("stripComponents", strip_components, 0),
+            _Arg("include", [] if include is None else include, []),
+            _Arg("exclude", [] if exclude is None else exclude, []),
+        ]
+        _ctx = self._select("extract", _args)
+        return Directory(_ctx)
 
     async def id(self) -> str:
         """A unique identifier for this File.
@@ -17031,7 +17079,7 @@ class Query(_Root):
         _ctx = self._select("sourceMap", _args)
         return SourceMap(_ctx)
 
-    def sshfs_volume(self, endpoint: str, private_key: "Secret", *, known_hosts: "Secret | None" = None, cache_key: str | None = None, insecure_skip_host_key_check: bool | None = False, experimental_service_host: "Service | None" = None,) -> "Volume":
+    def sshfs_volume(self, endpoint: str, private_key: "Secret", *, known_hosts: "Secret | None" = None, cache_key: str | None = None, insecure_skip_host_key_check: bool | None = False, experimental_service_host: "Service | None" = None, follow_symlinks: bool | None = False,) -> "Volume":
         """Constructs an SSHFS volume.
 
         Parameters
@@ -17054,6 +17102,11 @@ class Query(_Root):
         experimental_service_host:
             Service to use as the SSHFS network endpoint while verifying the
             original host key.
+        follow_symlinks:
+            Resolve symlinks on the remote host, so they appear as the files
+            and directories they point to. Without it, absolute symlinks and
+            symlinks containing ".." can't be read. With it, creating a
+            symlink in the volume fails.
         """
         if not (isinstance(endpoint, str)):
             raise _type_error("Query.sshfs_volume", "endpoint", endpoint, "str")
@@ -17067,6 +17120,8 @@ class Query(_Root):
             raise _type_error("Query.sshfs_volume", "insecure_skip_host_key_check", insecure_skip_host_key_check, "bool | None")
         if not (experimental_service_host is None or isinstance(experimental_service_host, Service)):
             raise _type_error("Query.sshfs_volume", "experimental_service_host", experimental_service_host, "Service | None")
+        if not (follow_symlinks is None or isinstance(follow_symlinks, bool)):
+            raise _type_error("Query.sshfs_volume", "follow_symlinks", follow_symlinks, "bool | None")
         _args = [
             _Arg("endpoint", endpoint),
             _Arg("privateKey", private_key),
@@ -17074,6 +17129,7 @@ class Query(_Root):
             _Arg("cacheKey", cache_key, None),
             _Arg("insecureSkipHostKeyCheck", insecure_skip_host_key_check, False),
             _Arg("experimentalServiceHost", experimental_service_host, None),
+            _Arg("followSymlinks", follow_symlinks, False),
         ]
         _ctx = self._select("sshfsVolume", _args)
         return Volume(_ctx)
@@ -21361,7 +21417,7 @@ def core(*, session: _Session | None = None) -> Query:
     return _client_root(Query, None, None, [], session=session)
 
 
-CORE_DIGEST = "sha256:bed28fa58a5987620cdc3d20ea0e63bc8cded176fbe1d7b31c9b42cce4c29757"
+CORE_DIGEST = "sha256:175e626422bfb81c2d51269ec16740ec9401baebfac4ac02d30aee15ef9efa71"
 """Digest of the core schema that this package was generated from."""
 
 
@@ -21377,7 +21433,6 @@ __all__ = [
     "ArtifactDimensionKey",
     "ArtifactDimensionKind",
     "ArtifactPath",
-    "ArtifactResult",
     "Artifacts",
     "BuildArg",
     "Bytes",

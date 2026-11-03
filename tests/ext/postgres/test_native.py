@@ -1,7 +1,5 @@
 """PostgreSQL metadata store tests."""
 
-from urllib.parse import parse_qsl, urlparse
-
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import narwhals as nw
@@ -18,7 +16,6 @@ from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
 from metaxy.versioning.types import HashAlgorithm
 
-from tests.ext.postgres.conftest import _with_search_path
 from tests.metadata_stores.shared import (
     CRUDTests,
     DeletionTests,
@@ -133,33 +130,6 @@ def test_postgresql_requires_connection_info() -> None:
     """Test that store requires either connection_string or connection_params."""
     with pytest.raises(ValueError, match="Must provide either connection_string or connection_params"):
         PostgreSQLMetadataStore()
-
-
-def test_with_search_path_adds_options_when_absent() -> None:
-    """Search path option should be added while preserving existing query params."""
-    base_url = "postgresql://postgres@localhost:5432/test_db?sslmode=require&connect_timeout=10"
-
-    result = _with_search_path(base_url, "test_schema")
-    parsed = urlparse(result)
-    query_params = dict(parse_qsl(parsed.query, keep_blank_values=True))
-
-    assert query_params["sslmode"] == "require"
-    assert query_params["connect_timeout"] == "10"
-    assert query_params["options"] == "-csearch_path=test_schema"
-
-
-def test_with_search_path_appends_to_existing_options_with_percent20() -> None:
-    """Existing options should keep a real space separator encoded as %20 (not +)."""
-    base_url = "postgresql://postgres@localhost:5432/test_db?sslmode=require&options=-cstatement_timeout%3D5"
-
-    result = _with_search_path(base_url, "isolated_schema")
-    parsed = urlparse(result)
-    query_params = dict(parse_qsl(parsed.query, keep_blank_values=True))
-
-    assert query_params["sslmode"] == "require"
-    assert query_params["options"] == "-cstatement_timeout=5 -csearch_path=isolated_schema"
-    assert "%20-csearch_path%3Disolated_schema" in parsed.query
-    assert "+-csearch_path=isolated_schema" not in parsed.query
 
 
 def test_postgresql_struct_to_jsonb_roundtrip(

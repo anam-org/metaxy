@@ -3,6 +3,25 @@
 type ModuleTypes {
   pub all: [TypeDef!]! {
     [
+      typeDef.withObject("TestSuite", description: "A pytest run in an image with the suite's dependencies installed.")
+        .withField("name", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Suite name in tests.toml.")
+        .withField("container", typeDef.withObject("Container"), description: "Image with the dependencies, the source tree and the service images to test against.")
+        .withField("pytest_args", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Arguments passed to pytest.")
+        .withFunction(
+          function("run", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Run the suite's tests.\n\nTests get nested Dagger access to start the services they need.")
+            .withCheck
+        ),
+      typeDef.withObject("TestSuites", description: "The test suites in tests.toml, keyed by name.")
+        .withCollection
+        .withField("names", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Suite names.")
+        .withCollectionKeys("names")
+        .withCollectionGet("suite")
+        .withFunction(
+          function("suite", typeDef.withObject("TestSuite"))
+            .withDescription("The suite called `name`.")
+            .withArg("name", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Suite name in tests.toml.")
+        ),
       typeDef.withObject("MetaxyCi", description: "CI pipelines for Metaxy.")
         .withFunction(
           function("image", typeDef.withObject("Container"))
@@ -10,6 +29,13 @@ type ModuleTypes {
             .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version to install, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
             .withArg("extras", typeDef.withOptional(true).withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)).withOptional(true), description: "Optional dependency extras to install, e.g. duckdb.", defaultValue: ("null" :: Dagger.JSON!))
             .withArg("groups", typeDef.withOptional(true).withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)).withOptional(true), description: "Dependency groups to install, e.g. dev.", defaultValue: ("null" :: Dagger.JSON!))
+            .withArg("overrides", typeDef.withOptional(true).withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)).withOptional(true), description: "Requirements that replace the matching locked requirements, e.g. ibis-framework==11.*.", defaultValue: ("null" :: Dagger.JSON!))
+            .withArg("apt_packages", typeDef.withOptional(true).withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)).withOptional(true), description: "Debian packages to install, e.g. libpq5.", defaultValue: ("null" :: Dagger.JSON!))
+        )
+        .withFunction(
+          function("tests", typeDef.withObject("TestSuites"))
+            .withDescription("The test suites defined in tests.toml.")
+            .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version to install, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
         )
         .withConstructor(
           function("", typeDef.withObject("MetaxyCi"))

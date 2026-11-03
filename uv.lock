@@ -3115,7 +3115,6 @@ dev = [
     { name = "pytest-cases" },
     { name = "pytest-cov" },
     { name = "pytest-env" },
-    { name = "pytest-postgresql" },
     { name = "pytest-rerunfailures" },
     { name = "ruff" },
     { name = "sybil" },
@@ -3228,7 +3227,6 @@ dev = [
     { name = "pytest-cases", specifier = ">=3.9.1" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-env", specifier = ">=1.2.0" },
-    { name = "pytest-postgresql", specifier = ">=8.0.0" },
     { name = "pytest-rerunfailures", specifier = ">=15.0" },
     { name = "ruff", specifier = ">=0.14.4" },
     { name = "sybil", specifier = ">=9.3.0" },
@@ -3293,18 +3291,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ab/f7/2933f1a1fb0e0f077d5d6a92c6c7f8a54e6128241f116dff4df8b6050bbf/mike-2.1.3.tar.gz", hash = "sha256:abd79b8ea483fb0275b7972825d3082e5ae67a41820f8d8a0dc7a3f49944e810", size = 38119, upload-time = "2024-08-13T05:02:14.167Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fd/1a/31b7cd6e4e7a02df4e076162e9783620777592bea9e4bb036389389af99d/mike-2.1.3-py3-none-any.whl", hash = "sha256:d90c64077e84f06272437b464735130d380703a76a5738b152932884c60c062a", size = 33754, upload-time = "2024-08-13T05:02:12.515Z" },
-]
-
-[[package]]
-name = "mirakuru"
-version = "3.0.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "psutil", marker = "sys_platform != 'cygwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/53/23/db9034ba28c7d89a540ffb8ca789f70dc12079108ece1cd1762295d5c807/mirakuru-3.0.2.tar.gz", hash = "sha256:21192186a8680ea7567ca68170261df3785768b12962dd19fe8cccab15ad3441", size = 29338, upload-time = "2026-02-11T19:41:15.42Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/5f/a3f1a7f1f6e55de9285b03ae7e0d3c2a15e044b6e3f9b53bef5609ca05f2/mirakuru-3.0.2-py3-none-any.whl", hash = "sha256:10e5dac4a8f26872c63e9cdfdc01b775aaa2beb3ced98abc497279d2dc525b8f", size = 27583, upload-time = "2026-02-11T19:41:13.578Z" },
 ]
 
 [[package]]
@@ -4428,15 +4414,6 @@ wheels = [
 ]
 
 [[package]]
-name = "port-for"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/88/a0/80a64e8cc096c7a9d0f546a28994af849b4775afc5e4ee44bf2739a55115/port_for-1.0.0.tar.gz", hash = "sha256:404d161b1b2c82e2f6b31d8646396b4847d02bf5ee10068c92b7263657a14582", size = 21681, upload-time = "2025-09-30T10:22:51.149Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/2c/b1faca65b9728b4ac43f0bee4bb9e7294bd0a62cc2ee59fd59403bf575f6/port_for-1.0.0-py3-none-any.whl", hash = "sha256:35a848b98cf4cc075fe80dc49ae5c3a78e3ca345a23bd39bf5252277b4eef5c2", size = 17544, upload-time = "2025-09-30T10:22:49.878Z" },
-]
-
-[[package]]
 name = "prek"
 version = "0.2.21"
 source = { registry = "https://pypi.org/simple" }
@@ -5189,22 +5166,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/13/12/9c87d0ca45d5992473208bcef2828169fa7d39b8d7fc6e3401f5c08b8bf7/pytest_env-1.2.0.tar.gz", hash = "sha256:475e2ebe8626cee01f491f304a74b12137742397d6c784ea4bc258f069232b80", size = 8973, upload-time = "2025-10-09T19:15:47.42Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/27/98/822b924a4a3eb58aacba84444c7439fce32680592f394de26af9c76e2569/pytest_env-1.2.0-py3-none-any.whl", hash = "sha256:d7e5b7198f9b83c795377c09feefa45d56083834e60d04767efd64819fc9da00", size = 6251, upload-time = "2025-10-09T19:15:46.077Z" },
-]
-
-[[package]]
-name = "pytest-postgresql"
-version = "8.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mirakuru" },
-    { name = "packaging" },
-    { name = "port-for" },
-    { name = "psycopg" },
-    { name = "pytest" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/c8/b9607675904b3e4004c76109741aac6479daecfe6fb38ad89f330c6c5adc/pytest_postgresql-8.0.0.tar.gz", hash = "sha256:26cbd44a0adef76cf4a82a3a2263f0e029bc54b5863556a9bd86ca3edfa91cce", size = 49737, upload-time = "2026-01-23T21:14:34.554Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/cf/2c962ce63904e2b051b644a0036bdeeae8ae05d91e11e829b220c3db9935/pytest_postgresql-8.0.0-py3-none-any.whl", hash = "sha256:125b63b16d630c2dea19807062ed4c96e6123f06058ce65b82b4b14174d6c4b8", size = 40228, upload-time = "2026-01-23T21:14:33.08Z" },
 ]
 
 [[package]]
