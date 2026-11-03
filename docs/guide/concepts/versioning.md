@@ -20,10 +20,6 @@ Here is how these versions are calculated, from bottom to top.
 
 These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them. They exist in Python at runtime, and are also serialized to the metadata store when `metaxy push` is called.
 
-!!! info "Version caching"
-
-    Each feature graph caches the versions that it computes. The cache follows feature definitions that are added, replaced, or removed, and changes of the hash truncation length. Do not change a feature definition in place after you add it to a graph, because Metaxy cannot detect such changes. Add a new definition instead.
-
 #### Field Level
 
 **Field Code Version** is defined on the field and is provided by the user (defaults to `"__metaxy_initial__"`). Apart from [overriding data versions](#data-version), this is the only input to the versioning system that can be directly modified by the user.

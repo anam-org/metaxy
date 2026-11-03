@@ -298,11 +298,6 @@ class FeatureGraph:
 
         The version is derived from the field's code version and the versions of its parent fields.
         A field of an external feature with a provenance override uses the override value as its version.
-
-        Versions are cached per graph. The cache follows feature definitions that are added, replaced or removed,
-        also through direct changes to `feature_definitions_by_key`, and changes of the hash truncation length.
-        A feature definition must not be changed in place after it is added to the graph,
-        and the graph must not change while versions are computed.
         """
         override = self._provenance_override(key)
         if override is not None:
@@ -404,11 +399,6 @@ class FeatureGraph:
 
         Hash together field provenance entries with the feature code version.
 
-        Versions are cached per graph. The cache follows feature definitions that are added, replaced or removed,
-        also through direct changes to `feature_definitions_by_key`, and changes of the hash truncation length.
-        A feature definition must not be changed in place after it is added to the graph,
-        and the graph must not change while versions are computed.
-
         Args:
             key: Feature key to get field versions for. Accepts types that can be converted into a feature key..
 
@@ -420,11 +410,6 @@ class FeatureGraph:
 
     def get_feature_version(self, key: CoercibleToFeatureKey) -> str:
         """Computes the feature version as a single string.
-
-        Versions are cached per graph. The cache follows feature definitions that are added, replaced or removed,
-        also through direct changes to `feature_definitions_by_key`, and changes of the hash truncation length.
-        A feature definition must not be changed in place after it is added to the graph,
-        and the graph must not change while versions are computed.
 
         Args:
             key: Feature key to get version for. Accepts types that can be converted into a feature key..
