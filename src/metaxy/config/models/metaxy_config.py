@@ -1,6 +1,6 @@
 import os
 import warnings
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
@@ -402,7 +402,7 @@ class MetaxyConfig(BaseSettings):
             import narwhals_map  # noqa: F401  # registers Map dtype and .map namespace on narwhals
 
     @contextmanager
-    def use(self) -> Iterator[Self]:
+    def use(self) -> Generator[Self]:
         """Use this configuration temporarily, restoring previous config on exit.
 
         Example:

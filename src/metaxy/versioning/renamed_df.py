@@ -71,14 +71,14 @@ class RenamedDataFrame(Generic[FrameT]):
     def filter(self, filters: Sequence[nw.Expr] | None) -> RenamedDataFrame[FrameT]:
         """Filter rows (ID column tracking unchanged)."""
         if filters:
-            new_df = self.df.filter(*filters)  # ty: ignore[invalid-argument-type]
+            new_df = self.df.filter(*filters)
             return replace(self, df=new_df)
         return self
 
     def select(self, columns: Sequence[str] | None) -> RenamedDataFrame[FrameT]:
         """Select columns and update ID tracking for selection."""
         if columns:
-            new_df = self.df.select(*columns)  # ty: ignore[invalid-argument-type]
+            new_df = self.df.select(*columns)
 
             # Update selected ID columns based on what's in the selection
             columns_set = set(columns)

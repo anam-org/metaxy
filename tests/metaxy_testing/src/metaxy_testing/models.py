@@ -44,7 +44,8 @@ def _validate_sample_feature_spec_id_columns(
 class SampleFeatureSpec(FeatureSpec):
     """A testing implementation of FeatureSpec that has a `sample_uid` ID column. Has to be moved to tests."""
 
-    id_columns: Annotated[
+    # A list, unlike FeatureSpec's tuple.
+    id_columns: Annotated[  # ty: ignore[invalid-attribute-override]
         pydantic.SkipValidation[list[str]],
         BeforeValidator(_validate_sample_feature_spec_id_columns),
     ] = pydantic.Field(

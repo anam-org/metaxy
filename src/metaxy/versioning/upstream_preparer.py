@@ -39,7 +39,7 @@ class UpstreamPreparer(Generic[FrameT]):
     5. Join all dependencies into a single DataFrame
     """
 
-    def __init__(self, plan: FeaturePlan, engine: VersioningEngine[FrameT]):
+    def __init__(self, plan: FeaturePlan, engine: VersioningEngine):
         self.plan = plan
         self.engine = engine
 
@@ -136,11 +136,11 @@ class UpstreamPreparer(Generic[FrameT]):
         result = dict(dfs)
 
         for feature_key, renamed_df in dfs.items():
-            cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+            cols = renamed_df.df.collect_schema().names()
             cols_to_drop = [col for col in columns_to_drop if col in cols]
             if cols_to_drop:
                 result[feature_key] = RenamedDataFrame(
-                    df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
+                    df=renamed_df.df.drop(*cols_to_drop),
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
 
@@ -157,7 +157,7 @@ class UpstreamPreparer(Generic[FrameT]):
             cols_to_drop = self.engine.feature_transformers_by_key[feature_key].aggregation_order_columns
             if cols_to_drop:
                 result[feature_key] = RenamedDataFrame(
-                    df=renamed_df.df.drop(*cols_to_drop),  # ty: ignore[invalid-argument-type]
+                    df=renamed_df.df.drop(*cols_to_drop),
                     id_column_tracker=renamed_df.id_column_tracker,
                 )
 
@@ -170,7 +170,7 @@ class UpstreamPreparer(Generic[FrameT]):
         """Raise ValueError if non-ID, non-system columns appear in multiple features."""
         all_columns: dict[str, list[FeatureKey]] = {}
         for feature_key, renamed_df in dfs.items():
-            cols = renamed_df.df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+            cols = renamed_df.df.collect_schema().names()
             for col in cols:
                 if col not in all_columns:
                     all_columns[col] = []

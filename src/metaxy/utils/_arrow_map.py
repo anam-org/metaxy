@@ -48,7 +48,7 @@ def convert_structs_to_maps(df: PolarsFrameT, columns: Sequence[str]) -> PolarsF
 
     if not map_exprs:
         return df
-    return cast(PolarsFrameT, df.with_columns(map_exprs))  # ty: ignore[invalid-argument-type]
+    return cast(PolarsFrameT, df.with_columns(map_exprs))
 
 
 def convert_maps_to_polars_map(
@@ -85,7 +85,7 @@ def convert_maps_to_polars_map(
         pl.col(col_name).map.from_entries().alias(col_name)  # ty: ignore[unresolved-attribute]
         for col_name in target_columns
     ]
-    return cast(PolarsFrameT, df.with_columns(map_exprs))  # ty: ignore[invalid-argument-type]
+    return cast(PolarsFrameT, df.with_columns(map_exprs))
 
 
 def _is_list_of_kv_struct(dtype: pl.DataType) -> bool:

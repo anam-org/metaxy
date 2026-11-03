@@ -1,5 +1,5 @@
 import hashlib
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, TypedDict, cast
@@ -714,7 +714,7 @@ class FeatureGraph:
         _active_graph.set(reg)
 
     @contextmanager
-    def use(self) -> Iterator[Self]:
+    def use(self) -> Generator[Self]:
         """Context manager to temporarily use this graph as active.
 
         This is the recommended way to use custom registries, especially in tests.

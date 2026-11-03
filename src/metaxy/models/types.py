@@ -69,7 +69,8 @@ class _Key(RootModel[tuple[str, ...]]):
         repr=False,  # ty: ignore[invalid-key]
     )  # Make immutable for hashability, use custom __repr__
 
-    root: tuple[str, ...]
+    # Frozen, so the override of RootModel's writable `root` is never written to.
+    root: tuple[str, ...]  # ty: ignore[invalid-mutable-override]
 
     if TYPE_CHECKING:
 

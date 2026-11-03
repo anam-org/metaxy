@@ -25,7 +25,7 @@ def is_local_path(path: str) -> bool:
 #
 def empty_frame_like(ref_frame: FrameT) -> FrameT:
     """Create an empty LazyFrame with the same schema as ref_frame."""
-    return ref_frame.head(0)  # ty: ignore[invalid-argument-type]
+    return ref_frame.head(0)
 
 
 def sanitize_uri(uri: str) -> str:

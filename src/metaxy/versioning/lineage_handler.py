@@ -172,11 +172,9 @@ class ExpansionLineageHandler(LineageHandler):
         join_columns: list[str],
     ) -> FrameT:
         """Collapse expanded rows to parent level for comparison."""
-        current_cols = current.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        current_cols = current.collect_schema().names()
         non_key_cols = [c for c in current_cols if c not in join_columns]
-        return current.group_by(*join_columns).agg(  # ty: ignore[invalid-argument-type]
-            *[nw.col(c).any_value(ignore_nulls=True) for c in non_key_cols]
-        )
+        return current.group_by(*join_columns).agg(*[nw.col(c).any_value(ignore_nulls=True) for c in non_key_cols])
 
 
 def create_lineage_handler(

@@ -1392,7 +1392,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             ),
         ):
             uid: str = Field(primary_key=True)
-            feature_version: str = Field()  # This SHOULD conflict!
+            feature_version: str = Field()  # ty: ignore[invalid-attribute-override]  # This SHOULD conflict!
 
         # If we get here, it means SQLModel didn't protect the column
         # which would be unexpected

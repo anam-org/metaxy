@@ -4,7 +4,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal
 
 import narwhals as nw
 from narwhals.typing import FrameT
@@ -101,10 +101,7 @@ class VersioningEngine(ABC):
             for next_key, renamed_df in upstream.items():
                 if key == next_key:
                     continue
-                df = cast(
-                    FrameT,
-                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),  # ty: ignore[invalid-argument-type]
-                )
+                df = df.join(renamed_df.df, on=self.shared_id_columns, how="inner")
             return df
 
         # Use cached properties for required and optional dependencies
@@ -126,10 +123,7 @@ class VersioningEngine(ABC):
             if df is None:
                 df = renamed_df.df
             else:
-                df = cast(
-                    FrameT,
-                    df.join(renamed_df.df, on=self.shared_id_columns, how="inner"),  # ty: ignore[invalid-argument-type]
-                )
+                df = df.join(renamed_df.df, on=self.shared_id_columns, how="inner")
 
         # Then, join all optional dependencies
         # Use outer join if all deps are optional, left join otherwise
@@ -145,13 +139,10 @@ class VersioningEngine(ABC):
                 # First dependency when all are optional - becomes the base
                 df = renamed_df.df
             else:
-                df = cast(
-                    FrameT,
-                    df.join(  # ty: ignore[invalid-argument-type]
-                        renamed_df.df,  # ty: ignore[invalid-argument-type]
-                        on=self.shared_id_columns,
-                        how=optional_join_type,
-                    ),
+                df = df.join(
+                    renamed_df.df,
+                    on=self.shared_id_columns,
+                    how=optional_join_type,
                 )
 
                 # For full outer join, coalesce the ID columns
@@ -159,13 +150,10 @@ class VersioningEngine(ABC):
                     for id_col in self.shared_id_columns:
                         right_col = f"{id_col}_right"
                         # Check if the right column exists (ty ignore for generic type)
-                        col_names = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+                        col_names = df.collect_schema().names()
                         if right_col in col_names:
-                            df = cast(
-                                FrameT,
-                                df.with_columns(  # ty: ignore[invalid-argument-type]
-                                    nw.coalesce(nw.col(id_col), nw.col(right_col)).alias(id_col)
-                                ).drop(right_col),
+                            df = df.with_columns(nw.coalesce(nw.col(id_col), nw.col(right_col)).alias(id_col)).drop(
+                                right_col
                             )
 
         assert df is not None, "No dataframes were joined"
@@ -238,13 +226,10 @@ class VersioningEngine(ABC):
         if MetaxyConfig.get().enable_map_datatype:
             return self.build_map_column(df, struct_name, field_columns)
 
-        return cast(
-            FrameT,
-            df.with_columns(  # ty: ignore[invalid-argument-type]
-                nw.struct([nw.col(src_col).alias(field_name) for field_name, src_col in field_columns.items()]).alias(
-                    struct_name
-                )
-            ),
+        return df.with_columns(
+            nw.struct([nw.col(src_col).alias(field_name) for field_name, src_col in field_columns.items()]).alias(
+                struct_name
+            )
         )
 
     @staticmethod
@@ -319,7 +304,7 @@ class VersioningEngine(ABC):
                 nw.col(col_name).struct.field(field_name).cast(nw.String).alias(out_col)
                 for field_name, out_col in field_mapping.items()
             ]
-            return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
+            return df.with_columns(*exprs)
 
         # Map path: use narwhals-map expressions (works across Polars, Arrow, Ibis)
         import narwhals_map  # noqa: F401  # registers .map namespace on nw.Expr
@@ -328,7 +313,7 @@ class VersioningEngine(ABC):
             nw.col(col_name).map.get(field_name).cast(nw.String).alias(out_col)  # ty: ignore[unresolved-attribute]
             for field_name, out_col in field_mapping.items()
         ]
-        return df.with_columns(*exprs)  # ty: ignore[invalid-argument-type]
+        return df.with_columns(*exprs)
 
     def aggregate_metadata_columns(
         self,
@@ -399,7 +384,7 @@ class VersioningEngine(ABC):
             )
 
         # Drop the original struct columns and temp columns, then rebuild structs
-        df = df.drop(  # ty: ignore[invalid-argument-type]
+        df = df.drop(
             renamed_data_version_by_field_col,
             renamed_prov_by_field_col,
             renamed_data_version_col,
@@ -409,7 +394,7 @@ class VersioningEngine(ABC):
         )
 
         # Build new struct columns from hashed fields
-        df = self.build_struct_column(df, renamed_data_version_by_field_col, hashed_field_cols)
+        df = self.build_struct_column(df, renamed_data_version_by_field_col, hashed_field_cols)  # ty: ignore[invalid-argument-type]
         df = self.build_struct_column(
             df,
             renamed_prov_by_field_col,
@@ -497,7 +482,7 @@ class VersioningEngine(ABC):
 
             # Concatenate all components
             concat_expr = nw.concat_str(components, separator="|")
-            df = df.with_columns(concat_expr.alias(temp_col_name))  # ty: ignore[invalid-argument-type]
+            df = df.with_columns(concat_expr.alias(temp_col_name))
 
         # Hash each concatenation column
         temp_hash_cols: dict[str, str] = {}  # field_key_str -> hash_col_name
@@ -585,11 +570,11 @@ class VersioningEngine(ABC):
 
         # Drop version columns if present (they come from upstream and shouldn't be in the result)
         version_columns = ["metaxy_feature_version", "metaxy_project_version"]
-        current_columns = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        current_columns = df.collect_schema().names()
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+            df = df.drop(*columns_to_drop)
 
         return df
 
@@ -648,7 +633,7 @@ class VersioningEngine(ABC):
         temp_cols = {fn: f"__hsvf_{fn}" for fn in sorted_names}
         df = self._extract_metadata_fields(df, struct_column, temp_cols)
         sample_concat = nw.concat_str([nw.col(c) for c in temp_cols.values()], separator="|")
-        df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
+        df = df.with_columns(sample_concat.alias("__sample_concat"))
 
         # Hash the concatenation to produce final provenance hash
         return self.hash_string_column(
@@ -730,7 +715,7 @@ class VersioningEngine(ABC):
             input_df: FrameT | None = None
 
             # Auto-compute metaxy_provenance if missing but metaxy_provenance_by_field exists
-            cols = expected.collect_schema().names()  # ty: ignore[invalid-argument-type]
+            cols = expected.collect_schema().names()
             if METAXY_PROVENANCE not in cols and METAXY_PROVENANCE_BY_FIELD in cols:
                 warnings.warn(
                     f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
@@ -758,7 +743,7 @@ class VersioningEngine(ABC):
         return expected, input_df
 
     def _check_required_provenance_columns(self, df: FrameT, message: str):
-        cols = df.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        cols = df.collect_schema().names()
 
         if METAXY_PROVENANCE_BY_FIELD not in cols:
             raise ValueError(

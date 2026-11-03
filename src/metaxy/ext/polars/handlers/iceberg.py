@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NewType, overload
@@ -184,7 +184,7 @@ class IcebergMetadataStore(MetadataStore):
         return HashAlgorithm.XXHASH32
 
     @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Generator[PolarsVersioningEngine]:
         """Create Polars versioning engine for Iceberg store."""
         with self._create_polars_versioning_engine(plan) as engine:
             yield engine

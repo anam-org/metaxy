@@ -82,7 +82,7 @@ class IbisVersioningEngine(VersioningEngine):
 
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Get hash function
         hash_fn = self.hash_functions[hash_algo]
@@ -112,7 +112,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
         keys = ibis.array([ibis.literal(name) for name in field_columns])
         values = ibis.array([ibis_table[src_col].cast("string") for src_col in field_columns.values()])
         return cast(FrameT, nw.from_native(ibis_table.mutate(**{col_name: ibis.map(keys, values)})))
@@ -135,7 +135,7 @@ class IbisVersioningEngine(VersioningEngine):
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         # Create window spec with ordering for deterministic results
         # Fall back to group_by columns for ordering if no explicit order_by columns
@@ -177,7 +177,7 @@ class IbisVersioningEngine(VersioningEngine):
         # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, "Only Ibis DataFrames are accepted"
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())  # ty: ignore[invalid-argument-type]
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
         ordering_expr = cast(ibis.expr.types.Column, ibis.coalesce(*[ibis_table[col] for col in timestamp_columns]))
         # Aggregate only keys and timestamps, keeping wide historical rows out of the aggregate state.

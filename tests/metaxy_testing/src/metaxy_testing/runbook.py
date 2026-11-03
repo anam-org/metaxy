@@ -13,7 +13,7 @@ import shutil
 import subprocess
 import tempfile
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
 from datetime import datetime
 from enum import Enum
@@ -216,7 +216,7 @@ class Runbook(BaseModel):
     _execution_state: RunbookExecutionState | None = PrivateAttr(default=None)
 
     def set_execution_state(self, state: RunbookExecutionState) -> None:
-        self._execution_state = state  # ty: ignore[invalid-assignment]
+        self._execution_state = state
 
     @property
     def execution_state(self) -> RunbookExecutionState | None:
@@ -418,7 +418,7 @@ class RunbookRunner:
         return self.last_result
 
     @contextmanager
-    def apply_patch(self, patch_path: str, *, push_graph: bool = True) -> Iterator[None]:
+    def apply_patch(self, patch_path: str, *, push_graph: bool = True) -> Generator[None]:
         """Apply a patch file as a context manager.
 
         The patch is reverted when exiting the context.
@@ -571,7 +571,7 @@ class RunbookRunner:
         example_dir: Path,
         env_overrides: dict[str, str] | None = None,
         work_dir: Path | None = None,
-    ) -> Iterator[RunbookRunner]:
+    ) -> Generator[RunbookRunner]:
         """Context manager for running an example runbook in tests.
 
         Copies the example to a temporary work directory so patches don't

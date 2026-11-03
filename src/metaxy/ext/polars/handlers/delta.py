@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
@@ -175,7 +175,7 @@ class DeltaMetadataStore(MetadataStore):
         return HashAlgorithm.XXHASH32
 
     @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Generator[PolarsVersioningEngine]:
         """Create Polars versioning engine for Delta store."""
         with self._create_polars_versioning_engine(plan) as engine:
             yield engine

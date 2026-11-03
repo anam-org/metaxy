@@ -13,7 +13,7 @@ Requirements:
 
 import json
 import warnings
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
@@ -128,7 +128,7 @@ class PostgreSQLMetadataStore(IbisMetadataStore):
         return nw.Implementation.POLARS
 
     @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Generator[PolarsVersioningEngine]:
         """Create PostgreSQL versioning engine.
 
         PostgreSQLMetadataStore always uses PolarsVersioningEngine.

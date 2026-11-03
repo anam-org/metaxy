@@ -66,7 +66,7 @@ class PolarsVersioningEngine(VersioningEngine):
             )
 
         assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
 
         # Apply hash
         hash_fn = self._HASH_FUNCTION_MAP[hash_algo]
@@ -92,7 +92,7 @@ class PolarsVersioningEngine(VersioningEngine):
         import polars_map  # noqa: F401  # registers .map accessor
 
         assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
         kv_pairs = [
             pl.struct(
                 pl.lit(field_name).alias("key"),
@@ -118,7 +118,7 @@ class PolarsVersioningEngine(VersioningEngine):
         All rows in the same group receive identical concatenated values.
         """
         assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
 
         # Use sort_by within the window to ensure deterministic ordering
         # then join all values with the separator
@@ -147,7 +147,7 @@ class PolarsVersioningEngine(VersioningEngine):
         """
         assert df.implementation == nw.Implementation.POLARS, "Only Polars DataFrames are accepted"
 
-        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())  # ty: ignore[invalid-argument-type]
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
 
         # Create a temporary column for ordering using coalesce
         ordering_expr = pl.coalesce([pl.col(col) for col in timestamp_columns])

@@ -7,7 +7,7 @@ Supports any SQL database that Ibis supports:
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
@@ -205,7 +205,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return HashAlgorithm.MD5
 
     @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[IbisVersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Generator[IbisVersioningEngine]:
         """Create provenance engine for Ibis backend as a context manager.
 
         Args:

@@ -130,25 +130,25 @@ class FeatureDepTransformer:
         # (e.g., metaxy_created_at, metaxy_materialization_id, metaxy_feature_version)
         # These are recalculated for the downstream feature and would cause column name
         # conflicts when joining 3+ upstream features
-        existing_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
+        existing_columns = set(df.collect_schema().names())
         columns_to_drop = [col for col in _COLUMNS_TO_DROP_BEFORE_JOIN if col in existing_columns]
         if columns_to_drop:
-            df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
+            df = df.drop(*columns_to_drop)
 
         # Apply rename
-        renamed_df = df.rename(self.renames) if self.renames else df  # ty: ignore[invalid-argument-type]
+        renamed_df = df.rename(self.renames) if self.renames else df
 
         # Apply filter
         if combined_filters:
-            renamed_df = renamed_df.filter(*combined_filters)  # ty: ignore[invalid-argument-type]
+            renamed_df = renamed_df.filter(*combined_filters)
 
         # Apply select
         if self.renamed_columns:
-            renamed_df = renamed_df.select(*self.renamed_columns)  # ty: ignore[invalid-argument-type]
+            renamed_df = renamed_df.select(*self.renamed_columns)
 
         # Create RenamedDataFrame with the complete ID column tracker
-        return RenamedDataFrame(  # ty: ignore[invalid-return-type]
-            df=renamed_df,  # ty: ignore[invalid-argument-type]
+        return RenamedDataFrame(
+            df=renamed_df,
             id_column_tracker=self.id_column_tracker,
         )
 

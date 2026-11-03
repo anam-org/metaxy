@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import functools
 import operator
-from typing import TYPE_CHECKING, Generic, cast
+from typing import TYPE_CHECKING, Generic
 
 import narwhals as nw
 from narwhals.typing import FrameT
@@ -29,7 +29,7 @@ class IncrementResolver(Generic[FrameT]):
     comparison (e.g., collapsing expanded rows).
     """
 
-    def __init__(self, plan: FeaturePlan, engine: VersioningEngine[FrameT]):
+    def __init__(self, plan: FeaturePlan, engine: VersioningEngine):
         self.plan = plan
         self.engine = engine
 
@@ -66,7 +66,7 @@ class IncrementResolver(Generic[FrameT]):
         current = self._transform_current_for_comparison(current, join_columns)
 
         # Rename provenance columns in current to avoid conflicts
-        current = current.rename(  # ty: ignore[invalid-argument-type]
+        current = current.rename(
             {
                 METAXY_PROVENANCE: f"__current_{METAXY_PROVENANCE}",
                 METAXY_PROVENANCE_BY_FIELD: f"__current_{METAXY_PROVENANCE_BY_FIELD}",
@@ -74,13 +74,10 @@ class IncrementResolver(Generic[FrameT]):
         )
 
         # Find added samples (in expected but not current)
-        added = cast(
-            FrameT,
-            expected.join(  # ty: ignore[invalid-argument-type]
-                cast(FrameT, current.select(join_columns)),  # ty: ignore[invalid-argument-type]
-                on=join_columns,
-                how="anti",
-            ),
+        added = expected.join(
+            current.select(join_columns),
+            on=join_columns,
+            how="anti",
         )
 
         # Evaluate staleness predicates against current metadata before the join,
@@ -94,12 +91,12 @@ class IncrementResolver(Generic[FrameT]):
             )
             select_columns.append(_STALE_BY_PREDICATE)
 
-        current_for_join = cast(FrameT, current_for_join.select(select_columns))
+        current_for_join = current_for_join.select(select_columns)
 
-        expected_columns = expected.collect_schema().names()  # ty: ignore[invalid-argument-type]
+        expected_columns = expected.collect_schema().names()
 
-        joined = expected.join(  # ty: ignore[invalid-argument-type]
-            current_for_join,  # ty: ignore[invalid-argument-type]
+        joined = expected.join(
+            current_for_join,
             on=join_columns,
             how="inner",
             suffix="__right",
@@ -112,24 +109,18 @@ class IncrementResolver(Generic[FrameT]):
         if staleness_predicates:
             changed_filter = changed_filter | nw.col(_STALE_BY_PREDICATE)
 
-        changed = cast(
-            FrameT,
-            joined.filter(changed_filter).select(expected_columns),
-        )
+        changed = joined.filter(changed_filter).select(expected_columns)
 
         # Find removed samples (in current but not expected)
-        removed = cast(
-            FrameT,
-            current.join(
-                cast(FrameT, expected.select(join_columns)),  # ty: ignore[invalid-argument-type]
-                on=join_columns,
-                how="anti",
-            ).rename(
-                {
-                    f"__current_{METAXY_PROVENANCE}": METAXY_PROVENANCE,
-                    f"__current_{METAXY_PROVENANCE_BY_FIELD}": METAXY_PROVENANCE_BY_FIELD,
-                }
-            ),
+        removed = current.join(
+            expected.select(join_columns),
+            on=join_columns,
+            how="anti",
+        ).rename(
+            {
+                f"__current_{METAXY_PROVENANCE}": METAXY_PROVENANCE,
+                f"__current_{METAXY_PROVENANCE_BY_FIELD}": METAXY_PROVENANCE_BY_FIELD,
+            }
         )
 
         return added, changed, removed

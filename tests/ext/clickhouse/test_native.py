@@ -739,7 +739,7 @@ def test_clickhouse_map_column_write_from_ibis_struct(
                 {"frames": "_hash_frames", "audio": "_hash_audio"},
             )
             nw_df = engine.build_struct_column(
-                nw_df,
+                nw_df,  # ty: ignore[invalid-argument-type]
                 METAXY_DATA_VERSION_BY_FIELD,
                 {"frames": "_hash_frames", "audio": "_hash_audio"},
             )

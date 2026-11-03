@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Generator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from types import TracebackType
@@ -700,7 +700,7 @@ class MetadataStore(ABC):
                 for dep in (plan.feature_deps or [])
             }
 
-            df_columns = set(df.collect_schema().names())  # ty: ignore[invalid-argument-type]
+            df_columns = set(df.collect_schema().names())
             missing_columns = [
                 f"{col} (from upstream feature {key.to_string()})"
                 for key, col in expected_columns.items()
@@ -1189,7 +1189,7 @@ class MetadataStore(ABC):
 
     @abstractmethod
     @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Iterator[VersioningEngine]:
+    def _create_versioning_engine(self, plan: FeaturePlan) -> Generator[VersioningEngine]:
         """Create provenance engine for this store as a context manager.
 
         Args:
@@ -1213,7 +1213,7 @@ class MetadataStore(ABC):
         ...
 
     @contextmanager
-    def _create_polars_versioning_engine(self, plan: FeaturePlan) -> Iterator[PolarsVersioningEngine]:
+    def _create_polars_versioning_engine(self, plan: FeaturePlan) -> Generator[PolarsVersioningEngine]:
         from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
         yield PolarsVersioningEngine(plan=plan)
@@ -1221,7 +1221,7 @@ class MetadataStore(ABC):
     @contextmanager
     def create_versioning_engine(
         self, plan: FeaturePlan, implementation: nw.Implementation
-    ) -> Iterator[VersioningEngine | PolarsVersioningEngine]:
+    ) -> Generator[VersioningEngine | PolarsVersioningEngine]:
         """
         Creates an appropriate provenance engine.
 
@@ -1274,7 +1274,7 @@ class MetadataStore(ABC):
             )
 
     @contextmanager
-    def open(self, mode: AccessMode = "r") -> Iterator[Self]:
+    def open(self, mode: AccessMode = "r") -> Generator[Self]:
         """Open/initialize the store for operations.
 
         Context manager that opens the store with specified access mode.
@@ -1453,7 +1453,7 @@ class MetadataStore(ABC):
     # ========== Core CRUD Operations ==========
 
     @contextmanager
-    def _shared_transaction_timestamp(self, *, soft_delete: bool = False) -> Iterator[datetime]:
+    def _shared_transaction_timestamp(self, *, soft_delete: bool = False) -> Generator[datetime]:
         """Context manager that establishes a shared timestamp for a write transaction.
 
         All write operations (write, delete with soft=True) within
@@ -1823,10 +1823,10 @@ class MetadataStore(ABC):
     def rebase(
         self,
         feature: CoercibleToFeatureKey,
-        df: FrameT,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
         *,
         to_feature_version: str | None = None,
-    ) -> FrameT:
+    ) -> nw.LazyFrame[Any]:
         """Rebase metadata from one feature version to another.
 
         Recalculates Metaxy versioning columns for the desired feature version.
@@ -1900,7 +1900,7 @@ class MetadataStore(ABC):
 
         # Null out data_version where it matches provenance (default, not user-overridden)
         # so _add_system_columns fills them from new provenance after write
-        working = df.with_columns(  # ty: ignore[invalid-argument-type]
+        working = df.with_columns(
             nw.when(nw.col(METAXY_DATA_VERSION) == nw.col(METAXY_PROVENANCE))
             .then(nw.lit(None, dtype=nw.String))
             .otherwise(nw.col(METAXY_DATA_VERSION))
