@@ -1,0 +1,8 @@
+{
+  "name": "metaxy-ci-claude-code",
+  "private": true,
+  "description": "Pins the Claude Code CLI that validates the plugin; Dependabot bumps it.",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.317"
+  }
+}

@@ -3,26 +3,99 @@
 type ModuleTypes {
   pub all: [TypeDef!]! {
     [
-      typeDef.withObject("TestSuite", description: "A pytest run in an image with the suite's dependencies installed.")
+      typeDef.withObject("ServiceImage", description: "The image of a service that the test fixtures start.")
+        .withField("name", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Service name in tests.toml, e.g. clickhouse.")
+        .withField("image", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Image reference."),
+      typeDef.withObject("TestSuite", description: "A test suite in tests.toml: what to install and which tests to run.")
         .withField("name", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Suite name in tests.toml.")
-        .withField("container", typeDef.withObject("Container"), description: "Image with the dependencies, the source tree and the service images to test against.")
-        .withField("pytest_args", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Arguments passed to pytest.")
+        .withField("extras", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Optional dependency extras to install.")
+        .withField("groups", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Dependency groups to install.")
+        .withField("overrides", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Requirements that replace the matching locked requirements.")
+        .withField("apt_packages", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Debian packages to install.")
+        .withField("services", typeDef.withListOf(typeDef.withObject("ServiceImage")), description: "Images of the services the tests start.")
+        .withField("pytest_args", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Arguments passed to pytest."),
+      typeDef.withObject("Suite", description: "A test suite that `dagger check` runs.")
+        .withField("suite", typeDef.withObject("TestSuite"), description: "The suite.")
+        .withFunction(
+          function("container", typeDef.withObject("Container"))
+            .withDescription("Image with the suite's dependencies, the source tree and the service images to test against.")
+        )
         .withFunction(
           function("run", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
-            .withDescription("Run the suite's tests.\n\nTests get nested Dagger access to start the services they need.")
+            .withDescription("Run the suite's tests.")
             .withCheck
         ),
-      typeDef.withObject("TestSuites", description: "The test suites in tests.toml, keyed by name.")
+      typeDef.withObject("ExtraSuite", description: "A heavy or compat test suite. It is not for a check: it runs only when `run` is called.")
+        .withField("suite", typeDef.withObject("TestSuite"), description: "The suite.")
+        .withFunction(
+          function("container", typeDef.withObject("Container"))
+            .withDescription("Image with the suite's dependencies, the source tree and the service images to test against.")
+        )
+        .withFunction(
+          function("run", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Run the suite's tests.")
+        ),
+      typeDef.withObject("TestSuites", description: "The test suites in tests.toml that `dagger check` runs, keyed by name.")
         .withCollection
         .withField("names", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Suite names.")
         .withCollectionKeys("names")
         .withCollectionGet("suite")
         .withFunction(
-          function("suite", typeDef.withObject("TestSuite"))
+          function("suite", typeDef.withObject("Suite"))
+            .withDescription("The suite called `name`.")
+            .withArg("name", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Suite name in tests.toml.")
+        ),
+      typeDef.withObject("ExtraTestSuites", description: "The heavy and compat test suites in tests.toml, keyed by name.")
+        .withCollection
+        .withField("names", typeDef.withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)), description: "Suite names.")
+        .withCollectionKeys("names")
+        .withCollectionGet("suite")
+        .withFunction(
+          function("suite", typeDef.withObject("ExtraSuite"))
             .withDescription("The suite called `name`.")
             .withArg("name", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Suite name in tests.toml.")
         ),
       typeDef.withObject("MetaxyCi", description: "CI pipelines for Metaxy.")
+        .withFunction(
+          function("claude_plugin", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Validate the Claude Code plugin manifest and the files it references.")
+            .withCheck
+        )
+        .withFunction(
+          function("deadcode", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Find unused code in src with deadcode.")
+            .withCheck
+        )
+        .withFunction(
+          function("deploy_docs", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Build the documentation and push it to the gh-pages branch with mike.")
+            .withCachePolicy(FunctionCachePolicy.Never)
+            .withArg("version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Documentation version, e.g. v1.0.0 or main.")
+            .withArg("github_token", typeDef.withObject("Secret"), description: "GitHub token that can push to the gh-pages branch.")
+            .withArg("alias", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Alias to point at this version, e.g. latest.", defaultValue: ("\"\"" :: Dagger.JSON!))
+            .withArg("default", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Version or alias that the docs root redirects to, e.g. stable.", defaultValue: ("\"\"" :: Dagger.JSON!))
+            .withArg("prerelease", typeDef.withKind(TypeDefKind.BOOLEAN_KIND), description: "Show the unstable version banner.", defaultValue: ("false" :: Dagger.JSON!))
+        )
+        .withFunction(
+          function("docs", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Build the documentation with `mkdocs build --strict`.")
+            .withCheck
+        )
+        .withFunction(
+          function("docs_snippets", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Test the code blocks in the documentation.")
+            .withCheck
+        )
+        .withFunction(
+          function("dprint", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Check TOML and JSON formatting with dprint.")
+            .withCheck
+        )
+        .withFunction(
+          function("extra_tests", typeDef.withObject("ExtraTestSuites"))
+            .withDescription("The heavy and compat test suites in tests.toml, which `dagger check` leaves out.")
+            .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version to install, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
+        )
         .withFunction(
           function("image", typeDef.withObject("Container"))
             .withDescription("A container with Metaxy and the selected extras and dependency groups installed.\n\nDefault dependency groups are installed only when listed in `groups`.")
@@ -33,14 +106,25 @@ type ModuleTypes {
             .withArg("apt_packages", typeDef.withOptional(true).withListOf(typeDef.withKind(TypeDefKind.STRING_KIND)).withOptional(true), description: "Debian packages to install, e.g. libpq5.", defaultValue: ("null" :: Dagger.JSON!))
         )
         .withFunction(
+          function("tach", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Check module boundaries with tach.")
+            .withCheck
+        )
+        .withFunction(
           function("tests", typeDef.withObject("TestSuites"))
-            .withDescription("The test suites defined in tests.toml.")
+            .withDescription("The test suites in tests.toml that `dagger check` runs.")
             .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version to install, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
+        )
+        .withFunction(
+          function("ty", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
+            .withDescription("Type check with ty.")
+            .withCheck
         )
         .withConstructor(
           function("", typeDef.withObject("MetaxyCi"))
             .withDescription("CI pipelines for Metaxy.")
             .withArg("ws", typeDef.withObject("Workspace"), description: "A Dagger workspace detected from the current working directory or\nconstructed from a Directory.")
+            .withArg("motherduck_token", typeDef.withOptional(true).withObject("Secret").withOptional(true), description: "MotherDuck token for the MotherDuck tests, which are skipped without it.", defaultValue: ("null" :: Dagger.JSON!))
         ),
     ]
   }

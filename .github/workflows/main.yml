@@ -35,8 +35,7 @@ jobs:
       use-tach: false
       dependency-matrix: ${{ github.event.inputs.full-matrix == 'true' }}
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+      DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
 
   docs:
     concurrency:
@@ -53,3 +52,5 @@ jobs:
       docs-version: ${{ github.ref_name }}
       docs-alias: 'latest'
       docs-prerelease: true
+    secrets:
+      DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}

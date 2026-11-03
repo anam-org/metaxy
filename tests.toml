@@ -3,17 +3,22 @@
 #
 # `overrides` are requirements that replace the matching locked requirements,
 # e.g. to test against another major version of a dependency.
+# `heavy = true` marks a suite that needs more resources than a check gets.
+# `compat = true` marks a suite that tests other dependency versions than uv.lock.
+# Both are left out of `dagger check`; GitHub Actions runs them, compat suites
+# only in the full test matrix.
 # `services` replaces images from the `[services]` table for one suite,
 # e.g. to test against another version of a database.
 
-# Debian packages installed in every suite's image, e.g. shared libraries.
-apt-packages = ["libpq5"]
+# Debian packages installed in every suite's image.
+# `git` lets `pytest --tach` find the files changed since the merge base with `main`.
+apt-packages = ["git", "libpq5"]
 
-# Images of the services that test fixtures start with Dagger.
+# Images of the services that test fixtures start with Dagger, pinned by digest.
 # `METAXY_TEST_<NAME>_IMAGE` replaces one, e.g. for a local run.
 [services]
-clickhouse = "clickhouse/clickhouse-server:26.6"
-postgres = "postgres:18-alpine"
+clickhouse = "clickhouse/clickhouse-server:26.6@sha256:2c870d77ea76e955fb1c8dad536ad40a1236b6093db0c4966e22d21d4428982b"
+postgres = "postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5"
 
 [suites.core]
 extras = ["duckdb", "delta"]
@@ -30,7 +35,7 @@ pytest-args = ["tests/ext/clickhouse"]
 [suites.clickhouse-25]
 extras = ["duckdb", "clickhouse"]
 pytest-args = ["tests/ext/clickhouse"]
-services = { clickhouse = "clickhouse/clickhouse-server:25.8" }
+services = { clickhouse = "clickhouse/clickhouse-server:25.8@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77" }
 
 [suites.postgres]
 extras = ["duckdb", "postgres"]
@@ -59,6 +64,7 @@ pytest-args = ["tests/ext/dagster"]
 [suites.ray]
 extras = ["duckdb", "ray"]
 pytest-args = ["tests/ext/ray"]
+heavy = true
 
 [suites.sqlalchemy]
 extras = ["duckdb", "sqlalchemy"]
@@ -75,9 +81,5 @@ pytest-args = ["tests/ext/mcp"]
 [suites.ibis-11]
 extras = ["duckdb", "clickhouse", "bigquery", "postgres"]
 overrides = ["ibis-framework[duckdb,clickhouse,bigquery,postgres]==11.*"]
-pytest-args = ["-m", "ibis"]
-
-[suites.ibis-12]
-extras = ["duckdb", "clickhouse", "bigquery", "postgres"]
-overrides = ["ibis-framework[duckdb,clickhouse,bigquery,postgres]==12.*"]
+compat = true
 pytest-args = ["-m", "ibis"]

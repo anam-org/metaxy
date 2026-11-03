@@ -8,9 +8,6 @@ ruff:
 typecheck:
     uv run ty check
 
-nox *args:
-    uv run nox {{args}}
-
 sync:
     uv sync --all-extras --all-groups
 
@@ -23,7 +20,6 @@ new-worktree branch:
     eval "$(direnv export bash)"
     git checkout -b {{branch}}
     gt track {{branch}}
-
 
 claude:
     claude --dangerously-skip-permissions --verbose
@@ -39,7 +35,6 @@ claude-resolve number prompt="":
     git checkout -b gt-{{number}}
     gt track gt-{{number}}
     claude --dangerously-skip-permissions "Resolve GitHub issue #{{number}} (do not create commits). {{prompt}}"
-
 
 # Create a GitHub issue with Claude and start working on it in an independent git worktree
 claude-draft-solution branch prompt:

@@ -5,8 +5,6 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  # Silence the Material for MkDocs "MkDocs 2.0" upgrade notice.
-  NO_MKDOCS_2_WARNING: "1"
 
 on:
   workflow_call:
@@ -28,7 +26,7 @@ on:
         type: boolean
         default: false
       dependency-matrix:
-        description: "Run dependency version compatibility tests"
+        description: "Run the compat test suites, which test other dependency versions"
         type: boolean
         default: false
       use-tach:
@@ -36,9 +34,7 @@ on:
         type: boolean
         default: true
     secrets:
-      CODECOV_TOKEN:
-        required: false
-      MOTHERDUCK_TOKEN:
+      DAGGER_CLOUD_TOKEN:
         required: false
 
 jobs:
@@ -46,22 +42,6 @@ jobs:
     runs-on: depot-ubuntu-latest
     outputs:
       test: ${{ steps.filter.outputs.test }}
-      docs: ${{ steps.filter.outputs.docs }}
-      claude-plugin: ${{ steps.filter.outputs.claude-plugin }}
-      core: ${{ steps.filter.outputs.core == 'true' || steps.core-filter.outputs.core-src == 'true' }}
-      tach: ${{ steps.filter.outputs.tach }}
-      duckdb: ${{ steps.filter.outputs.duckdb }}
-      clickhouse: ${{ steps.filter.outputs.clickhouse }}
-      postgres: ${{ steps.filter.outputs.postgres }}
-      delta: ${{ steps.filter.outputs.delta }}
-      iceberg: ${{ steps.filter.outputs.iceberg }}
-      lancedb: ${{ steps.filter.outputs.lancedb }}
-      bigquery: ${{ steps.filter.outputs.bigquery }}
-      dagster: ${{ steps.filter.outputs.dagster }}
-      ray: ${{ steps.filter.outputs.ray }}
-      sqlalchemy: ${{ steps.filter.outputs.sqlalchemy }}
-      sqlmodel: ${{ steps.filter.outputs.sqlmodel }}
-      mcp: ${{ steps.filter.outputs.mcp }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
@@ -80,306 +60,59 @@ jobs:
               - 'examples/**'
               - 'pyproject.toml'
               - 'uv.lock'
-            docs:
-              - '.github/workflows/**'
-              - mkdocs.yml
-              - 'docs/**'
-              - slides/2026-introducing-metaxy/package-lock.json
-            claude-plugin:
-              - '.claude-plugin/**'
-            core:
-              - 'tests/metadata_stores/shared/**'
-              - 'tests/ext/conftest.py'
-              - 'tests/conftest.py'
-              - 'pyproject.toml'
-              - 'uv.lock'
-              - '.github/workflows/**'
-              - '.github/actions/**'
-              - .envrc
-              - devenv.nix
-              - devenv.lock
-              - devenv.yaml
-            tach:
-              - 'src/**'
-              - tach.toml
-            duckdb:
-              - 'src/metaxy/ext/duckdb/**'
-              - 'tests/ext/duckdb/**'
-            clickhouse:
-              - 'src/metaxy/ext/clickhouse/**'
-              - 'tests/ext/clickhouse/**'
-            postgres:
-              - 'src/metaxy/ext/postgres/**'
-              - 'tests/ext/postgres/**'
-            delta:
-              - 'src/metaxy/ext/polars/handlers/delta.py'
-              - 'tests/ext/delta/**'
-            iceberg:
-              - 'src/metaxy/ext/polars/handlers/iceberg.py'
-              - 'tests/ext/iceberg/**'
-            lancedb:
-              - 'src/metaxy/ext/lancedb/**'
-              - 'tests/ext/lancedb/**'
-            bigquery:
-              - 'src/metaxy/ext/bigquery/**'
-              - 'tests/ext/bigquery/**'
-            dagster:
-              - 'src/metaxy/ext/dagster/**'
-              - 'tests/ext/dagster/**'
-            ray:
-              - 'src/metaxy/ext/ray/**'
-              - 'tests/ext/ray/**'
-            sqlalchemy:
-              - 'src/metaxy/ext/sqlalchemy/**'
-              - 'tests/ext/sqlalchemy/**'
-            sqlmodel:
-              - 'src/metaxy/ext/sqlmodel/**'
-              - 'tests/ext/sqlmodel/**'
-            mcp:
-              - 'src/metaxy/ext/mcp/**'
-              - 'tests/ext/mcp/**'
-      - uses: dorny/paths-filter@v4.0.0
-        id: core-filter
-        with:
-          predicate-quantifier: 'every'
-          filters: |
-            core-src:
-              - 'src/metaxy/**'
-              - '!src/metaxy/ext/**'
+              - tests.toml
+              - dagger.toml
+              - dagger.lock
+              - '.dagger/**'
 
-  lint:
-    runs-on: depot-ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7.5.0
-        with:
-          enable-cache: true
-      - name: Run Ruff
-        run: uv run --no-sync --with ruff ruff check
-
-  tach:
-    runs-on: depot-ubuntu-latest
-    needs: filter
-    if: ${{ inputs.run-all-checks || needs.filter.outputs.tach == 'true' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
-      - name: Run Tach
-        run: uv run tach check
-
-  deadcode:
-    runs-on: depot-ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7.5.0
-        with:
-          enable-cache: true
-      - name: Run Deadcode
-        run: uv run --no-sync --with deadcode deadcode src
-
-  format:
-    runs-on: depot-ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7.5.0
-        with:
-          enable-cache: true
-      - uses: dprint/check@v2.3
-        with:
-          dprint-version: 0.50.2
-      - name: Ruff Format
-        run: uv run --no-sync --with ruff ruff format --check --output-format=github
-
-  typecheck:
-    runs-on: depot-ubuntu-latest
-    needs: filter
-    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
-    env:
-      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(inputs.python-versions) }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
-      - name: Run ty
-        run: uv run ty check
-
-  test-core:
-    needs: filter
-    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' }}
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      checks: write
-    runs-on: depot-ubuntu-latest
-    env:
-      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(inputs.python-versions) }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Fetch main branch
-        if: github.ref != 'refs/heads/main'
-        run: git fetch origin main:main
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
-        with:
-          extras: "duckdb delta"
-
-      - name: Run Tests with Coverage
-        id: pytest
-        env:
-          COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
-          COVERAGE_FILE: ${{ github.workspace }}/.coverage
-        run: |
-          SITE_PACKAGES=$(uv run python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
-          cp .github/coverage_subprocess.pth "$SITE_PACKAGES/" || echo "Warning: Could not install coverage subprocess support"
-          TACH_FLAGS=${{ inputs.use-tach && '"--tach"' || '""' }}
-          uv run coverage run -m pytest --ignore=tests/ext $TACH_FLAGS --durations=10 --junit-xml=./junit.xml -o junit_family=legacy
-
-      - name: Combine Coverage Data
-        if: always()
-        run: |
-          uv run coverage combine --keep || true
-          uv run coverage xml -o coverage.xml
-
-      - name: Upload Coverage to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          slug: anam-org/metaxy
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: Python${{ matrix.python-version }}
-
-      - name: Upload Test Results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          report_type: test_results
-          slug: anam-org/metaxy
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: Python${{ matrix.python-version }}
-
-  test-integrations:
-    needs: [filter, generate-nox-matrix]
-    if: ${{ (inputs.run-all-checks || needs.filter.outputs.test == 'true') && needs.generate-nox-matrix.outputs.integrations != '[]' }}
-    permissions:
-      contents: read
-    runs-on: depot-ubuntu-latest
-    env:
-      DEVENV_PYTHON_VERSION: ${{ matrix.python-version }}
-      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-      MOTHERDUCK_REGION: eu-central-1
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ${{ fromJSON(inputs.python-versions) }}
-        integration: ${{ fromJSON(needs.generate-nox-matrix.outputs.integrations) }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Fetch main branch
-        if: github.ref != 'refs/heads/main'
-        run: git fetch origin main:main
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
-        with:
-          install-deps: "minimal"
-
-      - name: Run Tests with Coverage
-        env:
-          COVERAGE_PROCESS_START: ${{ github.workspace }}/pyproject.toml
-          COVERAGE_FILE: ${{ github.workspace }}/.coverage
-        run: >
-          uv run nox -s "integration(integration='${{ matrix.integration }}')"
-          -- --junit-xml=./junit.xml -o junit_family=legacy
-          ${{ inputs.use-tach && '--tach' || ' ' }}
-
-      - name: Upload Coverage to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          slug: anam-org/metaxy
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: Python${{ matrix.python-version }}
-
-      - name: Upload Test Results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5.5.2
-        with:
-          report_type: test_results
-          slug: anam-org/metaxy
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: Python${{ matrix.python-version }}
-
-  generate-nox-matrix:
-    needs: filter
+  extra-suites:
     runs-on: depot-ubuntu-latest
     outputs:
-      integrations: ${{ steps.matrix.outputs.integrations }}
-      compat-sessions: ${{ steps.matrix.outputs.compat_sessions }}
+      suites: ${{ steps.suites.outputs.suites }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7.5.0
-        with:
-          enable-cache: true
-      - name: Generate matrices from nox sessions
-        id: matrix
+      - name: List the heavy and compat test suites to run
+        id: suites
         env:
-          FILTER_OUTPUTS: ${{ toJSON(needs.filter.outputs) }}
-          RUN_ALL: ${{ inputs.run-all-checks }}
-          CORE_CHANGED: ${{ needs.filter.outputs.core }}
+          COMPAT: ${{ inputs.dependency-matrix }}
         run: |
-          NOX_JSON=$(uvx --with nox_uv nox -l --json)
-          ALL_INTEGRATIONS=$(echo "$NOX_JSON" | jq -c '[.[] | select(.tags | index("integration")) | .call_spec.integration]')
+          python3 - >> "$GITHUB_OUTPUT" <<'EOF'
+          import json, os, tomllib
+          with open("tests.toml", "rb") as f:
+              suites = tomllib.load(f)["suites"]
+          compat = os.environ["COMPAT"] == "true"
+          names = [name for name, spec in suites.items() if spec.get("heavy") or (compat and spec.get("compat"))]
+          print("suites=" + json.dumps(names))
+          EOF
 
-          if [[ "$RUN_ALL" == "true" || "$CORE_CHANGED" == "true" ]]; then
-            INTEGRATIONS="$ALL_INTEGRATIONS"
-          else
-            INTEGRATIONS=$(echo "$ALL_INTEGRATIONS" | jq -c --argjson filters "$FILTER_OUTPUTS" \
-              '[.[] | select(. as $name | $filters[$name] == "true")]')
-          fi
-
-          echo "integrations=$INTEGRATIONS" >> "$GITHUB_OUTPUT"
-          echo "compat_sessions=$(echo "$NOX_JSON" | jq -c '[.[] | select(.tags | index("compat")) | .session]')" >> "$GITHUB_OUTPUT"
-
-  test-nox-compat:
-    needs: [filter, generate-nox-matrix]
-    if: ${{ inputs.dependency-matrix && (inputs.run-all-checks || needs.filter.outputs.test == 'true') }}
+  test-extra:
+    needs: [filter, extra-suites]
+    if: ${{ (inputs.run-all-checks || needs.filter.outputs.test == 'true') && needs.extra-suites.outputs.suites != '[]' }}
+    permissions:
+      contents: read
     runs-on: depot-ubuntu-latest
-    env:
-      DEVENV_PYTHON_VERSION: "3.11"
     strategy:
       fail-fast: false
       matrix:
-        session: ${{ fromJSON(needs.generate-nox-matrix.outputs.compat-sessions) }}
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        suite: ${{ fromJSON(needs.extra-suites.outputs.suites) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
         with:
-          install-deps: "minimal"
-      - name: Run ${{ matrix.session }}
-        run: uv run nox -s "${{ matrix.session }}"
+          # The suites read the history since the merge base with main to skip unaffected tests.
+          fetch-depth: 0
+      - name: Install Dagger
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=1.0.0-beta.24 BIN_DIR="$HOME/.local/bin" sh
+      - name: Run ${{ matrix.suite }} tests
+        env:
+          DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+        run: >
+          dagger call --engine=cloud
+          extra-tests --python-version ${{ matrix.python-version }}
+          get --key ${{ matrix.suite }}
+          run
 
   test-windows:
     needs: filter
@@ -420,7 +153,6 @@ jobs:
         run: >
           uv run pytest
           -k "not clickhouse and not graphviz"
-          -p no:pytest_postgresql
           --ignore=tests/docs
           --ignore=tests/cli
           --ignore=tests/examples
@@ -469,7 +201,6 @@ jobs:
         run: >
           uv run pytest
           -k "not clickhouse and not graphviz"
-          -p no:pytest_postgresql
           --ignore=tests/docs
           --ignore=tests/ext/ray
           --ignore=tests/ext/clickhouse
@@ -477,105 +208,15 @@ jobs:
           --snapshot-warn-unused
           ${{ inputs.use-tach && '--tach' || ' ' }}
 
-  docs:
-    permissions:
-      contents: read
-    runs-on: depot-ubuntu-latest
-    needs:
-      - filter
-    if: ${{ inputs.run-all-checks || needs.filter.outputs.test == 'true' || needs.filter.outputs.docs == 'true' }}
-    env:
-      DEVENV_PYTHON_VERSION: "3.11"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Setup devenv
-        uses: ./.github/actions/setup-devenv
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.3
-        with:
-          bun-version: 1.3.1
-      - name: Build Docs
-        id: docs
-        env:
-          METAXY_SYNC_DOCS_MOUNTS: "1"
-        run: uv run mkdocs build --strict
-      - name: Test Docs Snippets
-        run: uv run pytest ./docs
-
-  claude-plugin:
-    runs-on: depot-ubuntu-latest
-    needs: filter
-    if: ${{ inputs.run-all-checks || needs.filter.outputs.claude-plugin == 'true' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.2
-      - name: Setup Node.js
-        uses: actions/setup-node@v6.3.0
-        with:
-          node-version: 'lts/*'
-      - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
-      - name: Validate plugin manifest
-        run: claude plugin validate .
-      - name: Validate plugin component paths
-        run: |
-          plugin_json=".claude-plugin/plugin.json"
-
-          # Check custom skill paths resolve to directories with SKILL.md files
-          skills_path=$(jq -r '.skills // empty' "$plugin_json")
-          if [ -n "$skills_path" ]; then
-            echo "Checking skills path: $skills_path"
-            found=0
-            for skill_dir in "$skills_path"/*/; do
-              if [ -f "${skill_dir}SKILL.md" ]; then
-                echo "  ✓ Found skill: $(basename "$skill_dir")"
-                found=$((found + 1))
-              else
-                echo "  ✗ Missing SKILL.md in: $skill_dir"
-                exit 1
-              fi
-            done
-            if [ "$found" -eq 0 ]; then
-              echo "  ✗ No skills found in $skills_path"
-              exit 1
-            fi
-            echo "  Found $found skill(s)"
-          fi
-
-          # Check custom MCP config is valid JSON
-          mcp_path=$(jq -r '.mcpServers // empty' "$plugin_json")
-          if [ -n "$mcp_path" ] && [ ! -f "$mcp_path" ]; then
-            echo "✗ MCP config not found: $mcp_path"
-            exit 1
-          elif [ -n "$mcp_path" ]; then
-            echo "Checking MCP config: $mcp_path"
-            jq empty "$mcp_path"
-            echo "  ✓ Valid JSON"
-            server_count=$(jq 'keys | length' "$mcp_path")
-            echo "  Found $server_count MCP server(s)"
-          fi
-
-          echo "✓ All plugin component paths valid"
-
   check:
     permissions: {}
     if: always()
     runs-on: depot-ubuntu-latest
     needs:
-      - test-core
-      - test-integrations
-      - generate-nox-matrix
-      - test-nox-compat
+      - extra-suites
+      - test-extra
       - test-windows
       - test-macos
-      - lint
-      - deadcode
-      - tach
-      - format
-      - typecheck
-      - docs
-      - claude-plugin
 
     steps:
       - name: All Green
@@ -583,4 +224,4 @@ jobs:
         uses: re-actors/alls-green@v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-core, test-integrations, generate-nox-matrix, test-nox-compat, test-windows, test-macos, typecheck, docs, claude-plugin, deadcode, tach
+          allowed-skips: test-extra, test-windows, test-macos
