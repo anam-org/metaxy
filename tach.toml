@@ -93,7 +93,7 @@ depends_on = ["metaxy._decorators"]
 [[modules]]
 path = "metaxy.ext.lancedb"
 layer = "ext"
-depends_on = ["metaxy._decorators"]
+depends_on = ["metaxy._decorators", "metaxy.ext.polars"]
 
 [[modules]]
 path = "metaxy.ext.metadata_stores"
@@ -167,6 +167,7 @@ path = "metaxy.metadata_store"
 layer = "core"
 depends_on = [
   "metaxy.metadata_store.base",
+  "metaxy.versioning",
   "metaxy.config",
   "metaxy._version",
   "metaxy.models",

@@ -1,6 +1,9 @@
 """Shared DuckLake configuration helpers."""
 
-from collections.abc import Mapping
+from __future__ import annotations
+
+from collections.abc import Generator, Mapping
+from contextlib import contextmanager
 from typing import Annotated, Any, Literal, Self
 
 from duckdb import DuckDBPyConnection  # noqa: TID253
@@ -12,14 +15,30 @@ from pydantic import (
 )
 
 from metaxy._decorators import public
+from metaxy.ext.duckdb.engine import DuckDBHandler
+from metaxy.ext.ibis.engine import IbisSQLHandler
+from metaxy.metadata_store.storage_config import StorageConfig
+from metaxy.metadata_store.types import AccessMode
 
 # ---------------------------------------------------------------------------
 # Metadata backend configs
 # ---------------------------------------------------------------------------
 
 
+class DuckLakeComponentConfig(BaseModel):
+    """Base for DuckLake catalog and storage backend configs.
+
+    Each backend declares the DuckDB extensions it needs via
+    ``required_extensions``; the handler merges them with the base
+    ``ducklake`` extension.
+    """
+
+    def required_extensions(self) -> list[str]:
+        return []
+
+
 @public
-class DuckDBCatalogConfig(BaseModel):
+class DuckDBCatalogConfig(DuckLakeComponentConfig):
     """DuckDB file-based metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["duckdb"] = "duckdb"
@@ -30,7 +49,7 @@ class DuckDBCatalogConfig(BaseModel):
 
 
 @public
-class SQLiteCatalogConfig(BaseModel):
+class SQLiteCatalogConfig(DuckLakeComponentConfig):
     """SQLite file-based metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["sqlite"] = "sqlite"
@@ -41,7 +60,7 @@ class SQLiteCatalogConfig(BaseModel):
 
 
 @public
-class PostgresCatalogConfig(BaseModel):
+class PostgresCatalogConfig(DuckLakeComponentConfig):
     """PostgreSQL metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["postgres"] = "postgres"
@@ -90,7 +109,7 @@ class PostgresCatalogConfig(BaseModel):
 
 
 @public
-class MotherDuckCatalogConfig(BaseModel):
+class MotherDuckCatalogConfig(DuckLakeComponentConfig):
     """[MotherDuck](https://motherduck.com/)-managed metadata backend for [DuckLake](https://ducklake.select/)."""
 
     type: Literal["motherduck"] = "motherduck"
@@ -100,6 +119,9 @@ class MotherDuckCatalogConfig(BaseModel):
         description="AWS region of the MotherDuck-managed S3 storage (e.g. 'eu-central-1').",
     )
 
+    def required_extensions(self) -> list[str]:
+        return ["motherduck"]
+
 
 # ---------------------------------------------------------------------------
 # Storage backend configs
@@ -107,7 +129,7 @@ class MotherDuckCatalogConfig(BaseModel):
 
 
 @public
-class LocalStorageConfig(BaseModel):
+class LocalStorageConfig(DuckLakeComponentConfig):
     """Local filesystem storage backend for DuckLake."""
 
     type: Literal["local"] = "local"
@@ -118,7 +140,7 @@ class LocalStorageConfig(BaseModel):
 
 
 @public
-class S3StorageConfig(BaseModel):
+class S3StorageConfig(DuckLakeComponentConfig):
     """[S3 storage](https://duckdb.org/docs/stable/core_extensions/httpfs/s3api) backend for DuckLake."""
 
     type: Literal["s3"] = "s3"
@@ -206,7 +228,7 @@ class S3StorageConfig(BaseModel):
 
 
 @public
-class R2StorageConfig(BaseModel):
+class R2StorageConfig(DuckLakeComponentConfig):
     """Cloudflare R2 storage backend for [DuckLake](https://ducklake.select/).
 
     Uses the DuckDB [`TYPE R2`](https://duckdb.org/docs/stable/core_extensions/httpfs/s3api#r2-secrets) secret.
@@ -253,7 +275,7 @@ class R2StorageConfig(BaseModel):
 
 
 @public
-class GCSStorageConfig(BaseModel):
+class GCSStorageConfig(DuckLakeComponentConfig):
     """Google Cloud Storage backend for [DuckLake](https://ducklake.select/).
 
     Uses the DuckDB [`TYPE GCS`](https://duckdb.org/docs/stable/core_extensions/httpfs/s3api#gcs-secrets) secret.
@@ -484,3 +506,65 @@ class DuckLakeAttachmentManager:
     def preview_sql(self) -> list[str]:
         """Return the SQL statements that would be executed during configure()."""
         return self._build_sql_statements()
+
+
+class DuckDBDuckLakeHandler(DuckDBHandler, IbisSQLHandler):
+    """Storage handler for DuckLake tables accessed through a DuckDB connection.
+
+    Attachment happens via the ``open()`` context manager -- the engine
+    calls it around each operation, ATTACHing the DuckLake catalog for the
+    duration of that operation.
+    """
+
+    def __init__(
+        self,
+        ducklake_config: DuckLakeConfig,
+        *,
+        auto_create_tables: bool = False,
+        store_name: str | None = None,
+    ) -> None:
+        super().__init__(auto_create_tables=auto_create_tables)
+        self._config = ducklake_config
+        self._attachment = DuckLakeAttachmentManager(ducklake_config, store_name=store_name)
+
+    # -- capability: only handles DuckLakeStorageConfig -----------------------
+
+    def can_handle(self, storage_config: StorageConfig) -> bool:
+        from metaxy.ext.ibis.engine import DuckLakeStorageConfig
+
+        return isinstance(storage_config, DuckLakeStorageConfig)
+
+    # -- lifecycle ------------------------------------------------------------
+
+    @contextmanager
+    def open(self, conn: Any, mode: AccessMode) -> Generator[Self]:  # noqa: ARG002
+        """ATTACH the DuckLake catalog for the duration of this operation."""
+        self._attachment._attached = False
+        self._attachment.configure(conn.con)
+        yield self
+
+    # -- public DuckLake API -------------------------------------------------
+
+    @property
+    def ducklake_config(self) -> DuckLakeConfig:
+        return self._config
+
+    @property
+    def attachment_manager(self) -> DuckLakeAttachmentManager:
+        return self._attachment
+
+    def preview_ducklake_sql(self) -> list[str]:
+        return self._attachment.preview_sql()
+
+    def required_extensions(self) -> list:
+        """Extensions this handler needs loaded on the DuckDB connection.
+
+        The base ``ducklake`` extension is always required; each catalog and
+        storage backend contributes any additional extensions it needs.
+        """
+        from metaxy.ext.duckdb.engine import ExtensionSpec
+
+        names = ["ducklake", *self._config.catalog.required_extensions()]
+        if self._config.storage is not None:
+            names += self._config.storage.required_extensions()
+        return [ExtensionSpec(name=name) for name in dict.fromkeys(names)]

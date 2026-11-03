@@ -18,6 +18,14 @@ class PolarsMaterializationWarning(Warning):
             warnings.warn(warning, cls, stacklevel=3)
 
 
+class LegacyMetadataStoreInstantiationWarning(DeprecationWarning):
+    """Emitted when using a legacy store class (e.g. DuckDBMetadataStore) instead of MetadataStore directly."""
+
+
+class LegacyMetadataStoreAttributeWarning(DeprecationWarning):
+    """Emitted when accessing a backcompat attribute (e.g. store.conn) instead of store._engine."""
+
+
 class MetaxyColumnMissingWarning(Warning):
     pass
 
