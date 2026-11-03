@@ -31,8 +31,10 @@ if TYPE_CHECKING:
 
 
 @public
-class FeatureDep(pydantic.BaseModel):
+class FeatureDep(FrozenBaseModel):
     """Feature dependency specification with optional column selection, renaming, and lineage.
+
+    Instances are immutable. Create a new `FeatureDep` to change a dependency.
 
     Attributes:
         feature: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
@@ -105,8 +107,6 @@ class FeatureDep(pydantic.BaseModel):
         ]
         ```
     """
-
-    model_config = pydantic.ConfigDict(extra="forbid")
 
     feature: ValidatedFeatureKey
     select: tuple[str, ...] | None = None  # None = all columns, () = only system columns
