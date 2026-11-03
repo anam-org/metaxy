@@ -6200,7 +6200,7 @@ Typically used in application setup code or test fixtures.</p>
 
 
 <a href="#metaxy.FeatureGraph.use" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">use</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Self&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Self">Self</a></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">use</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Generator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Generator">Generator</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Self&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Self">Self</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6213,7 +6213,7 @@ The graph is automatically restored when the context exits.</p>
 <p><span class="doc-section-title">Yields:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-<b><code>FeatureGraph</code></b> (              <code><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Self&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Self">Self</a></code>
+<b><code>FeatureGraph</code></b> (              <code><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Generator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Generator">Generator</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Self&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Self">Self</a>]</code>
 )          –
           <div class="doc-md-description">
             <p>This graph instance</p>
@@ -6234,7 +6234,7 @@ The graph is automatically restored when the context exits.</p>
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/models/feature.py</code></summary>
               <div class="language-python highlight"><pre><span></span><code><span id="__span-0-716"><a id="__codelineno-0-716" name="__codelineno-0-716"></a><a href="#__codelineno-0-716"><span class="linenos" data-linenos="716 "></span></a><span class="nd">@contextmanager</span>
-</span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
+</span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">use</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
 </span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager to temporarily use this graph as active.</span>
 </span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><a href="#__codelineno-0-719"><span class="linenos" data-linenos="719 "></span></a>
 </span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><a href="#__codelineno-0-720"><span class="linenos" data-linenos="720 "></span></a><span class="sd">    This is the recommended way to use custom registries, especially in tests.</span>
