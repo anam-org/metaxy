@@ -83,4 +83,5 @@ pytest-args = ["tests/ext/mcp"]
 extras = ["duckdb", "clickhouse", "bigquery", "postgres"]
 overrides = ["ibis-framework[duckdb,clickhouse,bigquery,postgres]==11.*"]
 compat = true
-pytest-args = ["-m", "ibis"]
+# Without their extras, pytest cannot import the test modules of these integrations.
+pytest-args = ["-m", "ibis", "--ignore=tests/ext/mcp", "--ignore=tests/ext/ray", "--ignore=tests/ext/sqlmodel"]
