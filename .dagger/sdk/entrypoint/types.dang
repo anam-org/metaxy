@@ -98,7 +98,6 @@ type ModuleTypes {
         .withFunction(
           function("extra_tests", typeDef.withObject("ExtraTestSuites"))
             .withDescription("The heavy and compat test suites in tests.toml, which `dagger check` leaves out.")
-            .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version to install, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
         )
         .withFunction(
           function("image", typeDef.withObject("Container"))
@@ -117,7 +116,6 @@ type ModuleTypes {
         .withFunction(
           function("tests", typeDef.withObject("TestSuites"))
             .withDescription("The test suites in tests.toml that `dagger check` runs.")
-            .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version to install, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
         )
         .withFunction(
           function("ty", typeDef.withOptional(true).withKind(TypeDefKind.VOID_KIND))
@@ -130,6 +128,7 @@ type ModuleTypes {
             .withArg("ws", typeDef.withObject("Workspace"), description: "A Dagger workspace detected from the current working directory or\nconstructed from a Directory.")
             .withArg("motherduck_token", typeDef.withOptional(true).withObject("Secret").withOptional(true), description: "MotherDuck token for the MotherDuck tests, which are skipped without it.", defaultValue: ("null" :: Dagger.JSON!))
             .withArg("codecov_token", typeDef.withOptional(true).withObject("Secret").withOptional(true), description: "Codecov token. With it, the test suites upload coverage to Codecov on the main branch.", defaultValue: ("null" :: Dagger.JSON!))
+            .withArg("python_version", typeDef.withKind(TypeDefKind.STRING_KIND), description: "Python version the test suites run on, e.g. 3.13.", defaultValue: ("\"3.11\"" :: Dagger.JSON!))
         ),
     ]
   }

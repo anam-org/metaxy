@@ -15,3 +15,12 @@ clients = ["github.com/typesafe-ai/daggerverse/uv@main"]
 
 [modules.ruff]
 source = "github.com/typesafe-ai/daggerverse/ruff@main"
+
+[env."python-3.12".modules.metaxy-ci.settings]
+pythonVersion = "3.12"
+
+[env."python-3.13".modules.metaxy-ci.settings]
+pythonVersion = "3.13"
+
+[env."python-3.14".modules.metaxy-ci.settings]
+pythonVersion = "3.14"

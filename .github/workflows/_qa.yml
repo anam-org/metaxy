@@ -97,7 +97,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ${{ fromJSON(inputs.python-versions) }}
         suite: ${{ fromJSON(needs.extra-suites.outputs.suites) }}
     steps:
       - name: Checkout code
@@ -115,9 +114,39 @@ jobs:
         run: >
           dagger call --engine=cloud
           ${{ github.ref == 'refs/heads/main' && '--codecov-token env://CODECOV_TOKEN' || '' }}
-          extra-tests --python-version ${{ matrix.python-version }}
+          extra-tests
           get --key ${{ matrix.suite }}
           run
+
+  test-python-versions:
+    needs: filter
+    # Cloud Checks run the suites on Python 3.11; this job runs them on the other versions.
+    if: ${{ (inputs.run-all-checks || needs.filter.outputs.test == 'true') && inputs.python-versions != '["3.11"]' }}
+    permissions:
+      contents: read
+    runs-on: depot-ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+        exclude:
+          - python-version: "3.11"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+        with:
+          # The suites read the history since the merge base with main to skip unaffected tests.
+          fetch-depth: 0
+      - name: Install Dagger
+        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=1.0.0-beta.24 BIN_DIR="$HOME/.local/bin" sh
+      - name: Run the test suites on Python ${{ matrix.python-version }}
+        env:
+          DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+        # The python-<version> workspace environments in dagger.toml set the suites' Python version.
+        run: >
+          dagger check --engine=cloud
+          --env "python-${{ matrix.python-version }}"
+          'dag+check://?check=run'
 
   test-windows:
     needs: filter
@@ -220,6 +249,7 @@ jobs:
     needs:
       - extra-suites
       - test-extra
+      - test-python-versions
       - test-windows
       - test-macos
 
@@ -229,4 +259,4 @@ jobs:
         uses: re-actors/alls-green@v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}
-          allowed-skips: test-extra, test-windows, test-macos
+          allowed-skips: test-extra, test-python-versions, test-windows, test-macos

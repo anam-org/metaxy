@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       full-matrix:
-        description: 'Run full test matrix (all Python versions, Windows, macOS)'
+        description: 'Also run the Windows, macOS and dependency compatibility tests'
         type: boolean
         default: false
 
@@ -28,7 +28,7 @@ jobs:
       issues: write
       checks: write
     with:
-      python-versions: ${{ github.event.inputs.full-matrix == 'true' && '["3.11", "3.12", "3.13", "3.14"]' || '["3.11"]' }}
+      python-versions: '["3.11", "3.12", "3.13", "3.14"]'
       run-windows: ${{ github.event.inputs.full-matrix == 'true' }}
       run-macos: ${{ github.event.inputs.full-matrix == 'true' }}
       run-all-checks: true

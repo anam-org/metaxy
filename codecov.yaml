@@ -8,6 +8,12 @@ coverage:
         target: auto
         threshold: 1%
 
+# Every test suite uploads under its own flag, only when it runs and passes on main.
+# A suite that is cached, failed or still running keeps its last report.
+flag_management:
+  default_rules:
+    carryforward: true
+
 comment:
   layout: "condensed_header, condensed_files, condensed_footer"
   require_changes: true

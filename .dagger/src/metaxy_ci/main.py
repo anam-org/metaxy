@@ -22,6 +22,7 @@ class MetaxyCi:
     codecov_token: Annotated[
         Secret | None, Doc("Codecov token. With it, the test suites upload coverage to Codecov on the main branch.")
     ] = None
+    python_version: Annotated[str, Doc("Python version the test suites run on, e.g. 3.13.")] = "3.11"
 
     @function
     async def image(
@@ -39,27 +40,27 @@ class MetaxyCi:
         return await image(self.ws, python_version, extras, groups, overrides, apt_packages)
 
     @function
-    async def tests(self, python_version: PythonVersion = "3.11") -> TestSuites:
+    async def tests(self) -> TestSuites:
         """The test suites in tests.toml that `dagger check` runs."""
         config = await self.ws.file("tests.toml").contents()
         return TestSuites(
             names=suite_names(config, extra=False),
             ws=self.ws,
             config=config,
-            python_version=python_version,
+            python_version=self.python_version,
             motherduck_token=self.motherduck_token,
             codecov_token=self.codecov_token,
         )
 
     @function
-    async def extra_tests(self, python_version: PythonVersion = "3.11") -> ExtraTestSuites:
+    async def extra_tests(self) -> ExtraTestSuites:
         """The heavy and compat test suites in tests.toml, which `dagger check` leaves out."""
         config = await self.ws.file("tests.toml").contents()
         return ExtraTestSuites(
             names=suite_names(config, extra=True),
             ws=self.ws,
             config=config,
-            python_version=python_version,
+            python_version=self.python_version,
             motherduck_token=self.motherduck_token,
             codecov_token=self.codecov_token,
         )
