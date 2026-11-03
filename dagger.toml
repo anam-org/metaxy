@@ -1,0 +1,17 @@
+[modules.python-sdk]
+source = "github.com/dagger/python-sdk"
+
+[sdks.python]
+module = "python-sdk"
+
+[modules.metaxy-ci]
+main = true
+source = ".dagger"
+
+[sdks.python.scopes.".dagger"]
+is-module = true
+name = "metaxy-ci"
+clients = ["github.com/typesafe-ai/daggerverse/uv@main"]
+
+[modules.ruff]
+source = "github.com/typesafe-ai/daggerverse/ruff@main"

@@ -1,4 +1,3 @@
-.dagger/sdk
 .coverage
 .test-timing
 .tach
@@ -20,6 +19,8 @@ wheels/
 # Virtual environments
 .venv
 .direnv
+.nox
+.node_modules
 
 # clickhouse
 preprocessed_configs

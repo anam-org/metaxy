@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "dagger": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792623028,
+        "narHash": "sha256-UTNLBdOxJsE4IwumT+ZYkb60umN/IbSHSizYgoJwDjQ=",
+        "owner": "dagger",
+        "repo": "nix",
+        "rev": "8b9a96f1d7cd8afefb8c13c4f4a092aa5b58c7c1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dagger",
+        "repo": "nix",
+        "type": "github"
+      }
+    },
     "devenv": {
       "locked": {
         "dir": "src/modules",
@@ -35,6 +55,7 @@
     },
     "root": {
       "inputs": {
+        "dagger": "dagger",
         "devenv": "devenv",
         "nixpkgs": "nixpkgs"
       }

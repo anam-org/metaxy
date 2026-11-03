@@ -1,0 +1,5 @@
+name = "metaxy-ci"
+
+[entrypoint]
+  kind = "dang"
+  source = "./sdk/entrypoint"

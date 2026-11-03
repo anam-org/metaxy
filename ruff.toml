@@ -1,7 +1,7 @@
 target-version = "py311"
 line-length = 120
 fix = true
-extend-exclude = ["publications"]
+extend-exclude = ["publications", ".dagger/sdk", ".dagger/clients"]
 force-exclude = true
 
 [format]

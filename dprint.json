@@ -5,7 +5,10 @@
     "**/*.lock",
     "docs/reference/**",
     "**/api.md",
-    "docs/index.md"
+    "docs/index.md",
+    ".dagger/dagger-module.toml",
+    ".dagger/sdk/**",
+    ".dagger/clients/**"
   ],
   "plugins": [
     "https://plugins.dprint.dev/toml-0.7.0.wasm",
