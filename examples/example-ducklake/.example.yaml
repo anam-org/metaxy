@@ -12,7 +12,8 @@ scenarios:
         command: "python src/example_ducklake/pipeline.py"
         description: "Run DuckLake pipeline"
         capture_output: true
-        timeout: 30.0
+        # The first run downloads the DuckLake and SQLite extensions of DuckDB.
+        timeout: 120.0
 
       - type: "assert_output"
         description: "Verify the output includes successful Metaxy writes and native Metaxy reads"
