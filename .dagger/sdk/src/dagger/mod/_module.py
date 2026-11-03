@@ -593,6 +593,12 @@ class Module:
         field.metadata = {**field.metadata, FIELD_DEF_KEY: meta}
         return field
 
+    @overload
+    def check(self, func: Func[P, R]) -> Func[P, R]: ...
+
+    @overload
+    def check(self) -> Callable[[Func[P, R]], Func[P, R]]: ...
+
     def check(
         self,
         func: Func[P, R] | None = None,
@@ -624,6 +630,12 @@ class Module:
             return fn
 
         return wrapper(func) if func else wrapper
+
+    @overload
+    def generate(self, func: Func[P, R]) -> Func[P, R]: ...
+
+    @overload
+    def generate(self) -> Callable[[Func[P, R]], Func[P, R]]: ...
 
     def generate(
         self,
@@ -658,6 +670,12 @@ class Module:
 
         return wrapper(func) if func else wrapper
 
+    @overload
+    def up(self, func: Func[P, R]) -> Func[P, R]: ...
+
+    @overload
+    def up(self) -> Callable[[Func[P, R]], Func[P, R]]: ...
+
     def up(
         self,
         func: Func[P, R] | None = None,
@@ -669,6 +687,12 @@ class Module:
             return fn
 
         return wrapper(func) if func else wrapper
+
+    @overload
+    def agent(self, func: Func[P, R]) -> Func[P, R]: ...
+
+    @overload
+    def agent(self) -> Callable[[Func[P, R]], Func[P, R]]: ...
 
     def agent(
         self,

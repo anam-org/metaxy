@@ -37,8 +37,7 @@ jobs:
       use-tach: false
       dependency-matrix: true
     secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+      DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
 
   testpypi:
     needs: qa
@@ -98,6 +97,8 @@ jobs:
       docs-version: ${{ needs.check-stable-release.outputs.version }}
       docs-alias: 'stable'
       docs-default: 'stable'
+    secrets:
+      DAGGER_CLOUD_TOKEN: ${{ secrets.DAGGER_CLOUD_TOKEN }}
 
   github-release:
     needs: pypi

@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Images the Dagger module pins in .dagger/src/metaxy_ci/images/<name>/Dockerfile.
+  - package-ecosystem: docker
+    directories:
+      - "/.dagger/src/metaxy_ci/images/*"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+
+  # The Claude Code CLI that validates the plugin.
+  - package-ecosystem: npm
+    directory: "/.dagger/src/metaxy_ci/images/claude-code"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
