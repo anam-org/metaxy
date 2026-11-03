@@ -12,7 +12,8 @@
 
 # Debian packages installed in every suite's image.
 # `git` lets `pytest --tach` find the files changed since the merge base with `main`.
-apt-packages = ["git", "libpq5"]
+# `patch` applies the example runbooks' code patches.
+apt-packages = ["git", "libpq5", "patch"]
 
 # Images of the services that test fixtures start with Dagger, pinned by digest.
 # `METAXY_TEST_<NAME>_IMAGE` replaces one, e.g. for a local run.
@@ -21,7 +22,7 @@ clickhouse = "clickhouse/clickhouse-server:26.6@sha256:2c870d77ea76e955fb1c8dad5
 postgres = "postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5"
 
 [suites.core]
-extras = ["duckdb", "delta"]
+extras = ["duckdb", "delta", "clickhouse"]
 pytest-args = ["--ignore=tests/ext"]
 
 [suites.duckdb]
@@ -58,7 +59,7 @@ extras = ["duckdb", "bigquery"]
 pytest-args = ["tests/ext/bigquery"]
 
 [suites.dagster]
-extras = ["duckdb", "dagster"]
+extras = ["duckdb", "dagster", "clickhouse"]
 pytest-args = ["tests/ext/dagster"]
 
 [suites.ray]
