@@ -9,7 +9,7 @@ from typing import Any, Self
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.ext.duckdb.engine import ExtensionSpec, _normalise_extensions
+from metaxy.ext.duckdb.engine import ExtensionSpec
 from metaxy.ext.duckdb.handlers.ducklake import (
     DuckDBDuckLakeHandler,
     DuckDBPyConnection,
@@ -103,15 +103,11 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
 
         _backcompat_warn_attr("extensions")
         assert isinstance(self._engine, DuckDBEngine)
-        return self._engine.extensions
-
-    def _open(self, mode: Any) -> None:
-        """Backcompat: delegates to engine.open(). Patchable for tests."""
-        self._engine.open(mode)
-
-    def _close(self) -> None:
-        """Backcompat: delegates to engine.close()."""
-        self._engine.close()
+        ducklake_handler = self._backcompat_find_ducklake_handler()
+        return [
+            *self._engine.extensions,
+            *(ducklake_handler.required_extensions() if ducklake_handler is not None else []),
+        ]
 
     def _load_extensions(self) -> None:
         from metaxy.ext.duckdb.engine import DuckDBEngine
@@ -177,7 +173,6 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
 
             auto_create_tables = MetaxyConfig.get().auto_create_tables
 
-        all_extensions = list(_normalise_extensions(extensions or []))
         ducklake_handler: DuckDBDuckLakeHandler | None = None
 
         prefix = table_prefix or ""
@@ -187,9 +182,6 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
                 auto_create_tables=auto_create_tables,
                 store_name=kwargs.get("name"),
             )
-            for ext in ducklake_handler.required_extensions():
-                if ext.name not in {e.name for e in all_extensions}:
-                    all_extensions.append(ext)
             storage = DuckLakeStorageConfig(format="ducklake", location=str(database), table_prefix=prefix)
         else:
             storage = IbisStorageConfig(format="duckdb", location=str(database), table_prefix=prefix)
@@ -197,7 +189,7 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
         engine = DuckDBEngine(
             database=database,
             config=config,
-            extensions=all_extensions,
+            extensions=extensions,
             auto_create_tables=auto_create_tables,
             handlers=[ducklake_handler] if ducklake_handler else None,
         )

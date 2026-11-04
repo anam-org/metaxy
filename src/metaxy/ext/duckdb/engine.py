@@ -56,11 +56,34 @@ def _hashfuncs_extension() -> ExtensionSpec:
     return ExtensionSpec(name="hashfuncs", repository="community")
 
 
+def load_extensions(conn: DuckDBPyConnection, extensions: Iterable[ExtensionSpec]) -> None:
+    """Install and load `extensions` on `conn`."""
+    for ext in extensions:
+        if ext.repository_url is None:
+            conn.install_extension(ext.name, repository=ext.repository)
+            conn.load_extension(ext.name)
+        else:
+            conn.execute("SET allow_extension_repositories = 'allowed'")
+            conn.execute(
+                f"CREATE EXTENSION REPOSITORY IF NOT EXISTS {ext.repository} WITH PREFIX '{ext.repository_url}'"
+            )
+            conn.execute(f"INSTALL {ext.name} FROM {ext.repository}")
+            conn.execute(f"LOAD {ext.name} FROM {ext.repository}")
+        for sql in ext.init_sql:
+            conn.execute(sql)
+
+
 class DuckDBHandler:
-    """Mixin for DuckDB IO handlers that declare the DuckDB extensions they need."""
+    """Mixin for DuckDB IO handlers that declare the DuckDB extensions they need.
+
+    The extensions are loaded when the engine opens the handler.
+    """
 
     def required_extensions(self) -> list[ExtensionSpec]:
         return []
+
+    def on_open(self, conn: DuckDBBackend, mode: AccessMode) -> None:  # noqa: ARG002
+        load_extensions(conn.con, self.required_extensions())
 
 
 def _normalise_extensions(
@@ -128,17 +151,6 @@ class DuckDBEngine(IbisComputeEngine["DuckDBBackend"]):
 
         super().open(mode)
         self._load_extensions()
-        self._attach_ducklake()
-
-    def _attach_ducklake(self) -> None:
-        """Eagerly ATTACH any configured DuckLake catalogs so they are available
-        for the lifetime of the connection, not just during a single operation.
-        """
-        from metaxy.ext.duckdb.handlers.ducklake import DuckDBDuckLakeHandler
-
-        for handler in self._handlers:
-            if isinstance(handler, DuckDBDuckLakeHandler):
-                handler.attachment_manager.configure(self._duckdb_raw_connection())
 
     def close(self) -> None:
         super().close()
@@ -150,22 +162,6 @@ class DuckDBEngine(IbisComputeEngine["DuckDBBackend"]):
             IbisSQLHandler(auto_create_tables=self._auto_create_tables),
             DuckDBLanceHandler(),
         ]
-
-    def _ensure_defaults(self) -> None:
-        if self._defaults_loaded:
-            return
-        prev_count = len(self._handlers)
-        super()._ensure_defaults()
-        existing_ext_names = {e.name for e in self.extensions}
-        for h in self._handlers[prev_count:]:
-            if not isinstance(h, DuckDBHandler):
-                continue
-            for ext in h.required_extensions():
-                if ext.name not in existing_ext_names:
-                    self.extensions.append(ext)
-                    existing_ext_names.add(ext.name)
-        if self._conn is not None:
-            self._load_extensions()
 
     def _create_hash_functions(self) -> dict:
         import ibis
@@ -233,23 +229,7 @@ class DuckDBEngine(IbisComputeEngine["DuckDBBackend"]):
         return candidate
 
     def _load_extensions(self) -> None:
-        if not self.extensions:
-            return
-
-        duckdb_conn = self._duckdb_raw_connection()
-        for ext in self.extensions:
-            if ext.repository_url is None:
-                duckdb_conn.install_extension(ext.name, repository=ext.repository)
-                duckdb_conn.load_extension(ext.name)
-            else:
-                duckdb_conn.execute("SET allow_extension_repositories = 'allowed'")
-                duckdb_conn.execute(
-                    f"CREATE EXTENSION REPOSITORY IF NOT EXISTS {ext.repository} WITH PREFIX '{ext.repository_url}'"
-                )
-                duckdb_conn.execute(f"INSTALL {ext.name} FROM {ext.repository}")
-                duckdb_conn.execute(f"LOAD {ext.name} FROM {ext.repository}")
-            for sql in ext.init_sql:
-                duckdb_conn.execute(sql)
+        load_extensions(self._duckdb_raw_connection(), self.extensions)
 
     @property
     def sqlalchemy_url(self) -> str:
