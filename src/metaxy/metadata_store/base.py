@@ -152,6 +152,28 @@ def _cast_present_system_columns(
     return df
 
 
+def _by_field_columns_to_maps(df: Frame) -> Frame:
+    """Convert Struct `*_by_field` columns of in-memory and Polars frames to `Map(String, value)`.
+
+    This is the frame contract of [`IOHandler.write`][metaxy.metadata_store.io_handler.IOHandler.write].
+    Lazy SQL frames are left as they are: their handlers convert them in SQL.
+    """
+    import polars as pl
+
+    from metaxy.utils._arrow_map import convert_structs_to_maps
+
+    by_field_columns = [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
+    schema = df.collect_schema()
+    if not any(isinstance(schema.get(name), nw.Struct) for name in by_field_columns):
+        return df
+    native = df.to_native()
+    if isinstance(native, pl.DataFrame | pl.LazyFrame):
+        return nw.from_native(convert_structs_to_maps(native, by_field_columns))
+    if isinstance(df, nw.DataFrame):
+        return nw.from_native(convert_structs_to_maps(df.to_polars(), by_field_columns))
+    return df
+
+
 @public
 class MetadataStore:
     """Base class for metadata storage backends."""
@@ -560,21 +582,10 @@ class MetadataStore:
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
-        # Convert _by_field Struct columns to Map.
         # User-provided samples may have these as Struct (the natural Polars literal form);
         # the store normalizes them to Map so downstream processing and output are consistent.
         if samples_nw is not None:
-            import polars as pl
-
-            native = samples_nw.to_native()
-            if isinstance(native, (pl.DataFrame, pl.LazyFrame)):
-                from metaxy.utils._arrow_map import convert_structs_to_maps
-
-                native = convert_structs_to_maps(
-                    native,
-                    columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
-                )
-                samples_nw = nw.from_native(native)
+            samples_nw = _by_field_columns_to_maps(samples_nw)
 
         with self.create_versioning_engine(plan=plan, implementation=implementation) as engine:
             if skip_comparison:
@@ -1471,7 +1482,7 @@ class MetadataStore:
         **kwargs: Any,
     ) -> None:
         """Write metadata for a feature to the backend."""
-        self._engine.write(feature_key, df, self._write_storage(), **kwargs)
+        self._engine.write(feature_key, _by_field_columns_to_maps(nw.from_native(df)), self._write_storage(), **kwargs)
 
     def _add_system_columns(
         self,

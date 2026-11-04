@@ -7,17 +7,22 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Self
 
+import narwhals as nw
 import polars as pl
 import pytest
 from metaxy.ext.duckdb.engine import DuckDBEngine
 from metaxy.ext.duckdb.handlers.lance import DuckDBLanceHandler
 from metaxy.ext.ibis.engine import IbisSQLHandler, IbisStorageConfig
+from metaxy.ext.polars.engine import PolarsComputeEngine
+from metaxy.ext.polars.handlers.delta import DeltaHandler, DeltaStorageConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.exceptions import NoHandlerError
 from metaxy.metadata_store.storage_config import LanceStorageConfig, StorageConfig
+from metaxy.metadata_store.table_ref import DeltaTableIdentifier
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.utils import collect_to_polars
+from narwhals.typing import Frame
 
 
 @pytest.mark.ibis
@@ -306,3 +311,57 @@ class TestHandlerLifecycle:
             assert unused_events == ["on_open:r"]
 
         assert unused_events == ["on_open:r", "on_close"]
+
+
+class CapturingDeltaHandler(DeltaHandler):
+    """Delta handler that records the schema of every frame it writes."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.schemas: list[nw.Schema] = []
+
+    def write(self, conn: None, table_id: DeltaTableIdentifier, df: Frame, **kwargs: Any) -> None:
+        self.schemas.append(nw.from_native(df).collect_schema())
+        super().write(conn, table_id, df, **kwargs)
+
+
+@pytest.mark.delta
+@pytest.mark.polars
+@pytest.mark.usefixtures("test_graph")
+class TestWriteFrameContract:
+    """Handlers receive `*_by_field` columns as `Map`, whatever form the caller passes."""
+
+    @pytest.fixture
+    def handler(self) -> CapturingDeltaHandler:
+        return CapturingDeltaHandler()
+
+    @pytest.fixture
+    def store(self, tmp_path: Path, handler: CapturingDeltaHandler) -> MetadataStore:
+        return MetadataStore(
+            engine=PolarsComputeEngine(handlers=[handler]), storage=DeltaStorageConfig(location=str(tmp_path))
+        )
+
+    @pytest.mark.parametrize(
+        "to_native",
+        [
+            pytest.param(lambda df: df, id="polars"),
+            pytest.param(pl.DataFrame.lazy, id="polars-lazy"),
+            pytest.param(pl.DataFrame.to_arrow, id="pyarrow"),
+        ],
+    )
+    def test_struct_columns_arrive_as_maps(
+        self,
+        store: MetadataStore,
+        handler: CapturingDeltaHandler,
+        test_features: dict[str, Any],
+        to_native: Callable[[pl.DataFrame], Any],
+    ) -> None:
+        upstream = test_features["UpstreamFeatureA"]
+        with store.open("w"):
+            store.write(upstream, to_native(_metadata([1])))
+            read_schema = store.read(upstream).collect_schema()
+
+        (written_schema,) = handler.schemas
+        for schema in (written_schema, read_schema):
+            assert isinstance(schema[METAXY_PROVENANCE_BY_FIELD], nw.Map)
+            assert isinstance(schema[METAXY_DATA_VERSION_BY_FIELD], nw.Map)

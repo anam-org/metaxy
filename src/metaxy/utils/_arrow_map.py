@@ -42,7 +42,10 @@ def convert_structs_to_maps(df: PolarsFrameT, columns: Sequence[str]) -> PolarsF
         # The value dtype is the supertype of all Struct field dtypes, as resolved by `concat_list`.
         entries_dtype = cast(pl.List, pl.LazyFrame(schema={col_name: dtype}).select(entries).collect_schema()[col_name])
         value_dtype = cast(pl.Struct, entries_dtype.inner).to_schema()["value"]
-        map_exprs.append(entries.cast(pl.Map(pl.String, value_dtype)))
+        # A null Struct row becomes a null Map row, not a Map of null values.
+        map_exprs.append(
+            pl.when(pl.col(col_name).is_not_null()).then(entries.cast(pl.Map(pl.String, value_dtype))).alias(col_name)
+        )
 
     if not map_exprs:
         return df
@@ -86,8 +89,11 @@ def convert_maps_to_structs(
         if not field_names:
             continue
 
+        # A null Map row becomes a null Struct row, not a Struct of null fields.
         struct_exprs.append(
-            pl.struct([pl.col(col_name).map.get(name).alias(name) for name in field_names]).alias(col_name)
+            pl.when(pl.col(col_name).is_not_null())
+            .then(pl.struct([pl.col(col_name).map.get(name).alias(name) for name in field_names]))
+            .alias(col_name)
         )
 
     if not struct_exprs:
