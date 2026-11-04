@@ -100,53 +100,46 @@ class LanceDBMetadataStore(MetadataStore):
     _should_warn_auto_create_tables = False
     versioning_engine_cls = PolarsVersioningEngine
 
+    uri: str
+    _conn: Any
+    _connect_kwargs: dict[str, Any]
+
     def __init__(
         self,
-        uri: str | Path,
+        uri: str | Path | None = None,
+        *,
+        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
+        connect_kwargs: dict[str, Any] | None = None,  # noqa: ARG002
+        **kwargs: Any,  # noqa: ARG002
+    ) -> None:
+        pass  # __new__ already initialized via MetadataStore.__init__
+
+    def __new__(
+        cls,
+        uri: str | Path | None = None,
         *,
         fallback_stores: list[MetadataStore] | None = None,
         connect_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
-    ):
-        """
-        Initialize [LanceDB](https://lancedb.com/docs/) metadata store.
+    ) -> LanceDBMetadataStore:
+        if uri is None:
+            raise ValueError("uri is required")
 
-        The database directory is created automatically if it doesn't exist (local paths only).
-        Tables are created on-demand when features are first written.
+        from metaxy.ext.polars.engine import PolarsComputeEngine
 
-        Args:
-            uri: Directory path or URI for LanceDB tables. Supports:
+        instance = MetadataStore.__new__(cls)
+        instance.uri = str(uri)
+        instance._conn = None
+        instance._connect_kwargs = connect_kwargs or {}
 
-                - **Local path**: `"./metadata"` or `Path("/data/metaxy/lancedb")`
-
-                - **Object stores**: `s3://`, `gs://`, `az://` (requires cloud credentials)
-
-                - **LanceDB Cloud**: `"db://database-name"` (requires API key)
-
-                - **Remote HTTP/HTTPS**: Any URI supported by LanceDB
-
-            fallback_stores: Ordered list of read-only fallback stores.
-                When reading features not found in this store, Metaxy searches
-                fallback stores in order. Useful for local dev → staging → production chains.
-            connect_kwargs: Extra keyword arguments passed directly to
-                [lancedb.connect()](https://lancedb.github.io/lancedb/python/python/#lancedb.connect).
-                Useful for LanceDB Cloud credentials (api_key, region) when you cannot
-                rely on environment variables.
-            **kwargs: Passed to [metaxy.metadata_store.base.MetadataStore][]
-                (e.g., hash_algorithm, hash_truncation_length, prefer_native)
-
-        Note:
-            Unlike SQL stores, LanceDB doesn't require explicit table creation.
-            Tables are created automatically when writing metadata.
-        """
-        self.uri: str = str(uri)
-        self._conn: Any | None = None
-        self._connect_kwargs = connect_kwargs or {}
-        super().__init__(
+        MetadataStore.__init__(
+            instance,
+            engine=PolarsComputeEngine(),
             fallback_stores=fallback_stores,
             auto_create_tables=True,
             **kwargs,
         )
+        return instance
 
     @contextmanager
     def _create_versioning_engine(self, plan):

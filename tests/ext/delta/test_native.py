@@ -71,14 +71,6 @@ class TestDelta(
         if table_path.exists():
             shutil.rmtree(table_path)
 
-    @pytest.fixture
-    def named_store(self, tmp_path: Path) -> MetadataStore:
-        return DeltaMetadataStore(
-            root_path=tmp_path / "delta_store",
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="prod",
-        )
-
 
 def test_delta_local_absolute_path(
     delta_store: DeltaMetadataStore, test_features: dict[str, FeatureDefinition]

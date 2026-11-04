@@ -3,7 +3,6 @@
 import pytest
 from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig, StoreConfig
-from metaxy.ext.ibis.metadata_store import IbisMetadataStore
 from metaxy.ext.sqlmodel import (
     BaseSQLModelFeature,
     filter_feature_sqlmodel_metadata,
@@ -52,7 +51,7 @@ def test_filter_feature_sqlmodel_metadata_applies_table_prefix():
             id: str = Field(primary_key=True)
             value: str
 
-        store = config.get_store(expected_type=IbisMetadataStore)
+        store = config.get_store()
 
         # Filter SQLModel metadata
         url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
@@ -96,7 +95,7 @@ def test_filter_feature_sqlmodel_metadata_no_prefix():
             id: str = Field(primary_key=True)
             value: str
 
-        store = config.get_store(expected_type=IbisMetadataStore)
+        store = config.get_store()
 
         # Filter SQLModel metadata
         url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
@@ -146,11 +145,11 @@ def test_filter_feature_sqlmodel_metadata_different_prefixes():
             data: str
 
         # Get metadata for store_a
-        store_a = config.get_store("store_a", expected_type=IbisMetadataStore)
+        store_a = config.get_store("store_a")
         url_a, metadata_a = filter_feature_sqlmodel_metadata(store_a, SQLModel.metadata)
 
         # Get metadata for store_b
-        store_b = config.get_store("store_b", expected_type=IbisMetadataStore)
+        store_b = config.get_store("store_b")
         url_b, metadata_b = filter_feature_sqlmodel_metadata(store_b, SQLModel.metadata)
 
         # Check that each metadata has the correct prefix
@@ -211,7 +210,7 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
             id: str = Field(primary_key=True)
             data: str
 
-        store = config.get_store(expected_type=IbisMetadataStore)
+        store = config.get_store()
 
         # Filter with project filtering enabled (default) - should include both since they're in same project
         url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
@@ -294,7 +293,7 @@ class TestProtocolParameter:
                 id: str = Field(primary_key=True)
                 value: str
 
-            store = config.get_store(expected_type=IbisMetadataStore)
+            store = config.get_store()
 
             # Without protocol override
             url_default, _ = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
@@ -335,7 +334,7 @@ class TestProtocolParameter:
                 id: str = Field(primary_key=True)
                 value: str
 
-            store = config.get_store(expected_type=IbisMetadataStore)
+            store = config.get_store()
             url, _ = filter_feature_sqlmodel_metadata(store, SQLModel.metadata, protocol=None)
             assert url == "duckdb:///mydb.db"
 
@@ -370,7 +369,7 @@ class TestProtocolParameter:
                 id: str = Field(primary_key=True)
                 value: str
 
-            store = config.get_store(expected_type=IbisMetadataStore)
+            store = config.get_store()
 
             # With protocol override
             url, metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata, protocol="postgresql+psycopg2")

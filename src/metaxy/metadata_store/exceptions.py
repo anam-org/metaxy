@@ -78,6 +78,13 @@ class TableNotFoundError(MetadataStoreError):
 
 
 @public
+class NoHandlerError(MetadataStoreError):
+    """No IOHandler registered for the requested storage format."""
+
+    pass
+
+
+@public
 class VersioningEngineMismatchError(Exception):
     """Raised when versioning_engine='native' is requested but data has wrong implementation."""
 

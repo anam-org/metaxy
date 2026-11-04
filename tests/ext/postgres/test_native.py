@@ -47,14 +47,6 @@ class TestPostgreSQL(
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
-    @pytest.fixture
-    def named_store(self, postgresql_db: str) -> MetadataStore:
-        return PostgreSQLMetadataStore(
-            connection_string=postgresql_db,
-            hash_algorithm=HashAlgorithm.XXHASH64,
-            name="pg-test",
-        )
-
 
 @pytest.fixture
 def clean_postgres_db(postgresql_db: str, test_graph: FeatureGraph):
@@ -204,7 +196,7 @@ def test_postgresql_auto_cast_false_only_converts_system_columns(
             }
         )
         transformed = collect_to_polars(
-            store.transform_before_write(nw.from_native(metadata), feature.key, store.get_table_name(feature.key))
+            store.transform_before_write(nw.from_native(metadata), store.get_table_name(feature.key))
         )
 
         assert transformed.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Utf8
@@ -910,10 +902,9 @@ def test_postgresql_parse_json_user_column_all_null_values(
 ) -> None:
     """All-NULL user JSON columns infer pl.Null when input is created without dtype hints."""
     with PostgreSQLMetadataStore(postgresql_db, auto_cast_struct_for_jsonb=True).open(mode="w") as store:
-        feature_key = test_features["UpstreamFeatureA"].key
         pl_df = pl.DataFrame({"sample_uid": [1, 2], "user_json": [None, None]})
 
-        result = store._parse_json_to_struct_columns(pl_df, feature_key, ["user_json"])
+        result = store._parse_json_to_struct_columns(pl_df, ["user_json"])
 
         assert result.schema["user_json"] == pl.Null
         assert result["user_json"].null_count() == len(result)
@@ -923,7 +914,6 @@ def test_postgresql_parse_json_user_utf8_column_all_null_values(
     dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """All-NULL nullable UTF8 user columns should remain UTF8 (not Struct) when parsing candidates."""
-    feature_key = test_features["UpstreamFeatureA"].key
     pl_df = pl.DataFrame(
         {
             "sample_uid": [1, 2],
@@ -931,7 +921,7 @@ def test_postgresql_parse_json_user_utf8_column_all_null_values(
         }
     )
 
-    result = dummy_pg_store._parse_json_to_struct_columns(pl_df, feature_key, ["user_text"])
+    result = dummy_pg_store._parse_json_to_struct_columns(pl_df, ["user_text"])
 
     assert result.schema["user_text"] == pl.Utf8
     assert result["user_text"].to_list() == [None, None]
@@ -941,7 +931,6 @@ def test_postgresql_parse_json_user_utf8_literal_null_values(
     dummy_pg_store: PostgreSQLMetadataStore, test_graph: FeatureGraph, test_features: dict
 ) -> None:
     """Literal \"null\" values in UTF8 user columns should remain UTF8 strings."""
-    feature_key = test_features["UpstreamFeatureA"].key
     pl_df = pl.DataFrame(
         {
             "sample_uid": [1, 2],
@@ -949,7 +938,7 @@ def test_postgresql_parse_json_user_utf8_literal_null_values(
         }
     )
 
-    result = dummy_pg_store._parse_json_to_struct_columns(pl_df, feature_key, ["user_text"])
+    result = dummy_pg_store._parse_json_to_struct_columns(pl_df, ["user_text"])
 
     assert result.schema["user_text"] == pl.Utf8
     assert result["user_text"].to_list() == ["null", None]
@@ -1011,11 +1000,9 @@ def test_parse_json_to_struct_columns_missing_feature_in_graph_decodes_system_st
             ]
         }
     )
-    missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
     result = dummy_pg_store._parse_json_to_struct_columns(
         df,
-        missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD],
     )
     assert isinstance(result.schema[METAXY_PROVENANCE_BY_FIELD], pl.Struct)
@@ -1035,7 +1022,6 @@ def test_postgresql_validate_required_system_columns_without_feature_schema(
     )
     parsed = dummy_pg_store._parse_json_to_struct_columns(
         df,
-        missing_feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
     dummy_pg_store._validate_required_system_struct_columns(
@@ -1381,7 +1367,6 @@ def test_parse_json_system_columns_all_null_remain_null_without_forced_schema(
 
     parsed = dummy_pg_store._parse_json_to_struct_columns(
         df,
-        feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
     dummy_pg_store._validate_required_system_struct_columns(
@@ -1409,7 +1394,6 @@ def test_validate_required_system_columns_allow_inferred_sparse_fields(
     )
     parsed = dummy_pg_store._parse_json_to_struct_columns(
         df,
-        feature_key,
         [METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD],
     )
     dummy_pg_store._validate_required_system_struct_columns(
@@ -1524,9 +1508,8 @@ def test_parse_json_user_columns_do_not_require_feature_in_graph(
 ) -> None:
     """User JSON decode should not require feature definition lookup."""
     df = pl.DataFrame({"user_json": ['{"model":"resnet","version":"1"}']})
-    missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = dummy_pg_store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
+    result = dummy_pg_store._parse_json_to_struct_columns(df, ["user_json"])
 
     assert isinstance(result.schema["user_json"], pl.Struct)
     assert result["user_json"].to_list() == [{"model": "resnet", "version": "1"}]
@@ -1537,9 +1520,8 @@ def test_parse_json_user_columns_infers_from_full_column(
 ) -> None:
     """Schema inference for user JSON should include sparse keys from all rows."""
     df = pl.DataFrame({"user_json": ['{"a":1}', '{"a":2,"b":"x"}']})
-    missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = dummy_pg_store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
+    result = dummy_pg_store._parse_json_to_struct_columns(df, ["user_json"])
 
     assert isinstance(result.schema["user_json"], pl.Struct)
     assert result["user_json"].to_list() == [{"a": 1, "b": None}, {"a": 2, "b": "x"}]
@@ -1551,9 +1533,8 @@ def test_parse_json_user_columns_with_incompatible_shapes_fallback_to_strings(
     """Incompatible user JSON rows should remain strings instead of failing decode."""
     original_values = ['{"a":1}', '{"a":{"nested":2}}']
     df = pl.DataFrame({"user_json": original_values})
-    missing_feature_key = FeatureKey(["test_stores", "missing_feature"])
 
-    result = dummy_pg_store._parse_json_to_struct_columns(df, missing_feature_key, ["user_json"])
+    result = dummy_pg_store._parse_json_to_struct_columns(df, ["user_json"])
 
     assert result.schema["user_json"] == pl.Utf8
     assert result["user_json"].to_list() == original_values
