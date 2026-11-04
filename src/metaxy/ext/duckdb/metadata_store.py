@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urlsplit
 
+from packaging.version import Version
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
@@ -29,9 +30,28 @@ class ExtensionSpec(BaseModel):
 
     name: str
     repository: str = "core"
-    """Extension repository: `"core"` for official extensions, `"community"` for community extensions."""
+    """Extension repository: `"core"` for official extensions, `"community"` for community extensions,
+    or the name of a third-party repository registered with `repository_url`."""
+    repository_url: str | None = None
+    """URL of a third-party extension repository. When set, the repository is registered under the
+    `repository` name before the extension is installed. This enables DuckDB's `allow_extension_repositories`
+    setting for the connection."""
     init_sql: Sequence[str] = ()
     """SQL statements to execute immediately after loading the extension."""
+
+
+def _hashfuncs_extension() -> ExtensionSpec:
+    """Return the `hashfuncs` extension spec for the installed DuckDB version.
+
+    From DuckDB 2.0, `hashfuncs` is distributed from the Query.Farm repository instead of the community repository.
+    """
+    import duckdb
+
+    if Version(duckdb.__version__).major >= 2:
+        return ExtensionSpec(
+            name="hashfuncs", repository="query_farm", repository_url="https://duckdb-extensions.query.farm"
+        )
+    return ExtensionSpec(name="hashfuncs", repository="community")
 
 
 @public
@@ -154,7 +174,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             self._ducklake_attachment = DuckLakeAttachmentManager(ducklake, store_name=kwargs.get("name"))
 
         if "hashfuncs" not in {ext.name for ext in self.extensions}:
-            self.extensions.append(ExtensionSpec(name="hashfuncs", repository="community"))
+            self.extensions.append(_hashfuncs_extension())
 
         super().__init__(
             backend="duckdb",
@@ -211,8 +231,16 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         duckdb_conn = self._duckdb_raw_connection()
         for ext in self.extensions:
-            duckdb_conn.install_extension(ext.name, repository=ext.repository)
-            duckdb_conn.load_extension(ext.name)
+            if ext.repository_url is None:
+                duckdb_conn.install_extension(ext.name, repository=ext.repository)
+                duckdb_conn.load_extension(ext.name)
+            else:
+                duckdb_conn.execute("SET allow_extension_repositories = 'allowed'")
+                duckdb_conn.execute(
+                    f"CREATE EXTENSION REPOSITORY IF NOT EXISTS {ext.repository} WITH PREFIX '{ext.repository_url}'"
+                )
+                duckdb_conn.execute(f"INSTALL {ext.name} FROM {ext.repository}")
+                duckdb_conn.execute(f"LOAD {ext.name} FROM {ext.repository}")
             for sql in ext.init_sql:
                 duckdb_conn.execute(sql)
 

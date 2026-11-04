@@ -899,7 +899,7 @@ def test_sync_external_features_consolidates_multiple_mismatches(store: Metadata
             sync_external_features(store)
 
         # Verify both features are mentioned in the single warning
-        warning_message = str(record[0].message)
+        (warning_message,) = [str(w.message) for w in record if "2 external feature" in str(w.message)]
         assert "multi_mismatch/a" in warning_message
         assert "multi_mismatch/b" in warning_message
 

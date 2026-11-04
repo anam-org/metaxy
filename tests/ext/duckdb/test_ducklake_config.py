@@ -376,6 +376,7 @@ def test_ducklake_e2e_with_dependencies(
                     "catalog": {"type": "duckdb", "uri": str(metadata_path)},
                     "storage": {"type": "local", "path": str(storage_dir)},
                     "attach_options": {"override_data_path": True},
+                    "data_inlining_row_limit": 0,
                 }
             )
 
@@ -581,6 +582,7 @@ def test_ducklake_s3_storage_roundtrip(
                     "use_ssl": False,
                 },
                 "attach_options": {"override_data_path": True},
+                "data_inlining_row_limit": 0,
             }
         )
 

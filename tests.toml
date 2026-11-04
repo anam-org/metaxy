@@ -27,7 +27,13 @@ pytest-args = ["--ignore=tests/ext"]
 
 [suites.duckdb]
 extras = ["duckdb"]
-pytest-args = ["tests/ext/duckdb"]
+pytest-args = ["tests/ext/duckdb", "-m", "not motherduck"]
+
+# MotherDuck does not support DuckDB 2 yet.
+[suites.motherduck]
+extras = ["duckdb"]
+overrides = ["duckdb<2"]
+pytest-args = ["tests/ext/duckdb", "-m", "motherduck"]
 
 [suites.clickhouse]
 extras = ["duckdb", "clickhouse"]
