@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
@@ -21,14 +21,16 @@ class PolarsComputeEngine(ComputeEngine[None]):
     Has no persistent connection — handlers receive ``None`` and manage their own I/O.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *, handlers: Sequence[IOHandler[None, Any]] | None = None) -> None:
+        super().__init__(handlers=handlers)
         from metaxy.ext.polars.versioning import PolarsVersioningEngine
 
         self.versioning_engine_cls = PolarsVersioningEngine
 
     def _create_default_handlers(self) -> list[IOHandler[None, Any]]:
-        return []
+        from metaxy.ext.polars.handlers.delta import DeltaHandler
+
+        return [DeltaHandler()]
 
     @property
     def connection(self) -> None:
