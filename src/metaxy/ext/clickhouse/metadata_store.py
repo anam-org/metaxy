@@ -60,18 +60,6 @@ class ClickHouseMetadataStore(IbisStoreBackcompat):
 
     def __init__(
         self,
-        connection_string: str | None = None,  # noqa: ARG002
-        *,
-        connection_params: dict[str, Any] | None = None,  # noqa: ARG002
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        auto_cast_struct_for_map: bool = True,  # noqa: ARG002
-        table_prefix: str | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
-    def __new__(
-        cls,
         connection_string: str | None = None,
         *,
         connection_params: dict[str, Any] | None = None,
@@ -79,7 +67,7 @@ class ClickHouseMetadataStore(IbisStoreBackcompat):
         auto_cast_struct_for_map: bool = True,
         table_prefix: str | None = None,
         **kwargs: Any,
-    ) -> ClickHouseMetadataStore:
+    ) -> None:
         from metaxy.ext.clickhouse.engine import ClickHouseEngine
         from metaxy.ext.clickhouse.handlers.native import ClickHouseSQLHandler
 
@@ -109,16 +97,13 @@ class ClickHouseMetadataStore(IbisStoreBackcompat):
             table_prefix=table_prefix or "",
         )
 
-        instance = IbisStoreBackcompat.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=engine,
             storage=storage,
             fallback_stores=fallback_stores,
             auto_create_tables=auto_create_tables,
             **kwargs,
         )
-        return instance
 
     @classmethod
     def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> Self:

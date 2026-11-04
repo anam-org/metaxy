@@ -271,19 +271,6 @@ class IcebergMetadataStore(MetadataStore):
 
     def __init__(
         self,
-        warehouse: str | Path | None = None,  # noqa: ARG002
-        *,
-        namespace: str = "metaxy",  # noqa: ARG002
-        catalog_name: str = "metaxy",  # noqa: ARG002
-        catalog_properties: dict[str, str] | None = None,  # noqa: ARG002
-        auto_create_namespace: bool = True,  # noqa: ARG002
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
-    def __new__(
-        cls,
         warehouse: str | Path | None = None,
         *,
         namespace: str = "metaxy",
@@ -292,7 +279,7 @@ class IcebergMetadataStore(MetadataStore):
         auto_create_namespace: bool = True,
         fallback_stores: list[MetadataStore] | None = None,
         **kwargs: Any,
-    ) -> IcebergMetadataStore:
+    ) -> None:
         if warehouse is None:
             raise ValueError("warehouse is required")
 
@@ -306,9 +293,7 @@ class IcebergMetadataStore(MetadataStore):
         else:
             location = warehouse_str.rstrip("/")
 
-        instance = MetadataStore.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=PolarsComputeEngine(),
             storage=IcebergStorageConfig(
                 location=location,
@@ -321,7 +306,6 @@ class IcebergMetadataStore(MetadataStore):
             versioning_engine="polars",
             **kwargs,
         )
-        return instance
 
     @property
     def _iceberg_storage(self) -> IcebergStorageConfig:

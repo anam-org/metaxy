@@ -60,18 +60,6 @@ class PostgreSQLMetadataStore(IbisStoreBackcompat):
 
     def __init__(
         self,
-        connection_string: str | None = None,  # noqa: ARG002
-        *,
-        connection_params: dict[str, Any] | None = None,  # noqa: ARG002
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        auto_cast_struct_for_jsonb: bool = True,  # noqa: ARG002
-        table_prefix: str | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
-    def __new__(
-        cls,
         connection_string: str | None = None,
         *,
         connection_params: dict[str, Any] | None = None,
@@ -79,7 +67,7 @@ class PostgreSQLMetadataStore(IbisStoreBackcompat):
         auto_cast_struct_for_jsonb: bool = True,
         table_prefix: str | None = None,
         **kwargs: Any,
-    ) -> PostgreSQLMetadataStore:
+    ) -> None:
         from metaxy.ext.postgresql.engine import PostgreSQLEngine
         from metaxy.ext.postgresql.handlers.native import PostgreSQLSQLHandler
 
@@ -107,16 +95,13 @@ class PostgreSQLMetadataStore(IbisStoreBackcompat):
         location = connection_string or "postgresql"
         storage = IbisStorageConfig(location=location, table_prefix=prefix)
 
-        instance = IbisStoreBackcompat.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=engine,
             storage=storage,
             fallback_stores=fallback_stores,
             auto_create_tables=auto_create_tables,
             **kwargs,
         )
-        return instance
 
     @classmethod
     def config_model(cls) -> type[PostgreSQLMetadataStoreConfig]:
