@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
+from sqlalchemy import Column, DateTime, Index, Integer, MetaData, String, Table
 
 from metaxy._decorators import experimental, public
 from metaxy.config import MetaxyConfig
@@ -60,6 +60,8 @@ def create_system_tables(
         Column("feature_spec", String),
         Column("feature_schema", String),
         Column("feature_class_path", String),
+        Column("hash_algorithm", String),
+        Column("hash_truncation_length", Integer),
         Column("tags", String, default="{}"),
         Column("deleted_at", DateTime, nullable=True),
         Index(

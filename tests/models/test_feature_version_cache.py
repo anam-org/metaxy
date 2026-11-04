@@ -354,24 +354,48 @@ def test_removed_ancestor_raises_until_it_is_added_again(
 
 
 @pytest.mark.parametrize("truncation_length", [12, 16])
-def test_entry_is_bound_to_hash_truncation_length(
+@pytest.mark.parametrize("layer", [0, DEPTH], ids=["root", "top"])
+def test_definition_with_other_hash_truncation_length_invalidates_entry(
+    graph: FeatureGraph,
+    diamond_graph: FeatureKey,
+    cached_version_by_field: dict[str, str],
+    layer: int,
+    truncation_length: int,
+) -> None:
+    """A definition of the feature or of an ancestor with other hash settings makes the next call compute again."""
+    graph.add_feature_definition(layer_definition(layer, "1", hash_truncation_length=truncation_length))
+
+    version_by_field = graph.get_feature_version_by_field(diamond_graph)
+
+    assert version_by_field != cached_version_by_field
+    assert version_by_field == reference_feature_version_by_field(graph, diamond_graph)
+
+
+def test_top_versions_have_hash_truncation_length_of_top_definition(
+    graph: FeatureGraph, diamond_graph: FeatureKey
+) -> None:
+    """Each feature uses the hash truncation length of its own definition."""
+    graph.add_feature_definition(layer_definition(DEPTH, "1", hash_truncation_length=16))
+
+    assert {len(version) for version in graph.get_feature_version_by_field(diamond_graph).values()} == {16}
+    assert len(graph.get_feature_version(diamond_graph)) == 16
+    assert {len(version) for version in graph.get_feature_version_by_field(layer_key(0)).values()} == {8}
+
+
+@pytest.mark.parametrize("truncation_length", [12, 16])
+def test_active_config_hash_truncation_length_keeps_entry(
     graph: FeatureGraph,
     diamond_graph: FeatureKey,
     config: MetaxyConfig,
     cached_version_by_field: dict[str, str],
+    parent_field_lookups: list[FQFieldKey],
     truncation_length: int,
 ) -> None:
-    """Versions are not reused across different hash truncation lengths."""
+    """Versions use the hash settings of the definitions, so the active config does not change them."""
     with config.model_copy(update={"hash_truncation_length": truncation_length}).use():
-        assert {len(version) for version in graph.get_feature_version_by_field(diamond_graph).values()} == {
-            truncation_length
-        }
-        assert graph.get_feature_version_by_field(diamond_graph) == reference_feature_version_by_field(
-            graph, diamond_graph
-        )
+        assert graph.get_feature_version_by_field(diamond_graph) == cached_version_by_field
 
-    assert graph.get_feature_version_by_field(diamond_graph) == cached_version_by_field
-    assert {len(version) for version in cached_version_by_field.values()} == {config.hash_truncation_length}
+    assert parent_field_lookups == []
 
 
 @pytest.mark.parametrize(
@@ -486,7 +510,7 @@ def test_partial_override_with_missing_upstream_raises_on_each_call(
 def test_cache_works_without_global_config(
     graph: FeatureGraph, diamond_graph: FeatureKey, parent_field_lookups: list[FQFieldKey]
 ) -> None:
-    """Without a global config, the default config applies, and repeated calls compute nothing."""
+    """Versions do not need a global config, and repeated calls compute nothing."""
     version_by_field = graph.get_feature_version_by_field(diamond_graph)
     feature_version = graph.get_feature_version(diamond_graph)
     parent_field_lookups.clear()
@@ -494,13 +518,12 @@ def test_cache_works_without_global_config(
     assert graph.get_feature_version_by_field(diamond_graph) == version_by_field
     assert graph.get_feature_version(diamond_graph) == feature_version
     assert parent_field_lookups == []
-    with MetaxyConfig().use():
-        assert version_by_field == reference_feature_version_by_field(graph, diamond_graph)
-        assert feature_version == reference_feature_version(graph, diamond_graph)
+    assert version_by_field == reference_feature_version_by_field(graph, diamond_graph)
+    assert feature_version == reference_feature_version(graph, diamond_graph)
 
 
 class FeatureVersionCacheMachine(RuleBasedStateMachine):
-    """Change a diamond field graph and the hash truncation length in a random order.
+    """Change a diamond field graph, the hash settings of its definitions and the active config in a random order.
 
     Each version and each error must always equal the outcome of the reference computation.
     """
@@ -523,24 +546,44 @@ class FeatureVersionCacheMachine(RuleBasedStateMachine):
             return multiple()
         return multiple(previous)
 
-    @rule(target=displaced_definitions, layer=LAYERS, code_version=CODE_VERSIONS)
-    def add_layer_definition(self, layer: int, code_version: str) -> MultipleResults[FeatureDefinition]:
-        return self.put_definition(layer_definition(layer, code_version), FeatureGraph.add_feature_definition)
+    @rule(target=displaced_definitions, layer=LAYERS, code_version=CODE_VERSIONS, truncation_length=TRUNCATION_LENGTHS)
+    def add_layer_definition(
+        self, layer: int, code_version: str, truncation_length: int
+    ) -> MultipleResults[FeatureDefinition]:
+        return self.put_definition(
+            layer_definition(layer, code_version, hash_truncation_length=truncation_length),
+            FeatureGraph.add_feature_definition,
+        )
 
-    @rule(target=displaced_definitions, layer=LAYERS, code_version=CODE_VERSIONS)
-    def assign_layer_definition(self, layer: int, code_version: str) -> MultipleResults[FeatureDefinition]:
-        return self.put_definition(layer_definition(layer, code_version), assign_definition)
+    @rule(target=displaced_definitions, layer=LAYERS, code_version=CODE_VERSIONS, truncation_length=TRUNCATION_LENGTHS)
+    def assign_layer_definition(
+        self, layer: int, code_version: str, truncation_length: int
+    ) -> MultipleResults[FeatureDefinition]:
+        return self.put_definition(
+            layer_definition(layer, code_version, hash_truncation_length=truncation_length), assign_definition
+        )
 
     @rule(
-        target=displaced_definitions, layer=LAYERS, code_version=CODE_VERSIONS, provenance_by_field=PROVENANCE_OVERRIDES
+        target=displaced_definitions,
+        layer=LAYERS,
+        code_version=CODE_VERSIONS,
+        provenance_by_field=PROVENANCE_OVERRIDES,
+        truncation_length=TRUNCATION_LENGTHS,
     )
     def assign_external_layer_definition(
-        self, layer: int, code_version: str, provenance_by_field: dict[CoercibleToFieldKey, str] | None
+        self,
+        layer: int,
+        code_version: str,
+        provenance_by_field: dict[CoercibleToFieldKey, str] | None,
+        truncation_length: int,
     ) -> MultipleResults[FeatureDefinition]:
         # Direct assignment, because `add_feature_definition` ignores an external definition
         # when the key holds a non-external definition.
         return self.put_definition(
-            external_layer_definition(layer, code_version, provenance_by_field), assign_definition
+            external_layer_definition(
+                layer, code_version, provenance_by_field, hash_truncation_length=truncation_length
+            ),
+            assign_definition,
         )
 
     @rule(target=displaced_definitions, layer=LAYERS)
@@ -561,7 +604,8 @@ class FeatureVersionCacheMachine(RuleBasedStateMachine):
         add_unrelated_feature(self.graph)
 
     @rule(truncation_length=TRUNCATION_LENGTHS)
-    def set_truncation_length(self, truncation_length: int) -> None:
+    def set_config_truncation_length(self, truncation_length: int) -> None:
+        """Change the active config, which must not change the versions of existing definitions."""
         self.config = self.config.model_copy(update={"hash_truncation_length": truncation_length})
 
     def check(self, query: VersionQuery) -> None:

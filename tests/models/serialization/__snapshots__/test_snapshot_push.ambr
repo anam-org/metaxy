@@ -25,27 +25,27 @@
     'versions': list([
       dict({
         'feature_key': 'upstream',
-        'metaxy_definition_version': 'a4354d3c',
+        'metaxy_definition_version': '7af8e050',
         'metaxy_feature_version': '414ff48a',
-        'metaxy_project_version': '4f7133cd',
+        'metaxy_project_version': '52e0fb2d',
       }),
       dict({
         'feature_key': 'downstream',
-        'metaxy_definition_version': '313e1641',
+        'metaxy_definition_version': '70982361',
         'metaxy_feature_version': 'd4bebcbe',
-        'metaxy_project_version': '4f7133cd',
+        'metaxy_project_version': '52e0fb2d',
       }),
       dict({
         'feature_key': 'upstream',
-        'metaxy_definition_version': 'fb62c0eb',
+        'metaxy_definition_version': '175c7aba',
         'metaxy_feature_version': '414ff48a',
-        'metaxy_project_version': '3721af47',
+        'metaxy_project_version': 'a03f25dc',
       }),
       dict({
         'feature_key': 'downstream',
-        'metaxy_definition_version': '25d49159',
+        'metaxy_definition_version': '1511382b',
         'metaxy_feature_version': 'd4bebcbe',
-        'metaxy_project_version': '3721af47',
+        'metaxy_project_version': 'a03f25dc',
       }),
     ]),
   })

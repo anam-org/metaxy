@@ -3,6 +3,7 @@ from functools import cached_property
 
 import pydantic
 
+from metaxy._hashing import HashAlgorithm
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureDep, FeatureKey, FeatureSpec
 from metaxy.models.field import (
@@ -56,6 +57,8 @@ class FeaturePlan(FrozenBaseModel):
     feature: pydantic.SkipValidation[FeatureSpec]
     deps: pydantic.SkipValidation[list[FeatureSpec] | None]
     feature_deps: list[FeatureDep] | None = None  # The actual dependency specifications with field mappings
+    hash_algorithm: HashAlgorithm = HashAlgorithm.XXHASH32
+    hash_truncation_length: int = 8
 
     @cached_property
     def parent_features_by_key(

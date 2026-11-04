@@ -17,6 +17,7 @@ from pydantic_settings import (
 )
 
 from metaxy._decorators import public
+from metaxy._hashing import HashAlgorithm
 from metaxy.config.metaxy_source import MetaxyTomlSource, discover_config_with_parents
 from metaxy.config.models.plugin_config import PluginConfig
 from metaxy.config.models.store_config import StoreConfig
@@ -185,6 +186,11 @@ class MetaxyConfig(BaseSettings):
         default_factory=dict,
         description="Configuration for Metaxy integrations with third-party tools",
         frozen=False,
+    )
+
+    hash_algorithm: HashAlgorithm | None = PydanticField(
+        default=None,
+        description="Hash algorithm attached to feature definitions. Defaults to the selected store's algorithm.",
     )
 
     hash_truncation_length: int = PydanticField(default=8, description="Truncate hash values to this length.", ge=8)
@@ -521,8 +527,7 @@ class MetaxyConfig(BaseSettings):
             Instantiated metadata store
 
         Raises:
-            ValueError: If store name not found in config, or if fallback stores
-                have different hash algorithms than the parent store
+            ValueError: If store name is not found in the config
             ImportError: If store class cannot be imported
             TypeError: If the actual store type does not match the expected type
 
@@ -534,8 +539,6 @@ class MetaxyConfig(BaseSettings):
             store = config.get_store()
             ```
         """
-        from metaxy._hashing import HashAlgorithm
-
         if len(self.stores) == 0:
             raise InvalidConfigError.from_config(
                 self,
@@ -633,7 +636,7 @@ class MetaxyConfig(BaseSettings):
                 f"Store '{name}' ({store_class.__name__}) was configured with "
                 f"hash_algorithm='{configured_hash_algorithm.value}' but is using "
                 f"'{store.hash_algorithm.value}'. The store class may have overridden "
-                f"the hash algorithm. All stores must use the same hash algorithm.",
+                f"the configured hash algorithm.",
             )
 
         if expected_type is not None and not isinstance(store, expected_type):

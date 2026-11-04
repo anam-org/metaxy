@@ -2,9 +2,11 @@
 # name: test_feature_definition_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_definition_version': '2770c11d',
+    'hash_algorithm': 'xxhash32',
+    'hash_truncation_length': 8,
+    'metaxy_definition_version': '82fd9a04',
     'metaxy_feature_version': '3599b5f9',
-    'metaxy_project_version': 'd99f5c77',
+    'metaxy_project_version': 'd1eac687',
   })
 # ---
 # name: test_feature_spec_version_deterministic
@@ -145,7 +147,9 @@
       'metadata': dict({
       }),
     }),
-    'metaxy_definition_version': 'c4763fb4',
+    'hash_algorithm': 'xxhash32',
+    'hash_truncation_length': 8,
+    'metaxy_definition_version': '2ba042a7',
     'metaxy_feature_version': 'd22026d5',
     'project': 'test_spec_version',
   })

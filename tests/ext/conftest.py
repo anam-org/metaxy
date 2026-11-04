@@ -7,8 +7,9 @@ from typing import Any
 
 import boto3
 import pytest
-from metaxy import BaseFeature
+from metaxy import BaseFeature, MetadataStore
 from metaxy.config import MetaxyConfig
+from metaxy.models.feature import FeatureGraph
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
@@ -78,12 +79,27 @@ def s3_bucket_and_storage_options(
 
 
 @pytest.fixture
-def config_with_truncation(truncation_length: int | None) -> Generator[MetaxyConfig, None, None]:
+def integration_config(config: MetaxyConfig, store: MetadataStore) -> MetaxyConfig:
+    """Configure features for the integration store's hash algorithm."""
+    return config.model_copy(update={"hash_algorithm": store.hash_algorithm})
+
+
+@pytest.fixture(autouse=True)
+def graph(integration_config: MetaxyConfig) -> Generator[FeatureGraph, None, None]:
+    with integration_config.use(), FeatureGraph().use() as graph:
+        yield graph
+
+
+@pytest.fixture
+def config_with_truncation(
+    integration_config: MetaxyConfig,
+    truncation_length: int | None,
+) -> Generator[MetaxyConfig, None, None]:
     """Fixture that sets MetaxyConfig with hash_truncation_length.
 
     The test must be parametrized on truncation_length for this fixture to work.
     """
-    config = MetaxyConfig.get().model_copy(update={"hash_truncation_length": truncation_length})
+    config = integration_config.model_copy(update={"hash_truncation_length": truncation_length})
 
     with config.use():
         yield config
