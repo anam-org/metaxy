@@ -238,7 +238,7 @@ depends_on = [
 [[modules]]
 path = "metaxy.models.constants"
 layer = "core"
-depends_on = []
+depends_on = ["metaxy.config"]
 
 [[modules]]
 path = "metaxy.models.types"

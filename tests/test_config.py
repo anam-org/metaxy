@@ -93,6 +93,19 @@ def test_metaxy_config_default() -> None:
 
     assert config.store == "dev"
     assert config.stores == {}
+    assert (
+        config.created_at_column,
+        config.updated_at_column,
+        config.deleted_at_column,
+    ) == ("metaxy_created_at", "metaxy_updated_at", "metaxy_deleted_at")
+
+
+def test_lifecycle_columns_must_be_distinct_and_not_fixed_system_columns() -> None:
+    with pytest.raises(ValueError, match="must be distinct"):
+        MetaxyConfig(created_at_column="timestamp", updated_at_column="timestamp")
+
+    with pytest.raises(ValueError, match="conflict with reserved"):
+        MetaxyConfig(created_at_column="metaxy_feature_version")
 
 
 def test_bare_construction_does_not_auto_discover_toml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

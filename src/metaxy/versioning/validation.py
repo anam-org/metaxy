@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import TYPE_CHECKING
 
-from metaxy.models.constants import ALL_SYSTEM_COLUMNS
+from metaxy.models.constants import get_reserved_system_columns
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
 
@@ -43,6 +43,7 @@ def validate_column_configuration(plan: FeaturePlan) -> None:
 
 def _validate_individual_dep_renames(plan: FeaturePlan) -> None:
     """Validate rename mappings for each dependency individually."""
+    system_columns = get_reserved_system_columns()
     for dep in plan.feature_deps or []:
         if not isinstance(dep, FeatureDep):
             continue
@@ -55,11 +56,11 @@ def _validate_individual_dep_renames(plan: FeaturePlan) -> None:
 
         for old_name, new_name in dep.rename.items():
             # Check for renaming to system columns
-            if new_name in ALL_SYSTEM_COLUMNS:
+            if new_name in system_columns:
                 raise ValueError(
                     f"Cannot rename column '{old_name}' to system column name '{new_name}' "
                     f"in dependency '{dep.feature.to_string()}'. "
-                    f"System columns: {sorted(ALL_SYSTEM_COLUMNS)}"
+                    f"System columns: {sorted(system_columns)}"
                 )
 
             # Check against upstream feature's ID columns

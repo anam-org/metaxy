@@ -15,7 +15,6 @@ from metaxy import FeatureSpec
 from metaxy._decorators import public
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
-    ALL_SYSTEM_COLUMNS,
     METAXY_CREATED_AT,
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
@@ -27,6 +26,8 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_UPDATED_AT,
     SYSTEM_COLUMN_PREFIX,
+    get_lifecycle_system_columns,
+    get_reserved_system_columns,
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph, MetaxyMeta
 from metaxy.models.feature_spec import FeatureSpecWithIDColumns
@@ -36,11 +37,6 @@ if TYPE_CHECKING:
     from sqlalchemy import MetaData
 
     from metaxy.ext.ibis.metadata_store import IbisMetadataStore
-
-RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
-    set(ALL_SYSTEM_COLUMNS)
-    | {name.removeprefix(SYSTEM_COLUMN_PREFIX) for name in ALL_SYSTEM_COLUMNS if name.startswith(SYSTEM_COLUMN_PREFIX)}
-)
 
 
 class MetaxyTableInfo(BaseModel):
@@ -56,10 +52,10 @@ class SQLModelFeatureConfig(TypedDict, total=False):
     """
 
     inject_primary_key: bool
-    """Whether to automatically create a composite PK for (metaxy_feature_version, *id_columns, metaxy_updated_at)."""
+    """Whether to create a composite PK using the feature version, IDs, and configured update timestamp."""
 
     inject_index: bool
-    """Whether to automatically create a composite index on (metaxy_feature_version, *id_columns, metaxy_updated_at)."""
+    """Whether to create a composite index using the feature version, IDs, and configured update timestamp."""
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
@@ -97,6 +93,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
 
         # If this is a concrete table (table=True) with a spec
         if kwargs.get("table") and spec is not None:
+            system_columns = get_reserved_system_columns()
+            reserved_field_names = system_columns | {
+                name.removeprefix(SYSTEM_COLUMN_PREFIX)
+                for name in system_columns
+                if name.startswith(SYSTEM_COLUMN_PREFIX)
+            }
+
             # Forbid custom __tablename__ since it won't work with metadata store's get_table_name()
             if "__tablename__" in namespace:
                 raise ValueError(
@@ -106,18 +109,19 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
                 )
 
             # Prevent user-defined fields from shadowing system-managed columns
-            conflicts = {attr_name for attr_name in namespace if attr_name in RESERVED_SQLMODEL_FIELD_NAMES}
+            conflicts = {field_name for field_name in namespace if field_name in reserved_field_names}
+            conflicts.update(namespace.get("__annotations__", {}).keys() & system_columns)
 
             # Also guard against explicit sa_column_kwargs targeting system columns
             for attr_name, attr_value in namespace.items():
                 sa_column_kwargs = getattr(attr_value, "sa_column_kwargs", None)
                 if isinstance(sa_column_kwargs, dict):
                     column_name = sa_column_kwargs.get("name")
-                    if column_name in ALL_SYSTEM_COLUMNS:
+                    if column_name in system_columns:
                         conflicts.add(attr_name)
 
             if conflicts:
-                reserved = ", ".join(sorted(ALL_SYSTEM_COLUMNS))
+                reserved = ", ".join(sorted(system_columns))
                 conflict_list = ", ".join(sorted(conflicts))
                 raise ValueError(
                     "Cannot define SQLModel field(s) "
@@ -127,6 +131,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
 
             # Automatically set __tablename__ from the feature key
             namespace["__tablename__"] = spec.key.table_name
+            cls._inject_lifecycle_fields(namespace)
 
             # Inject table args (info metadata + optional constraints)
             cls._inject_table_args(namespace, spec, cls_name, inject_primary_key, inject_index)
@@ -136,6 +141,24 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         new_class = super().__new__(cls, cls_name, bases, namespace, spec=spec, **kwargs)
 
         return new_class
+
+    @staticmethod
+    def _inject_lifecycle_fields(namespace: dict[str, Any]) -> None:
+        created_at_column, updated_at_column, deleted_at_column = get_lifecycle_system_columns()
+        annotations = namespace.setdefault("__annotations__", {})
+        for field_name, column_name, description, nullable in (
+            ("metaxy_created_at", created_at_column, "Timestamp when the metadata row was created (UTC)", False),
+            ("metaxy_updated_at", updated_at_column, "Timestamp when the metadata row was last updated (UTC)", False),
+            ("metaxy_deleted_at", deleted_at_column, "Soft delete timestamp (UTC); null means active row", True),
+        ):
+            annotations[field_name] = AwareDatetime | None
+            namespace[field_name] = Field(
+                default=None,
+                description=description,
+                sa_type=DateTime(timezone=True),
+                sa_column_kwargs={"name": column_name},
+                nullable=nullable,
+            )
 
     @staticmethod
     def _resolve_sqlmodel_config(
@@ -186,8 +209,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):
         # Prepare constraints if requested
         constraints = []
         if inject_primary_key or inject_index:
-            # Composite key/index columns: metaxy_feature_version + id_columns + metaxy_updated_at
-            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, METAXY_UPDATED_AT]
+            # Composite key/index columns: feature version + IDs + configured update timestamp
+            _, updated_at_column, _ = get_lifecycle_system_columns()
+            key_columns = [METAXY_FEATURE_VERSION, *spec.id_columns, updated_at_column]
 
             if inject_primary_key:
                 constraints.append(PrimaryKeyConstraint(*key_columns, name="metaxy_pk"))
