@@ -1,10 +1,15 @@
-"""Tests for FeatureDefinition model."""
+"""Tests for FeatureDefinition model and the immutability of the spec parts that it holds."""
 
+import pickle
+
+import narwhals as nw
+import polars as pl
 import pytest
 from metaxy import CoercibleToFieldKey, FeatureDefinition
-from metaxy.models.feature_spec import FeatureSpec
-from metaxy.models.field import FieldSpec
+from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.field import FieldDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
+from pydantic import BaseModel, ValidationError
 
 
 def test_feature_definition_from_feature_class(graph):
@@ -165,6 +170,85 @@ def test_feature_definition_is_frozen():
 
     with pytest.raises(Exception):  # Pydantic's ValidationError for frozen models
         definition.feature_class_path = "other.path"  # ty: ignore[invalid-assignment]
+
+
+SPEC_PART_MODELS: dict[str, type[BaseModel]] = {
+    "feature_dep": FeatureDep,
+    "field_spec": FieldSpec,
+    "field_dep": FieldDep,
+}
+
+
+@pytest.fixture
+def feature_dep() -> FeatureDep:
+    """Feature dependency with a column selection and a SQL filter."""
+    return FeatureDep(feature=FeatureKey(["upstream"]), select=("value",), filters=["value > 1"])
+
+
+@pytest.fixture
+def field_dep() -> FieldDep:
+    return FieldDep(feature=FeatureKey(["upstream"]), fields=["value"])
+
+
+@pytest.fixture
+def field_spec(field_dep: FieldDep) -> FieldSpec:
+    return FieldSpec(key="value", code_version="2", deps=[field_dep])
+
+
+@pytest.fixture
+def values_frame() -> nw.DataFrame[pl.DataFrame]:
+    """Frame with the column "value" holding 0, 1 and 2."""
+    return nw.from_native(pl.DataFrame({"value": [0, 1, 2]}))
+
+
+@pytest.mark.parametrize(
+    ("model_fixture", "attribute"),
+    [
+        pytest.param(model_fixture, attribute, id=f"{model.__name__}.{attribute}")
+        for model_fixture, model in SPEC_PART_MODELS.items()
+        for attribute in model.model_fields
+    ],
+)
+def test_spec_part_rejects_attribute_assignment(
+    request: pytest.FixtureRequest, model_fixture: str, attribute: str
+) -> None:
+    """The parts of a feature spec cannot be changed in place, like the feature definition that holds them."""
+    model: BaseModel = request.getfixturevalue(model_fixture)
+    dumped = model.model_dump()
+
+    with pytest.raises(ValidationError) as exc_info:
+        setattr(model, attribute, object())
+
+    assert [error["type"] for error in exc_info.value.errors()] == ["frozen_instance"]
+    assert model.model_dump() == dumped
+
+
+@pytest.mark.parametrize("model_fixture", list(SPEC_PART_MODELS))
+def test_spec_part_rejects_extra_fields(request: pytest.FixtureRequest, model_fixture: str) -> None:
+    model: BaseModel = request.getfixturevalue(model_fixture)
+
+    with pytest.raises(ValidationError) as exc_info:
+        type(model).model_validate(model.model_dump() | {"unknown": 1})
+
+    assert [error["type"] for error in exc_info.value.errors()] == ["extra_forbidden"]
+
+
+@pytest.mark.parametrize("model_fixture", list(SPEC_PART_MODELS))
+def test_spec_part_survives_pickle_round_trip(request: pytest.FixtureRequest, model_fixture: str) -> None:
+    model: BaseModel = request.getfixturevalue(model_fixture)
+
+    assert pickle.loads(pickle.dumps(model)) == model
+
+
+def test_feature_dep_filters_work_on_frozen_instance(
+    feature_dep: FeatureDep, values_frame: nw.DataFrame[pl.DataFrame]
+) -> None:
+    """`filters` parses the SQL filters once and keeps the result. The result survives a pickle round trip."""
+    filters = feature_dep.filters
+
+    assert feature_dep.filters is filters
+    assert values_frame.filter(*filters)["value"].to_list() == [2]
+    assert values_frame.filter(*pickle.loads(pickle.dumps(feature_dep)).filters)["value"].to_list() == [2]
 
 
 class TestGetFeatureByKey:

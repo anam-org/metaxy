@@ -2,10 +2,11 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import BaseModel, BeforeValidator, TypeAdapter
+from pydantic import BeforeValidator, TypeAdapter
 from pydantic import Field as PydanticField
 
 from metaxy._decorators import public
+from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.types import (
     CoercibleToFieldKey,
@@ -59,8 +60,11 @@ def _validate_field_dep_fields(
 
 
 @public
-class FieldDep(BaseModel):
-    model_config = {"extra": "forbid"}
+class FieldDep(FrozenBaseModel):
+    """Dependency of a field on fields of an upstream feature.
+
+    Instances are immutable. Create a new `FieldDep` to change a dependency.
+    """
 
     feature: Annotated[FeatureKey, BeforeValidator(_validate_field_dep_feature)]
     fields: Annotated[
@@ -106,8 +110,11 @@ def _validate_field_spec_key(value: Any) -> FieldKey:
 
 
 @public
-class FieldSpec(BaseModel):
-    model_config = {"extra": "forbid"}
+class FieldSpec(FrozenBaseModel):
+    """Specification of a feature field.
+
+    Instances are immutable. Create a new `FieldSpec` to change a field.
+    """
 
     key: Annotated[FieldKey, BeforeValidator(_validate_field_spec_key)] = PydanticField(
         default_factory=lambda: FieldKey(["default"])
