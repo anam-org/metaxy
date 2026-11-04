@@ -66,6 +66,7 @@ plugins:
   - exclude:
       glob:
         - snippets/*
+        - guide/concepts/metadata-queries.md
   - metaxy-examples:
       examples_dir: "../examples"
   - cyclopts
