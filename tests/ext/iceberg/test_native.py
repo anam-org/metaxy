@@ -7,7 +7,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 from metaxy import HashAlgorithm
-from metaxy.ext.polars.handlers.iceberg import IcebergMetadataStore
+from metaxy.ext.polars.engine import PolarsComputeEngine
+from metaxy.ext.polars.handlers.iceberg import IcebergMetadataStore, IcebergStorageConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
@@ -53,6 +54,20 @@ class TestIceberg(
     def store(self, tmp_path: Path) -> MetadataStore:
         return IcebergMetadataStore(
             warehouse=tmp_path / "iceberg_store",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+
+@pytest.mark.iceberg
+@pytest.mark.polars
+class TestComposedIceberg(CRUDTests, DeletionTests, FilterTests, ResolveUpdateTests, WriteTests):
+    """A plain `MetadataStore` composed of the Polars engine and Iceberg storage."""
+
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return MetadataStore(
+            engine=PolarsComputeEngine(),
+            storage=IcebergStorageConfig(location=str(tmp_path / "iceberg_store"), namespace="composed"),
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
