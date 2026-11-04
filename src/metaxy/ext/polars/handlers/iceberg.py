@@ -22,7 +22,6 @@ from metaxy.metadata_store.io_handler import IOHandler
 from metaxy.metadata_store.storage_config import StorageConfig
 from metaxy.metadata_store.table_ref import TableRef
 from metaxy.metadata_store.utils import is_local_path
-from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
 
@@ -186,7 +185,6 @@ class IcebergHandler(IOHandler[None, IcebergTableIdentifier]):
         **kwargs: Any,
     ) -> None:
         """Append `df` to the table. `kwargs` are forwarded to `Table.append`."""
-        from metaxy.utils._arrow_map import convert_structs_to_maps
 
         catalog = self.catalog(table_id.storage)
         if table_id.storage.auto_create_namespace:
@@ -194,9 +192,7 @@ class IcebergHandler(IOHandler[None, IcebergTableIdentifier]):
 
         # Arrow `Utf8View` columns from Polars Enums are not supported
         frame = collect_to_polars(df).with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
-        arrow_table = convert_structs_to_maps(
-            frame, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
-        ).to_arrow()
+        arrow_table = frame.to_arrow()
         _ensure_table(catalog, table_id.identifier, arrow_table.schema).append(arrow_table, **kwargs)
 
     def has_feature(

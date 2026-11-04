@@ -14,7 +14,6 @@ from metaxy.metadata_store.io_handler import IOHandler
 from metaxy.metadata_store.storage_config import LanceStorageConfig, StorageConfig
 from metaxy.metadata_store.table_ref import LanceTableIdentifier
 from metaxy.metadata_store.utils import is_local_path
-from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.utils import collect_to_polars
 
 
@@ -71,11 +70,7 @@ class LanceDBHandler(IOHandler[None, LanceTableIdentifier]):
         df: Frame,
         **kwargs: Any,  # noqa: ARG002
     ) -> None:
-        from metaxy.utils._arrow_map import convert_structs_to_maps
-
-        df_polars = convert_structs_to_maps(
-            collect_to_polars(df), columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
-        )
+        df_polars = collect_to_polars(df)
         if self.has_feature(conn, table_id):
             self._database(table_id).open_table(table_id.table_name).add(df_polars)
         else:

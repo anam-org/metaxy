@@ -17,7 +17,6 @@ from metaxy.metadata_store.io_handler import IOHandler
 from metaxy.metadata_store.storage_config import StorageConfig
 from metaxy.metadata_store.table_ref import DeltaTableIdentifier
 from metaxy.metadata_store.utils import is_local_path
-from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
 
@@ -109,16 +108,12 @@ class DeltaHandler(IOHandler[None, DeltaTableIdentifier]):
     ) -> None:
         import deltalake
 
-        from metaxy.utils._arrow_map import convert_structs_to_maps
-
         # delta-rs does not support Polars Enum columns
         frame = collect_to_polars(df).with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
         options: dict[str, Any] = {"storage_options": table_id.storage_options or None, **self.write_options}
         deltalake.write_deltalake(
             str(table_id.uri),
-            convert_structs_to_maps(
-                frame, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
-            ).to_arrow(),
+            frame.to_arrow(),
             mode=options.pop("mode"),
             **options,
         )

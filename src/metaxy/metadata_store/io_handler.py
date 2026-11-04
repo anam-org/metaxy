@@ -68,7 +68,11 @@ class IOHandler(ABC, Generic[ConnectionT, TableRefT]):
         df: Frame,
         **kwargs: Any,
     ) -> None:
-        """Write `df` to `table_id` using `conn`."""
+        """Write `df` to `table_id` using `conn`.
+
+        The store passes `metaxy_provenance_by_field` and `metaxy_data_version_by_field` as `Map` columns,
+        except in lazy SQL frames, where they can still be `Struct` columns.
+        """
         ...
 
     @abstractmethod

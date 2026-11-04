@@ -5,7 +5,7 @@ from __future__ import annotations
 import polars as pl
 import pyarrow as pa
 import pytest
-from metaxy.utils._arrow_map import convert_structs_to_maps
+from metaxy.utils._arrow_map import convert_maps_to_structs, convert_structs_to_maps
 
 MAP_STR_STR = pl.Map(pl.String(), pl.String())
 
@@ -98,3 +98,26 @@ class TestConvertStructsToMaps:
 
         assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert result.height == 0
+
+
+class TestNullRows:
+    """A null row stays null when converting between Struct and Map."""
+
+    @pytest.fixture
+    def struct_with_null(self) -> pl.DataFrame:
+        return pl.DataFrame(
+            {
+                "by_field": pl.Series(
+                    [None, {"alpha": "a", "beta": None}], dtype=pl.Struct({"alpha": pl.String, "beta": pl.String})
+                )
+            }
+        )
+
+    def test_null_struct_becomes_null_map(self, struct_with_null: pl.DataFrame) -> None:
+        result = convert_structs_to_maps(struct_with_null, ["by_field"])
+        assert result.schema["by_field"] == MAP_STR_STR
+        assert result["by_field"].to_list() == [None, {"alpha": "a", "beta": None}]
+
+    def test_null_map_becomes_null_struct(self, struct_with_null: pl.DataFrame) -> None:
+        result = convert_maps_to_structs(convert_structs_to_maps(struct_with_null, ["by_field"]), ["by_field"])
+        assert result["by_field"].to_list() == [None, {"alpha": "a", "beta": None}]
