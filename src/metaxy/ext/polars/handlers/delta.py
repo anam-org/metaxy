@@ -203,24 +203,12 @@ class DeltaMetadataStore(MetadataStore):
         self,
         root_path: str | Path | None = None,
         *,
-        storage_options: dict[str, Any] | None = None,  # noqa: ARG002
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        layout: Literal["flat", "nested"] = "nested",  # noqa: ARG002
-        delta_write_options: dict[str, Any] | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
-    def __new__(
-        cls,
-        root_path: str | Path | None = None,
-        *,
         storage_options: dict[str, Any] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
         layout: Literal["flat", "nested"] = "nested",
         delta_write_options: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> DeltaMetadataStore:
+    ) -> None:
         if root_path is None:
             raise ValueError("root_path is required")
 
@@ -235,16 +223,13 @@ class DeltaMetadataStore(MetadataStore):
         else:
             root_str = root_str.rstrip("/")
 
-        instance = MetadataStore.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=PolarsComputeEngine(handlers=[DeltaHandler(write_options=delta_write_options)]),
             storage=DeltaStorageConfig(location=root_str, layout=layout, storage_options=storage_options or {}),
             fallback_stores=fallback_stores,
             versioning_engine="polars",
             **kwargs,
         )
-        return instance
 
     @property
     def _delta_storage(self) -> DeltaStorageConfig:

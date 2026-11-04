@@ -65,21 +65,6 @@ class BigQueryMetadataStore(IbisStoreBackcompat):
         ```
     """
 
-    def __init__(
-        self,
-        project_id: str | None = None,  # noqa: ARG002
-        dataset_id: str | None = None,  # noqa: ARG002
-        *,
-        credentials_path: str | None = None,  # noqa: ARG002
-        credentials: Any | None = None,  # noqa: ARG002
-        location: str | None = None,  # noqa: ARG002
-        connection_params: dict[str, Any] | None = None,  # noqa: ARG002
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        table_prefix: str | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
     @property
     def project_id(self) -> str | None:
         from metaxy.ext.bigquery.engine import BigQueryEngine
@@ -98,8 +83,8 @@ class BigQueryMetadataStore(IbisStoreBackcompat):
         assert isinstance(self._engine, BigQueryEngine)
         return self._engine.dataset_id
 
-    def __new__(
-        cls,
+    def __init__(
+        self,
         project_id: str | None = None,
         dataset_id: str | None = None,
         *,
@@ -110,7 +95,7 @@ class BigQueryMetadataStore(IbisStoreBackcompat):
         fallback_stores: list[MetadataStore] | None = None,
         table_prefix: str | None = None,
         **kwargs: Any,
-    ) -> BigQueryMetadataStore:
+    ) -> None:
         from metaxy.ext.bigquery.engine import BigQueryEngine
 
         auto_create_tables = kwargs.pop("auto_create_tables", None)
@@ -132,16 +117,13 @@ class BigQueryMetadataStore(IbisStoreBackcompat):
         prefix = table_prefix or ""
         storage = IbisStorageConfig(location=project_id or "bigquery", table_prefix=prefix)
 
-        instance = IbisStoreBackcompat.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=engine,
             storage=storage,
             fallback_stores=fallback_stores,
             auto_create_tables=auto_create_tables,
             **kwargs,
         )
-        return instance
 
     @classmethod
     def config_model(cls) -> type[BigQueryMetadataStoreConfig]:

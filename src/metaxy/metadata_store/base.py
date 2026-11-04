@@ -64,13 +64,6 @@ if TYPE_CHECKING:
 MetadataStoreConfigT = TypeVar("MetadataStoreConfigT", bound="MetadataStoreConfig")
 
 
-def _unpickle_store(cls: type[MetadataStore], state: dict[str, Any]) -> MetadataStore:
-    """Reconstruct a MetadataStore from pickled state, bypassing __new__/__init__."""
-    obj = object.__new__(cls)
-    obj.__dict__.update(state)
-    return obj
-
-
 @public
 class MetadataStoreConfig(BaseSettings):
     """Base configuration class for metadata stores.
@@ -2016,10 +2009,6 @@ class MetadataStore:
     def __repr__(self) -> str:
         """Return the display string with optional name prefix."""
         return self._format_display_with_name(self.display())
-
-    def __reduce__(self) -> tuple[Any, ...]:
-        """Pickle support: bypass __new__/__init__ and restore from __dict__."""
-        return (_unpickle_store, (type(self), self.__dict__))
 
     def find_store_for_feature(
         self,

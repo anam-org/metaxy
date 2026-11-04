@@ -97,35 +97,22 @@ class LanceDBMetadataStore(MetadataStore):
         self,
         uri: str | Path | None = None,
         *,
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        connect_kwargs: dict[str, Any] | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
-    def __new__(
-        cls,
-        uri: str | Path | None = None,
-        *,
         fallback_stores: list[MetadataStore] | None = None,
         connect_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> LanceDBMetadataStore:
+    ) -> None:
         if uri is None:
             raise ValueError("uri is required")
 
         from metaxy.ext.polars.engine import PolarsComputeEngine
 
-        instance = MetadataStore.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=PolarsComputeEngine(handlers=[LanceDBHandler()]),
             storage=LanceStorageConfig(location=str(uri), connect_kwargs=connect_kwargs or {}),
             fallback_stores=fallback_stores,
             auto_create_tables=True,
             **kwargs,
         )
-        return instance
 
     @property
     def uri(self) -> str:

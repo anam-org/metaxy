@@ -72,19 +72,6 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
         ```
     """
 
-    def __init__(
-        self,
-        database: str | Path = "",  # noqa: ARG002
-        *,
-        config: dict[str, str] | None = None,  # noqa: ARG002
-        extensions: Sequence[str | ExtensionSpec] | None = None,  # noqa: ARG002
-        fallback_stores: list[MetadataStore] | None = None,  # noqa: ARG002
-        ducklake: DuckLakeConfig | None = None,  # noqa: ARG002
-        table_prefix: str | None = None,  # noqa: ARG002
-        **kwargs: Any,  # noqa: ARG002
-    ) -> None:
-        pass  # __new__ already initialized via MetadataStore.__init__
-
     # -- backcompat properties (deprecated, will be removed in 0.2.0) --
 
     @property
@@ -154,8 +141,8 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
         assert handler is not None, "DuckLake is not configured"
         return handler.ducklake_config
 
-    def __new__(
-        cls,
+    def __init__(
+        self,
         database: str | Path = "",
         *,
         config: dict[str, str] | None = None,
@@ -164,7 +151,7 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
         ducklake: DuckLakeConfig | None = None,
         table_prefix: str | None = None,
         **kwargs: Any,
-    ) -> DuckDBMetadataStore:
+    ) -> None:
         from metaxy.ext.duckdb.engine import DuckDBEngine
 
         auto_create_tables = kwargs.pop("auto_create_tables", None)
@@ -194,16 +181,13 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
             handlers=[ducklake_handler] if ducklake_handler else None,
         )
 
-        instance = IbisStoreBackcompat.__new__(cls)
-        MetadataStore.__init__(
-            instance,
+        super().__init__(
             engine=engine,
             storage=storage,
             fallback_stores=fallback_stores,
             auto_create_tables=auto_create_tables,
             **kwargs,
         )
-        return instance
 
     @classmethod
     def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> Self:
