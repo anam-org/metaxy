@@ -37,27 +37,6 @@ class StorageConfig(BaseModel):
         raise NotImplementedError(f"{type(self).__name__} must implement resolve()")
 
 
-class IcebergStorageConfig(StorageConfig):
-    """Storage configuration for Apache Iceberg tables.
-
-    Attributes:
-        namespace: Iceberg namespace for feature tables.
-        catalog_name: Name of the PyIceberg catalog instance.
-        catalog_properties: Properties passed to `pyiceberg.catalog.load_catalog`.
-        auto_create_namespace: Create the namespace on first write if missing.
-    """
-
-    namespace: str = "metaxy"
-    catalog_name: str = "metaxy"
-    catalog_properties: dict[str, str] | None = None
-    auto_create_namespace: bool = True
-
-    def resolve(self, key: FeatureKey) -> TableRef:
-        from metaxy.metadata_store.table_ref import IcebergTableIdentifier
-
-        return IcebergTableIdentifier(namespace=self.namespace, table_name=key.table_name)
-
-
 class LanceStorageConfig(StorageConfig):
     """Storage configuration for Lance tables.
 

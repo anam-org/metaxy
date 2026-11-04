@@ -29,8 +29,9 @@ class PolarsComputeEngine(ComputeEngine[None]):
 
     def _create_default_handlers(self) -> list[IOHandler[None, Any]]:
         from metaxy.ext.polars.handlers.delta import DeltaHandler
+        from metaxy.ext.polars.handlers.iceberg import IcebergHandler
 
-        return [DeltaHandler()]
+        return [DeltaHandler(), IcebergHandler()]
 
     @property
     def connection(self) -> None:
