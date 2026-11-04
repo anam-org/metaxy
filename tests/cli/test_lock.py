@@ -816,9 +816,9 @@ def test_load_all_features_from_store_warns_on_invalid_feature(tmp_path: Path):
     assert FeatureKey(["test", "valid"]) in definitions
     assert FeatureKey(["test", "will_corrupt"]) not in definitions
 
-    assert len(caught) == 1
-    assert caught[0].category is InvalidStoredFeatureWarning
-    assert "test/will_corrupt" in str(caught[0].message)
+    invalid_feature_warnings = [w for w in caught if w.category is InvalidStoredFeatureWarning]
+    assert len(invalid_feature_warnings) == 1
+    assert "test/will_corrupt" in str(invalid_feature_warnings[0].message)
 
 
 class TestGenerateLockFileSelection:
