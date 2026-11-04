@@ -2,294 +2,294 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.metaxy.io/main/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/changelog/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/examples/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/examples/aggregation/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/examples/basic/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/examples/ducklake/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/examples/expansion/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/qa/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/filters/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/metadata-stores/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/projects/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/syntactic-sugar/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/versioning/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/definitions/external-features/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/definitions/features/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/definitions/optional-dependencies/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/definitions/relationship/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/lifecycle/connecting-external-consumers/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/lifecycle/deployment/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/lifecycle/development/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/concepts/lifecycle/testing/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/guide/quickstart/quickstart/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/ai/claude/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/ai/mcp/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/compute/ray/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/bigquery/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/clickhouse/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/duckdb/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/ibis/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/lancedb/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/databases/postgresql/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/delta/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/ducklake/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/metadata-stores/storage/iceberg/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/orchestration/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/orchestration/dagster/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/orchestration/dagster/api/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/orchestration/dagster/metaxify/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/plugins/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/plugins/sqlalchemy/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/integrations/plugins/sqlmodel/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/metaxy/design/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/metaxy/pitch/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/publications/2026-introducing-metaxy/paper/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/cli/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/configuration/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/system-columns/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/system-tables/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/config/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/constants/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/initialization/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/types/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/utils/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/feature-selection/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/feature-spec/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/feature/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/field/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/fields-mapping/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/filters/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/graph/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/definitions/relationship/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/metadata-stores/base/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/reference/api/metadata-stores/exceptions/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://docs.metaxy.io/main/slides/2026-introducing-metaxy/intro/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
 </urlset>
