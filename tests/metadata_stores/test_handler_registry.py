@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Generator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import polars as pl
 import pytest
@@ -14,6 +15,7 @@ from metaxy.ext.ibis.engine import IbisSQLHandler, IbisStorageConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.metadata_store.exceptions import NoHandlerError
 from metaxy.metadata_store.storage_config import LanceStorageConfig, StorageConfig
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.utils import collect_to_polars
 
@@ -88,11 +90,7 @@ class TestMultiStorageHandlerResolution:
 
     @pytest.fixture
     def multi_store(self, tmp_path: Path) -> MetadataStore:
-        lance_handler = DuckDBLanceHandler()
-        engine = DuckDBEngine(
-            database=":memory:",
-            extensions=[*lance_handler.required_extensions()],
-        )
+        engine = DuckDBEngine(database=":memory:")
         return MetadataStore(
             engine=engine,
             storage=IbisStorageConfig(format="duckdb", location=":memory:"),
@@ -212,3 +210,85 @@ class TestFallbackStorage:
     ) -> None:
         with pytest.raises(NoHandlerError, match="unknown_format"):
             make_store(dev_storage, [StorageConfig(format="unknown_format", location="/tmp/nope")])
+
+
+class RecordingSQLHandler(IbisSQLHandler):
+    """SQL handler that records its lifecycle events."""
+
+    def __init__(self, events: list[str], *, storage_format: str = "duckdb") -> None:
+        super().__init__(auto_create_tables=True)
+        self.events = events
+        self.storage_format = storage_format
+
+    def can_handle(self, storage_config: StorageConfig) -> bool:
+        return storage_config.format == self.storage_format
+
+    def on_open(self, conn: Any, mode: AccessMode) -> None:  # noqa: ARG002
+        self.events.append(f"on_open:{mode}")
+
+    def on_close(self, conn: Any) -> None:  # noqa: ARG002
+        self.events.append("on_close")
+
+    @contextmanager
+    def write_scope(self, conn: Any) -> Generator[Self]:  # noqa: ARG002
+        self.events.append("write_scope:enter")
+        yield self
+        self.events.append("write_scope:exit")
+
+
+@pytest.mark.ibis
+@pytest.mark.duckdb
+@pytest.mark.usefixtures("test_graph")
+class TestHandlerLifecycle:
+    """The engine opens the handlers that serve the store's storages once per connection and scopes each write."""
+
+    @pytest.fixture
+    def events(self) -> list[str]:
+        return []
+
+    @pytest.fixture
+    def unused_events(self) -> list[str]:
+        return []
+
+    @pytest.fixture
+    def engine(self, tmp_path: Path, events: list[str], unused_events: list[str]) -> DuckDBEngine:
+        return DuckDBEngine(
+            database=tmp_path / "metadata.duckdb",
+            handlers=[
+                RecordingSQLHandler(unused_events, storage_format="unused"),
+                RecordingSQLHandler(events),
+            ],
+        )
+
+    @pytest.fixture
+    def store(self, engine: DuckDBEngine) -> MetadataStore:
+        return MetadataStore(engine=engine, auto_create_tables=True)
+
+    def test_hooks_wrap_the_connection_and_each_write(
+        self, store: MetadataStore, events: list[str], test_features: dict[str, Any]
+    ) -> None:
+        upstream = test_features["UpstreamFeatureA"]
+        with store.open("w"):
+            store.write(upstream, _metadata([1]))
+            store.write(upstream, _metadata([2]))
+            assert store.has_feature(upstream)
+            collect_to_polars(store.read(upstream))
+
+        assert events == [
+            "on_open:w",
+            *["write_scope:enter", "write_scope:exit"] * 2,
+            "on_close",
+        ]
+
+    def test_handlers_without_a_storage_are_not_opened(self, store: MetadataStore, unused_events: list[str]) -> None:
+        with store:
+            pass
+
+        assert unused_events == []
+
+    def test_handler_resolved_while_open_is_opened(self, engine: DuckDBEngine, unused_events: list[str]) -> None:
+        with engine:
+            engine.get_handler(StorageConfig(format="unused", location=""))
+            assert unused_events == ["on_open:r"]
+
+        assert unused_events == ["on_open:r", "on_close"]

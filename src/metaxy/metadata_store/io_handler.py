@@ -111,11 +111,20 @@ class IOHandler(ABC, Generic[ConnectionT, TableRefT]):
         """
         return {}
 
-    @contextmanager
-    def open(self, conn: ConnectionT, mode: AccessMode) -> Generator[Self]:  # noqa: ARG002
-        """Per-operation lifecycle hook around I/O calls.
+    def on_open(self, conn: ConnectionT, mode: AccessMode) -> None:
+        """Called once after the compute engine connects.
 
-        Override to acquire/release resources (e.g. catalogs, transactions)
-        scoped to a single CRUD operation.
+        Override to prepare the connection for this handler (e.g. load extensions, attach catalogs).
+        The engine calls this only for handlers that serve one of the store's storages.
+        """
+
+    def on_close(self, conn: ConnectionT) -> None:
+        """Called once before the compute engine disconnects."""
+
+    @contextmanager
+    def write_scope(self, conn: ConnectionT) -> Generator[Self]:  # noqa: ARG002
+        """Scope around a single `write` call.
+
+        Override to acquire and release resources (e.g. transactions) for one write.
         """
         yield self

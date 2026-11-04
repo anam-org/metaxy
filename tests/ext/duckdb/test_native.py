@@ -454,9 +454,9 @@ def test_duckdb_read_mode_read_only_selection(
     store = DuckDBMetadataStore(database=database_value)
     if database is None:
         store.connection_params["database"] = None
-    # Ensure _open("r") actively manages this flag, including clearing stale values.
+    # Ensure open("r") actively manages this flag, including clearing stale values.
     store.connection_params["read_only"] = True
-    store._open("r")
+    store._engine.open("r")
 
     if expected_read_only:
         assert store.connection_params.get("read_only") is True

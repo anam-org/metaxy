@@ -58,14 +58,19 @@ class ComputeEngine(ABC, Generic[ConnT]):
         self._handler_cache: dict[int, IOHandler[ConnT, Any]] = {}
         self._mode: AccessMode = "r"
         self._exit_stack: ExitStack | None = None
+        self._opened_handlers: list[IOHandler[ConnT, Any]] = []
 
     # --- context manager -----------------------------------------------------
 
     def __enter__(self) -> Self:
-        stack = ExitStack().__enter__()
-        self.open(self._mode)
-        stack.callback(self.close)
-        self._exit_stack = stack
+        with ExitStack() as stack:
+            self.open(self._mode)
+            stack.callback(self.close)
+            self._exit_stack = stack
+            stack.callback(self._opened_handlers.clear)
+            for handler in dict.fromkeys(self._handler_cache.values()):
+                self._open_handler(handler)
+            self._exit_stack = stack.pop_all()
         return self
 
     def __exit__(
@@ -77,6 +82,13 @@ class ComputeEngine(ABC, Generic[ConnT]):
         if self._exit_stack is not None:
             self._exit_stack.__exit__(exc_type, exc_val, exc_tb)
             self._exit_stack = None
+
+    def _open_handler(self, handler: IOHandler[ConnT, Any]) -> None:
+        """Run the engine-scoped hooks of `handler` while the engine is open."""
+        assert self._exit_stack is not None
+        handler.on_open(self.connection, self._mode)
+        self._opened_handlers.append(handler)
+        self._exit_stack.callback(handler.on_close, self.connection)
 
     # --- handler registry ----------------------------------------------------
 
@@ -95,6 +107,8 @@ class ComputeEngine(ABC, Generic[ConnT]):
         for h in self._handlers:
             if h.can_handle(storage_config):
                 self._handler_cache[id(storage_config)] = h
+                if self._exit_stack is not None and h not in self._opened_handlers:
+                    self._open_handler(h)
                 return h
         from metaxy.metadata_store.exceptions import NoHandlerError
 
@@ -150,8 +164,9 @@ class ComputeEngine(ABC, Generic[ConnT]):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
-        with self.get_handler(storage_config).open(self.connection, self._mode) as handler:
-            return handler.read(self.connection, storage_config.resolve(key), filters=filters, columns=columns)
+        return self.get_handler(storage_config).read(
+            self.connection, storage_config.resolve(key), filters=filters, columns=columns
+        )
 
     def write(
         self,
@@ -160,7 +175,7 @@ class ComputeEngine(ABC, Generic[ConnT]):
         storage_config: StorageConfig,
         **kwargs: Any,
     ) -> None:
-        with self.get_handler(storage_config).open(self.connection, self._mode) as handler:
+        with self.get_handler(storage_config).write_scope(self.connection) as handler:
             handler.write(self.connection, storage_config.resolve(key), df, **kwargs)
 
     def has_feature(
@@ -168,16 +183,14 @@ class ComputeEngine(ABC, Generic[ConnT]):
         key: FeatureKey,
         storage_config: StorageConfig,
     ) -> bool:
-        with self.get_handler(storage_config).open(self.connection, self._mode) as handler:
-            return handler.has_feature(self.connection, storage_config.resolve(key))
+        return self.get_handler(storage_config).has_feature(self.connection, storage_config.resolve(key))
 
     def drop(
         self,
         key: FeatureKey,
         storage_config: StorageConfig,
     ) -> None:
-        with self.get_handler(storage_config).open(self.connection, self._mode) as handler:
-            handler.drop(self.connection, storage_config.resolve(key))
+        self.get_handler(storage_config).drop(self.connection, storage_config.resolve(key))
 
     def delete(
         self,
@@ -187,21 +200,19 @@ class ComputeEngine(ABC, Generic[ConnT]):
         *,
         with_feature_history: bool,
     ) -> None:
-        with self.get_handler(storage_config).open(self.connection, self._mode) as handler:
-            handler.delete(
-                self.connection,
-                storage_config.resolve(key),
-                filters,
-                with_feature_history=with_feature_history,
-            )
+        self.get_handler(storage_config).delete(
+            self.connection,
+            storage_config.resolve(key),
+            filters,
+            with_feature_history=with_feature_history,
+        )
 
     def get_store_metadata(
         self,
         key: FeatureKey,
         storage_config: StorageConfig,
     ) -> dict[str, Any]:
-        with self.get_handler(storage_config).open(self.connection, self._mode) as handler:
-            return handler.get_store_metadata(storage_config.resolve(key))
+        return self.get_handler(storage_config).get_store_metadata(storage_config.resolve(key))
 
     # --- hashing / versioning ------------------------------------------------
 

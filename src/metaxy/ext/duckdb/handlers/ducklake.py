@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Mapping
-from contextlib import contextmanager
+from collections.abc import Mapping
 from typing import Annotated, Any, Literal, Self
 
 from duckdb import DuckDBPyConnection  # noqa: TID253
@@ -511,9 +510,8 @@ class DuckLakeAttachmentManager:
 class DuckDBDuckLakeHandler(DuckDBHandler, IbisSQLHandler):
     """Storage handler for DuckLake tables accessed through a DuckDB connection.
 
-    Attachment happens via the ``open()`` context manager -- the engine
-    calls it around each operation, ATTACHing the DuckLake catalog for the
-    duration of that operation.
+    The DuckLake catalog is attached when the engine opens the handler and stays attached for the lifetime of the
+    connection.
     """
 
     def __init__(
@@ -536,12 +534,12 @@ class DuckDBDuckLakeHandler(DuckDBHandler, IbisSQLHandler):
 
     # -- lifecycle ------------------------------------------------------------
 
-    @contextmanager
-    def open(self, conn: Any, mode: AccessMode) -> Generator[Self]:  # noqa: ARG002
-        """ATTACH the DuckLake catalog for the duration of this operation."""
-        self._attachment._attached = False
+    def on_open(self, conn: Any, mode: AccessMode) -> None:
+        super().on_open(conn, mode)
         self._attachment.configure(conn.con)
-        yield self
+
+    def on_close(self, conn: Any) -> None:  # noqa: ARG002
+        self._attachment._attached = False
 
     # -- public DuckLake API -------------------------------------------------
 

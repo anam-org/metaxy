@@ -34,12 +34,7 @@ class TestDuckDBLance(
     @pytest.fixture
     def store(self, tmp_path: Path) -> MetadataStore:
         lance_path = tmp_path / "duckdb_lance_store"
-        handler = DuckDBLanceHandler()
-        engine = DuckDBEngine(
-            database=":memory:",
-            handlers=[handler],
-            extensions=[*handler.required_extensions()],
-        )
+        engine = DuckDBEngine(database=":memory:", handlers=[DuckDBLanceHandler()])
         return MetadataStore(
             engine=engine,
             storage=LanceStorageConfig(format="lance", location=str(lance_path)),
