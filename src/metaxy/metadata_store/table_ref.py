@@ -41,6 +41,17 @@ class DeltaTableIdentifier(TableRef):
 
 
 @dataclass(frozen=True, slots=True)
+class IcebergTableIdentifier(TableRef):
+    """Identifies an Iceberg table by its catalog namespace and name."""
+
+    namespace: str
+    table_name: str
+
+    def table_parts(self) -> tuple[str, ...]:
+        return (self.namespace, self.table_name)
+
+
+@dataclass(frozen=True, slots=True)
 class LanceTableIdentifier(TableRef):
     """Identifies a Lance table by its URI."""
 

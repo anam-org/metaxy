@@ -6,6 +6,7 @@ and user-defined feature tables. These can be used with migration tools like Ale
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
@@ -22,6 +23,7 @@ from metaxy.models.feature_spec import FeatureSpec
 
 if TYPE_CHECKING:
     from metaxy.metadata_store import MetadataStore
+    from metaxy.models.types import FeatureKey
 
 
 # System Tables
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
 
 def create_system_tables(
     metadata: MetaData,
-    table_prefix: str = "",
+    table_name: Callable[[FeatureKey], str] = lambda key: key.table_name,
 ) -> tuple[Table, Table]:
     """Create system table definitions in the given metadata.
 
@@ -37,13 +39,13 @@ def create_system_tables(
 
     Args:
         metadata: SQLAlchemy MetaData object to add tables to
-        table_prefix: Optional prefix to prepend to table names (e.g., "dev_")
+        table_name: Returns the table name of a system table key
 
     Returns:
         Tuple of (feature_versions_table, events_table)
     """
-    feature_versions_name = f"{table_prefix}{FEATURE_VERSIONS_KEY.table_name}"
-    events_name = f"{table_prefix}{EVENTS_KEY.table_name}"
+    feature_versions_name = table_name(FEATURE_VERSIONS_KEY)
+    events_name = table_name(EVENTS_KEY)
 
     feature_versions_table = Table(
         feature_versions_name,
@@ -130,21 +132,13 @@ def _get_store_sqlalchemy_url(
     return url.render_as_string(hide_password=False)
 
 
-def _get_system_metadata(
-    table_prefix: str = "",
-) -> MetaData:
-    """Create SQLAlchemy metadata containing system tables.
+def _get_system_metadata(store: MetadataStore) -> MetaData:
+    """Create SQLAlchemy metadata containing the system tables of `store`.
 
     System tables always include primary key constraints.
-
-    Args:
-        table_prefix: Optional prefix to prepend to table names
-
-    Returns:
-        MetaData containing system table definitions
     """
     metadata = MetaData()
-    create_system_tables(metadata, table_prefix=table_prefix)
+    create_system_tables(metadata, table_name=store.get_table_name)
     return metadata
 
 
@@ -177,7 +171,7 @@ def get_system_slqa_metadata(
         Metadata stores do their best at providing the correct `sqlalchemy_url`, so you typically don't need to modify the output of this function.
     """
     url = _get_store_sqlalchemy_url(store, protocol=protocol, port=port)
-    metadata = _get_system_metadata(table_prefix=store._table_prefix)
+    metadata = _get_system_metadata(store)
     return url, metadata
 
 

@@ -28,21 +28,21 @@ class TestHandlerRegistry:
     def test_default_handlers_loaded_lazily(self) -> None:
         engine = DuckDBEngine(database=":memory:")
         assert not engine._defaults_loaded
-        sc = IbisStorageConfig(format="duckdb", location=":memory:")
+        sc = IbisStorageConfig(location=":memory:")
         handler = engine.get_handler(sc)
         assert engine._defaults_loaded
         assert isinstance(handler, IbisSQLHandler)
 
     def test_get_handler_returns_capable_handler(self) -> None:
         engine = DuckDBEngine(database=":memory:")
-        sc = IbisStorageConfig(format="duckdb", location=":memory:")
+        sc = IbisStorageConfig(location=":memory:")
         handler = engine.get_handler(sc)
         assert isinstance(handler, IbisSQLHandler)
 
     def test_get_handler_raises_no_handler_error(self) -> None:
         engine = DuckDBEngine(database=":memory:")
-        sc = StorageConfig(format="unknown_format", location="/tmp/nope")
-        with pytest.raises(NoHandlerError, match="No handler registered for format 'unknown_format'"):
+        sc = StorageConfig(location="/tmp/nope")
+        with pytest.raises(NoHandlerError, match="No handler registered for StorageConfig"):
             engine.get_handler(sc)
 
     def test_user_override_takes_priority(self) -> None:
@@ -51,13 +51,13 @@ class TestHandlerRegistry:
             database=":memory:",
             handlers=[custom_handler],
         )
-        sc = IbisStorageConfig(format="duckdb", location=":memory:")
+        sc = IbisStorageConfig(location=":memory:")
         # User-provided handler comes first
         assert engine.get_handler(sc) is custom_handler
 
     def test_lance_default_handler(self) -> None:
         engine = DuckDBEngine(database=":memory:")
-        sc = LanceStorageConfig(format="lance", location="/tmp/lance")
+        sc = LanceStorageConfig(location="/tmp/lance")
         handler = engine.get_handler(sc)
         assert isinstance(handler, DuckDBLanceHandler)
 
@@ -67,7 +67,7 @@ class TestHandlerRegistry:
             database=":memory:",
             handlers=[custom_lance],
         )
-        sc = LanceStorageConfig(format="lance", location="/tmp/lance")
+        sc = LanceStorageConfig(location="/tmp/lance")
         assert engine.get_handler(sc) is custom_lance
 
     def test_defaults_loaded_only_once(self) -> None:
@@ -79,8 +79,8 @@ class TestHandlerRegistry:
 
     def test_can_handle(self) -> None:
         engine = DuckDBEngine(database=":memory:")
-        assert engine.can_handle(IbisStorageConfig(format="duckdb", location=":memory:"))
-        assert engine.can_handle(LanceStorageConfig(format="lance", location="/tmp/lance"))
+        assert engine.can_handle(IbisStorageConfig(location=":memory:"))
+        assert engine.can_handle(LanceStorageConfig(location="/tmp/lance"))
 
 
 @pytest.mark.ibis
@@ -93,8 +93,8 @@ class TestMultiStorageHandlerResolution:
         engine = DuckDBEngine(database=":memory:")
         return MetadataStore(
             engine=engine,
-            storage=IbisStorageConfig(format="duckdb", location=":memory:"),
-            fallback_storage=[LanceStorageConfig(format="lance", location=str(tmp_path / "lance_data"))],
+            storage=IbisStorageConfig(location=":memory:"),
+            fallback_storage=[LanceStorageConfig(location=str(tmp_path / "lance_data"))],
         )
 
     def test_handler_resolution_for_sql_storage(self, multi_store: MetadataStore) -> None:
@@ -128,11 +128,11 @@ class TestFallbackStorage:
 
     @pytest.fixture
     def prod_storage(self, database: Path) -> IbisStorageConfig:
-        return IbisStorageConfig(format="duckdb", location=str(database), table_prefix="prod_")
+        return IbisStorageConfig(location=str(database), table_prefix="prod_")
 
     @pytest.fixture
     def dev_storage(self, database: Path) -> IbisStorageConfig:
-        return IbisStorageConfig(format="duckdb", location=str(database), table_prefix="dev_")
+        return IbisStorageConfig(location=str(database), table_prefix="dev_")
 
     @pytest.fixture
     def make_store(self, database: Path) -> Callable[..., MetadataStore]:
@@ -199,29 +199,43 @@ class TestFallbackStorage:
         self, make_store: Callable[..., MetadataStore], database: Path, upstream: Any
     ) -> None:
         store = make_store()
-        assert store._storage == IbisStorageConfig(format="duckdb", location=str(database))
+        assert store._storage == IbisStorageConfig(location=str(database))
 
         with store.open("w"):
             store.write(upstream, _metadata([1]))
             assert collect_to_polars(store.read(upstream))["sample_uid"].to_list() == [1]
 
+    def test_table_name_comes_from_primary_storage(self, dev_store: MetadataStore, upstream: Any) -> None:
+        assert dev_store.get_table_name(upstream.spec.key) == f"dev_{upstream.spec.key.table_name}"
+
+    def test_table_name_requires_sql_storage(self, tmp_path: Path, upstream: Any) -> None:
+        store = MetadataStore(
+            engine=DuckDBEngine(database=":memory:"), storage=LanceStorageConfig(location=str(tmp_path))
+        )
+        with pytest.raises(TypeError, match="LanceStorageConfig does not store features in SQL tables"):
+            store.get_table_name(upstream.spec.key)
+
     def test_unhandled_fallback_storage_fails_at_construction(
         self, make_store: Callable[..., MetadataStore], dev_storage: IbisStorageConfig
     ) -> None:
-        with pytest.raises(NoHandlerError, match="unknown_format"):
-            make_store(dev_storage, [StorageConfig(format="unknown_format", location="/tmp/nope")])
+        with pytest.raises(NoHandlerError, match="StorageConfig"):
+            make_store(dev_storage, [StorageConfig(location="/tmp/nope")])
+
+
+class UnusedStorageConfig(IbisStorageConfig):
+    """Storage that no store in these tests uses."""
 
 
 class RecordingSQLHandler(IbisSQLHandler):
     """SQL handler that records its lifecycle events."""
 
-    def __init__(self, events: list[str], *, storage_format: str = "duckdb") -> None:
+    def __init__(self, events: list[str], *, storage_type: type[StorageConfig] = IbisStorageConfig) -> None:
         super().__init__(auto_create_tables=True)
         self.events = events
-        self.storage_format = storage_format
+        self.storage_type = storage_type
 
     def can_handle(self, storage_config: StorageConfig) -> bool:
-        return storage_config.format == self.storage_format
+        return type(storage_config) is self.storage_type
 
     def on_open(self, conn: Any, mode: AccessMode) -> None:  # noqa: ARG002
         self.events.append(f"on_open:{mode}")
@@ -255,7 +269,7 @@ class TestHandlerLifecycle:
         return DuckDBEngine(
             database=tmp_path / "metadata.duckdb",
             handlers=[
-                RecordingSQLHandler(unused_events, storage_format="unused"),
+                RecordingSQLHandler(unused_events, storage_type=UnusedStorageConfig),
                 RecordingSQLHandler(events),
             ],
         )
@@ -288,7 +302,7 @@ class TestHandlerLifecycle:
 
     def test_handler_resolved_while_open_is_opened(self, engine: DuckDBEngine, unused_events: list[str]) -> None:
         with engine:
-            engine.get_handler(StorageConfig(format="unused", location=""))
+            engine.get_handler(UnusedStorageConfig(location=""))
             assert unused_events == ["on_open:r"]
 
         assert unused_events == ["on_open:r", "on_close"]

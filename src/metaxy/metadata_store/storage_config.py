@@ -23,14 +23,12 @@ class StorageConfig(BaseModel):
     an untyped options dict.
 
     Attributes:
-        format: Short identifier for the storage format.
         location: Connection URI, directory path, or object store URI.
         schema: Optional database schema or dataset qualifier.
     """
 
     model_config = ConfigDict(frozen=True)
 
-    format: str
     location: str
     schema_: str | None = Field(default=None, alias="schema")
 
@@ -55,9 +53,9 @@ class IcebergStorageConfig(StorageConfig):
     auto_create_namespace: bool = True
 
     def resolve(self, key: FeatureKey) -> TableRef:
-        from metaxy.metadata_store.table_ref import SQLTableIdentifier
+        from metaxy.metadata_store.table_ref import IcebergTableIdentifier
 
-        return SQLTableIdentifier(table_name=key.table_name)
+        return IcebergTableIdentifier(namespace=self.namespace, table_name=key.table_name)
 
 
 class LanceStorageConfig(StorageConfig):

@@ -131,7 +131,7 @@ class DuckDBEngine(IbisComputeEngine["DuckDBBackend"]):
         )
 
     def native_storage(self) -> IbisStorageConfig:
-        return IbisStorageConfig(format="duckdb", location=self.database)
+        return IbisStorageConfig(location=self.database)
 
     def open(self, mode: AccessMode) -> None:
         if mode == "r":

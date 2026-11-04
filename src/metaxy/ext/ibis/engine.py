@@ -506,7 +506,6 @@ class IbisComputeEngine(ComputeEngine[IbisConnT], ABC):
 
     def native_storage(self) -> IbisStorageConfig:
         return IbisStorageConfig(
-            format=self.backend or "sql",
             location=self.connection_string or self.backend or "",
         )
 
