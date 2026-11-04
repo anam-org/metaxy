@@ -5,13 +5,9 @@ from __future__ import annotations
 import polars as pl
 import pyarrow as pa
 import pytest
-from metaxy.utils._arrow_map import (
-    convert_maps_to_polars_map,
-    convert_structs_to_maps,
-)
-from polars_map import Map
+from metaxy.utils._arrow_map import convert_structs_to_maps
 
-MAP_STR_STR = Map(pl.String(), pl.String())
+MAP_STR_STR = pl.Map(pl.String(), pl.String())
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────
@@ -44,40 +40,23 @@ def multi_column_df() -> pl.DataFrame:
     )
 
 
-@pytest.fixture
-def list_kv_df() -> pl.DataFrame:
-    """Polars DataFrame with a List(Struct({key, value})) column (as Arrow Map appears in Polars)."""
-    return pl.DataFrame(
-        {
-            "sample_uid": ["s1", "s2"],
-            "metaxy_provenance_by_field": [
-                [{"key": "alpha", "value": "a1"}, {"key": "beta", "value": "b1"}],
-                [{"key": "alpha", "value": "a2"}, {"key": "beta", "value": "b2"}],
-            ],
-        }
-    )
-
-
 # ── convert_structs_to_maps ──────────────────────────────────────────
 
 
 class TestConvertStructsToMaps:
-    """Tests for the write-path Struct to polars_map.Map conversion."""
+    """Tests for the write-path Struct to pl.Map conversion."""
 
     def test_struct_to_map_basic(self, struct_df: pl.DataFrame) -> None:
-        """Struct column becomes polars_map.Map, values accessible via .map.get()."""
+        """Struct column becomes pl.Map, values accessible via .map.get()."""
         result = convert_structs_to_maps(struct_df, columns=["metaxy_provenance_by_field"])
 
         assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
-        assert result["metaxy_provenance_by_field"].map.get("alpha").to_list() == ["a1", "a2"]  # ty: ignore[unresolved-attribute]
-        assert result["metaxy_provenance_by_field"].map.get("beta").to_list() == ["b1", "b2"]  # ty: ignore[unresolved-attribute]
+        assert result["metaxy_provenance_by_field"].map.get("alpha").to_list() == ["a1", "a2"]
+        assert result["metaxy_provenance_by_field"].map.get("beta").to_list() == ["b1", "b2"]
 
     def test_roundtrip_to_native_arrow_map(self, struct_df: pl.DataFrame) -> None:
-        """Struct → polars_map.Map → native Arrow MapArray via polars_map.to_arrow()."""
-        import polars_map
-
-        converted = convert_structs_to_maps(struct_df, columns=["metaxy_provenance_by_field"])
-        native = polars_map.to_arrow(converted)
+        """Struct → pl.Map → native Arrow MapArray."""
+        native = convert_structs_to_maps(struct_df, columns=["metaxy_provenance_by_field"]).to_arrow()
 
         map_field = native.schema.field("metaxy_provenance_by_field")
         assert pa.types.is_map(map_field.type)
@@ -119,51 +98,3 @@ class TestConvertStructsToMaps:
 
         assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
         assert result.height == 0
-
-
-# ── convert_maps_to_polars_map ───────────────────────────────────────
-
-
-class TestConvertMapsToPolarsMap:
-    """Tests for the read-path List(Struct({key, value})) to polars_map.Map conversion."""
-
-    def test_dataframe_to_polars_map(self, list_kv_df: pl.DataFrame) -> None:
-        """DataFrame with List(Struct({key, value})) column becomes polars_map.Map dtype."""
-        result = convert_maps_to_polars_map(list_kv_df, columns=["metaxy_provenance_by_field"])
-
-        assert isinstance(result, pl.DataFrame)
-        assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
-
-        vals = result["metaxy_provenance_by_field"].map.get("alpha").to_list()  # ty: ignore[unresolved-attribute]
-        assert vals == ["a1", "a2"]
-
-    def test_lazyframe_preserves_type(self, list_kv_df: pl.DataFrame) -> None:
-        """LazyFrame input produces LazyFrame output."""
-        lazy = list_kv_df.lazy()
-        result = convert_maps_to_polars_map(lazy, columns=["metaxy_provenance_by_field"])
-
-        assert isinstance(result, pl.LazyFrame)
-        collected = result.collect()
-        assert collected.schema["metaxy_provenance_by_field"] == MAP_STR_STR
-
-    def test_explicit_columns_parameter(self, list_kv_df: pl.DataFrame) -> None:
-        """Explicit columns parameter targets only specified columns."""
-        df = list_kv_df.with_columns(
-            pl.col("metaxy_provenance_by_field").alias("other_map_col"),
-        )
-        result = convert_maps_to_polars_map(df, columns=["metaxy_provenance_by_field"])
-
-        assert result.schema["metaxy_provenance_by_field"] == MAP_STR_STR
-        assert result.schema["other_map_col"] != MAP_STR_STR
-
-    def test_non_matching_columns_skipped(self) -> None:
-        """Columns that are not List(Struct({key, value})) are skipped."""
-        df = pl.DataFrame(
-            {
-                "name": ["hello", "world"],
-                "score": [1.0, 2.0],
-            }
-        )
-        result = convert_maps_to_polars_map(df, columns=["name", "score"])
-
-        assert result.schema == df.schema

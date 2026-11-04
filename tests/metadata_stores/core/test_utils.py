@@ -133,7 +133,7 @@ def test_ibis_type_to_polars_struct(store: IbisMetadataStore) -> None:
 # -- ibis_type_to_polars: Map raises at base level --
 
 
-def test_ibis_type_to_polars_map_raises(store: IbisMetadataStore) -> None:
+def test_ibis_map_type_to_polars_raises(store: IbisMetadataStore) -> None:
     with pytest.raises(NotImplementedError):
         store.ibis_type_to_polars(dt.Map(key_type=dt.String(), value_type=dt.Int64()))
 

@@ -512,7 +512,7 @@ class TestColumnSelection:
         }
 
         joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
-        joined_df = joined.collect().to_polars()
+        joined_df = joined.collect().to_polars().sort("sample_uid")
 
         # Verify both renamed columns are present
         assert "upstream1_col" in joined_df.columns

@@ -12,7 +12,8 @@ from metaxy.ext.duckdb import (
 )
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars
-from polars.testing import assert_frame_equal
+
+from metaxy_testing import assert_metadata_frame_equal
 
 pytestmark = pytest.mark.motherduck
 
@@ -87,4 +88,4 @@ def test_motherduck_ducklake_write_read_roundtrip(
         store.write(feature, payload)
         result = collect_to_polars(store.read(feature))
         actual = result.sort("sample_uid").select(["sample_uid", "metaxy_provenance_by_field"])
-        assert_frame_equal(actual, payload.sort("sample_uid"))
+        assert_metadata_frame_equal(actual, payload.sort("sample_uid"))
