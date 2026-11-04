@@ -52,4 +52,6 @@ class LanceStorageConfig(StorageConfig):
         return LanceTableIdentifier(
             uri=f"{self.location.rstrip('/')}/{key.table_name}.lance",
             table_name=key.table_name,
+            database=self.location,
+            connect_kwargs=dict(self.connect_kwargs),
         )

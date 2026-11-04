@@ -10,7 +10,10 @@ import pytest
 from metaxy import FeatureKey, HashAlgorithm
 from metaxy.config import MetaxyConfig
 from metaxy.ext.lancedb import LanceDBMetadataStore
+from metaxy.ext.lancedb.handler import LanceDBHandler
+from metaxy.ext.polars.engine import PolarsComputeEngine
 from metaxy.metadata_store import MetadataStore, StoreNotOpenError
+from metaxy.metadata_store.storage_config import LanceStorageConfig
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.utils import collect_to_polars
@@ -44,6 +47,21 @@ class TestLanceDB(
         return LanceDBMetadataStore(
             uri=tmp_path / "lancedb_store",
             hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+
+@pytest.mark.lancedb
+@pytest.mark.polars
+class TestComposedLanceDB(CRUDTests, DeletionTests, FilterTests, ResolveUpdateTests, WriteTests):
+    """A plain `MetadataStore` composed of the Polars engine, the LanceDB handler and Lance storage."""
+
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return MetadataStore(
+            engine=PolarsComputeEngine(handlers=[LanceDBHandler()]),
+            storage=LanceStorageConfig(location=str(tmp_path / "lancedb_store")),
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            auto_create_tables=True,
         )
 
 
@@ -149,7 +167,7 @@ def test_lancedb_remote_uri_no_mkdir(tmp_path: Path, monkeypatch: pytest.MonkeyP
 
 
 def test_lancedb_local_path_calls_mkdir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that open() calls mkdir for local filesystem paths."""
+    """Connecting to a local database creates its directory."""
     mkdir_calls = []
 
     original_mkdir = Path.mkdir
@@ -170,6 +188,7 @@ def test_lancedb_local_path_calls_mkdir(tmp_path: Path, monkeypatch: pytest.Monk
     with monkeypatch.context() as m:
         m.setattr("lancedb.connect", mock_lancedb.connect)
         with store.open():
+            _ = store.conn
             assert len(mkdir_calls) == 1, "mkdir should be called once for local path"
             assert str(local_path) in mkdir_calls[0][0]
             assert mkdir_calls[0][2].get("parents") is True
@@ -202,7 +221,7 @@ def test_lancedb_connection_string_variations(tmp_path: Path, monkeypatch: pytes
             m.setattr("lancedb.connect", mock_connect)
             try:
                 with store.open():
-                    pass
+                    _ = store.conn
             except Exception:
                 pass  # Ignore errors from mock connection
 
