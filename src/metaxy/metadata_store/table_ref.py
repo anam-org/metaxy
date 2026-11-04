@@ -8,8 +8,9 @@ TableAdapter methods operate on.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
 class TableRef(ABC):
@@ -35,6 +36,7 @@ class DeltaTableIdentifier(TableRef):
     """Identifies a Delta Lake table by its URI."""
 
     uri: str | Path
+    storage_options: dict[str, Any] = field(default_factory=dict, hash=False)
 
     def table_parts(self) -> tuple[str, ...]:
         return (str(self.uri),)

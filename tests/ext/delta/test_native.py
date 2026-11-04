@@ -8,7 +8,8 @@ from pathlib import Path
 import polars as pl
 import pytest
 from metaxy import HashAlgorithm
-from metaxy.ext.polars.handlers.delta import DeltaMetadataStore
+from metaxy.ext.polars.engine import PolarsComputeEngine
+from metaxy.ext.polars.handlers.delta import DeltaMetadataStore, DeltaStorageConfig
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature_definition import FeatureDefinition
 from metaxy.models.types import FeatureKey
@@ -70,6 +71,20 @@ class TestDelta(
         table_path = Path(store._feature_uri(feature.spec.key))
         if table_path.exists():
             shutil.rmtree(table_path)
+
+
+@pytest.mark.delta
+@pytest.mark.polars
+class TestComposedDelta(CRUDTests, DeletionTests, FilterTests, ResolveUpdateTests, WriteTests):
+    """A plain `MetadataStore` composed of the Polars engine and Delta storage."""
+
+    @pytest.fixture
+    def store(self, tmp_path: Path) -> MetadataStore:
+        return MetadataStore(
+            engine=PolarsComputeEngine(),
+            storage=DeltaStorageConfig(location=str(tmp_path / "delta_store"), layout="flat"),
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
 
 
 def test_delta_local_absolute_path(

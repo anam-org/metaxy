@@ -1,12 +1,10 @@
-"""Delta Lake metadata store implemented with delta-rs."""
+"""Delta Lake storage implemented with delta-rs."""
 
 from __future__ import annotations
 
-from collections.abc import Generator, Sequence
-from contextlib import contextmanager
-from functools import cached_property
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import Any, Literal
 
 import narwhals as nw
 import polars as pl
@@ -14,17 +12,14 @@ from narwhals.typing import Frame
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
-from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.io_handler import IOHandler
+from metaxy.metadata_store.storage_config import StorageConfig
+from metaxy.metadata_store.table_ref import DeltaTableIdentifier
 from metaxy.metadata_store.utils import is_local_path
-from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
+from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.types import FeatureKey
 from metaxy.utils import collect_to_polars
-from metaxy.versioning.types import HashAlgorithm
-
-if TYPE_CHECKING:
-    import deltalake
 
 
 @public
@@ -62,6 +57,131 @@ class DeltaMetadataStoreConfig(MetadataStoreConfig):
     )
 
 
+class DeltaStorageConfig(StorageConfig):
+    """Storage configuration for Delta Lake tables under `location`.
+
+    Attributes:
+        layout: `"nested"` stores each feature in a directory per key part, `"flat"` in one directory per feature.
+        storage_options: Storage backend options passed to delta-rs.
+    """
+
+    layout: Literal["flat", "nested"] = "nested"
+    storage_options: dict[str, Any] = Field(default_factory=dict)
+
+    def resolve(self, key: FeatureKey) -> DeltaTableIdentifier:
+        table_path = "/".join(part for part in key.parts if part) if self.layout == "nested" else key.table_name
+        return DeltaTableIdentifier(uri=f"{self.location}/{table_path}.delta", storage_options=self.storage_options)
+
+
+class DeltaHandler(IOHandler[None, DeltaTableIdentifier]):
+    """Reads and writes Delta Lake tables with delta-rs and Polars."""
+
+    def __init__(self, *, write_options: dict[str, Any] | None = None) -> None:
+        self.write_options = {"mode": "append", "schema_mode": "merge", **(write_options or {})}
+        """Options passed to [`deltalake.write_deltalake`][deltalake.write_deltalake]."""
+
+    def can_handle(self, storage_config: StorageConfig) -> bool:
+        return isinstance(storage_config, DeltaStorageConfig)
+
+    def read(
+        self,
+        conn: None,  # noqa: ARG002
+        table_id: DeltaTableIdentifier,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        if not self.has_feature(None, table_id):
+            return None
+        lazy = nw.from_native(pl.scan_delta(str(table_id.uri), storage_options=table_id.storage_options or None))
+        if filters:
+            lazy = lazy.filter(*filters)
+        if columns is not None:
+            lazy = lazy.select(columns)
+        return lazy
+
+    def write(
+        self,
+        conn: None,  # noqa: ARG002
+        table_id: DeltaTableIdentifier,
+        df: Frame,
+        **kwargs: Any,  # noqa: ARG002
+    ) -> None:
+        import deltalake
+
+        from metaxy.utils._arrow_map import convert_structs_to_maps
+
+        # delta-rs does not support Polars Enum columns
+        frame = collect_to_polars(df).with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
+        options: dict[str, Any] = {"storage_options": table_id.storage_options or None, **self.write_options}
+        deltalake.write_deltalake(
+            str(table_id.uri),
+            convert_structs_to_maps(
+                frame, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
+            ).to_arrow(),
+            mode=options.pop("mode"),
+            **options,
+        )
+
+    def has_feature(
+        self,
+        conn: None,  # noqa: ARG002
+        table_id: DeltaTableIdentifier,
+    ) -> bool:
+        # `deltalake.DeltaTable.is_deltatable()` sometimes hangs when called from several threads,
+        # so existence is checked by opening the table instead.
+        from deltalake.exceptions import TableNotFoundError
+
+        try:
+            self._open_table(table_id, without_files=True)
+        except TableNotFoundError:
+            return False
+        return True
+
+    def drop(
+        self,
+        conn: None,  # noqa: ARG002
+        table_id: DeltaTableIdentifier,
+    ) -> None:
+        if self.has_feature(None, table_id):
+            self._open_table(table_id, without_files=True).delete()
+
+    def delete(
+        self,
+        conn: None,
+        table_id: DeltaTableIdentifier,
+        filters: Sequence[nw.Expr] | None,
+        *,
+        with_feature_history: bool,  # noqa: ARG002
+    ) -> None:
+        """Hard-delete rows with the native Delta `DELETE` operation.
+
+        Note:
+            Ibis (`ibis-framework`) converts the Narwhals filters to SQL. It is included in the `delta` extras.
+        """
+        lazy = self.read(conn, table_id)
+        if lazy is None:
+            return
+        if not filters:
+            self._open_table(table_id).delete()
+            return
+
+        from metaxy.metadata_store.utils import narwhals_expr_to_sql_predicate
+
+        predicate = narwhals_expr_to_sql_predicate(filters, lazy.collect_schema(), dialect="datafusion")
+        self._open_table(table_id).delete(predicate=predicate)
+
+    def get_store_metadata(self, table_id: DeltaTableIdentifier) -> dict[str, Any]:
+        return {"uri": str(table_id.uri)}
+
+    def _open_table(self, table_id: DeltaTableIdentifier, *, without_files: bool = False) -> Any:
+        import deltalake
+
+        return deltalake.DeltaTable(
+            str(table_id.uri), storage_options=table_id.storage_options or None, without_files=without_files
+        )
+
+
 @public
 class DeltaMetadataStore(MetadataStore):
     """
@@ -83,13 +203,6 @@ class DeltaMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
-    versioning_engine_cls = PolarsVersioningEngine
-
-    storage_options: dict[str, Any]
-    layout: str
-    delta_write_options: dict[str, Any]
-    _root_uri: str
-    _is_remote: bool
 
     def __init__(
         self,
@@ -121,282 +234,39 @@ class DeltaMetadataStore(MetadataStore):
         if layout not in ("flat", "nested"):
             raise ValueError(f"Invalid layout: {layout}. Must be 'flat' or 'nested'.")
 
-        instance = MetadataStore.__new__(cls)
-        instance.storage_options = storage_options or {}
-        instance.layout = layout
-        instance.delta_write_options = delta_write_options or {}
-
         root_str = str(root_path)
-        instance._is_remote = not is_local_path(root_str)
-
-        if instance._is_remote:
-            instance._root_uri = root_str.rstrip("/")
+        if is_local_path(root_str):
+            root_str = str(Path(root_str.removeprefix("file://").removeprefix("local://")).expanduser().resolve())
         else:
-            if root_str.startswith("file://"):
-                root_str = root_str[7:]
-            elif root_str.startswith("local://"):
-                root_str = root_str[8:]
-            instance._root_uri = str(Path(root_str).expanduser().resolve())
+            root_str = root_str.rstrip("/")
 
+        instance = MetadataStore.__new__(cls)
         MetadataStore.__init__(
             instance,
-            engine=PolarsComputeEngine(),
+            engine=PolarsComputeEngine(handlers=[DeltaHandler(write_options=delta_write_options)]),
+            storage=DeltaStorageConfig(location=root_str, layout=layout, storage_options=storage_options or {}),
             fallback_stores=fallback_stores,
             versioning_engine="polars",
             **kwargs,
         )
         return instance
 
-    # ===== MetadataStore abstract methods =====
+    @property
+    def _delta_storage(self) -> DeltaStorageConfig:
+        assert isinstance(self._storage, DeltaStorageConfig)
+        return self._storage
 
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
-        """Check if feature exists in Delta store.
-
-        Args:
-            feature: Feature to check
-
-        Returns:
-            True if feature exists, False otherwise
-        """
-        return self._table_exists(feature)
-
-    def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Use XXHASH32 by default."""
-        return HashAlgorithm.XXHASH32
-
-    @contextmanager
-    def _create_versioning_engine(self, plan: FeaturePlan) -> Generator[PolarsVersioningEngine]:
-        """Create Polars versioning engine for Delta store."""
-        with self._create_polars_versioning_engine(plan) as engine:
-            yield engine
-
-    def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
-        pass
-
-    def _close(self) -> None:
-        pass
-
-    @cached_property
-    def default_delta_write_options(self) -> dict[str, Any]:
-        """Default write options for Delta Lake operations.
-
-        Merges base defaults with user-provided delta_write_options.
-        Base defaults: mode="append", schema_mode="merge", storage_options.
-        """
-        write_kwargs: dict[str, Any] = {
-            "mode": "append",
-            "schema_mode": "merge",  # Allow schema evolution
-            "storage_options": self.storage_options or None,
-        }
-        # Override with custom options from constructor
-        write_kwargs.update(self.delta_write_options)
-        return write_kwargs
-
-    # ===== Internal helpers =====
+    @property
+    def _root_uri(self) -> str:
+        return self._delta_storage.location
 
     def _feature_uri(self, feature_key: FeatureKey) -> str:
-        """Return the URI/path used by deltalake for this feature."""
-        if self.layout == "nested":
-            # Nested layout: store in directories like "part1/part2/part3"
-            # Filter out empty parts to avoid creating absolute paths that would
-            # cause os.path.join to discard the root_uri
-            table_path = "/".join(part for part in feature_key.parts if part)
-        else:
-            # Flat layout: store in directories like "part1__part2__part3"
-            # table_name already handles this correctly via __join
-            table_path = feature_key.table_name
-        return f"{self._root_uri}/{table_path}.delta"
-
-    def _table_exists(self, feature: CoercibleToFeatureKey) -> bool:
-        """Check whether the feature exists as a Delta table.
-
-        Works for both local and remote (object store) paths.
-        """
-        # for weird reasons deltalake.DeltaTable.is_deltatable() sometimes hangs in multi-threading settings
-        # but a deltalake.DeltaTable can be constructed just fine
-        # so we are relying on DeltaTableNotFoundError to check for existence
-        from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
-
-        try:
-            _ = self._open_delta_table(feature, without_files=True)
-        except DeltaTableNotFoundError:
-            return False
-        return True
-
-    @overload
-    def _cast_enum_to_string(self, frame: pl.DataFrame) -> pl.DataFrame: ...
-
-    @overload
-    def _cast_enum_to_string(self, frame: pl.LazyFrame) -> pl.LazyFrame: ...
-
-    def _cast_enum_to_string(self, frame: pl.DataFrame | pl.LazyFrame) -> pl.DataFrame | pl.LazyFrame:
-        """Cast Enum columns to String to avoid delta-rs Utf8View incompatibility."""
-        return frame.with_columns(pl.selectors.by_dtype(pl.Enum).cast(pl.Utf8))
-
-    def _open_delta_table(self, feature: CoercibleToFeatureKey, *, without_files: bool = False) -> deltalake.DeltaTable:
-        import deltalake
-
-        feature_key = self._resolve_feature_key(feature)
-        table_uri = self._feature_uri(feature_key)
-        return deltalake.DeltaTable(
-            table_uri,
-            storage_options=self.storage_options or None,
-            without_files=without_files,
-        )
-
-    # ===== Storage operations =====
-
-    def _write_feature(
-        self,
-        feature_key: FeatureKey,
-        df: Frame,
-        **kwargs: Any,
-    ) -> None:
-        """Append metadata to the Delta table for a feature.
-
-        Args:
-            feature_key: Feature key to write to
-            df: DataFrame with metadata
-            **kwargs: Backend-specific parameters that are passed to `write_deltalake`.
-        """
-        table_uri = self._feature_uri(feature_key)
-
-        # Prepare write parameters
-        write_opts = self.default_delta_write_options.copy()
-        mode = write_opts.pop("mode", "append")
-        storage_options = write_opts.pop("storage_options", None)
-
-        self._write_with_map_columns(df, table_uri, mode, storage_options, write_opts)
-
-    def _write_with_map_columns(
-        self,
-        df: Frame,
-        table_uri: str,
-        mode: Literal["error", "append", "ignore", "overwrite"],
-        storage_options: dict[str, str] | None,
-        write_opts: dict[str, Any],
-    ) -> None:
-        """Collect to Arrow and convert Struct *_by_field columns to native MapArray before writing."""
-        import deltalake
-
-        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.utils._arrow_map import convert_structs_to_maps
-
-        df_native = self._cast_enum_to_string(collect_to_polars(df))
-        df_native = convert_structs_to_maps(
-            df_native, columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
-        )
-        arrow_table = df_native.to_arrow()
-        deltalake.write_deltalake(
-            table_uri,
-            arrow_table,
-            mode=mode,
-            storage_options=storage_options,
-            **(write_opts or {}),
-        )
-
-    def _drop_feature(self, feature_key: FeatureKey) -> None:
-        """Drop Delta table for the specified feature using soft delete.
-
-        Uses Delta's delete operation which marks rows as deleted in the transaction log
-        rather than physically removing files.
-        """
-        # Check if table exists first
-        if not self._table_exists(feature_key):
-            return
-
-        # Load the Delta table
-        delta_table = self._open_delta_table(feature_key, without_files=True)
-
-        # Use Delta's delete operation - soft delete all rows
-        # This marks rows as deleted in transaction log without physically removing files
-        delta_table.delete()
-
-    def _delete_feature(
-        self,
-        feature_key: FeatureKey,
-        filters: Sequence[nw.Expr] | None = None,
-        *,
-        with_feature_history: bool,
-    ) -> None:
-        """Hard-delete rows from a Delta table using the native DELETE operation.
-
-        Note:
-            This implementation relies on Ibis (ibis-framework) to generate SQL from Narwhals expressions.
-            The `ibis` package is included in the `delta` extras: `pip install metaxy[delta]`.
-        """
-        if not self._table_exists(feature_key):
-            return
-
-        # Load Delta table
-        delta_table = self._open_delta_table(feature_key)
-
-        # Convert Narwhals filter expressions to SQL predicate using Ibis
-        if not filters:
-            delta_table.delete()
-            return
-
-        from metaxy.metadata_store.utils import narwhals_expr_to_sql_predicate
-
-        schema = self.read_feature_schema_from_store(feature_key)
-        predicate = narwhals_expr_to_sql_predicate(
-            filters,
-            schema,
-            dialect="datafusion",
-        )
-
-        # Use Delta's native DELETE operation
-        delta_table.delete(predicate=predicate)
-
-    def _read_feature(
-        self,
-        feature: CoercibleToFeatureKey,
-        *,
-        filters: Sequence[nw.Expr] | None = None,
-        columns: Sequence[str] | None = None,
-        **kwargs: Any,
-    ) -> nw.LazyFrame[Any] | None:
-        """Read metadata stored in Delta for a single feature using lazy evaluation.
-
-        Args:
-            feature: Feature to read metadata for
-            filters: List of Narwhals filter expressions
-            columns: Subset of columns to return
-            **kwargs: Backend-specific parameters (currently unused)
-        """
-        self._check_open()
-
-        if not self._table_exists(feature):
-            return None
-
-        feature_key = self._resolve_feature_key(feature)
-        table_uri = self._feature_uri(feature_key)
-
-        # Use scan_delta for lazy evaluation
-        lf = pl.scan_delta(
-            table_uri,
-            storage_options=self.storage_options or None,
-        )
-
-        # Convert to Narwhals
-        nw_lazy = nw.from_native(lf)
-
-        # Apply filters (unpack list, skip if empty)
-        if filters:
-            nw_lazy = nw_lazy.filter(*filters)
-
-        # Apply column selection
-        if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
-
-        return nw_lazy
+        """Return the URI of the Delta table that holds `feature_key`."""
+        return str(self._delta_storage.resolve(feature_key).uri)
 
     def display(self) -> str:
         """Return human-readable representation of the store."""
         return f"DeltaMetadataStore(path={self._root_uri})"
-
-    def _get_store_metadata_impl(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
-        return {"uri": self._feature_uri(self._resolve_feature_key(feature_key))}
 
     @classmethod
     def config_model(cls) -> type[DeltaMetadataStoreConfig]:
