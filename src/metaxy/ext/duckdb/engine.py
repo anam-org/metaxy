@@ -17,7 +17,6 @@ from metaxy.ext.ibis.engine import (
     IbisSQLHandler,
     IbisStorageConfig,
 )
-from metaxy.ext.ibis.metadata_store import IbisMetadataStoreConfig
 from metaxy.metadata_store.io_handler import IOHandler
 from metaxy.metadata_store.types import AccessMode
 from metaxy.versioning.types import HashAlgorithm
@@ -239,9 +238,3 @@ class DuckDBEngine(IbisComputeEngine["DuckDBBackend"]):
         from metaxy.metadata_store.utils import sanitize_uri
 
         return f"DuckDBEngine(database={sanitize_uri(self.database)})"
-
-    @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:
-        from metaxy.ext.duckdb.metadata_store import DuckDBMetadataStoreConfig
-
-        return DuckDBMetadataStoreConfig

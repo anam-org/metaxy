@@ -9,7 +9,6 @@ import narwhals as nw
 from narwhals.typing import FrameT
 
 from metaxy.ext.ibis.engine import IbisComputeEngine
-from metaxy.ext.ibis.metadata_store import IbisMetadataStoreConfig
 from metaxy.ext.ibis.versioning import IbisVersioningEngine
 from metaxy.metadata_store.io_handler import IOHandler
 from metaxy.metadata_store.types import AccessMode
@@ -188,9 +187,3 @@ class ClickHouseEngine(IbisComputeEngine["ClickHouseBackend"]):
             url = url.set(query=new_query)
 
         return url.render_as_string(hide_password=False)
-
-    @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:
-        from metaxy.ext.clickhouse.metadata_store import ClickHouseMetadataStoreConfig
-
-        return ClickHouseMetadataStoreConfig

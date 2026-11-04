@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from types import TracebackType
@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias, TypeVar, cast, 
 
 import narwhals as nw
 from narwhals.typing import Frame, FrameT, IntoFrame
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field, ImportString
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from metaxy._decorators import public
@@ -100,6 +100,64 @@ class MetadataStoreConfig(BaseSettings):
     )
 
 
+@public
+class ComponentConfig(BaseModel):
+    """A store component (a compute engine or a storage) given by its import path and constructor arguments.
+
+    Example:
+        ```toml title="metaxy.toml"
+        [stores.dev.config.engine]
+        type = "metaxy.ext.duckdb.engine.DuckDBEngine"
+        database = "metadata.db"
+        ```
+    """
+
+    model_config = ConfigDict(extra="allow", frozen=True)
+
+    type: ImportString[Callable[..., Any]] = Field(description="Full import path to the component class.")
+
+    def build(self) -> Any:
+        """Construct the component."""
+        return self.type(**(self.model_extra or {}))
+
+
+@public
+class ComposedMetadataStoreConfig(MetadataStoreConfig):
+    """Configuration for a [`MetadataStore`][metaxy.MetadataStore] composed of a compute engine and storages.
+
+    Example:
+        ```toml title="metaxy.toml"
+        [stores.dev]
+        type = "metaxy.MetadataStore"
+
+        [stores.dev.config.engine]
+        type = "metaxy.ext.polars.engine.PolarsComputeEngine"
+
+        [stores.dev.config.storage]
+        type = "metaxy.ext.polars.handlers.delta.DeltaStorageConfig"
+        location = "s3://my-bucket/dev"
+
+        [[stores.dev.config.fallback_storage]]
+        type = "metaxy.ext.polars.handlers.delta.DeltaStorageConfig"
+        location = "s3://my-bucket/prod"
+        ```
+    """
+
+    engine: ComponentConfig = Field(description="Compute engine that runs versioning and performs I/O.")
+    storage: ComponentConfig | None = Field(
+        default=None,
+        description="Primary storage. If not set, the engine's native storage is used.",
+    )
+    fallback_storage: list[ComponentConfig] = Field(
+        default_factory=list,
+        description="Read-only storages, read through the same engine after the primary storage.",
+    )
+    auto_create_tables: bool | None = Field(
+        default=None,
+        description="Whether to create tables automatically when writing new features.",
+    )
+
+
 VersioningEngineOptions: TypeAlias = Literal["auto", "native", "polars"]
 
 # Mapping of system columns to their expected Narwhals dtypes
@@ -165,6 +223,19 @@ def _by_field_columns_to_maps(df: Frame) -> Frame:
     if isinstance(df, nw.DataFrame):
         return nw.from_native(convert_structs_to_maps(df.to_polars(), by_field_columns))
     return df
+
+
+def _build_components(config: ComposedMetadataStoreConfig) -> dict[str, Any]:
+    """Construct the engine and storages of `config` as `MetadataStore` arguments."""
+    engine = config.engine.build()
+    if not isinstance(engine, ComputeEngine):
+        raise TypeError(f"`engine` must build a ComputeEngine, got {type(engine).__name__}.")
+    storage = config.storage.build() if config.storage is not None else None
+    fallback_storage = [component.build() for component in config.fallback_storage]
+    for built in [storage, *fallback_storage]:
+        if built is not None and not isinstance(built, StorageConfig):
+            raise TypeError(f"Storages must build a StorageConfig, got {type(built).__name__}.")
+    return {"engine": engine, "storage": storage, "fallback_storage": fallback_storage}
 
 
 @public
@@ -1094,7 +1165,7 @@ class MetadataStore:
     @classmethod
     def config_model(cls) -> type[MetadataStoreConfig]:
         """Return the configuration model class for this store type."""
-        return MetadataStoreConfig
+        return ComposedMetadataStoreConfig
 
     @classmethod
     def from_config(cls, config: MetadataStoreConfig, **kwargs: Any) -> Self:
@@ -1133,6 +1204,8 @@ class MetadataStore:
 
         config_dict = config.model_dump(exclude_unset=True)
         fallback_store_names = config_dict.pop("fallback_stores", [])
+        if isinstance(config, ComposedMetadataStoreConfig):
+            config_dict |= _build_components(config)
         store = cls(**config_dict, **kwargs)
         if fallback_store_names:
             store.fallback_stores = FallbackStoreList(

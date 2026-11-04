@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from metaxy.ext.ibis.engine import IbisComputeEngine
-from metaxy.ext.ibis.metadata_store import IbisMetadataStoreConfig
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
@@ -93,12 +92,6 @@ class BigQueryEngine(IbisComputeEngine["BigQueryBackend"]):
     def display(self) -> str:
         dataset_info = f"/{self.dataset_id}" if self.dataset_id else ""
         return f"BigQueryEngine(project={self.project_id}{dataset_info})"
-
-    @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:
-        from metaxy.ext.bigquery.metadata_store import BigQueryMetadataStoreConfig
-
-        return BigQueryMetadataStoreConfig
 
 
 def _build_bigquery_connection_params(
