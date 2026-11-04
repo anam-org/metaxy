@@ -44,10 +44,12 @@ class DeltaTableIdentifier(TableRef):
 
 @dataclass(frozen=True, slots=True)
 class LanceTableIdentifier(TableRef):
-    """Identifies a Lance table by its URI."""
+    """Identifies a Lance table by its URI and by its name in the Lance database at `database`."""
 
     uri: str
     table_name: str
+    database: str = ""
+    connect_kwargs: dict[str, Any] = field(default_factory=dict, hash=False)
 
     def table_parts(self) -> tuple[str, ...]:
         return (self.uri,)

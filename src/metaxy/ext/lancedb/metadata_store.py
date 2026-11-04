@@ -3,23 +3,17 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-import narwhals as nw
-from narwhals.typing import Frame
 from pydantic import Field
 
 from metaxy._decorators import public
-from metaxy.ext.polars.versioning import PolarsVersioningEngine
+from metaxy.ext.lancedb.handler import LanceDBHandler
 from metaxy.metadata_store.base import MetadataStore, MetadataStoreConfig
-from metaxy.metadata_store.types import AccessMode
-from metaxy.metadata_store.utils import is_local_path, sanitize_uri
-from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
-from metaxy.utils import collect_to_polars
-from metaxy.versioning.types import HashAlgorithm
+from metaxy.metadata_store.storage_config import LanceStorageConfig
+from metaxy.metadata_store.utils import sanitize_uri
+from metaxy.models.types import FeatureKey
 
 logger = logging.getLogger(__name__)
 
@@ -98,11 +92,6 @@ class LanceDBMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
-    versioning_engine_cls = PolarsVersioningEngine
-
-    uri: str
-    _conn: Any
-    _connect_kwargs: dict[str, Any]
 
     def __init__(
         self,
@@ -128,244 +117,47 @@ class LanceDBMetadataStore(MetadataStore):
         from metaxy.ext.polars.engine import PolarsComputeEngine
 
         instance = MetadataStore.__new__(cls)
-        instance.uri = str(uri)
-        instance._conn = None
-        instance._connect_kwargs = connect_kwargs or {}
-
         MetadataStore.__init__(
             instance,
-            engine=PolarsComputeEngine(),
+            engine=PolarsComputeEngine(handlers=[LanceDBHandler()]),
+            storage=LanceStorageConfig(location=str(uri), connect_kwargs=connect_kwargs or {}),
             fallback_stores=fallback_stores,
             auto_create_tables=True,
             **kwargs,
         )
         return instance
 
-    @contextmanager
-    def _create_versioning_engine(self, plan):
-        """Create Polars versioning engine for LanceDB.
-
-        Args:
-            plan: Feature plan for the feature we're tracking provenance for
-
-        Yields:
-            PolarsVersioningEngine instance
-        """
-        engine = PolarsVersioningEngine(plan=plan)
-        try:
-            yield engine
-        finally:
-            # No cleanup needed for Polars engine
-            pass
-
-    def _open(self, mode: AccessMode) -> None:  # noqa: ARG002
-        import lancedb
-
-        if is_local_path(self.uri):
-            Path(self.uri).mkdir(parents=True, exist_ok=True)
-
-        self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
-
-    def _close(self) -> None:
-        self._conn = None
+    @property
+    def uri(self) -> str:
+        return self._write_storage().location
 
     @property
     def conn(self) -> Any:
-        """Get LanceDB connection.
-
-        Returns:
-            Active LanceDB connection
+        """The LanceDB connection.
 
         Raises:
-            StoreNotOpenError: If store is not open
+            StoreNotOpenError: If the store is not open
         """
         from metaxy.metadata_store.exceptions import StoreNotOpenError
 
-        if self._conn is None:
+        if not self._is_open:
             raise StoreNotOpenError("LanceDB connection is not open. Store must be used as a context manager.")
-        return self._conn
+        storage = self._write_storage()
+        assert isinstance(storage, LanceStorageConfig)
+        handler = self._engine.get_handler(storage)
+        assert isinstance(handler, LanceDBHandler)
+        return handler.connection(storage.location, dict(storage.connect_kwargs))
 
-    # Helpers -----------------------------------------------------------------
+    @property
+    def _conn(self) -> Any:
+        return self.conn if self._is_open else None
 
     def _table_name(self, feature_key: FeatureKey) -> str:
         return feature_key.table_name
 
-    def _table_exists(self, table_name: str) -> bool:
-        """Check if a table exists without listing all tables.
-
-        Uses open_table() which is more efficient than listing all tables,
-        especially for remote storage (S3, GCS, etc.) where listing is expensive.
-
-        Args:
-            table_name: Name of the table to check
-
-        Returns:
-            True if table exists, False otherwise
-        """
-        try:
-            self.conn.open_table(table_name)
-            return True
-        except (ValueError, FileNotFoundError):
-            # LanceDB raises ValueError when table doesn't exist
-            return False
-
-    def _get_table(self, table_name: str):
-        return self.conn.open_table(table_name)
-
-    # ===== MetadataStore abstract methods =====
-
-    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
-        """Check if feature exists in LanceDB store.
-
-        Args:
-            feature: Feature to check
-
-        Returns:
-            True if feature exists, False otherwise
-        """
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self._table_name(feature_key)
-        return self._table_exists(table_name)
-
-    def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Use XXHASH32 by default."""
-        return HashAlgorithm.XXHASH32
-
-    # Storage ------------------------------------------------------------------
-
-    def _write_feature(
-        self,
-        feature_key: FeatureKey,
-        df: Frame,
-        **kwargs: Any,
-    ) -> None:
-        """Append metadata to Lance table.
-
-        Creates the table if it doesn't exist, otherwise appends to existing table.
-        Uses LanceDB's native Polars/Arrow integration for efficient storage.
-
-        Args:
-            feature_key: Feature key to write to
-            df: Narwhals Frame with metadata (already validated by base class)
-        """
-        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD, METAXY_PROVENANCE_BY_FIELD
-        from metaxy.utils._arrow_map import convert_structs_to_maps
-
-        df_polars = convert_structs_to_maps(
-            collect_to_polars(df), columns=[METAXY_PROVENANCE_BY_FIELD, METAXY_DATA_VERSION_BY_FIELD]
-        )
-
-        table_name = self._table_name(feature_key)
-
-        if self._table_exists(table_name):
-            table = self._get_table(table_name)
-            table.add(df_polars)
-        else:
-            self.conn.create_table(table_name, data=df_polars)
-
-    def _drop_feature(self, feature_key: FeatureKey) -> None:
-        """Drop Lance table for feature.
-
-        Permanently removes the Lance table from the database directory.
-        Safe to call even if table doesn't exist (no-op).
-
-        Args:
-            feature_key: Feature key to drop metadata for
-        """
-        table_name = self._table_name(feature_key)
-        if self._table_exists(table_name):
-            self.conn.drop_table(table_name)
-
-    def _delete_feature(
-        self,
-        feature_key: FeatureKey,
-        filters: Sequence[nw.Expr] | None,
-        *,
-        with_feature_history: bool,
-    ) -> None:
-        """Hard deletion for LanceDB. Calls the delete method on the Lance table.
-
-        Args:
-            feature_key: Feature to delete from
-            filter_expr: Narwhals expression to select rows to delete
-        """
-        table_name = self._table_name(feature_key)
-        table = self._get_table(table_name)
-
-        # If no filters provided, delete all rows
-        if not filters:
-            table.delete()
-            return
-
-        # LanceDB's delete() API requires a single SQL WHERE clause string,
-        # so combine multiple filter expressions into one using all_horizontal
-        combined_filter = nw.all_horizontal(list(filters), ignore_nulls=False)
-
-        # Convert Narwhals expression to SQL WHERE clause for LanceDB.
-        # LanceDB requires unquoted identifiers, so we use the unquote_identifiers transform.
-        from metaxy.metadata_store.utils import (
-            narwhals_expr_to_sql_predicate,
-            unquote_identifiers,
-        )
-
-        schema = self.read_feature_schema_from_store(feature_key)
-        filter_str = narwhals_expr_to_sql_predicate(
-            combined_filter,
-            schema,
-            dialect="datafusion",
-            extra_transforms=unquote_identifiers(),
-        )
-
-        # Use native LanceDB delete for efficient in-place deletion
-        table.delete(filter_str)
-
-    def _read_feature(
-        self,
-        feature: CoercibleToFeatureKey,
-        *,
-        filters: Sequence[nw.Expr] | None = None,
-        columns: Sequence[str] | None = None,
-        **kwargs: Any,
-    ) -> nw.LazyFrame[Any] | None:
-        """Read metadata from Lance table.
-
-        Loads data from Lance, converts to Polars, and returns as Narwhals LazyFrame.
-        Applies filters and column selection in memory.
-
-        Args:
-            feature: Feature to read
-            filters: List of Narwhals filter expressions
-            columns: Optional list of columns to select
-            **kwargs: Backend-specific parameters (unused)
-
-        Returns:
-            Narwhals LazyFrame with metadata, or None if table not found
-        """
-        self._check_open()
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self._table_name(feature_key)
-        if not self._table_exists(table_name):
-            return None
-
-        table = self._get_table(table_name)
-        # LanceDB's to_polars() returns a Polars LazyFrame directly
-        # (fixed in Polars via https://github.com/pola-rs/polars/pull/25654)
-        nw_lazy = nw.from_native(table.to_polars())
-
-        if filters:
-            nw_lazy = nw_lazy.filter(*filters)
-
-        if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
-
-        return nw_lazy
-
-    # Display ------------------------------------------------------------------
-
     def display(self) -> str:
         """Human-readable representation with sanitized credentials."""
-        path = sanitize_uri(self.uri)
-        return f"LanceDBMetadataStore(path={path})"
+        return f"LanceDBMetadataStore(path={sanitize_uri(self.uri)})"
 
     @classmethod
     def config_model(cls) -> type[LanceDBMetadataStoreConfig]:
