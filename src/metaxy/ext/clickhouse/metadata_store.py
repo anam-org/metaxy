@@ -105,7 +105,6 @@ class ClickHouseMetadataStore(IbisStoreBackcompat):
         )
 
         storage = IbisStorageConfig(
-            format="clickhouse",
             location=connection_string or "clickhouse",
             table_prefix=table_prefix or "",
         )

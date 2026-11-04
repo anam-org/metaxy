@@ -182,9 +182,9 @@ class DuckDBMetadataStore(IbisStoreBackcompat):
                 auto_create_tables=auto_create_tables,
                 store_name=kwargs.get("name"),
             )
-            storage = DuckLakeStorageConfig(format="ducklake", location=str(database), table_prefix=prefix)
+            storage = DuckLakeStorageConfig(location=str(database), table_prefix=prefix)
         else:
-            storage = IbisStorageConfig(format="duckdb", location=str(database), table_prefix=prefix)
+            storage = IbisStorageConfig(location=str(database), table_prefix=prefix)
 
         engine = DuckDBEngine(
             database=database,

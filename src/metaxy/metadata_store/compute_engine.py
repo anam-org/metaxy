@@ -8,7 +8,7 @@ via `_create_default_handlers`.
 ```python
 MetadataStore(
     engine=DuckDBEngine(database="metadata.db"),
-    fallback_storage=[LanceStorageConfig(format="lance", location="s3://bucket/prod")],
+    fallback_storage=[LanceStorageConfig(location="s3://bucket/prod")],
 )
 ```
 """
@@ -112,7 +112,7 @@ class ComputeEngine(ABC, Generic[ConnT]):
                 return h
         from metaxy.metadata_store.exceptions import NoHandlerError
 
-        raise NoHandlerError(f"No handler registered for format '{storage_config.format}'")
+        raise NoHandlerError(f"No handler registered for {type(storage_config).__name__}")
 
     def can_handle(self, storage_config: StorageConfig) -> bool:
         """Whether any registered handler can handle this storage_config."""

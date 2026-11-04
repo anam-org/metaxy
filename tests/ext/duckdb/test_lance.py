@@ -37,6 +37,6 @@ class TestDuckDBLance(
         engine = DuckDBEngine(database=":memory:", handlers=[DuckDBLanceHandler()])
         return MetadataStore(
             engine=engine,
-            storage=LanceStorageConfig(format="lance", location=str(lance_path)),
+            storage=LanceStorageConfig(location=str(lance_path)),
             hash_algorithm=HashAlgorithm.XXHASH64,
         )

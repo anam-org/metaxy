@@ -130,7 +130,7 @@ class BigQueryMetadataStore(IbisStoreBackcompat):
         )
 
         prefix = table_prefix or ""
-        storage = IbisStorageConfig(format="bigquery", location=project_id or "bigquery", table_prefix=prefix)
+        storage = IbisStorageConfig(location=project_id or "bigquery", table_prefix=prefix)
 
         instance = IbisStoreBackcompat.__new__(cls)
         MetadataStore.__init__(

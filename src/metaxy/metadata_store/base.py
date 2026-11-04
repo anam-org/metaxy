@@ -1985,22 +1985,21 @@ class MetadataStore:
             return str(self._engine.sqlalchemy_url)
         raise ValueError(f"{self._engine.__class__.__name__} does not provide a sqlalchemy_url")
 
-    @property
-    def _table_prefix(self) -> str:
-        """Return the table prefix of the primary storage, if it has one."""
-        return getattr(self._storage, "table_prefix", "")
-
     def get_table_name(self, key: FeatureKey) -> str:
-        """Return the table name for a feature key, with table prefix applied."""
-        prefix = self._table_prefix
-        return f"{prefix}{key.table_name}" if prefix else key.table_name
+        """Return the name of the SQL table that holds `key` in the primary storage."""
+        from metaxy.metadata_store.table_ref import SQLTableIdentifier
+
+        table_ref = self._write_storage().resolve(key)
+        if not isinstance(table_ref, SQLTableIdentifier):
+            raise TypeError(f"{type(self._storage).__name__} does not store features in SQL tables.")
+        return table_ref.table_name
 
     def display(self) -> str:
         """Return a human-readable display string for this store."""
         from metaxy.metadata_store.utils import sanitize_uri
 
         engine_name = self._engine.__class__.__name__
-        storage_parts = [f"{sc.format}({sanitize_uri(sc.location)})" for sc in self._read_storages()]
+        storage_parts = [sanitize_uri(sc.location) for sc in self._read_storages()]
         return f"{engine_name}({', '.join(storage_parts)})"
 
     def __repr__(self) -> str:

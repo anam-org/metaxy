@@ -172,9 +172,8 @@ class IbisMetadataStore(MetadataStore, ABC):
             versioning_engine=versioning_engine,
         )
 
-    @property  # type: ignore[override]
-    def _table_prefix(self) -> str:  # type: ignore[override]
-        return self._ibis_table_prefix
+    def get_table_name(self, key: FeatureKey) -> str:
+        return f"{self._ibis_table_prefix}{key.table_name}"
 
     def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
         feature_key = self._resolve_feature_key(feature)

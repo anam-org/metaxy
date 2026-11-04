@@ -105,7 +105,7 @@ class PostgreSQLMetadataStore(IbisStoreBackcompat):
 
         prefix = table_prefix or ""
         location = connection_string or "postgresql"
-        storage = IbisStorageConfig(format="postgresql", location=location, table_prefix=prefix)
+        storage = IbisStorageConfig(location=location, table_prefix=prefix)
 
         instance = IbisStoreBackcompat.__new__(cls)
         MetadataStore.__init__(
