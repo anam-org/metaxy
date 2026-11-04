@@ -21,6 +21,26 @@ description: "Learn how to use DuckDB as a Metaxy metadata store."
 pip install 'metaxy[duckdb]'
 ```
 
+## Pre-installing DuckDB Extensions
+
+Pre-install extensions during the image build for faster startup and air-gapped deployments.
+
+!!! example
+
+    List the extensions explicitly in a text file:
+
+    ```sql title="duckdb-extensions.sql"
+    --8<-- "example-ducklake/duckdb-extensions.sql"
+    ```
+
+    Install them before copying the application code to keep the extension layer cacheable:
+
+    ```dockerfile title="Dockerfile"
+    --8<-- "example-ducklake/Dockerfile"
+    ```
+
+    Keep the DuckDB CLI and Python package versions equal. Update the text file when the application's required extensions change.
+
 ## API Reference
 
 <!-- dprint-ignore-start -->
