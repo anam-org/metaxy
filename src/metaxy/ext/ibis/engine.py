@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import narwhals as nw
 from narwhals.typing import Frame
 
-from metaxy.ext.ibis.metadata_store import IbisMetadataStoreConfig
 from metaxy.ext.ibis.versioning import IbisVersioningEngine
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.compute_engine import ComputeEngine
@@ -579,7 +578,3 @@ class IbisComputeEngine(ComputeEngine[IbisConnT], ABC):
         backend_info = self.connection_string or f"{self.backend}"
         sanitized_info = sanitize_uri(backend_info)
         return f"{self.__class__.__name__}(backend={sanitized_info})"
-
-    @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:
-        return IbisMetadataStoreConfig

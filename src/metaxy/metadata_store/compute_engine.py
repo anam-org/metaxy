@@ -32,7 +32,6 @@ from metaxy.versioning import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
-    from metaxy.metadata_store.base import MetadataStoreConfig
     from metaxy.models.plan import FeaturePlan
 
 HandlerT = TypeVar("HandlerT", bound=IOHandler[Any, Any])
@@ -239,10 +238,4 @@ class ComputeEngine(ABC, Generic[ConnT]):
     @abstractmethod
     def display(self) -> str:
         """Human-readable description of the backend (for logs/CLI)."""
-        ...
-
-    @classmethod
-    @abstractmethod
-    def config_model(cls) -> type[MetadataStoreConfig]:
-        """Return the Pydantic config class for this adapter."""
         ...

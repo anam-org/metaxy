@@ -11,7 +11,6 @@ from metaxy.versioning import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
-    from metaxy.metadata_store.base import MetadataStoreConfig
     from metaxy.models.plan import FeaturePlan
 
 
@@ -65,7 +64,3 @@ class PolarsComputeEngine(ComputeEngine[None]):
 
     def display(self) -> str:
         return "PolarsComputeEngine()"
-
-    @classmethod
-    def config_model(cls) -> type[MetadataStoreConfig]:
-        return MetadataStoreConfig

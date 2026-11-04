@@ -54,6 +54,12 @@ The following base configuration class is typically used by child metadata store
 
 ::: metaxy.metadata_store.base.MetadataStoreConfig
 
+A plain [`MetadataStore`][metaxy.MetadataStore] is configured with its compute engine and storages:
+
+::: metaxy.metadata_store.base.ComposedMetadataStoreConfig
+
+::: metaxy.metadata_store.base.ComponentConfig
+
 ---
 
 ## Configuration

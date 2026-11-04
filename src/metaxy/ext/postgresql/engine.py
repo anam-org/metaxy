@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 from metaxy.ext.ibis.engine import IbisComputeEngine
-from metaxy.ext.ibis.metadata_store import IbisMetadataStoreConfig
 from metaxy.ext.polars.versioning import PolarsVersioningEngine
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.io_handler import IOHandler
@@ -70,9 +69,3 @@ class PostgreSQLEngine(IbisComputeEngine["PostgresBackend"]):
 
         location = self.connection_string or "postgresql"
         return f"PostgreSQLEngine(connection={sanitize_uri(location)})"
-
-    @classmethod
-    def config_model(cls) -> type[IbisMetadataStoreConfig]:
-        from metaxy.ext.postgresql.metadata_store import PostgreSQLMetadataStoreConfig
-
-        return PostgreSQLMetadataStoreConfig
