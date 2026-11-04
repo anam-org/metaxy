@@ -8,7 +8,12 @@ import pytest
 from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.plan import FeaturePlan, FQFieldKey
-from metaxy.models.types import CoercibleToFieldKey, ValidatedFieldKeyAdapter
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    CoercibleToFieldKey,
+    ValidatedFeatureKeyAdapter,
+    ValidatedFieldKeyAdapter,
+)
 from metaxy_testing.models import SampleFeatureSpec
 
 from tests.models.diamond_graph import DEPTH, add_diamond
@@ -36,6 +41,20 @@ def parent_field_lookups(monkeypatch: pytest.MonkeyPatch) -> list[FQFieldKey]:
 
     monkeypatch.setattr(FeaturePlan, "get_parent_fields_for_field", spy)
     return lookups
+
+
+@pytest.fixture
+def feature_plan_requests(monkeypatch: pytest.MonkeyPatch) -> list[FeatureKey]:
+    """Record the feature key of each `FeatureGraph.get_feature_plan` call."""
+    requests: list[FeatureKey] = []
+    original = FeatureGraph.get_feature_plan
+
+    def spy(graph: FeatureGraph, key: CoercibleToFeatureKey) -> FeaturePlan:
+        requests.append(ValidatedFeatureKeyAdapter.validate_python(key))
+        return original(graph, key)
+
+    monkeypatch.setattr(FeatureGraph, "get_feature_plan", spy)
+    return requests
 
 
 @pytest.fixture

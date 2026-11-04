@@ -226,6 +226,21 @@ def test_get_feature_version_by_field_computes_each_field_once(
     assert set(parent_field_lookups) == {key for layer in range(DEPTH + 1) for key in layer_field_keys(layer)}
 
 
+def test_get_feature_version_by_field_builds_each_plan_once(
+    graph: FeatureGraph, diamond_graph: FeatureKey, feature_plan_requests: list[FeatureKey]
+) -> None:
+    """One call on a new graph builds the plan of each feature once, and a repeated call builds none."""
+    graph.get_feature_version_by_field(diamond_graph)
+
+    assert len(feature_plan_requests) == DEPTH + 1
+    assert set(feature_plan_requests) == {layer_key(layer) for layer in range(DEPTH + 1)}
+
+    feature_plan_requests.clear()
+    graph.get_feature_version_by_field(diamond_graph)
+
+    assert feature_plan_requests == []
+
+
 def test_get_field_version_computes_each_upstream_field_once(
     graph: FeatureGraph, diamond_graph: FeatureKey, parent_field_lookups: list[FQFieldKey]
 ) -> None:

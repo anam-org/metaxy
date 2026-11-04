@@ -56,7 +56,7 @@ def _hash_version_by_field(version_by_field: Mapping[str, str], hash_truncation_
     return hasher.hexdigest()[:hash_truncation_length]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _FeatureVersions:
     """The version of each field of a feature, and the feature version derived from them."""
 
@@ -70,11 +70,13 @@ class _FeatureVersionCacheEntry:
 
     The entry is valid while the hash truncation length is the same and the graph holds the
     same definition objects for all recorded keys. A recorded `None` means that the key is
-    not in the graph. Field versions are added one at a time as they are computed.
+    not in the graph. The plan is built from the recorded definitions. Field versions are
+    added one at a time as they are computed.
     """
 
     hash_truncation_length: int
     definitions: dict[FeatureKey, FeatureDefinition | None]
+    plan: FeaturePlan
     field_versions: dict[FieldKey, str] = field(default_factory=dict)
     feature_versions: _FeatureVersions | None = None
 
@@ -299,6 +301,7 @@ class FeatureGraph:
         The version is derived from the field's code version and the versions of its parent fields.
         A field of an external feature with a provenance override uses the override value as its version.
         """
+        # An override is returned before the config is read, because reading a config that is not loaded warns.
         override = self._provenance_override(key)
         if override is not None:
             return override
@@ -319,43 +322,35 @@ class FeatureGraph:
         if override is not None:
             return override
 
-        entry = self._current_cache_entry(key.feature, hash_truncation_length)
-        if entry is not None and key.field in entry.field_versions:
+        entry = self._cache_entry(key.feature, hash_truncation_length)
+        if key.field in entry.field_versions:
             return entry.field_versions[key.field]
 
-        entry, plan = self._plan_and_cache_entry(key.feature, hash_truncation_length, entry)
         hasher = hashlib.sha256()
         hasher.update(key.to_string().encode())
-        hasher.update(str(plan.feature.fields_by_key[key.field].code_version).encode())
-        for parent_key in sorted(plan.get_parent_fields_for_field(key.field)):
+        hasher.update(str(entry.plan.feature.fields_by_key[key.field].code_version).encode())
+        for parent_key in sorted(entry.plan.get_parent_fields_for_field(key.field)):
             hasher.update(self._get_field_version(parent_key, hash_truncation_length).encode())
 
         entry.field_versions[key.field] = hasher.hexdigest()[:hash_truncation_length]
         return entry.field_versions[key.field]
 
-    def _current_cache_entry(self, key: FeatureKey, hash_truncation_length: int) -> _FeatureVersionCacheEntry | None:
-        """Get the cache entry of a feature, or `None` if there is no current entry."""
+    def _cache_entry(self, key: FeatureKey, hash_truncation_length: int) -> _FeatureVersionCacheEntry:
+        """Get the current cache entry of a feature, and replace a missing or stale entry with a new one.
+
+        The cache only holds entries of features with a valid plan.
+        """
         entry = self._feature_version_cache.get(key)
         if entry is not None and entry.is_current(self.feature_definitions_by_key, hash_truncation_length):
             return entry
-        return None
 
-    def _plan_and_cache_entry(
-        self, key: FeatureKey, hash_truncation_length: int, entry: _FeatureVersionCacheEntry | None
-    ) -> tuple[_FeatureVersionCacheEntry, FeaturePlan]:
-        """Get the plan of a feature together with a current cache entry for it.
-
-        `entry` is the current entry of the feature, or `None` if there is no current entry.
-        The cache only holds entries of features with a valid plan.
-        """
-        if entry is not None:
-            return entry, self.get_feature_plan(key)
-
-        definitions = self._dependency_definitions(key)
-        plan = self.get_feature_plan(key)
-        entry = _FeatureVersionCacheEntry(hash_truncation_length=hash_truncation_length, definitions=definitions)
+        entry = _FeatureVersionCacheEntry(
+            hash_truncation_length=hash_truncation_length,
+            definitions=self._dependency_definitions(key),
+            plan=self.get_feature_plan(key),
+        )
         self._feature_version_cache[key] = entry
-        return entry, plan
+        return entry
 
     def _dependency_definitions(self, key: FeatureKey) -> dict[FeatureKey, FeatureDefinition | None]:
         """Collect the definitions of a feature and of all its transitive ancestors.
@@ -376,17 +371,16 @@ class FeatureGraph:
 
     def _get_feature_versions(self, key: FeatureKey) -> _FeatureVersions:
         hash_truncation_length = get_hash_truncation_length()
-        entry = self._current_cache_entry(key, hash_truncation_length)
-        if entry is not None and entry.feature_versions is not None:
+        entry = self._cache_entry(key, hash_truncation_length)
+        if entry.feature_versions is not None:
             return entry.feature_versions
 
-        entry, plan = self._plan_and_cache_entry(key, hash_truncation_length, entry)
         # The field order of the spec is kept, because it is visible in serialized versions.
         version_by_field = {
             field_key.to_string(): self._get_field_version(
                 FQFieldKey(field=field_key, feature=key), hash_truncation_length
             )
-            for field_key in plan.feature.fields_by_key
+            for field_key in entry.plan.feature.fields_by_key
         }
         entry.feature_versions = _FeatureVersions(
             version_by_field=version_by_field,
