@@ -1396,3 +1396,37 @@ def test_clickhouse_ibis_type_to_polars_nested_map(ch_store: ClickHouseMetadataS
 def test_clickhouse_ibis_type_to_polars_delegates_non_map(ch_store: ClickHouseMetadataStore) -> None:
     assert ch_store.ibis_type_to_polars(dt.String()) == pl.String
     assert ch_store.ibis_type_to_polars(dt.UUID()) == pl.String
+
+
+def test_clickhouse_read_filters_reach_the_scan(clickhouse_store: ClickHouseMetadataStore) -> None:
+    """A read's filters become a PREWHERE of the table scan, below the deduplication."""
+    import ibis
+    import narwhals as nw
+    from metaxy import BaseFeature, FeatureSpec
+    from metaxy.models.types import FeatureKey
+
+    with FeatureGraph().use():
+
+        class Chunk(
+            BaseFeature, spec=FeatureSpec(key=FeatureKey(["test_filter_pushdown", "chunk"]), id_columns=["chunk_id"])
+        ):
+            chunk_id: str
+            dataset: str
+
+        with clickhouse_store.open("w"):
+            clickhouse_store.write(
+                Chunk,
+                pl.DataFrame(
+                    {
+                        "chunk_id": ["c1", "c2"],
+                        "dataset": ["needle", "other"],
+                        "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                    }
+                ),
+            )
+            lazy = clickhouse_store.read(Chunk, filters=[nw.col("dataset") == "needle"])
+            assert collect_to_polars(lazy)["chunk_id"].to_list() == ["c1"]
+            sql = ibis.to_sql(lazy.to_native(), dialect="clickhouse")
+            plan = [row[0] for row in clickhouse_store.conn.con.query(f"EXPLAIN actions = 1 {sql}").result_rows]  # ty: ignore[unresolved-attribute]
+
+    assert any("Prewhere filter column" in line and "needle" in line for line in plan), "\n".join(plan)

@@ -774,6 +774,8 @@ class MetadataStore(ABC):
             feature: Feature to read metadata for
             feature_version: Explicit feature_version to filter by (mutually exclusive with with_feature_history=False)
             filters: Sequence of Narwhals filter expressions to apply to this feature.
+                Unless `with_sample_history=True`, they apply to the latest row of each sample only: a sample
+                whose latest row does not match is left out, not replaced by an older row that matches.
                 Example: `[nw.col("x") > 10, nw.col("y") < 5]`
             columns: Subset of columns to include. Metaxy's system columns are always included.
             allow_fallback: Whether to allow fallback to upstream stores if the requested feature is not found in the current store.
@@ -829,7 +831,7 @@ class MetadataStore(ABC):
                 "Use with_feature_history=True with feature_version parameter."
             )
 
-        # Separate system filters (applied before dedup) from user filters (applied after dedup)
+        # Separate system filters (applied before dedup) from user filters (applied to the latest rows)
         # System filters like feature_version need to be applied early to reduce data volume
         # User filters should see the deduplicated view of the data
         system_filters: list[nw.Expr] = []
@@ -858,7 +860,7 @@ class MetadataStore(ABC):
         lazy_frame = None
         try:
             # Only pass system filters to _read_feature
-            # User filters will be applied after deduplication
+            # User filters are applied to the latest row of each sample, in the deduplication below
             lazy_frame = self._read_feature(
                 feature, filters=system_filters if system_filters else None, columns=read_columns
             )
@@ -881,18 +883,20 @@ class MetadataStore(ABC):
                 id_cols = list(self._resolve_feature_plan(feature_key).feature.id_columns)
                 # Treat soft-deletes like hard deletes by ordering on the
                 # most recent lifecycle timestamp.
+                # User filters go into the deduplication: they see only the latest row of each sample, and
+                # query engines can push them into the scan, which they cannot do for filters on its result.
                 lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                     df=lazy_frame,
                     group_columns=id_cols,
                     timestamp_columns=[METAXY_DELETED_AT, METAXY_UPDATED_AT],
+                    filters=user_filters,
                 )
+            else:
+                for user_filter in user_filters:
+                    lazy_frame = lazy_frame.filter(user_filter)
 
             if filter_deleted:
                 lazy_frame = lazy_frame.filter(nw.col(METAXY_DELETED_AT).is_null())
-
-            # Apply user filters AFTER deduplication so they see the latest version of each row
-            for user_filter in user_filters:
-                lazy_frame = lazy_frame.filter(user_filter)
 
         # For system tables, apply user filters directly (no dedup needed)
         if lazy_frame is not None and is_system_table:

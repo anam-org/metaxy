@@ -301,3 +301,57 @@ def test_keep_latest_by_group_compiles_without_execution(dialect: str) -> None:
     assert result.implementation == nw.Implementation.IBIS
     assert result.to_native().schema() == table.schema()
     assert ibis.to_sql(result.to_native(), dialect=dialect)
+
+
+def test_keep_latest_by_group_filters_apply_to_latest_rows(keep_latest_test_data: tuple[Any, Any, datetime]) -> None:
+    """Filters see only each group's latest rows, and choose among tied latest rows before the tie-break."""
+    from datetime import timedelta
+
+    import narwhals as nw
+    import polars as pl
+
+    engine_class, create_data_fn, base_time = keep_latest_test_data
+    latest = base_time + timedelta(hours=1)
+    data = pl.DataFrame(
+        {
+            "sample_uid": ["moved", "moved", "tied", "tied", "kept", "kept"],
+            "timestamp": [base_time, latest, latest, latest, base_time, latest],
+            "dataset": ["a", "b", "b", "a", "a", "a"],
+            "value": ["old", "new", "tie_b", "tie_a", "old", "new"],
+        }
+    )
+
+    result = collect_to_polars(
+        engine_class.keep_latest_by_group(
+            create_data_fn(data), ["sample_uid"], ["timestamp"], filters=[nw.col("dataset") == "a"]
+        )
+    ).sort("sample_uid")
+
+    # "moved" is left out, not read from its older row; of the tied rows, the matching one is kept.
+    assert result.select("sample_uid", "value").rows() == [("kept", "new"), ("tied", "tie_a")]
+
+
+@pytest.mark.ibis
+@pytest.mark.parametrize("dialect", ["duckdb", "clickhouse", "bigquery", "postgres", "datafusion"])
+def test_keep_latest_by_group_filters_run_before_the_tie_break(dialect: str) -> None:
+    """In the SQL, the filter is in a subquery of the tie-break's window, so an engine can push it into the scan."""
+    import ibis
+    import narwhals as nw
+    import sqlglot
+    from sqlglot import exp
+
+    table = ibis.table({"sample_uid": "string", "timestamp": "timestamp", "dataset": "string"}, name="history")
+    result = IbisVersioningEngine.keep_latest_by_group(
+        nw.from_native(table), ["sample_uid"], ["timestamp"], filters=[nw.col("dataset") == "needle"]
+    )
+
+    tree = sqlglot.parse_one(ibis.to_sql(result.to_native(), dialect=dialect), read=dialect)
+    filter_select = next(lit for lit in tree.find_all(exp.Literal) if lit.this == "needle").find_ancestor(exp.Select)
+    window_select = next(tree.find_all(exp.Window)).find_ancestor(exp.Select)
+    assert filter_select is not None and window_select is not None
+    ancestors = []
+    node = filter_select.parent
+    while node is not None:
+        ancestors.append(node)
+        node = node.parent
+    assert any(node is window_select for node in ancestors)
