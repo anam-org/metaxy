@@ -4,6 +4,7 @@ CRITICAL: This implementation NEVER materializes lazy expressions.
 All operations stay in the lazy Ibis world for SQL execution.
 """
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Protocol, cast
 
 import narwhals as nw
@@ -156,16 +157,19 @@ class IbisVersioningEngine(VersioningEngine):
         df: FrameT,
         group_columns: list[str],
         timestamp_columns: list[str],
+        filters: Sequence[nw.Expr] = (),
     ) -> FrameT:
         """Keep only the latest row per group based on timestamp columns.
 
-        Selects rows matching each group's latest timestamp, then keeps one
-        whole row when timestamps tie. All operations remain lazy Ibis expressions.
+        Selects rows matching each group's latest timestamp, applies `filters`
+        to them, then keeps one whole row when timestamps tie. All operations
+        remain lazy Ibis expressions.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Ibis
             group_columns: Columns to group by (typically ID columns)
             timestamp_columns: Column names to coalesce for ordering (uses first non-null value)
+            filters: Filters on the latest rows, applied before the tie-break
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
@@ -187,6 +191,10 @@ class IbisVersioningEngine(VersioningEngine):
             [ibis_table[col].identical_to(latest[col]) for col in group_columns]
             + [ordering_expr.identical_to(latest[TEMP_TABLE_NAME])],
         )
+        if filters:
+            # Filter before the tie-break's window: an engine can push a filter through the semi join into
+            # the scan, but not through the window, so filters on the result read every row of the table.
+            latest_rows = cast(ibis.expr.types.Table, nw.from_native(latest_rows).filter(*filters).to_native())
         # Rank only the latest candidates; per-column aggregates can mix tied rows and skip nulls.
         result_table = latest_rows.filter(ibis.row_number().over(group_by=group_columns) == 0)
 

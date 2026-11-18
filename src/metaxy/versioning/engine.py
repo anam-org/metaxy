@@ -276,6 +276,7 @@ class VersioningEngine(ABC):
         df: FrameT,
         group_columns: list[str],
         timestamp_columns: list[str],
+        filters: Sequence[nw.Expr] = (),
     ) -> FrameT:
         """Keep only the latest row per group based on timestamp columns.
 
@@ -283,6 +284,9 @@ class VersioningEngine(ABC):
             df: Input DataFrame.
             group_columns: Columns defining the groups.
             timestamp_columns: Column names to coalesce for ordering (uses first non-null value).
+            filters: Filters on the latest rows. A group whose latest row does not match is left out, not
+                replaced by an older row. They are applied before ties between latest rows are broken, so a
+                query engine can push them into the scan, which it cannot do for a filter on the result.
 
         Returns:
             DataFrame with only the latest row per group.

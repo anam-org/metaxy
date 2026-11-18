@@ -1,6 +1,6 @@
 """Polars implementation of VersioningEngine."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import cast
 
 import narwhals as nw
@@ -134,13 +134,18 @@ class PolarsVersioningEngine(VersioningEngine):
         df: FrameT,
         group_columns: list[str],
         timestamp_columns: list[str],
+        filters: Sequence[nw.Expr] = (),
     ) -> FrameT:
         """Keep only the latest row per group based on timestamp columns.
+
+        Selects rows matching each group's latest timestamp, applies `filters`
+        to them, then keeps one whole row when timestamps tie.
 
         Args:
             df: Narwhals DataFrame/LazyFrame backed by Polars
             group_columns: Columns to group by (typically ID columns)
             timestamp_columns: Column names to coalesce for ordering (uses first non-null value)
+            filters: Filters on the latest rows, applied before the tie-break
 
         Returns:
             Narwhals DataFrame/LazyFrame with only the latest row per group
@@ -151,10 +156,17 @@ class PolarsVersioningEngine(VersioningEngine):
 
         # Create a temporary column for ordering using coalesce
         ordering_expr = pl.coalesce([pl.col(col) for col in timestamp_columns])
-        df_pl = df_pl.with_columns(ordering_expr.alias(TEMP_TABLE_NAME))
+        lf = df_pl.lazy().with_columns(ordering_expr.alias(TEMP_TABLE_NAME))
 
-        result = df_pl.group_by(group_columns).agg(pl.col("*").sort_by(TEMP_TABLE_NAME).last())
-        result = result.drop(TEMP_TABLE_NAME)
+        # Same plan as the Ibis engine: the latest timestamp per group from keys and timestamps only, a semi
+        # join back to the rows with it, the filters, then one row per group. A lazy scan can take the filters.
+        latest = lf.group_by(group_columns).agg(pl.col(TEMP_TABLE_NAME).max())
+        latest_rows = lf.join(latest, on=[*group_columns, TEMP_TABLE_NAME], how="semi", nulls_equal=True)
+        if filters:
+            latest_rows = nw.from_native(latest_rows).filter(*filters).to_native()
+        result = latest_rows.unique(subset=group_columns, keep="any").drop(TEMP_TABLE_NAME)
+        if isinstance(df_pl, pl.DataFrame):
+            return cast(FrameT, nw.from_native(result.collect()))
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result))
